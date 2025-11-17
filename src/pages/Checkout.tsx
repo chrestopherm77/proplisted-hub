@@ -27,17 +27,18 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [pixData, setPixData] = useState<{ qrCode: string; payload: string } | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/auth');
       return;
     }
     fetchCart();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchCart = async () => {
     try {

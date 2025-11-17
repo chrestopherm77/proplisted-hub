@@ -22,18 +22,19 @@ export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<string[]>([]);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/auth');
       return;
     }
     fetchLeads();
     fetchCart();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchLeads = async () => {
     try {

@@ -22,17 +22,18 @@ interface PurchasedLead {
 export default function MyLeads() {
   const [purchases, setPurchases] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/auth');
       return;
     }
     fetchPurchases();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchPurchases = async () => {
     if (!user) return;
