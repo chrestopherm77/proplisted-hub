@@ -42,7 +42,8 @@ serve(async (req) => {
 
     // Create or get Asaas customer
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
-    const asaasBaseUrl = 'https://sandbox.asaas.com/api/v3';
+    const asaasBaseUrl = 'https://api-sandbox.asaas.com/v3';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 
     // Create customer in Asaas
     const customerResponse = await fetch(`${asaasBaseUrl}/customers`, {
@@ -62,24 +63,46 @@ serve(async (req) => {
     const customerData = await customerResponse.json();
     console.log('Asaas customer created:', customerData.id);
 
-    // Create payment in Asaas
-    const paymentResponse = await fetch(`${asaasBaseUrl}/payments`, {
+    // Create checkout in Asaas
+    const items = cartItems.map((item: any) => ({
+      name: item.lead_id,
+      value: item.price,
+      description: `Lead ID: ${item.lead_id}`
+    }));
+
+    const checkoutResponse = await fetch(`${asaasBaseUrl}/checkouts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': asaasApiKey!,
       },
       body: JSON.stringify({
-        customer: customerData.id,
-        billingType: paymentMethod === 'PIX' ? 'PIX' : 'CREDIT_CARD',
-        value: totalAmount,
-        dueDate: new Date().toISOString().split('T')[0],
-        description: `Compra de ${cartItems.length} lead(s) - LeadMarket`,
+        billingTypes: ['PIX', 'CREDIT_CARD'],
+        chargeTypes: ['ONETIME'],
+        items,
+        expiresIn: 60,
+        callback: {
+          successUrl: `${supabaseUrl}/checkout-success`,
+          errorUrl: `${supabaseUrl}/checkout-error`,
+          expiredUrl: `${supabaseUrl}/checkout-expired`
+        },
+        customerData: {
+          name: profile.name,
+          cpfCnpj: profile.creci_number,
+          email: user.email,
+          phone: profile.phone
+        }
       }),
     });
 
-    const paymentData = await paymentResponse.json();
-    console.log('Asaas payment created:', paymentData.id);
+    if (!checkoutResponse.ok) {
+      const errorData = await checkoutResponse.json();
+      console.error('Asaas checkout error:', errorData);
+      throw new Error(`Erro ao criar checkout: ${JSON.stringify(errorData)}`);
+    }
+
+    const checkoutData = await checkoutResponse.json();
+    console.log('Checkout created:', checkoutData.id);
 
     // Create purchase records in database
     for (const item of cartItems) {
@@ -89,7 +112,7 @@ serve(async (req) => {
           user_id: user.id,
           lead_id: item.lead_id,
           amount: item.price,
-          asaas_payment_id: paymentData.id,
+          asaas_payment_id: checkoutData.id,
           asaas_customer_id: customerData.id,
           status: 'PENDING',
         });
@@ -99,31 +122,10 @@ serve(async (req) => {
       }
     }
 
-    // Get PIX QR Code if payment method is PIX
-    let pixQrCode = null;
-    let pixPayload = null;
-
-    if (paymentMethod === 'PIX') {
-      const qrCodeResponse = await fetch(
-        `${asaasBaseUrl}/payments/${paymentData.id}/pixQrCode`,
-        {
-          headers: {
-            'access_token': asaasApiKey!,
-          },
-        }
-      );
-
-      const qrCodeData = await qrCodeResponse.json();
-      pixQrCode = qrCodeData.encodedImage;
-      pixPayload = qrCodeData.payload;
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
-        paymentId: paymentData.id,
-        pixQrCode,
-        pixPayload,
+        checkoutUrl: checkoutData.url,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
