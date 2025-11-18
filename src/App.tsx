@@ -9,6 +9,9 @@ import Leads from "./pages/Leads";
 import MyLeads from "./pages/MyLeads";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutError from "./pages/CheckoutError";
+import CheckoutExpired from "./pages/CheckoutExpired";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
           <Route path="/my-leads" element={<MyLeads />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout-success" element={<CheckoutSuccess />} />
+          <Route path="/checkout-error" element={<CheckoutError />} />
+          <Route path="/checkout-expired" element={<CheckoutExpired />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
