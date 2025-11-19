@@ -88,6 +88,22 @@ serve(async (req) => {
 
     console.log('Checkout payload:', JSON.stringify(checkoutPayload, null, 2));
 
+    // Clean customer data before sending to Asaas
+    const cleanedCustomerData = {
+      ...checkoutPayload.customerData,
+      name: checkoutPayload.customerData.name.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''),
+      phone: checkoutPayload.customerData.phone.replace(/\D/g, ''),
+      cpfCnpj: checkoutPayload.customerData.cpfCnpj.replace(/\D/g, ''),
+      postalCode: checkoutPayload.customerData.postalCode.replace(/\D/g, ''),
+    };
+
+    const finalPayload = {
+      ...checkoutPayload,
+      customerData: cleanedCustomerData,
+    };
+
+    console.log('Final payload to Asaas:', JSON.stringify(finalPayload, null, 2));
+
     const checkoutResponse = await fetch(`${ASAAS_BASE_URL}/checkouts`, {
       method: 'POST',
       headers: {
@@ -95,7 +111,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'User-Agent': 'LeadMarket-System',
       },
-      body: JSON.stringify(checkoutPayload),
+      body: JSON.stringify(finalPayload),
     });
 
     if (!checkoutResponse.ok) {
@@ -107,7 +123,8 @@ serve(async (req) => {
     const checkoutData = await checkoutResponse.json();
     console.log('Checkout created successfully!');
     console.log('Checkout ID:', checkoutData.id);
-    console.log('Checkout URL:', checkoutData.url);
+    console.log('Checkout Link:', checkoutData.link);
+    console.log('Full response:', JSON.stringify(checkoutData, null, 2));
 
     // Save purchase records in database with PENDING status
     console.log('Saving purchase records...');
@@ -129,11 +146,11 @@ serve(async (req) => {
 
     console.log('=== Checkout creation completed ===');
 
-    // Return checkout URL for redirect
+    // Return checkout link for redirect (Asaas uses 'link' not 'url')
     return new Response(
       JSON.stringify({
         success: true,
-        checkoutUrl: checkoutData.url,
+        checkoutUrl: checkoutData.link || checkoutData.url,
         checkoutId: checkoutData.id,
       }),
       {
