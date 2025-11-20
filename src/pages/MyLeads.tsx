@@ -33,6 +33,13 @@ export default function MyLeads() {
       return;
     }
     fetchPurchases();
+    
+    // Poll for updates every 3 seconds to catch webhook updates
+    const interval = setInterval(() => {
+      fetchPurchases();
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, [user, authLoading]);
 
   const fetchPurchases = async () => {
