@@ -59,8 +59,11 @@ serve(async (req) => {
     // Prepare billing types based on payment method
     const billingTypes = paymentMethod === 'PIX' ? ['PIX'] : ['CREDIT_CARD'];
 
-    // Create Asaas Checkout
+    // Create Asaas Checkout with webhook URL
     console.log('Creating Asaas checkout...');
+    const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
+    console.log('Webhook URL:', webhookUrl);
+    
     const checkoutPayload = {
       billingTypes: billingTypes,
       chargeTypes: ['DETACHED'],
@@ -72,6 +75,7 @@ serve(async (req) => {
         expiredUrl: `${FRONTEND_URL}/checkout-expired`,
         cancelUrl: `${FRONTEND_URL}/checkout-error`
       },
+      webhookUrl: webhookUrl,
       customerData: {
         name: customerData.name,
         cpfCnpj: customerData.cpfCnpj,
