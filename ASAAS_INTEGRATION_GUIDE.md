@@ -152,9 +152,9 @@ O payload enviado ao Asaas segue **EXATAMENTE** esta estrutura:
   ],
   "expiresIn": 60,
   "callback": {
-    "successUrl": "https://seu-site.com/checkout-success",
-    "errorUrl": "https://seu-site.com/checkout-error",
-    "expiredUrl": "https://seu-site.com/checkout-expired"
+    "successUrl": "https://hmcpfedcvkurttyolurv.lovable.app/checkout-success",
+    "errorUrl": "https://hmcpfedcvkurttyolurv.lovable.app/checkout-error",
+    "expiredUrl": "https://hmcpfedcvkurttyolurv.lovable.app/checkout-expired"
   },
   "customerData": {
     "name": "Nome do Cliente",
