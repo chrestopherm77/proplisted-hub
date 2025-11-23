@@ -3,8 +3,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, asaas-access-token',
 };
+
+// Known Asaas IP ranges for additional security (optional)
+const ASAAS_IP_RANGES = [
+  // Add Asaas IP ranges here when available from their documentation
+  // For now, this serves as a placeholder for future implementation
+];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -13,7 +19,61 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    console.log('=== Webhook Request Received ===');
+    
+    // SECURITY LAYER 1: Verify webhook access token
+    const webhookSecret = Deno.env.get('ASAAS_WEBHOOK_SECRET');
+    const providedToken = req.headers.get('asaas-access-token') || 
+                          req.headers.get('x-asaas-access-token') ||
+                          req.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!webhookSecret) {
+      console.error('❌ SECURITY ERROR: ASAAS_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!providedToken || providedToken !== webhookSecret) {
+      console.error('❌ SECURITY ALERT: Unauthorized webhook attempt');
+      console.error('IP Address:', req.headers.get('x-forwarded-for') || 'unknown');
+      console.error('User-Agent:', req.headers.get('user-agent') || 'unknown');
+      
+      // Store failed attempt for security monitoring
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      await supabaseClient
+        .from('asaas_webhook_events')
+        .insert({
+          event_type: 'UNAUTHORIZED_ATTEMPT',
+          asaas_event_id: null,
+          payment_id: null,
+          payload: {
+            ip: req.headers.get('x-forwarded-for') || 'unknown',
+            userAgent: req.headers.get('user-agent') || 'unknown',
+            timestamp: new Date().toISOString(),
+          },
+          processed: false,
+          error_message: 'Unauthorized webhook attempt - invalid access token',
+        });
+      
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Webhook token verified successfully');
+
+    // SECURITY LAYER 2: Optional IP validation (if Asaas provides IP ranges)
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    console.log('Request from IP:', clientIP);
+    
+    // Initialize Supabase client for webhook processing
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

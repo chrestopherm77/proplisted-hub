@@ -200,8 +200,13 @@ No **Sandbox do Asaas**:
 Configure no Asaas:
 1. Vá em **Integrações → Webhooks**
 2. Adicione URL: `https://seu-projeto.supabase.co/functions/v1/asaas-webhook`
-3. Selecione eventos: CHECKOUT_*, PAYMENT_*
-4. Salve
+3. **IMPORTANTE - Segurança**: Configure o header customizado para autenticação:
+   - Nome do header: `asaas-access-token`
+   - Valor: Use o mesmo valor que você configurou em `ASAAS_WEBHOOK_SECRET`
+4. Selecione eventos: CHECKOUT_*, PAYMENT_*
+5. Salve
+
+⚠️ **CRÍTICO**: O webhook agora possui autenticação obrigatória via token. Sem o header correto, as requisições serão rejeitadas com erro 401.
 
 Quando testar pagamentos, os webhooks serão enviados automaticamente.
 
@@ -246,10 +251,21 @@ Todos os webhooks são salvos aqui para auditoria:
 
 ✅ **Token NUNCA exposto no frontend**  
 ✅ **Todas as requisições via backend**  
-✅ **Webhook público mas validado**  
+✅ **Webhook autenticado via access token**  
+✅ **Proteção contra requisições falsas**  
 ✅ **Dados sensíveis em variáveis de ambiente**  
 ✅ **HTTPS obrigatório**  
 ✅ **Validação de duplicação de eventos**  
+✅ **Logs de tentativas não autorizadas**  
+
+### Autenticação do Webhook
+
+O webhook agora implementa múltiplas camadas de segurança:
+
+1. **Token de Acesso Obrigatório**: Todas as requisições devem incluir o `ASAAS_WEBHOOK_SECRET` no header
+2. **Registro de Tentativas Não Autorizadas**: Todas as tentativas de acesso sem token válido são registradas
+3. **Validação de IP** (opcional): Preparado para validar IPs de origem quando disponibilizados pelo Asaas
+4. **Monitoramento em Tempo Real**: Verifique tentativas não autorizadas na tabela `asaas_webhook_events`
 
 ---
 
