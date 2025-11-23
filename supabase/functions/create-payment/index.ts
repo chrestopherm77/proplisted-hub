@@ -39,7 +39,8 @@ serve(async (req) => {
     const ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const FRONTEND_URL = supabaseUrl.replace('supabase.co', 'lovable.app').replace('/functions/v1', '');
+    // Frontend URL onde o usuário deve ser redirecionado após o pagamento
+    const FRONTEND_URL = 'https://proplist-hub.lovable.app';
 
     if (!ASAAS_API_KEY) {
       throw new Error('ASAAS_API_KEY não configurada');
