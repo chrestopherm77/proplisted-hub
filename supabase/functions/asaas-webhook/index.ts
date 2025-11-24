@@ -27,10 +27,11 @@ serve(async (req) => {
       );
     }
 
-    if (incomingToken !== ASAAS_WEBHOOK_SECRET) {
-      console.error('❌ Invalid webhook token received');
-      console.error('Expected:', ASAAS_WEBHOOK_SECRET);
-      console.error('Received:', incomingToken);
+  if (incomingToken !== ASAAS_WEBHOOK_SECRET) {
+    console.error('❌ Invalid webhook token received');
+    console.error('Token validation failed - check ASAAS_WEBHOOK_SECRET configuration');
+    console.error('Request IP:', req.headers.get('x-forwarded-for') || 'unknown');
+    // Note: Never log actual secret or token values
       
       // Log unauthorized attempt
       const supabaseClient = createClient(
