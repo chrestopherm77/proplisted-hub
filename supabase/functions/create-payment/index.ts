@@ -49,6 +49,10 @@ serve(async (req) => {
     const totalAmount = cartItems.reduce((sum: number, item: any) => sum + Number(item.price), 0);
     console.log('Total amount:', totalAmount);
 
+    // Generate unique order ID to track this purchase
+    const orderId = crypto.randomUUID();
+    console.log('Order ID:', orderId);
+
     // Prepare checkout items
     const checkoutItems = cartItems.map((item: any) => ({
       name: item.name || `Lead - ${item.lead_id}`,
@@ -69,6 +73,7 @@ serve(async (req) => {
       billingTypes: billingTypes,
       chargeTypes: ['DETACHED'],
       minutesToExpire: 60,
+      externalReference: orderId, // Link order ID to Asaas
       items: checkoutItems,
       callback: {
         successUrl: `${FRONTEND_URL}/checkout-success`,
@@ -131,8 +136,8 @@ serve(async (req) => {
     console.log('Checkout Link:', checkoutData.link);
     console.log('Full response:', JSON.stringify(checkoutData, null, 2));
 
-    // Save purchase records in database with PENDING status
-    console.log('Saving purchase records...');
+    // Save purchase records in database with PENDING status and order ID
+    console.log('Saving purchase records with order ID:', orderId);
     for (const item of cartItems) {
       const { error: purchaseError } = await supabaseClient
         .from('purchases')
@@ -140,7 +145,7 @@ serve(async (req) => {
           user_id: user.id,
           lead_id: item.lead_id,
           amount: item.price,
-          asaas_payment_id: checkoutData.id,
+          asaas_payment_id: orderId, // Use order ID for webhook matching
           status: 'PENDING',
         });
 
