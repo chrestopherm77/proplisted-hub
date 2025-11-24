@@ -74,12 +74,14 @@ serve(async (req) => {
     const paymentId = payload.payment?.id;
     const eventId = payload.id;
     const externalReference = payload.payment?.externalReference || payload.checkout?.externalReference;
+    const checkoutSession = payload.payment?.checkoutSession; // Extract checkout session ID
     
     console.log('=== Asaas Webhook Received ===');
     console.log('Event type:', event);
     console.log('Event ID:', eventId);
     console.log('Checkout ID:', checkoutId);
     console.log('Payment ID:', paymentId);
+    console.log('Checkout Session:', checkoutSession);
     console.log('External Reference (Order ID):', externalReference);
 
     // Store webhook event for audit
@@ -104,23 +106,23 @@ serve(async (req) => {
 
     if (event === 'CHECKOUT_PAID' || event === 'CHECKOUT_CONFIRMED') {
       console.log('Checkout payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference);
+      await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference, checkoutSession);
     }
 
     if (event === 'CHECKOUT_EXPIRED') {
       console.log('Checkout expired');
-      await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference);
+      await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference, checkoutSession);
     }
 
     // Handle direct payment events
     if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       console.log('Direct payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference);
+      await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
     }
 
     if (event === 'PAYMENT_OVERDUE') {
       console.log('Payment overdue');
-      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference);
+      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
     }
 
     console.log('=== Webhook processed successfully ===');
@@ -176,7 +178,8 @@ async function processPaymentConfirmation(
   supabaseClient: any, 
   paymentId: string, 
   eventId: string,
-  externalReference: string | null = null
+  externalReference: string | null = null,
+  checkoutSession: string | null = null
 ) {
   console.log('Processing payment confirmation for:', paymentId);
   console.log('External Reference (Order ID):', externalReference);
@@ -210,6 +213,24 @@ async function processPaymentConfirmation(
 
     if (purchases && purchases.length > 0) {
       console.log(`✅ Found ${purchases.length} purchases by order ID`);
+    }
+  }
+
+  // Try by checkout session ID if not found by external reference
+  if (!purchases || purchases.length === 0) {
+    if (checkoutSession) {
+      console.log('Searching purchases by checkout session ID:', checkoutSession);
+      const result = await supabaseClient
+        .from('purchases')
+        .select('*')
+        .eq('asaas_checkout_id', checkoutSession);
+      
+      purchases = result.data;
+      fetchError = result.error;
+
+      if (purchases && purchases.length > 0) {
+        console.log(`✅ Found ${purchases.length} purchases by checkout session ID`);
+      }
     }
   }
 
@@ -347,7 +368,8 @@ async function updatePurchaseStatus(
   supabaseClient: any, 
   paymentId: string, 
   status: string,
-  externalReference: string | null = null
+  externalReference: string | null = null,
+  checkoutSession: string | null = null
 ) {
   console.log(`Updating purchase status to ${status} for payment:`, paymentId);
   console.log('External Reference (Order ID):', externalReference);
@@ -363,6 +385,21 @@ async function updatePurchaseStatus(
       console.error('Error updating purchase status by order ID:', error);
     } else {
       console.log('✅ Updated purchases by order ID');
+      return;
+    }
+  }
+
+  // Try by checkout session ID
+  if (checkoutSession) {
+    const { error } = await supabaseClient
+      .from('purchases')
+      .update({ status })
+      .eq('asaas_checkout_id', checkoutSession);
+
+    if (error) {
+      console.error('Error updating purchase status by checkout session:', error);
+    } else {
+      console.log('✅ Updated purchases by checkout session ID');
       return;
     }
   }
