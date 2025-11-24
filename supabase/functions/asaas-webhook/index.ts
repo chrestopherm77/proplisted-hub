@@ -1,46 +1,38 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, asaas-access-token',
-};
-
-// Known Asaas IP ranges for additional security (optional)
-const ASAAS_IP_RANGES = [
-  // Add Asaas IP ranges here when available from their documentation
-  // For now, this serves as a placeholder for future implementation
-];
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
     console.log('=== Webhook Request Received ===');
     
-    // SECURITY LAYER 1: Verify webhook access token
-    const webhookSecret = Deno.env.get('ASAAS_WEBHOOK_SECRET');
-    const providedToken = req.headers.get('asaas-access-token') || 
-                          req.headers.get('x-asaas-access-token') ||
-                          req.headers.get('authorization')?.replace('Bearer ', '');
+    // SECURITY LAYER 1: Verify webhook secret token
+    const ASAAS_WEBHOOK_SECRET = Deno.env.get('ASAAS_WEBHOOK_SECRET');
+    const incomingToken = req.headers.get('asaas-access-token');
     
-    if (!webhookSecret) {
-      console.error('❌ SECURITY ERROR: ASAAS_WEBHOOK_SECRET not configured');
+    if (!ASAAS_WEBHOOK_SECRET) {
+      console.error('❌ ASAAS_WEBHOOK_SECRET not configured');
       return new Response(
         JSON.stringify({ error: 'Webhook secret not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!providedToken || providedToken !== webhookSecret) {
-      console.error('❌ SECURITY ALERT: Unauthorized webhook attempt');
-      console.error('IP Address:', req.headers.get('x-forwarded-for') || 'unknown');
-      console.error('User-Agent:', req.headers.get('user-agent') || 'unknown');
+    if (incomingToken !== ASAAS_WEBHOOK_SECRET) {
+      console.error('❌ Invalid webhook token received');
+      console.error('Expected:', ASAAS_WEBHOOK_SECRET);
+      console.error('Received:', incomingToken);
       
-      // Store failed attempt for security monitoring
+      // Log unauthorized attempt
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -50,12 +42,9 @@ serve(async (req) => {
         .from('asaas_webhook_events')
         .insert({
           event_type: 'UNAUTHORIZED_ATTEMPT',
-          asaas_event_id: null,
-          payment_id: null,
-          payload: {
-            ip: req.headers.get('x-forwarded-for') || 'unknown',
-            userAgent: req.headers.get('user-agent') || 'unknown',
-            timestamp: new Date().toISOString(),
+          payload: { 
+            headers: Object.fromEntries(req.headers.entries()),
+            timestamp: new Date().toISOString() 
           },
           processed: false,
           error_message: 'Unauthorized webhook attempt - invalid access token',
@@ -69,7 +58,7 @@ serve(async (req) => {
 
     console.log('✅ Webhook token verified successfully');
 
-    // SECURITY LAYER 2: Optional IP validation (if Asaas provides IP ranges)
+    // SECURITY LAYER 2: Optional IP validation
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     console.log('Request from IP:', clientIP);
     
@@ -79,22 +68,28 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const webhookData = await req.json();
+    const payload = await req.json();
+    const event = payload.event;
+    const checkoutId = payload.checkout?.id;
+    const paymentId = payload.payment?.id;
+    const eventId = payload.id;
+    const externalReference = payload.payment?.externalReference || payload.checkout?.externalReference;
     
     console.log('=== Asaas Webhook Received ===');
-    console.log('Event type:', webhookData.event);
-    console.log('Event ID:', webhookData.id);
-    console.log('Payment ID:', webhookData.payment?.id);
-    console.log('Checkout ID:', webhookData.checkout?.id);
+    console.log('Event type:', event);
+    console.log('Event ID:', eventId);
+    console.log('Checkout ID:', checkoutId);
+    console.log('Payment ID:', paymentId);
+    console.log('External Reference (Order ID):', externalReference);
 
     // Store webhook event for audit
     const { error: webhookError } = await supabaseClient
       .from('asaas_webhook_events')
       .insert({
-        event_type: webhookData.event,
-        asaas_event_id: webhookData.id,
-        payment_id: webhookData.payment?.id || webhookData.checkout?.id,
-        payload: webhookData,
+        event_type: event,
+        asaas_event_id: eventId,
+        payment_id: paymentId || checkoutId,
+        payload: payload,
         processed: false,
       });
 
@@ -102,88 +97,89 @@ serve(async (req) => {
       console.error('Error storing webhook event:', webhookError);
     }
 
-    // Process different event types
-    const eventType = webhookData.event;
-    let paymentId = null;
-
-    // Handle checkout events
-    if (eventType === 'CHECKOUT_CREATED') {
+    // Process checkout events
+    if (event === 'CHECKOUT_CREATED') {
       console.log('Checkout created event received');
-      paymentId = webhookData.checkout?.id;
     }
 
-    if (eventType === 'CHECKOUT_PAID' || eventType === 'CHECKOUT_CONFIRMED') {
+    if (event === 'CHECKOUT_PAID' || event === 'CHECKOUT_CONFIRMED') {
       console.log('Checkout payment confirmed!');
-      paymentId = webhookData.checkout?.id;
-      await processPaymentConfirmation(supabaseClient, paymentId, webhookData.id);
+      await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference);
     }
 
-    if (eventType === 'CHECKOUT_EXPIRED') {
+    if (event === 'CHECKOUT_EXPIRED') {
       console.log('Checkout expired');
-      paymentId = webhookData.checkout?.id;
-      await updatePurchaseStatus(supabaseClient, paymentId, 'EXPIRED');
+      await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference);
     }
 
-    // Handle direct payment events (fallback)
-    if (eventType === 'PAYMENT_RECEIVED' || eventType === 'PAYMENT_CONFIRMED') {
+    // Handle direct payment events
+    if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       console.log('Direct payment confirmed!');
-      paymentId = webhookData.payment?.id;
-      await processPaymentConfirmation(supabaseClient, paymentId, webhookData.id);
+      await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference);
     }
 
-    if (eventType === 'PAYMENT_OVERDUE') {
+    if (event === 'PAYMENT_OVERDUE') {
       console.log('Payment overdue');
-      paymentId = webhookData.payment?.id;
-      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE');
+      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference);
     }
 
     console.log('=== Webhook processed successfully ===');
 
     return new Response(
-      JSON.stringify({ success: true, event: eventType }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ 
+        success: true,
+        event: event,
+        processed: true 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('=== Error in webhook function ===');
+    console.error('=== Webhook Processing Error ===');
     console.error('Error:', error.message);
     console.error('Stack:', error.stack);
 
-    // Try to update webhook event with error
+    // Try to log error to database
     try {
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      const webhookData = await req.json();
-      
       await supabaseClient
         .from('asaas_webhook_events')
-        .update({ 
+        .insert({
+          event_type: 'ERROR',
+          payload: { error: error.message, stack: error.stack },
+          processed: false,
           error_message: error.message,
-          processed: false 
-        })
-        .eq('asaas_event_id', webhookData.id);
-    } catch (updateError) {
-      console.error('Error updating webhook event:', updateError);
+        });
+    } catch (dbError) {
+      console.error('Failed to log error to database:', dbError);
     }
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Webhook processing failed'
+      }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
 });
 
 // Process payment confirmation
-async function processPaymentConfirmation(supabaseClient: any, paymentId: string, eventId: string) {
+async function processPaymentConfirmation(
+  supabaseClient: any, 
+  paymentId: string, 
+  eventId: string,
+  externalReference: string | null = null
+) {
   console.log('Processing payment confirmation for:', paymentId);
+  console.log('External Reference (Order ID):', externalReference);
 
   // Check if already processed
   const { data: existingEvent } = await supabaseClient
@@ -198,11 +194,40 @@ async function processPaymentConfirmation(supabaseClient: any, paymentId: string
     return;
   }
 
-  // Get all purchases for this payment
-  const { data: purchases, error: fetchError } = await supabaseClient
-    .from('purchases')
-    .select('*')
-    .eq('asaas_payment_id', paymentId);
+  // Try to find purchases by external reference (order ID) first
+  let purchases = null;
+  let fetchError = null;
+
+  if (externalReference) {
+    console.log('Searching purchases by order ID:', externalReference);
+    const result = await supabaseClient
+      .from('purchases')
+      .select('*')
+      .eq('asaas_payment_id', externalReference);
+    
+    purchases = result.data;
+    fetchError = result.error;
+
+    if (purchases && purchases.length > 0) {
+      console.log(`✅ Found ${purchases.length} purchases by order ID`);
+    }
+  }
+
+  // Fallback: try payment ID if no external reference or not found
+  if (!purchases || purchases.length === 0) {
+    console.log('Trying to find purchases by payment ID:', paymentId);
+    const result = await supabaseClient
+      .from('purchases')
+      .select('*')
+      .eq('asaas_payment_id', paymentId);
+    
+    purchases = result.data;
+    fetchError = result.error;
+
+    if (purchases && purchases.length > 0) {
+      console.log(`✅ Found ${purchases.length} purchases by payment ID`);
+    }
+  }
 
   if (fetchError) {
     console.error('Error fetching purchases:', fetchError);
@@ -210,7 +235,8 @@ async function processPaymentConfirmation(supabaseClient: any, paymentId: string
   }
 
   if (!purchases || purchases.length === 0) {
-    console.log('No purchases found for payment:', paymentId);
+    console.log('⚠️ No purchases found for payment:', paymentId);
+    console.log('Order ID was:', externalReference);
     return;
   }
 
@@ -264,7 +290,7 @@ async function processPaymentConfirmation(supabaseClient: any, paymentId: string
       .eq('user_id', purchase.user_id)
       .eq('lead_id', purchase.lead_id);
 
-    console.log('Purchase processed successfully:', purchase.id);
+    console.log('✅ Purchase processed successfully:', purchase.id);
   }
 
   // Mark webhook event as processed
@@ -276,22 +302,43 @@ async function processPaymentConfirmation(supabaseClient: any, paymentId: string
     })
     .eq('asaas_event_id', eventId);
 
-  console.log('Payment confirmation processing completed');
+  console.log('✅ Payment confirmation processing completed');
 }
 
-// Update purchase status
-async function updatePurchaseStatus(supabaseClient: any, paymentId: string, status: string) {
-  console.log(`Updating purchases to ${status} for payment:`, paymentId);
+// Update purchase status (for expired/overdue payments)
+async function updatePurchaseStatus(
+  supabaseClient: any, 
+  paymentId: string, 
+  status: string,
+  externalReference: string | null = null
+) {
+  console.log(`Updating purchase status to ${status} for payment:`, paymentId);
+  console.log('External Reference (Order ID):', externalReference);
 
+  // Try external reference first
+  if (externalReference) {
+    const { error } = await supabaseClient
+      .from('purchases')
+      .update({ status })
+      .eq('asaas_payment_id', externalReference);
+
+    if (error) {
+      console.error('Error updating purchase status by order ID:', error);
+    } else {
+      console.log('✅ Updated purchases by order ID');
+      return;
+    }
+  }
+
+  // Fallback to payment ID
   const { error } = await supabaseClient
     .from('purchases')
     .update({ status })
     .eq('asaas_payment_id', paymentId);
 
   if (error) {
-    console.error('Error updating purchase status:', error);
-    throw error;
+    console.error('Error updating purchase status by payment ID:', error);
+  } else {
+    console.log('✅ Updated purchases by payment ID');
   }
-
-  console.log('Purchase status updated successfully');
 }
