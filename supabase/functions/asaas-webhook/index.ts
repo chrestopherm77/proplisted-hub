@@ -229,6 +229,43 @@ async function processPaymentConfirmation(
     }
   }
 
+  // Last resort: fetch payment from Asaas API to get checkout info
+  if (!purchases || purchases.length === 0) {
+    console.log('💡 Attempting to fetch payment details from Asaas API...');
+    try {
+      const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
+      const ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+      
+      const paymentResponse = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}`, {
+        headers: {
+          'access_token': ASAAS_API_KEY || '',
+          'User-Agent': 'LeadMarket-Webhook',
+        },
+      });
+
+      if (paymentResponse.ok) {
+        const paymentData = await paymentResponse.json();
+        console.log('📦 Payment data from API:', JSON.stringify(paymentData, null, 2));
+        
+        // Try to find by external reference from API
+        if (paymentData.externalReference) {
+          console.log('Found externalReference in API response:', paymentData.externalReference);
+          const result = await supabaseClient
+            .from('purchases')
+            .select('*')
+            .eq('asaas_payment_id', paymentData.externalReference);
+          
+          purchases = result.data;
+          if (purchases && purchases.length > 0) {
+            console.log(`✅ Found ${purchases.length} purchases by API externalReference`);
+          }
+        }
+      }
+    } catch (apiError: any) {
+      console.error('Error fetching payment from Asaas API:', apiError.message);
+    }
+  }
+
   if (fetchError) {
     console.error('Error fetching purchases:', fetchError);
     throw fetchError;

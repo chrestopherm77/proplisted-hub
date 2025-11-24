@@ -136,8 +136,9 @@ serve(async (req) => {
     console.log('Checkout Link:', checkoutData.link);
     console.log('Full response:', JSON.stringify(checkoutData, null, 2));
 
-    // Save purchase records in database with PENDING status and order ID
+    // Save purchase records in database with PENDING status, order ID and checkout ID
     console.log('Saving purchase records with order ID:', orderId);
+    console.log('Saving purchase records with checkout ID:', checkoutData.id);
     for (const item of cartItems) {
       const { error: purchaseError } = await supabaseClient
         .from('purchases')
@@ -146,6 +147,7 @@ serve(async (req) => {
           lead_id: item.lead_id,
           amount: item.price,
           asaas_payment_id: orderId, // Use order ID for webhook matching
+          asaas_checkout_id: checkoutData.id, // Save checkout ID for payment matching
           status: 'PENDING',
         });
 

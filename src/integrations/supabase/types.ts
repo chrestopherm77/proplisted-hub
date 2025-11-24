@@ -122,6 +122,7 @@ export type Database = {
       purchases: {
         Row: {
           amount: number
+          asaas_checkout_id: string | null
           asaas_customer_id: string | null
           asaas_payment_id: string | null
           id: string
@@ -133,6 +134,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
           id?: string
@@ -144,6 +146,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
           id?: string
