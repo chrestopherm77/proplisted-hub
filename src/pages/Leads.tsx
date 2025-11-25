@@ -128,34 +128,56 @@ export default function Leads() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (
-            <Card key={lead.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">Lead #{lead.id.slice(0, 8)}</CardTitle>
-                  <Badge variant={isSoldOut(lead) ? 'destructive' : 'default'}>
+            <Card key={lead.id} className="flex flex-col hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg mb-2 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">
+                        #{lead.id.slice(0, 3)}
+                      </span>
+                      Lead Qualificado
+                    </CardTitle>
+                  </div>
+                  <Badge 
+                    variant={isSoldOut(lead) ? 'destructive' : 'default'}
+                    className="text-xs"
+                  >
                     {isSoldOut(lead)
                       ? 'Esgotado'
-                      : `${lead.purchase_count}/${lead.max_purchases} vendidos`}
+                      : `${lead.max_purchases - lead.purchase_count} disponíveis`}
                   </Badge>
                 </div>
-                <CardDescription className="min-h-[60px]">{lead.description}</CardDescription>
+                <CardDescription className="min-h-[60px] text-sm leading-relaxed">
+                  {lead.description}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="text-2xl font-bold text-primary">{formatPrice(lead.price)}</div>
+              <CardContent className="flex-grow flex flex-col justify-between pt-0">
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between p-3 bg-primary-light rounded-lg">
+                    <span className="text-sm text-muted-foreground font-medium">Valor do Lead</span>
+                    <div className="text-2xl font-bold text-primary">{formatPrice(lead.price)}</div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                    <span>{lead.purchase_count} vendidos</span>
+                    <span>•</span>
+                    <span>{lead.max_purchases} máximo</span>
+                  </div>
+                </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="pt-0">
                 {isSoldOut(lead) ? (
-                  <Button disabled className="w-full">
+                  <Button disabled className="w-full" variant="secondary">
                     Esgotado
                   </Button>
                 ) : isInCart(lead.id) ? (
-                  <Button variant="outline" className="w-full" disabled>
+                  <Button variant="outline" className="w-full border-primary text-primary" disabled>
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     No Carrinho
                   </Button>
                 ) : (
-                  <Button onClick={() => addToCart(lead.id)} className="w-full">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
+                  <Button onClick={() => addToCart(lead.id)} className="w-full group">
+                    <ShoppingCart className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
                     Adicionar ao Carrinho
                   </Button>
                 )}
