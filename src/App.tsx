@@ -13,6 +13,7 @@ import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutError from "./pages/CheckoutError";
 import CheckoutExpired from "./pages/CheckoutExpired";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => {
           <Route path="/checkout-success" element={<CheckoutSuccess />} />
           <Route path="/checkout-error" element={<CheckoutError />} />
           <Route path="/checkout-expired" element={<CheckoutExpired />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

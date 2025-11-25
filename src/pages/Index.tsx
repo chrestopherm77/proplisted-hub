@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Package, TrendingUp, Shield, Zap } from 'lucide-react';
+import { Package, TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -23,67 +23,220 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-background">
-      <header className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-background">
+      <header className="container mx-auto px-4 py-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Package className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold text-primary">LeadMarket</span>
           </div>
-          <Button onClick={() => navigate('/auth')}>Entrar</Button>
+          <Button onClick={() => navigate('/auth')} size="lg">
+            Entrar
+          </Button>
         </div>
       </header>
 
       <main>
-        <section className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
+        {/* Hero Section */}
+        <section className="container mx-auto px-4 py-20 text-center bg-gradient-to-br from-primary-light to-white">
+          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
             Leads Qualificados para{' '}
             <span className="text-primary">Seu Negócio Imobiliário</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
             Conecte-se com clientes em potencial prontos para comprar ou vender imóveis.
             Aumente suas vendas com leads verificados.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate('/auth')}>
+            <Button size="lg" onClick={() => navigate('/auth')} className="text-lg px-8">
               Começar Agora
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/leads')}>
+            <Button size="lg" variant="outline" onClick={() => navigate('/leads')} className="text-lg px-8">
               Ver Leads Disponíveis
             </Button>
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-16">
+        {/* Features Section */}
+        <section className="container mx-auto px-4 py-20">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Por que escolher o LeadMarket?</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            A plataforma mais confiável para corretores de imóveis encontrarem clientes qualificados
+          </p>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <TrendingUp className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Leads Qualificados</h3>
-              <p className="text-muted-foreground">
-                Todos os leads são verificados e qualificados antes de serem disponibilizados
+            <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+              <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <TrendingUp className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Leads Qualificados</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Todos os leads são verificados e qualificados antes de serem disponibilizados. 
+                Apenas contatos reais e com interesse genuíno.
               </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <Shield className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Seguro e Confiável</h3>
-              <p className="text-muted-foreground">
-                Plataforma segura em conformidade com LGPD para proteção de dados
+            <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+              <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Shield className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Seguro e Confiável</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Plataforma segura em conformidade com LGPD para proteção de dados. 
+                Seus investimentos e informações estão protegidos.
               </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <Zap className="h-12 w-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Acesso Instantâneo</h3>
-              <p className="text-muted-foreground">
-                Receba acesso imediato aos contatos após a confirmação do pagamento
+            <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+              <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Zap className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Acesso Instantâneo</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Receba acesso imediato aos contatos após a confirmação do pagamento. 
+                Sem espera, sem burocracia.
               </p>
             </div>
           </div>
         </section>
+
+        {/* How It Works */}
+        <section className="bg-muted py-20">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Como Funciona</h2>
+            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+              Processo simples e rápido para você começar a fechar negócios hoje mesmo
+            </p>
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+                  1
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Escolha o Lead</h3>
+                <p className="text-muted-foreground">
+                  Navegue pelo marketplace e escolha leads que se encaixam no seu perfil de cliente
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+                  2
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Realize o Pagamento</h3>
+                <p className="text-muted-foreground">
+                  Adicione ao carrinho e finalize a compra de forma segura via PIX ou cartão
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+                  3
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Entre em Contato</h3>
+                <p className="text-muted-foreground">
+                  Acesse imediatamente nome e telefone do lead e comece a negociar
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="container mx-auto px-4 py-20">
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="p-8">
+              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
+              <div className="text-4xl font-bold text-primary mb-2">500+</div>
+              <p className="text-muted-foreground">Corretores Ativos</p>
+            </div>
+            <div className="p-8">
+              <Target className="h-12 w-12 text-primary mx-auto mb-4" />
+              <div className="text-4xl font-bold text-primary mb-2">2.000+</div>
+              <p className="text-muted-foreground">Leads Vendidos</p>
+            </div>
+            <div className="p-8">
+              <Clock className="h-12 w-12 text-primary mx-auto mb-4" />
+              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
+              <p className="text-muted-foreground">Suporte Disponível</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits Section */}
+        <section className="bg-primary-light py-20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Benefícios Exclusivos</h2>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 bg-white p-6 rounded-lg shadow-sm">
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Leads Exclusivos por Região</h3>
+                    <p className="text-muted-foreground">
+                      Cada lead pode ser vendido para no máximo 3 corretores, garantindo exclusividade
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 bg-white p-6 rounded-lg shadow-sm">
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Informações Completas</h3>
+                    <p className="text-muted-foreground">
+                      Nome, telefone e descrição detalhada do interesse do cliente
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 bg-white p-6 rounded-lg shadow-sm">
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Pagamento Seguro</h3>
+                    <p className="text-muted-foreground">
+                      Múltiplas formas de pagamento com a segurança do Asaas
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 bg-white p-6 rounded-lg shadow-sm">
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Histórico Completo</h3>
+                    <p className="text-muted-foreground">
+                      Acesse todos os seus leads comprados a qualquer momento
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="container mx-auto px-4 py-20">
+          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-12 text-center text-white shadow-2xl">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Pronto para Aumentar suas Vendas?
+            </h2>
+            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+              Junte-se a centenas de corretores que já estão fechando mais negócios com o LeadMarket
+            </p>
+            <Button 
+              size="lg" 
+              onClick={() => navigate('/auth')}
+              className="bg-white text-primary hover:bg-gray-100 text-lg px-10 py-6 h-auto"
+            >
+              Começar Agora Gratuitamente
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </section>
       </main>
 
-      <footer className="bg-white border-t border-border mt-20">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2025 LeadMarket. Todos os direitos reservados.
+      <footer className="bg-card border-t border-border">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center space-x-2">
+              <Package className="h-6 w-6 text-primary" />
+              <span className="font-bold text-primary">LeadMarket</span>
+            </div>
+            <div className="text-sm text-muted-foreground text-center">
+              © 2025 LeadMarket. Todos os direitos reservados.
+            </div>
+          </div>
         </div>
       </footer>
     </div>
