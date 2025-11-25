@@ -5,7 +5,7 @@ import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Calendar, DollarSign } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 interface PurchasedLead {
@@ -64,12 +64,14 @@ export default function MyLeads() {
 
       if (error) throw error;
 
-      const formattedData = data?.map((purchase: any) => ({
-        id: purchase.id,
-        amount: purchase.amount,
-        purchased_at: purchase.purchased_at,
-        lead: purchase.leads,
-      })) || [];
+      const formattedData = data
+        ?.filter((purchase: any) => purchase.leads) // Filter out purchases with null leads
+        .map((purchase: any) => ({
+          id: purchase.id,
+          amount: purchase.amount,
+          purchased_at: purchase.purchased_at,
+          lead: purchase.leads,
+        })) || [];
 
       setPurchases(formattedData);
     } catch (error) {
@@ -157,9 +159,9 @@ export default function MyLeads() {
         {purchases.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">Você ainda não comprou nenhum lead</p>
-            <a href="/leads" className="text-primary hover:underline">
+            <Link to="/leads" className="text-primary hover:underline">
               Explorar Marketplace
-            </a>
+            </Link>
           </div>
         )}
       </div>
