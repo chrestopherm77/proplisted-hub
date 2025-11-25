@@ -5,7 +5,8 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ShoppingCart, X, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +23,8 @@ export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<string[]>([]);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -98,6 +101,37 @@ export default function Leads() {
     }
   };
 
+  const removeFromCart = async (leadId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('shopping_cart')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('lead_id', leadId);
+
+      if (error) throw error;
+
+      setCartItems(cartItems.filter(id => id !== leadId));
+      toast({
+        title: 'Removido do carrinho',
+        description: 'Lead removido com sucesso',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível remover do carrinho',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openLeadDetails = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -126,19 +160,15 @@ export default function Leads() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {leads.map((lead) => (
-            <Card key={lead.id} className="flex flex-col hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">
-                        #{lead.id.slice(0, 3)}
-                      </span>
-                      Lead Qualificado
-                    </CardTitle>
-                  </div>
+            <Card 
+              key={lead.id} 
+              className="flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40"
+              onClick={() => openLeadDetails(lead)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
                   <Badge 
                     variant={isSoldOut(lead) ? 'destructive' : 'default'}
                     className="text-xs"
@@ -147,44 +177,105 @@ export default function Leads() {
                       ? 'Esgotado'
                       : `${lead.max_purchases - lead.purchase_count} disponíveis`}
                   </Badge>
+                  {isInCart(lead.id) && (
+                    <Badge variant="outline" className="text-xs">
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      No carrinho
+                    </Badge>
+                  )}
                 </div>
-                <CardDescription className="min-h-[60px] text-sm leading-relaxed">
+                <CardTitle className="text-base line-clamp-2">
+                  Lead #{lead.id.slice(0, 6)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow pt-0">
+                <CardDescription className="line-clamp-2 text-xs mb-3">
                   {lead.description}
                 </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col justify-between pt-0">
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between p-3 bg-primary-light rounded-lg">
-                    <span className="text-sm text-muted-foreground font-medium">Valor do Lead</span>
-                    <div className="text-2xl font-bold text-primary">{formatPrice(lead.price)}</div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                    <span>{lead.purchase_count} vendidos</span>
-                    <span>•</span>
-                    <span>{lead.max_purchases} máximo</span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                    <Info className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
-                {isSoldOut(lead) ? (
-                  <Button disabled className="w-full" variant="secondary">
-                    Esgotado
-                  </Button>
-                ) : isInCart(lead.id) ? (
-                  <Button variant="outline" className="w-full border-primary text-primary" disabled>
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    No Carrinho
-                  </Button>
-                ) : (
-                  <Button onClick={() => addToCart(lead.id)} className="w-full group">
-                    <ShoppingCart className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                    Adicionar ao Carrinho
-                  </Button>
-                )}
-              </CardFooter>
             </Card>
           ))}
         </div>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            {selectedLead && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <DialogTitle className="text-2xl">
+                      Lead #{selectedLead.id.slice(0, 8)}
+                    </DialogTitle>
+                    <Badge 
+                      variant={isSoldOut(selectedLead) ? 'destructive' : 'default'}
+                    >
+                      {isSoldOut(selectedLead)
+                        ? 'Esgotado'
+                        : `${selectedLead.max_purchases - selectedLead.purchase_count}/${selectedLead.max_purchases} disponíveis`}
+                    </Badge>
+                  </div>
+                  <DialogDescription className="text-base pt-4">
+                    {selectedLead.description}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-6 space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Valor do Lead</p>
+                      <p className="text-3xl font-bold text-primary">{formatPrice(selectedLead.price)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground mb-1">Status</p>
+                      <p className="text-sm font-medium">{selectedLead.purchase_count} vendidos</p>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  {isSoldOut(selectedLead) ? (
+                    <Button disabled className="w-full" variant="secondary" size="lg">
+                      Esgotado
+                    </Button>
+                  ) : isInCart(selectedLead.id) ? (
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFromCart(selectedLead.id);
+                        setDialogOpen(false);
+                      }}
+                      variant="outline" 
+                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      size="lg"
+                    >
+                      <X className="mr-2 h-5 w-5" />
+                      Remover do Carrinho
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(selectedLead.id);
+                        setDialogOpen(false);
+                      }}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Adicionar ao Carrinho
+                    </Button>
+                  )}
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {leads.length === 0 && (
           <div className="text-center py-12">
