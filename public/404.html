@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecionando...</title>
+  <script>
+    // Store the attempted path and redirect to SPA root
+    sessionStorage.setItem('redirect', window.location.pathname + window.location.search);
+    window.location.replace('/');
+  </script>
+</head>
+<body>
+  <p>Redirecionando...</p>
+</body>
+</html>
