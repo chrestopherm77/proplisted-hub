@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
+import { RevenueChart } from './RevenueChart';
+import { LeadsPerformanceChart } from './LeadsPerformanceChart';
+import { SalesByStatusChart } from './SalesByStatusChart';
 
 interface Stats {
   totalRevenue: number;
@@ -75,50 +78,63 @@ export function DashboardStats() {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-success">{formatCurrency(stats.totalRevenue)}</div>
-          <p className="text-xs text-muted-foreground">Vendas confirmadas</p>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">{formatCurrency(stats.totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground">Vendas confirmadas</p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Compras</CardTitle>
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-primary">{stats.totalPurchases}</div>
-          <p className="text-xs text-muted-foreground">Leads vendidos</p>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Compras</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">{stats.totalPurchases}</div>
+            <p className="text-xs text-muted-foreground">Leads vendidos</p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Leads Ativos</CardTitle>
-          <Package className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-info">{stats.activeLeads}</div>
-          <p className="text-xs text-muted-foreground">Disponíveis para venda</p>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Leads Ativos</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-info">{stats.activeLeads}</div>
+            <p className="text-xs text-muted-foreground">Disponíveis para venda</p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Usuários</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-secondary">{stats.totalUsers}</div>
-          <p className="text-xs text-muted-foreground">Cadastrados na plataforma</p>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Usuários</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-secondary">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">Cadastrados na plataforma</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <RevenueChart />
+        <SalesByStatusChart />
+      </div>
+
+      <div className="grid gap-6">
+        <LeadsPerformanceChart />
+      </div>
     </div>
   );
 }
