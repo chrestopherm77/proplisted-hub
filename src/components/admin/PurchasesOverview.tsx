@@ -111,43 +111,45 @@ export function PurchasesOverview() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Histórico de Compras</CardTitle>
+        <CardTitle className="text-lg md:text-xl">Histórico de Compras</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Lead</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {purchases.map((purchase) => (
-              <TableRow key={purchase.id}>
-                <TableCell className="font-medium">
-                  {formatDate(purchase.purchased_at)}
-                </TableCell>
-                <TableCell>{purchase.user.name}</TableCell>
-                <TableCell>
-                  <div className="max-w-xs">
-                    <p className="font-medium">{purchase.lead?.name || 'Lead removido'}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {purchase.lead?.description || '-'}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell className="font-semibold">{formatPrice(purchase.amount)}</TableCell>
-                <TableCell>{getStatusBadge(purchase.status)}</TableCell>
+        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Data</TableHead>
+                <TableHead className="whitespace-nowrap">Cliente</TableHead>
+                <TableHead className="whitespace-nowrap">Lead</TableHead>
+                <TableHead className="whitespace-nowrap">Valor</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {purchases.map((purchase) => (
+                <TableRow key={purchase.id}>
+                  <TableCell className="font-medium whitespace-nowrap text-sm">
+                    {formatDate(purchase.purchased_at)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">{purchase.user.name}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px] md:max-w-xs">
+                      <p className="font-medium text-sm truncate">{purchase.lead?.name || 'Lead removido'}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {purchase.lead?.description || '-'}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-semibold whitespace-nowrap text-sm">{formatPrice(purchase.amount)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getStatusBadge(purchase.status)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
         {purchases.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             Nenhuma compra realizada ainda
           </div>
         )}

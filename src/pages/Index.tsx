@@ -38,33 +38,33 @@ const Index = () => {
 
       <main>
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-20 text-center bg-gradient-to-br from-primary-light to-white">
-          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+        <section className="container mx-auto px-4 py-12 md:py-20 text-center bg-gradient-to-br from-primary-light to-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-6 leading-tight px-2">
             Leads Qualificados para{' '}
             <span className="text-primary">Seu Negócio Imobiliário</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto leading-relaxed px-4">
             Conecte-se com clientes em potencial prontos para comprar ou vender imóveis.
             Aumente suas vendas com leads verificados.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate('/auth')} className="text-lg px-8">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4">
+            <Button size="lg" onClick={() => navigate('/auth')} className="text-base md:text-lg px-6 md:px-8 h-12 md:h-auto">
               Começar Agora
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/leads')} className="text-lg px-8">
+            <Button size="lg" variant="outline" onClick={() => navigate('/leads')} className="text-base md:text-lg px-6 md:px-8 h-12 md:h-auto">
               Ver Leads Disponíveis
             </Button>
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="container mx-auto px-4 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Por que escolher o LeadMarket?</h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+        <section className="container mx-auto px-4 py-12 md:py-20">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadMarket?</h2>
+          <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
             A plataforma mais confiável para corretores de imóveis encontrarem clientes qualificados
           </p>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
               <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <TrendingUp className="h-7 w-7 text-primary" />

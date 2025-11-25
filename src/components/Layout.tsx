@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { MobileMenu } from '@/components/MobileMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,12 +31,14 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light to-background">
-      <header className="bg-white border-b border-border shadow-sm">
+      <header className="bg-white border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
+            {user && <MobileMenu isAdmin={isAdmin} onSignOut={handleSignOut} />}
+            
             <Link to="/" className="flex items-center space-x-2">
-              <Package className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-primary">LeadMarket</span>
+              <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+              <span className="text-lg md:text-xl font-bold text-primary">LeadMarket</span>
             </Link>
 
             {user && (
@@ -70,16 +73,16 @@ export const Layout = ({ children }: LayoutProps) => {
               </nav>
             )}
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               {user ? (
                 <>
                   <Link to="/cart">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10">
                       <ShoppingCart className="h-5 w-5" />
                     </Button>
                   </Link>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild className="hidden md:flex">
                       <Button variant="ghost" size="icon">
                         <User className="h-5 w-5" />
                       </Button>
@@ -100,7 +103,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </>
               ) : (
                 <Link to="/auth">
-                  <Button>Entrar</Button>
+                  <Button size="sm" className="text-sm">Entrar</Button>
                 </Link>
               )}
             </div>
@@ -108,7 +111,7 @@ export const Layout = ({ children }: LayoutProps) => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-4 md:py-8">{children}</main>
 
       <footer className="bg-white border-t border-border mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
