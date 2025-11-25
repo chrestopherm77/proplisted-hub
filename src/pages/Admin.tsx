@@ -16,14 +16,14 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || isAdmin === null) return;
     
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    if (!isAdmin) {
+    if (isAdmin === false) {
       toast({
         title: 'Acesso Negado',
         description: 'Você não tem permissão para acessar esta área',
@@ -34,7 +34,7 @@ export default function Admin() {
     }
 
     setLoading(false);
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, isAdmin, navigate, toast]);
 
   if (loading || authLoading) {
     return (
