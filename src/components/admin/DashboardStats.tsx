@@ -78,61 +78,61 @@ export function DashboardStats() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Receita Total</CardTitle>
+            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{formatCurrency(stats.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">Vendas confirmadas</p>
+            <div className="text-lg md:text-2xl font-bold text-success">{formatCurrency(stats.totalRevenue)}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Vendas confirmadas</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Compras</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Total de Compras</CardTitle>
+            <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{stats.totalPurchases}</div>
-            <p className="text-xs text-muted-foreground">Leads vendidos</p>
+            <div className="text-lg md:text-2xl font-bold text-primary">{stats.totalPurchases}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Leads vendidos</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Leads Ativos</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Leads Ativos</CardTitle>
+            <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-info">{stats.activeLeads}</div>
-            <p className="text-xs text-muted-foreground">Disponíveis para venda</p>
+            <div className="text-lg md:text-2xl font-bold text-info">{stats.activeLeads}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Disponíveis para venda</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuários</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Usuários</CardTitle>
+            <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-secondary">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">Cadastrados na plataforma</p>
+            <div className="text-lg md:text-2xl font-bold text-secondary">{stats.totalUsers}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Cadastrados na plataforma</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Section */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
         <RevenueChart />
         <SalesByStatusChart />
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         <LeadsPerformanceChart />
       </div>
     </div>

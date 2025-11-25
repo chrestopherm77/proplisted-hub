@@ -47,15 +47,15 @@ export default function Admin() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Painel Administrativo</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Painel Administrativo</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Gerencie leads, visualize compras e acompanhe estatísticas
           </p>
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Gerenciar Leads</TabsTrigger>
             <TabsTrigger value="purchases">Compras</TabsTrigger>

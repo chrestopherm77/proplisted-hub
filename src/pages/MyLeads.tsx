@@ -112,14 +112,14 @@ export default function MyLeads() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Meus Leads</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Meus Leads</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Leads que você comprou com informações completas de contato
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-2">
           {purchases.map((purchase) => (
             <Card key={purchase.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>

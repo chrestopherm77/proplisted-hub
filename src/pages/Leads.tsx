@@ -153,14 +153,14 @@ export default function Leads() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Marketplace de Leads</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Marketplace de Leads</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Explore e compre leads qualificados para seu negócio imobiliário
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {leads.map((lead) => (
             <Card 
               key={lead.id} 
@@ -204,7 +204,7 @@ export default function Leads() {
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             {selectedLead && (
               <>
                 <DialogHeader>

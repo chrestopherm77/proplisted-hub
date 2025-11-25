@@ -309,10 +309,10 @@ export default function Checkout() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto pb-12">
-        <h1 className="text-3xl font-bold mb-6">Finalizar Compra</h1>
+      <div className="max-w-4xl mx-auto pb-8 md:pb-12">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Finalizar Compra</h1>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Resumo do Pedido</CardTitle>

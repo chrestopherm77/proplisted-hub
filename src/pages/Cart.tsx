@@ -127,9 +127,9 @@ export default function Cart() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-6">
-          <ShoppingBag className="h-8 w-8 text-primary mr-3" />
-          <h1 className="text-3xl font-bold">Meu Carrinho</h1>
+        <div className="flex items-center mb-4 md:mb-6">
+          <ShoppingBag className="h-6 w-6 md:h-8 md:w-8 text-primary mr-2 md:mr-3" />
+          <h1 className="text-2xl md:text-3xl font-bold">Meu Carrinho</h1>
         </div>
 
         {cartItems.length === 0 ? (

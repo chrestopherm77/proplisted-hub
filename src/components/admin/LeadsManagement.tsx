@@ -184,17 +184,24 @@ export function LeadsManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gerenciar Leads</h2>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-xl md:text-2xl font-bold">Gerenciar Leads</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingLead(null); setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '3' }); }}>
+            <Button 
+              onClick={() => { 
+                setEditingLead(null); 
+                setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '3' }); 
+              }}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Novo Lead
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingLead ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
               <DialogDescription>
@@ -264,50 +271,53 @@ export function LeadsManagement() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 md:gap-4">
         {leads.map((lead) => (
           <Card key={lead.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                 <div className="flex-1">
-                  <CardTitle className="text-lg">{lead.name}</CardTitle>
-                  <CardDescription>{lead.phone}</CardDescription>
+                  <CardTitle className="text-base md:text-lg">{lead.name}</CardTitle>
+                  <CardDescription className="text-sm">{lead.phone}</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant={lead.is_active ? 'default' : 'secondary'}>
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant={lead.is_active ? 'default' : 'secondary'} className="text-xs">
                     {lead.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     {lead.purchase_count}/{lead.max_purchases} vendidos
                   </Badge>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">{lead.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
-                <div className="flex gap-2">
+              <p className="text-xs md:text-sm text-muted-foreground mb-3">{lead.description}</p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <span className="text-base md:text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => toggleLeadStatus(lead)}
+                    className="flex-1 sm:flex-none h-8"
                   >
-                    {lead.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {lead.is_active ? <EyeOff className="h-3 w-3 md:h-4 md:w-4" /> : <Eye className="h-3 w-3 md:h-4 md:w-4" />}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => openEditDialog(lead)}
+                    className="flex-1 sm:flex-none h-8"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
                     onClick={() => deleteLead(lead.id)}
+                    className="flex-1 sm:flex-none h-8"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                 </div>
               </div>
@@ -317,8 +327,8 @@ export function LeadsManagement() {
       </div>
 
       {leads.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Nenhum lead cadastrado</p>
+        <div className="text-center py-8 md:py-12">
+          <p className="text-sm md:text-base text-muted-foreground">Nenhum lead cadastrado</p>
         </div>
       )}
     </div>
