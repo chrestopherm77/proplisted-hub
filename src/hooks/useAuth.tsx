@@ -11,13 +11,13 @@ export const useAuth = () => {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         // Check admin status after state update
         if (session?.user) {
-          await checkAdminStatus(session.user.id);
+          checkAdminStatus(session.user.id);
         } else {
           setIsAdmin(false);
         }
@@ -25,15 +25,14 @@ export const useAuth = () => {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
       
       if (session?.user) {
-        await checkAdminStatus(session.user.id);
+        checkAdminStatus(session.user.id);
       }
-      
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
