@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CsvImport } from './CsvImport';
 
 interface Lead {
   id: string;
@@ -185,6 +186,8 @@ export function LeadsManagement() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <CsvImport onImportComplete={fetchLeads} />
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h2 className="text-xl md:text-2xl font-bold">Gerenciar Leads</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
