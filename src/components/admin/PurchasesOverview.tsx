@@ -31,33 +31,45 @@ export function PurchasesOverview() {
 
   const fetchPurchases = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch purchases with leads
+      const { data: purchasesData, error: purchasesError } = await supabase
         .from('purchases')
         .select(`
           id,
           amount,
           status,
           purchased_at,
+          user_id,
           leads (
             name,
             description
-          ),
-          profiles!purchases_user_id_fkey (
-            name
           )
         `)
         .order('purchased_at', { ascending: false });
 
-      if (error) throw error;
+      if (purchasesError) throw purchasesError;
 
-      const formattedData = data?.map((purchase: any) => ({
+      // Get unique user_ids and fetch profiles
+      const userIds = [...new Set(purchasesData?.map(p => p.user_id) || [])];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+      const formattedData = purchasesData?.map((purchase: any) => ({
         id: purchase.id,
         amount: purchase.amount,
         status: purchase.status,
         purchased_at: purchase.purchased_at,
         lead: purchase.leads,
         user: {
-          name: purchase.profiles?.name || 'Usuário desconhecido',
+          name: profilesMap.get(purchase.user_id)?.name || 'Usuário desconhecido',
           email: '',
         },
       })) || [];
