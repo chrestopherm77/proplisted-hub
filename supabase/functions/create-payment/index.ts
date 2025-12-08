@@ -32,8 +32,75 @@ serve(async (req) => {
     console.log('=== Creating Asaas Checkout ===');
     console.log('User ID:', user.id);
     console.log('Payment Method:', paymentMethod);
-    console.log('Cart items:', cartItems.length);
-    console.log('Customer Data:', customerData);
+    console.log('Cart items count:', cartItems?.length || 0);
+
+    // Validate cartItems exists and is an array
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error('Carrinho vazio ou inválido');
+    }
+
+    // Extract lead_ids from cart items
+    const leadIds = cartItems.map((item: any) => item.lead_id).filter(Boolean);
+    
+    if (leadIds.length === 0) {
+      throw new Error('Nenhum lead válido no carrinho');
+    }
+
+    // CRITICAL SECURITY FIX: Fetch actual lead prices from database
+    console.log('Fetching leads from database for price validation...');
+    const { data: dbLeads, error: leadsError } = await supabaseClient
+      .from('leads')
+      .select('id, price, is_active, name, description, purchase_count, max_purchases')
+      .in('id', leadIds);
+
+    if (leadsError) {
+      console.error('Error fetching leads:', leadsError);
+      throw new Error('Erro ao validar leads');
+    }
+
+    if (!dbLeads || dbLeads.length === 0) {
+      throw new Error('Nenhum lead encontrado no banco de dados');
+    }
+
+    // Create a map of lead_id -> lead data from database
+    const leadMap = new Map(dbLeads.map((lead: any) => [lead.id, lead]));
+
+    // Validate each cart item against database
+    const validatedItems = [];
+    for (const cartItem of cartItems) {
+      const dbLead = leadMap.get(cartItem.lead_id);
+      
+      if (!dbLead) {
+        console.error(`Lead ${cartItem.lead_id} not found in database`);
+        throw new Error(`Lead ${cartItem.lead_id} não encontrado`);
+      }
+
+      // Check if lead is active
+      if (!dbLead.is_active) {
+        console.error(`Lead ${cartItem.lead_id} is not active`);
+        throw new Error(`Lead não está mais disponível para compra`);
+      }
+
+      // Check if lead has reached max purchases
+      if (dbLead.purchase_count >= dbLead.max_purchases) {
+        console.error(`Lead ${cartItem.lead_id} has reached max purchases`);
+        throw new Error(`Lead já atingiu o limite máximo de vendas`);
+      }
+
+      // Use the ACTUAL price from database, not from client
+      validatedItems.push({
+        lead_id: dbLead.id,
+        price: Number(dbLead.price), // Always use database price
+        name: dbLead.name,
+        description: dbLead.description,
+      });
+    }
+
+    console.log('Validated items count:', validatedItems.length);
+
+    // Calculate total from DATABASE prices (not client-provided)
+    const totalAmount = validatedItems.reduce((sum: number, item: any) => sum + item.price, 0);
+    console.log('Total amount (from database):', totalAmount);
 
     const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
     const ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
@@ -46,17 +113,19 @@ serve(async (req) => {
       throw new Error('ASAAS_API_KEY não configurada');
     }
 
-    const totalAmount = cartItems.reduce((sum: number, item: any) => sum + Number(item.price), 0);
-    console.log('Total amount:', totalAmount);
+    // Validate customer data
+    if (!customerData || !customerData.name || !customerData.cpfCnpj || !customerData.email) {
+      throw new Error('Dados do cliente incompletos');
+    }
 
     // Generate unique order ID to track this purchase
     const orderId = crypto.randomUUID();
     console.log('Order ID:', orderId);
 
-    // Prepare checkout items
-    const checkoutItems = cartItems.map((item: any) => ({
+    // Prepare checkout items using validated database data
+    const checkoutItems = validatedItems.map((item: any) => ({
       name: item.name || `Lead - ${item.lead_id}`,
-      value: Number(item.price),
+      value: item.price,
       description: item.description || `Compra de lead ID: ${item.lead_id}`,
       quantity: 1
     }));
@@ -67,7 +136,6 @@ serve(async (req) => {
     // Create Asaas Checkout with webhook URL
     console.log('Creating Asaas checkout...');
     const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
-    console.log('Webhook URL:', webhookUrl);
     
     const checkoutPayload = {
       billingTypes: billingTypes,
@@ -96,8 +164,6 @@ serve(async (req) => {
       }
     };
 
-    console.log('Checkout payload:', JSON.stringify(checkoutPayload, null, 2));
-
     // Clean customer data before sending to Asaas
     const cleanedCustomerData = {
       ...checkoutPayload.customerData,
@@ -112,7 +178,7 @@ serve(async (req) => {
       customerData: cleanedCustomerData,
     };
 
-    console.log('Final payload to Asaas:', JSON.stringify(finalPayload, null, 2));
+    console.log('Sending checkout request to Asaas...');
 
     const checkoutResponse = await fetch(`${ASAAS_BASE_URL}/checkouts`, {
       method: 'POST',
@@ -133,19 +199,17 @@ serve(async (req) => {
     const checkoutData = await checkoutResponse.json();
     console.log('Checkout created successfully!');
     console.log('Checkout ID:', checkoutData.id);
-    console.log('Checkout Link:', checkoutData.link);
-    console.log('Full response:', JSON.stringify(checkoutData, null, 2));
 
     // Save purchase records in database with PENDING status, order ID and checkout ID
+    // Use validated items with DATABASE prices
     console.log('Saving purchase records with order ID:', orderId);
-    console.log('Saving purchase records with checkout ID:', checkoutData.id);
-    for (const item of cartItems) {
+    for (const item of validatedItems) {
       const { error: purchaseError } = await supabaseClient
         .from('purchases')
         .insert({
           user_id: user.id,
           lead_id: item.lead_id,
-          amount: item.price,
+          amount: item.price, // Use database-validated price
           asaas_payment_id: orderId, // Use order ID for webhook matching
           asaas_checkout_id: checkoutData.id, // Save checkout ID for payment matching
           status: 'PENDING',
@@ -173,7 +237,6 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('=== Error in create-payment function ===');
     console.error('Error:', error.message);
-    console.error('Stack:', error.stack);
     
     return new Response(
       JSON.stringify({ 
