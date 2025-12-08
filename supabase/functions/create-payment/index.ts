@@ -191,9 +191,12 @@ serve(async (req) => {
     });
 
     if (!checkoutResponse.ok) {
-      const errorData = await checkoutResponse.json();
-      console.error('Error creating checkout:', errorData);
-      throw new Error(`Erro ao criar checkout: ${JSON.stringify(errorData)}`);
+      // Log error details server-side only (don't expose to client)
+      const errorData = await checkoutResponse.text();
+      console.error('Asaas checkout creation failed - Status:', checkoutResponse.status);
+      console.error('Asaas error (server-side only):', errorData);
+      // Sanitized error message to avoid exposing customer PII
+      throw new Error('Falha ao criar checkout. Por favor, verifique seus dados e tente novamente.');
     }
 
     const checkoutData = await checkoutResponse.json();
