@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShoppingCart, X, Info } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ShoppingCart, X, Info, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,12 +20,45 @@ interface Lead {
   is_active: boolean;
 }
 
+interface ParsedDescription {
+  interest: string;
+  region: string;
+  characteristics: string;
+}
+
+const parseDescription = (description: string): ParsedDescription => {
+  const lines = description.split('\n').map(line => line.trim());
+  let interest = '';
+  let region = '';
+  let characteristics = '';
+
+  for (const line of lines) {
+    const lowerLine = line.toLowerCase();
+    if (lowerLine.startsWith('interesse:') || lowerLine.startsWith('interest:')) {
+      interest = line.split(':').slice(1).join(':').trim();
+    } else if (lowerLine.startsWith('região:') || lowerLine.startsWith('region:') || lowerLine.startsWith('regiao:')) {
+      region = line.split(':').slice(1).join(':').trim();
+    } else if (lowerLine.startsWith('características:') || lowerLine.startsWith('caracteristicas:') || lowerLine.startsWith('characteristics:')) {
+      characteristics = line.split(':').slice(1).join(':').trim();
+    }
+  }
+
+  // If no structured format found, use the whole description as characteristics
+  if (!interest && !region && !characteristics) {
+    characteristics = description;
+  }
+
+  return { interest, region, characteristics };
+};
+
 export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [filterInterest, setFilterInterest] = useState<string>('all');
+  const [filterRegion, setFilterRegion] = useState<string>('all');
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -76,6 +110,38 @@ export default function Leads() {
       console.error('Error fetching cart:', error);
     }
   };
+
+  // Extract unique interests and regions for filters
+  const { uniqueInterests, uniqueRegions } = useMemo(() => {
+    const interests = new Set<string>();
+    const regions = new Set<string>();
+
+    leads.forEach(lead => {
+      const parsed = parseDescription(lead.description);
+      if (parsed.interest) interests.add(parsed.interest);
+      if (parsed.region) regions.add(parsed.region);
+    });
+
+    return {
+      uniqueInterests: Array.from(interests).sort(),
+      uniqueRegions: Array.from(regions).sort(),
+    };
+  }, [leads]);
+
+  // Filter leads based on selected filters
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      const parsed = parseDescription(lead.description);
+      
+      if (filterInterest !== 'all' && parsed.interest !== filterInterest) {
+        return false;
+      }
+      if (filterRegion !== 'all' && parsed.region !== filterRegion) {
+        return false;
+      }
+      return true;
+    });
+  }, [leads, filterInterest, filterRegion]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
@@ -142,6 +208,23 @@ export default function Leads() {
   const isInCart = (leadId: string) => cartItems.includes(leadId);
   const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases;
 
+  const renderFormattedDescription = (description: string) => {
+    const parsed = parseDescription(description);
+    return (
+      <div className="space-y-1 text-sm">
+        {parsed.interest && (
+          <p><span className="font-medium text-foreground">Interesse:</span> {parsed.interest}</p>
+        )}
+        {parsed.region && (
+          <p><span className="font-medium text-foreground">Região:</span> {parsed.region}</p>
+        )}
+        {parsed.characteristics && (
+          <p><span className="font-medium text-foreground">Características:</span> {parsed.characteristics}</p>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -160,47 +243,106 @@ export default function Leads() {
           </p>
         </div>
 
+        {/* Filters */}
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filtros</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-1.5 min-w-[180px]">
+              <label className="text-xs text-muted-foreground">Interesse</label>
+              <Select value={filterInterest} onValueChange={setFilterInterest}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todos os interesses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os interesses</SelectItem>
+                  {uniqueInterests.map(interest => (
+                    <SelectItem key={interest} value={interest}>{interest}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5 min-w-[180px]">
+              <label className="text-xs text-muted-foreground">Região</label>
+              <Select value={filterRegion} onValueChange={setFilterRegion}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todas as regiões" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as regiões</SelectItem>
+                  {uniqueRegions.map(region => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(filterInterest !== 'all' || filterRegion !== 'all') && (
+              <div className="flex items-end">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setFilterInterest('all');
+                    setFilterRegion('all');
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {leads.map((lead) => (
-            <Card 
-              key={lead.id} 
-              className="flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40"
-              onClick={() => openLeadDetails(lead)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge 
-                    variant={isSoldOut(lead) ? 'destructive' : 'default'}
-                    className="text-xs"
-                  >
-                    {isSoldOut(lead)
-                      ? 'Esgotado'
-                      : `${lead.max_purchases - lead.purchase_count} disponíveis`}
-                  </Badge>
-                  {isInCart(lead.id) && (
-                    <Badge variant="outline" className="text-xs">
-                      <ShoppingCart className="h-3 w-3 mr-1" />
-                      No carrinho
+          {filteredLeads.map((lead) => {
+            const parsed = parseDescription(lead.description);
+            return (
+              <Card 
+                key={lead.id} 
+                className="flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40"
+                onClick={() => openLeadDetails(lead)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge 
+                      variant={isSoldOut(lead) ? 'destructive' : 'default'}
+                      className="text-xs"
+                    >
+                      {isSoldOut(lead)
+                        ? 'Esgotado'
+                        : `${lead.max_purchases - lead.purchase_count} disponíveis`}
                     </Badge>
-                  )}
-                </div>
-                <CardTitle className="text-base line-clamp-2">
-                  Lead #{lead.id.slice(0, 6)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow pt-0">
-                <CardDescription className="line-clamp-2 text-xs mb-3">
-                  {lead.description}
-                </CardDescription>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {isInCart(lead.id) && (
+                      <Badge variant="outline" className="text-xs">
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        No carrinho
+                      </Badge>
+                    )}
+                  </div>
+                  <CardTitle className="text-base">
+                    Lead #{lead.id.slice(0, 6)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow pt-0">
+                  <div className="text-xs text-muted-foreground mb-3 space-y-0.5">
+                    {parsed.interest && <p><span className="font-medium">Interesse:</span> {parsed.interest}</p>}
+                    {parsed.region && <p><span className="font-medium">Região:</span> {parsed.region}</p>}
+                    {parsed.characteristics && (
+                      <p className="line-clamp-1"><span className="font-medium">Características:</span> {parsed.characteristics}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -220,9 +362,9 @@ export default function Leads() {
                         : `${selectedLead.max_purchases - selectedLead.purchase_count}/${selectedLead.max_purchases} disponíveis`}
                     </Badge>
                   </div>
-                  <DialogDescription className="text-base pt-4">
-                    {selectedLead.description}
-                  </DialogDescription>
+                  <div className="pt-4 text-muted-foreground">
+                    {renderFormattedDescription(selectedLead.description)}
+                  </div>
                 </DialogHeader>
 
                 <div className="py-6 space-y-4">
@@ -277,9 +419,13 @@ export default function Leads() {
           </DialogContent>
         </Dialog>
 
-        {leads.length === 0 && (
+        {filteredLeads.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum lead disponível no momento</p>
+            <p className="text-muted-foreground">
+              {leads.length === 0 
+                ? 'Nenhum lead disponível no momento' 
+                : 'Nenhum lead encontrado com os filtros selecionados'}
+            </p>
           </div>
         )}
       </div>
