@@ -159,14 +159,14 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="creci">CRECI</Label>
+              <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
               <div className="relative">
                 <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  id="creci" 
+                  id="cpf_cnpj" 
                   value={profile.creci_number}
                   onChange={(e) => setProfile({ ...profile, creci_number: e.target.value })}
-                  placeholder="Número do CRECI"
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
                   className="pl-10"
                 />
               </div>
