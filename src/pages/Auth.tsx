@@ -140,11 +140,12 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="creci">Número CRECI</Label>
+                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
                   <Input
-                    id="creci"
+                    id="cpf_cnpj"
                     type="text"
                     required
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
                     value={formData.creci_number}
                     onChange={(e) => setFormData({ ...formData, creci_number: e.target.value })}
                   />
