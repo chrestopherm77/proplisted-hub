@@ -57,6 +57,10 @@ export default function Leads() {
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Temporary filter states (before clicking "Filtrar")
+  const [tempInterest, setTempInterest] = useState<string>('all');
+  const [tempRegion, setTempRegion] = useState<string>('all');
+  // Applied filter states
   const [filterInterest, setFilterInterest] = useState<string>('all');
   const [filterRegion, setFilterRegion] = useState<string>('all');
   const { user, loading: authLoading } = useAuth();
@@ -128,7 +132,21 @@ export default function Leads() {
     };
   }, [leads]);
 
-  // Filter leads based on selected filters
+  // Apply filters when button is clicked
+  const applyFilters = () => {
+    setFilterInterest(tempInterest);
+    setFilterRegion(tempRegion);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setTempInterest('all');
+    setTempRegion('all');
+    setFilterInterest('all');
+    setFilterRegion('all');
+  };
+
+  // Filter leads based on applied filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const parsed = parseDescription(lead.description);
@@ -249,24 +267,10 @@ export default function Leads() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex flex-col gap-1.5 min-w-[180px]">
-              <label className="text-xs text-muted-foreground">Interesse</label>
-              <Select value={filterInterest} onValueChange={setFilterInterest}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os interesses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os interesses</SelectItem>
-                  {uniqueInterests.map(interest => (
-                    <SelectItem key={interest} value={interest}>{interest}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5 min-w-[180px]">
               <label className="text-xs text-muted-foreground">Região</label>
-              <Select value={filterRegion} onValueChange={setFilterRegion}>
+              <Select value={tempRegion} onValueChange={setTempRegion}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Todas as regiões" />
                 </SelectTrigger>
@@ -278,20 +282,31 @@ export default function Leads() {
                 </SelectContent>
               </Select>
             </div>
-            {(filterInterest !== 'all' || filterRegion !== 'all') && (
-              <div className="flex items-end">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => {
-                    setFilterInterest('all');
-                    setFilterRegion('all');
-                  }}
-                >
-                  Limpar filtros
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-col gap-1.5 min-w-[180px]">
+              <label className="text-xs text-muted-foreground">Interesse</label>
+              <Select value={tempInterest} onValueChange={setTempInterest}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todos os interesses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os interesses</SelectItem>
+                  {uniqueInterests.map(interest => (
+                    <SelectItem key={interest} value={interest}>{interest}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={applyFilters}>
+                Filtrar
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={clearFilters}
+              >
+                Limpar
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -304,16 +319,11 @@ export default function Leads() {
                 className="flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40"
                 onClick={() => openLeadDetails(lead)}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge 
-                      variant={isSoldOut(lead) ? 'destructive' : 'default'}
-                      className="text-xs"
-                    >
-                      {isSoldOut(lead)
-                        ? 'Esgotado'
-                        : `${lead.max_purchases - lead.purchase_count} disponíveis`}
-                    </Badge>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-bold">
+                      Lead #{lead.id.slice(0, 5).toUpperCase()}
+                    </CardTitle>
                     {isInCart(lead.id) && (
                       <Badge variant="outline" className="text-xs">
                         <ShoppingCart className="h-3 w-3 mr-1" />
@@ -321,23 +331,32 @@ export default function Leads() {
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-base">
-                    Lead #{lead.id.slice(0, 6)}
-                  </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-grow pt-0">
-                  <div className="text-xs text-muted-foreground mb-3 space-y-0.5">
-                    {parsed.interest && <p><span className="font-medium">Interesse:</span> {parsed.interest}</p>}
-                    {parsed.region && <p><span className="font-medium">Região:</span> {parsed.region}</p>}
+                <CardContent className="flex-grow pt-0 space-y-3">
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    {parsed.region && (
+                      <p><span className="font-medium text-foreground">Região:</span> {parsed.region}</p>
+                    )}
+                    {parsed.interest && (
+                      <p><span className="font-medium text-foreground">Interesse:</span> {parsed.interest}</p>
+                    )}
                     {parsed.characteristics && (
-                      <p className="line-clamp-1"><span className="font-medium">Características:</span> {parsed.characteristics}</p>
+                      <p><span className="font-medium text-foreground">Características:</span> {parsed.characteristics}</p>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                      <Info className="h-4 w-4" />
-                    </Button>
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
+                      <Badge 
+                        variant={isSoldOut(lead) ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {isSoldOut(lead)
+                          ? 'Esgotado'
+                          : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disponíveis`}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
