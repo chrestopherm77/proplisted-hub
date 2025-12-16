@@ -256,7 +256,7 @@ async function processPaymentConfirmation(
     console.log('💡 Attempting to fetch payment details from Asaas API...');
     try {
       const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
-      const ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+      const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
       
       const paymentResponse = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}`, {
         headers: {
