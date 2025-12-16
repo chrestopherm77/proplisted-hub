@@ -103,7 +103,7 @@ serve(async (req) => {
     console.log('Total amount (from database):', totalAmount);
 
     const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
-    const ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+    const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     // Frontend URL onde o usuário deve ser redirecionado após o pagamento
