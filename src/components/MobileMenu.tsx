@@ -30,7 +30,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
         <SheetHeader>
           <SheetTitle className="flex items-center space-x-2 text-left">
             <Package className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold text-primary">LeadMarket</span>
+            <span className="text-lg font-bold text-primary">LeadBay</span>
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col space-y-2 mt-8">
