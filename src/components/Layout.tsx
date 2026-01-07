@@ -38,7 +38,7 @@ export const Layout = ({ children }: LayoutProps) => {
             
             <Link to="/" className="flex items-center space-x-2">
               <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              <span className="text-lg md:text-xl font-bold text-primary">LeadMarket</span>
+              <span className="text-lg md:text-xl font-bold text-primary">LeadBay</span>
             </Link>
 
             {user && (
@@ -115,7 +115,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       <footer className="bg-white border-t border-border mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2025 LeadMarket. Todos os direitos reservados.
+          © 2025 LeadBay. Todos os direitos reservados.
         </div>
       </footer>
     </div>

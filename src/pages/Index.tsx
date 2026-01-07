@@ -28,7 +28,7 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Package className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-primary">LeadMarket</span>
+            <span className="text-xl font-bold text-primary">LeadBay</span>
           </div>
           <Button onClick={() => navigate('/auth')} size="lg">
             Entrar
@@ -60,7 +60,7 @@ const Index = () => {
 
         {/* Features Section */}
         <section className="container mx-auto px-4 py-12 md:py-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadMarket?</h2>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadBay?</h2>
           <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
             A plataforma mais confiável para corretores de imóveis encontrarem clientes qualificados
           </p>
@@ -212,7 +212,7 @@ const Index = () => {
               Pronto para Aumentar suas Vendas?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Junte-se a centenas de corretores que já estão fechando mais negócios com o LeadMarket
+              Junte-se a centenas de corretores que já estão fechando mais negócios com o LeadBay
             </p>
             <Button 
               size="lg" 
@@ -231,10 +231,10 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center space-x-2">
               <Package className="h-6 w-6 text-primary" />
-              <span className="font-bold text-primary">LeadMarket</span>
+              <span className="font-bold text-primary">LeadBay</span>
             </div>
             <div className="text-sm text-muted-foreground text-center">
-              © 2025 LeadMarket. Todos os direitos reservados.
+              © 2025 LeadBay. Todos os direitos reservados.
             </div>
           </div>
         </div>

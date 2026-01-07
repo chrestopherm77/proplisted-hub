@@ -261,7 +261,7 @@ async function processPaymentConfirmation(
       const paymentResponse = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}`, {
         headers: {
           'access_token': ASAAS_API_KEY || '',
-          'User-Agent': 'LeadMarket-Webhook',
+          'User-Agent': 'LeadBay-Webhook',
         },
       });
 

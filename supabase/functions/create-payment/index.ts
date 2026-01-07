@@ -185,7 +185,7 @@ serve(async (req) => {
       headers: {
         'access_token': ASAAS_API_KEY,
         'Content-Type': 'application/json',
-        'User-Agent': 'LeadMarket-System',
+        'User-Agent': 'LeadBay-System',
       },
       body: JSON.stringify(finalPayload),
     });
