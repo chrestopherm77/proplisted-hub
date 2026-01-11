@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_submissions: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          form_data: Json
+          id: string
+          intention: string
+          name: string
+          phone: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          form_data?: Json
+          id?: string
+          intention: string
+          name: string
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          form_data?: Json
+          id?: string
+          intention?: string
+          name?: string
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string | null
