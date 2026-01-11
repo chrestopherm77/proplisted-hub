@@ -92,29 +92,98 @@ export type Database = {
       profiles: {
         Row: {
           accepted_terms: boolean | null
+          address: string | null
+          cau: string | null
+          cau_uf: string | null
+          cnpj: string | null
+          company_name: string | null
+          company_type: string | null
+          cpf: string | null
+          crea: string | null
+          crea_pj: string | null
+          crea_pj_uf: string | null
+          crea_uf: string | null
           created_at: string | null
-          creci_number: string
+          creci: string | null
+          creci_number: string | null
+          creci_pj: string | null
+          creci_pj_uf: string | null
+          creci_uf: string | null
           id: string
           name: string
+          person_type: string | null
           phone: string
+          profession: string | null
+          rt_cau: string | null
+          rt_cau_uf: string | null
+          rt_cpf: string | null
+          rt_crea: string | null
+          rt_crea_uf: string | null
+          rt_name: string | null
           updated_at: string | null
         }
         Insert: {
           accepted_terms?: boolean | null
+          address?: string | null
+          cau?: string | null
+          cau_uf?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          company_type?: string | null
+          cpf?: string | null
+          crea?: string | null
+          crea_pj?: string | null
+          crea_pj_uf?: string | null
+          crea_uf?: string | null
           created_at?: string | null
-          creci_number: string
+          creci?: string | null
+          creci_number?: string | null
+          creci_pj?: string | null
+          creci_pj_uf?: string | null
+          creci_uf?: string | null
           id: string
           name: string
+          person_type?: string | null
           phone: string
+          profession?: string | null
+          rt_cau?: string | null
+          rt_cau_uf?: string | null
+          rt_cpf?: string | null
+          rt_crea?: string | null
+          rt_crea_uf?: string | null
+          rt_name?: string | null
           updated_at?: string | null
         }
         Update: {
           accepted_terms?: boolean | null
+          address?: string | null
+          cau?: string | null
+          cau_uf?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          company_type?: string | null
+          cpf?: string | null
+          crea?: string | null
+          crea_pj?: string | null
+          crea_pj_uf?: string | null
+          crea_uf?: string | null
           created_at?: string | null
-          creci_number?: string
+          creci?: string | null
+          creci_number?: string | null
+          creci_pj?: string | null
+          creci_pj_uf?: string | null
+          creci_uf?: string | null
           id?: string
           name?: string
+          person_type?: string | null
           phone?: string
+          profession?: string | null
+          rt_cau?: string | null
+          rt_cau_uf?: string | null
+          rt_cpf?: string | null
+          rt_crea?: string | null
+          rt_crea_uf?: string | null
+          rt_name?: string | null
           updated_at?: string | null
         }
         Relationships: []
