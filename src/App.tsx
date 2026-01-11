@@ -15,6 +15,7 @@ import CheckoutError from "./pages/CheckoutError";
 import CheckoutExpired from "./pages/CheckoutExpired";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import LeadForm from "./pages/LeadForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => {
           <Route path="/checkout-expired" element={<CheckoutExpired />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/lp" element={<LeadForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
