@@ -1,7 +1,14 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { OptionCard, MultiOptionCard } from "../../OptionCard";
-import { Ruler, Target, Home, Route, Droplets } from "lucide-react";
+import { Ruler, Target, Home, Route, Droplets, Tractor, Trees, MoreHorizontal } from "lucide-react";
+
+const ruralTypeOptions = [
+  { value: 'FARM', label: 'Fazenda', icon: <Tractor className="h-6 w-6" /> },
+  { value: 'SITIO', label: 'Sítio', icon: <Home className="h-6 w-6" /> },
+  { value: 'CHACARA', label: 'Chácara', icon: <Trees className="h-6 w-6" /> },
+  { value: 'OTHER', label: 'Outro', icon: <MoreHorizontal className="h-6 w-6" /> },
+];
 
 const areaOptions = [
   { value: 'up_to_10', label: 'Até 10 ha' },
@@ -68,6 +75,21 @@ export function SellRuralDetailsStep({ data, updateFlowData }: StepProps) {
       subtitle="Preencha as informações sobre a propriedade"
     >
       <div className="space-y-8">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Qual tipo de imóvel rural?</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {ruralTypeOptions.map((option) => (
+              <OptionCard
+                key={option.value}
+                label={option.label}
+                icon={option.icon}
+                isSelected={data.sell?.ruralType === option.value}
+                onClick={() => updateFlowData('sell', { ruralType: option.value as any })}
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-4">
           <h3 className="text-lg font-medium flex items-center gap-2">
             <Ruler className="h-5 w-5 text-primary" />

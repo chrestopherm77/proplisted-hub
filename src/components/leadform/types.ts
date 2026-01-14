@@ -18,6 +18,7 @@ export interface SellFlowData {
   acceptsExclusivity?: 'YES' | 'NO' | 'DEPENDS';
   propertyType?: PropertyType;
   commercialType?: CommercialType;
+  commercialBedrooms?: string;
   commercialBathrooms?: string;
   commercialParkingSpots?: string;
   residentialType?: ResidentialType;

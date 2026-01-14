@@ -1,7 +1,7 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { OptionCard } from "../../OptionCard";
-import { Building, Warehouse, DoorOpen, Store, MoreHorizontal, Layers, Bath, Car } from "lucide-react";
+import { Building, Warehouse, DoorOpen, Store, MoreHorizontal, Layers, Bed, Bath, Car } from "lucide-react";
 
 const typeOptions = [
   { value: 'BUILDING', label: 'Prédio comercial', icon: <Building className="h-6 w-6" /> },
@@ -12,6 +12,7 @@ const typeOptions = [
   { value: 'MULTIPLE', label: 'Possuo mais de uma opção', icon: <Layers className="h-6 w-6" /> },
 ];
 
+const bedroomOptions = ['1', '2', '3', '4+'];
 const bathroomOptions = ['1', '2', '3', '4+'];
 const parkingOptions = ['0', '1', '2', '3+'];
 
@@ -32,6 +33,24 @@ export function SellCommercialTypeStep({ data, updateFlowData }: StepProps) {
                 icon={option.icon}
                 isSelected={data.sell?.commercialType === option.value}
                 onClick={() => updateFlowData('sell', { commercialType: option.value as any })}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <Bed className="h-5 w-5 text-primary" />
+            Quantos dormitórios o imóvel possui?
+          </h3>
+          <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
+            {bedroomOptions.map((option) => (
+              <OptionCard
+                key={option}
+                label={option}
+                isSelected={data.sell?.commercialBedrooms === option}
+                onClick={() => updateFlowData('sell', { commercialBedrooms: option })}
+                className="py-4"
               />
             ))}
           </div>
