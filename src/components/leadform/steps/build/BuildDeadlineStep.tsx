@@ -9,10 +9,10 @@ const options = [
   { value: '3_to_6_months', label: 'De 3 a 6 meses', icon: <Clock className="h-6 w-6" /> },
 ];
 
-export function BuyDeadlineStep({ data, updateFlowData }: StepProps) {
+export function BuildDeadlineStep({ data, updateFlowData }: StepProps) {
   return (
     <StepContainer
-      title="Em quanto tempo você pretende comprar?"
+      title="Em quanto tempo pretende comprar/construir?"
       subtitle="Selecione seu prazo ideal"
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -21,8 +21,8 @@ export function BuyDeadlineStep({ data, updateFlowData }: StepProps) {
             key={option.value}
             label={option.label}
             icon={option.icon}
-            isSelected={data.buy?.deadline === option.value}
-            onClick={() => updateFlowData('buy', { deadline: option.value })}
+            isSelected={data.build?.deadline === option.value}
+            onClick={() => updateFlowData('build', { deadline: option.value })}
           />
         ))}
       </div>

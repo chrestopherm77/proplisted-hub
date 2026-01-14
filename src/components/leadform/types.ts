@@ -2,13 +2,15 @@
 export type LeadIntention = 'SELL' | 'BUY' | 'BUILD' | 'RENT';
 
 // Property types
-export type PropertyType = 'COMMERCIAL' | 'RESIDENTIAL' | 'MIXED' | 'RURAL';
-export type CommercialType = 'BUILDING' | 'WAREHOUSE' | 'OFFICE' | 'STORE' | 'OTHER' | 'MULTIPLE';
+export type PropertyType = 'COMMERCIAL' | 'RESIDENTIAL' | 'MIXED' | 'RURAL' | 'LAND';
+export type CommercialType = 'BUILDING' | 'WAREHOUSE' | 'OFFICE' | 'STORE' | 'HOUSE' | 'OTHER' | 'MULTIPLE';
 export type ResidentialType = 'APARTMENT' | 'HOUSE' | 'KITNET' | 'LAND' | 'MULTIPLE';
+export type MixedType = 'APARTMENT' | 'HOUSE' | 'KITNET' | 'MULTIPLE';
 export type RuralType = 'FARM' | 'SITIO' | 'CHACARA' | 'OTHER';
+export type Topography = 'FLAT' | 'UPHILL' | 'DOWNHILL' | 'UNKNOWN';
 
 // Seller relation
-export type SellerRelation = 'OWNER' | 'LEGAL_REP' | 'BROKER_EXCLUSIVE' | 'BROKER_NON_EXCLUSIVE';
+export type SellerRelation = 'OWNER' | 'LEGAL_REP';
 
 // Sell flow data
 export interface SellFlowData {
@@ -16,7 +18,11 @@ export interface SellFlowData {
   acceptsExclusivity?: 'YES' | 'NO' | 'DEPENDS';
   propertyType?: PropertyType;
   commercialType?: CommercialType;
+  commercialBathrooms?: string;
+  commercialParkingSpots?: string;
   residentialType?: ResidentialType;
+  residentialTopography?: Topography;
+  mixedType?: MixedType;
   ruralType?: RuralType;
   bedrooms?: string;
   bathrooms?: string;
@@ -28,6 +34,7 @@ export interface SellFlowData {
   waterResources?: string[];
   region?: string;
   size?: string;
+  terrainPosition?: 'CORNER' | 'MIDDLE' | 'UNKNOWN';
   expectedValue?: string;
   paymentMethods?: string[];
   wasAppraised?: boolean;
@@ -41,23 +48,31 @@ export interface SellFlowData {
 // Buy flow data
 export interface BuyFlowData {
   purpose?: 'HOUSING' | 'INVESTMENT' | 'COMMERCIAL';
-  propertyStatus?: 'READY' | 'UNDER_CONSTRUCTION' | 'BOTH';
   propertyType?: string;
+  // Residential prefs
   prefersGatedCommunity?: boolean;
   bedrooms?: string;
-  commercialType?: string;
-  minSize?: string;
   bathrooms?: string;
   parkingSpots?: string;
+  propertyReadyStatus?: 'READY' | 'UNDER_CONSTRUCTION' | 'BOTH';
+  // Commercial prefs
+  commercialType?: string;
+  minSize?: string;
+  // Land prefs
+  landMinSize?: string;
+  landPrefersGated?: boolean;
+  // Location/Budget
   region?: string;
   budgetMin?: string;
   budgetMax?: string;
+  // Payment
   paymentMethod?: string;
   isFinancingApproved?: boolean;
   isConsortiumContemplated?: boolean;
   tradeOfferType?: string;
   tradeOfferValue?: string;
   tradeOfferPaidOff?: boolean;
+  // Deadline
   deadline?: string;
 }
 
@@ -65,12 +80,27 @@ export interface BuyFlowData {
 export interface BuildFlowData {
   purpose?: 'HOUSING' | 'INVESTMENT' | 'COMMERCIAL';
   hasLand?: 'YES' | 'NEGOTIATING' | 'NO';
-  hasProject?: 'RESEARCHING' | 'YES' | 'IN_PROGRESS' | 'NO';
+  topography?: Topography;
+  hasProject?: 'YES' | 'IN_PROGRESS' | 'NO';
   floors?: string;
   area?: string;
-  hasBuilder?: boolean;
+  hasKnowledge?: boolean;
   location?: string;
+  // BTS (Built To Suit)
+  isBTS?: boolean;
+  btsRentRange?: string;
+  btsMinContractTerm?: string;
+  // Budget
   budget?: string;
+  // Payment
+  paymentMethod?: string;
+  isFinancingApproved?: boolean;
+  isConsortiumContemplated?: boolean;
+  tradeOfferType?: string;
+  tradeOfferValue?: string;
+  tradeOfferPaidOff?: boolean;
+  // Deadline
+  deadline?: string;
 }
 
 // Rent flow data
@@ -81,6 +111,7 @@ export interface RentFlowData {
   bedrooms?: string;
   bathrooms?: string;
   parkingSpots?: string;
+  minSize?: string;
   region?: string;
   maxRent?: string;
   includesCondoAndTax?: boolean;

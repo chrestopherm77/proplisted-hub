@@ -16,10 +16,11 @@ import { SellExclusivityStep } from "./steps/sell/SellExclusivityStep";
 import { SellPropertyTypeStep } from "./steps/sell/SellPropertyTypeStep";
 import { SellCommercialTypeStep } from "./steps/sell/SellCommercialTypeStep";
 import { SellResidentialTypeStep } from "./steps/sell/SellResidentialTypeStep";
-import { SellResidentialDetailsStep } from "./steps/sell/SellResidentialDetailsStep";
-import { SellRuralTypeStep } from "./steps/sell/SellRuralTypeStep";
+import { SellMixedTypeStep } from "./steps/sell/SellMixedTypeStep";
 import { SellRuralDetailsStep } from "./steps/sell/SellRuralDetailsStep";
 import { SellGeneralInfoStep } from "./steps/sell/SellGeneralInfoStep";
+import { SellTerrainPositionStep } from "./steps/sell/SellTerrainPositionStep";
+import { SellValueStep } from "./steps/sell/SellValueStep";
 import { SellPaymentMethodsStep } from "./steps/sell/SellPaymentMethodsStep";
 import { SellPropertyStatusStep } from "./steps/sell/SellPropertyStatusStep";
 import { SellDocumentationStep } from "./steps/sell/SellDocumentationStep";
@@ -27,10 +28,10 @@ import { SellDeadlineStep } from "./steps/sell/SellDeadlineStep";
 
 // Buy steps
 import { BuyPurposeStep } from "./steps/buy/BuyPurposeStep";
-import { BuyPropertyStatusStep } from "./steps/buy/BuyPropertyStatusStep";
 import { BuyPropertyTypeStep } from "./steps/buy/BuyPropertyTypeStep";
 import { BuyResidentialPrefsStep } from "./steps/buy/BuyResidentialPrefsStep";
 import { BuyCommercialPrefsStep } from "./steps/buy/BuyCommercialPrefsStep";
+import { BuyLandPrefsStep } from "./steps/buy/BuyLandPrefsStep";
 import { BuyLocationBudgetStep } from "./steps/buy/BuyLocationBudgetStep";
 import { BuyPaymentMethodStep } from "./steps/buy/BuyPaymentMethodStep";
 import { BuyDeadlineStep } from "./steps/buy/BuyDeadlineStep";
@@ -38,14 +39,21 @@ import { BuyDeadlineStep } from "./steps/buy/BuyDeadlineStep";
 // Build steps
 import { BuildPurposeStep } from "./steps/build/BuildPurposeStep";
 import { BuildLandStep } from "./steps/build/BuildLandStep";
+import { BuildTopographyStep } from "./steps/build/BuildTopographyStep";
 import { BuildProjectStep } from "./steps/build/BuildProjectStep";
 import { BuildCharacteristicsStep } from "./steps/build/BuildCharacteristicsStep";
-import { BuildExecutionStep } from "./steps/build/BuildExecutionStep";
+import { BuildKnowledgeStep } from "./steps/build/BuildKnowledgeStep";
+import { BuildLocationStep } from "./steps/build/BuildLocationStep";
+import { BuildBTSStep } from "./steps/build/BuildBTSStep";
+import { BuildBudgetStep } from "./steps/build/BuildBudgetStep";
+import { BuildPaymentStep } from "./steps/build/BuildPaymentStep";
+import { BuildDeadlineStep } from "./steps/build/BuildDeadlineStep";
 
 // Rent steps
 import { RentPurposeStep } from "./steps/rent/RentPurposeStep";
 import { RentPropertyTypeStep } from "./steps/rent/RentPropertyTypeStep";
-import { RentPreferencesStep } from "./steps/rent/RentPreferencesStep";
+import { RentResidentialPrefsStep } from "./steps/rent/RentResidentialPrefsStep";
+import { RentCommercialPrefsStep } from "./steps/rent/RentCommercialPrefsStep";
 import { RentLocationValueStep } from "./steps/rent/RentLocationValueStep";
 import { RentGuaranteeStep } from "./steps/rent/RentGuaranteeStep";
 
@@ -65,7 +73,7 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.intention,
   },
   
-  // SELL FLOW
+  // ============ SELL FLOW ============
   { 
     id: 'sell-relation', 
     component: SellRelationStep, 
@@ -97,30 +105,34 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.sell?.residentialType,
   },
   { 
-    id: 'sell-residential-details', 
-    component: SellResidentialDetailsStep, 
-    isVisible: (data) => data.intention === 'SELL' && 
-      data.sell?.propertyType === 'RESIDENTIAL' && 
-      ['APARTMENT', 'HOUSE', 'KITNET'].includes(data.sell?.residentialType || ''),
-    validate: (data) => !!data.sell?.bedrooms && !!data.sell?.bathrooms,
-  },
-  { 
-    id: 'sell-rural-type', 
-    component: SellRuralTypeStep, 
-    isVisible: (data) => data.intention === 'SELL' && data.sell?.propertyType === 'RURAL',
-    validate: (data) => !!data.sell?.ruralType,
+    id: 'sell-mixed-type', 
+    component: SellMixedTypeStep, 
+    isVisible: (data) => data.intention === 'SELL' && data.sell?.propertyType === 'MIXED',
+    validate: (data) => !!data.sell?.mixedType,
   },
   { 
     id: 'sell-rural-details', 
     component: SellRuralDetailsStep, 
     isVisible: (data) => data.intention === 'SELL' && data.sell?.propertyType === 'RURAL',
-    validate: (data) => !!data.sell?.ruralArea && !!data.sell?.ruralPurpose,
+    validate: (data) => !!data.sell?.ruralArea,
   },
   { 
     id: 'sell-general-info', 
     component: SellGeneralInfoStep, 
     isVisible: (data) => data.intention === 'SELL',
-    validate: (data) => !!data.sell?.region && !!data.sell?.expectedValue,
+    validate: (data) => !!data.sell?.region,
+  },
+  { 
+    id: 'sell-terrain-position', 
+    component: SellTerrainPositionStep, 
+    isVisible: (data) => data.intention === 'SELL' && data.sell?.propertyType === 'LAND',
+    validate: (data) => !!data.sell?.terrainPosition,
+  },
+  { 
+    id: 'sell-value', 
+    component: SellValueStep, 
+    isVisible: (data) => data.intention === 'SELL',
+    validate: (data) => !!data.sell?.expectedValue,
   },
   { 
     id: 'sell-payment-methods', 
@@ -132,7 +144,7 @@ const allSteps: StepDefinition[] = [
     id: 'sell-property-status', 
     component: SellPropertyStatusStep, 
     isVisible: (data) => data.intention === 'SELL',
-    validate: (data) => data.sell?.wasAppraised !== undefined && data.sell?.isOccupied !== undefined,
+    validate: (data) => data.sell?.isOccupied !== undefined,
   },
   { 
     id: 'sell-documentation', 
@@ -144,21 +156,15 @@ const allSteps: StepDefinition[] = [
     id: 'sell-deadline', 
     component: SellDeadlineStep, 
     isVisible: (data) => data.intention === 'SELL',
-    validate: (data) => !!data.sell?.deadline && !!data.sell?.motivation,
+    validate: (data) => !!data.sell?.deadline,
   },
   
-  // BUY FLOW
+  // ============ BUY FLOW ============
   { 
     id: 'buy-purpose', 
     component: BuyPurposeStep, 
     isVisible: (data) => data.intention === 'BUY',
     validate: (data) => !!data.buy?.purpose,
-  },
-  { 
-    id: 'buy-property-status', 
-    component: BuyPropertyStatusStep, 
-    isVisible: (data) => data.intention === 'BUY',
-    validate: (data) => !!data.buy?.propertyStatus,
   },
   { 
     id: 'buy-property-type', 
@@ -169,7 +175,7 @@ const allSteps: StepDefinition[] = [
   { 
     id: 'buy-residential-prefs', 
     component: BuyResidentialPrefsStep, 
-    isVisible: (data) => data.intention === 'BUY' && ['HOUSE', 'APARTMENT'].includes(data.buy?.propertyType || ''),
+    isVisible: (data) => data.intention === 'BUY' && ['HOUSE', 'APARTMENT', 'KITNET'].includes(data.buy?.propertyType || ''),
     validate: (data) => !!data.buy?.bedrooms,
   },
   { 
@@ -177,6 +183,12 @@ const allSteps: StepDefinition[] = [
     component: BuyCommercialPrefsStep, 
     isVisible: (data) => data.intention === 'BUY' && data.buy?.propertyType === 'COMMERCIAL',
     validate: (data) => !!data.buy?.commercialType,
+  },
+  { 
+    id: 'buy-land-prefs', 
+    component: BuyLandPrefsStep, 
+    isVisible: (data) => data.intention === 'BUY' && data.buy?.propertyType === 'LAND',
+    validate: (data) => !!data.buy?.landMinSize,
   },
   { 
     id: 'buy-location-budget', 
@@ -197,7 +209,7 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.buy?.deadline,
   },
   
-  // BUILD FLOW
+  // ============ BUILD FLOW ============
   { 
     id: 'build-purpose', 
     component: BuildPurposeStep, 
@@ -209,6 +221,18 @@ const allSteps: StepDefinition[] = [
     component: BuildLandStep, 
     isVisible: (data) => data.intention === 'BUILD',
     validate: (data) => !!data.build?.hasLand,
+  },
+  { 
+    id: 'build-bts', 
+    component: BuildBTSStep, 
+    isVisible: (data) => data.intention === 'BUILD' && data.build?.hasLand === 'NO',
+    validate: (data) => data.build?.isBTS !== undefined,
+  },
+  { 
+    id: 'build-topography', 
+    component: BuildTopographyStep, 
+    isVisible: (data) => data.intention === 'BUILD' && (data.build?.hasLand === 'YES' || data.build?.hasLand === 'NEGOTIATING'),
+    validate: (data) => !!data.build?.topography,
   },
   { 
     id: 'build-project', 
@@ -223,13 +247,37 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.build?.floors && !!data.build?.area,
   },
   { 
-    id: 'build-execution', 
-    component: BuildExecutionStep, 
+    id: 'build-knowledge', 
+    component: BuildKnowledgeStep, 
     isVisible: (data) => data.intention === 'BUILD',
-    validate: (data) => data.build?.hasBuilder !== undefined && !!data.build?.budget,
+    validate: (data) => data.build?.hasKnowledge !== undefined,
+  },
+  { 
+    id: 'build-location', 
+    component: BuildLocationStep, 
+    isVisible: (data) => data.intention === 'BUILD',
+    validate: (data) => !!data.build?.location,
+  },
+  { 
+    id: 'build-budget', 
+    component: BuildBudgetStep, 
+    isVisible: (data) => data.intention === 'BUILD',
+    validate: (data) => !!data.build?.budget,
+  },
+  { 
+    id: 'build-payment', 
+    component: BuildPaymentStep, 
+    isVisible: (data) => data.intention === 'BUILD',
+    validate: (data) => !!data.build?.paymentMethod,
+  },
+  { 
+    id: 'build-deadline', 
+    component: BuildDeadlineStep, 
+    isVisible: (data) => data.intention === 'BUILD',
+    validate: (data) => !!data.build?.deadline,
   },
   
-  // RENT FLOW
+  // ============ RENT FLOW ============
   { 
     id: 'rent-purpose', 
     component: RentPurposeStep, 
@@ -239,14 +287,20 @@ const allSteps: StepDefinition[] = [
   { 
     id: 'rent-property-type', 
     component: RentPropertyTypeStep, 
-    isVisible: (data) => data.intention === 'RENT',
+    isVisible: (data) => data.intention === 'RENT' && (data.rent?.purpose === 'HOUSING' || data.rent?.purpose === 'TEMPORARY'),
     validate: (data) => !!data.rent?.propertyType,
   },
   { 
-    id: 'rent-preferences', 
-    component: RentPreferencesStep, 
-    isVisible: (data) => data.intention === 'RENT',
-    validate: (data) => !!data.rent?.bathrooms,
+    id: 'rent-residential-prefs', 
+    component: RentResidentialPrefsStep, 
+    isVisible: (data) => data.intention === 'RENT' && (data.rent?.purpose === 'HOUSING' || data.rent?.purpose === 'TEMPORARY'),
+    validate: (data) => !!data.rent?.bedrooms,
+  },
+  { 
+    id: 'rent-commercial-prefs', 
+    component: RentCommercialPrefsStep, 
+    isVisible: (data) => data.intention === 'RENT' && data.rent?.purpose === 'COMMERCIAL',
+    validate: (data) => !!data.rent?.propertyType,
   },
   { 
     id: 'rent-location-value', 
@@ -261,7 +315,7 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.rent?.guarantee && !!data.rent?.moveInDeadline,
   },
   
-  // CONTACT (always last)
+  // ============ CONTACT (always last) ============
   { 
     id: 'contact', 
     component: ContactStep, 
@@ -277,7 +331,6 @@ export function LeadFormWizard() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
-  // Get visible steps based on current form data
   const visibleSteps = useMemo(() => {
     return allSteps.filter(step => step.isVisible(formData));
   }, [formData]);
@@ -285,12 +338,10 @@ export function LeadFormWizard() {
   const currentStep = visibleSteps[currentStepIndex];
   const isLastStep = currentStepIndex === visibleSteps.length - 1;
 
-  // Update form data
   const updateData = useCallback((updates: Partial<LeadFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Update flow-specific data
   const updateFlowData = useCallback(<K extends 'sell' | 'buy' | 'build' | 'rent'>(
     flow: K,
     updates: Partial<NonNullable<LeadFormData[K]>>
@@ -301,7 +352,6 @@ export function LeadFormWizard() {
     }));
   }, []);
 
-  // Navigation handlers
   const handleBack = useCallback(() => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex(prev => prev - 1);
@@ -309,7 +359,6 @@ export function LeadFormWizard() {
   }, [currentStepIndex]);
 
   const handleNext = useCallback(async () => {
-    // Validate current step
     if (currentStep.validate && !currentStep.validate(formData)) {
       toast({
         title: "Campo obrigatório",
@@ -320,7 +369,6 @@ export function LeadFormWizard() {
     }
 
     if (isLastStep) {
-      // Submit form
       setIsSubmitting(true);
       try {
         const { error } = await supabase
@@ -339,7 +387,6 @@ export function LeadFormWizard() {
           }]);
 
         if (error) throw error;
-
         setIsSubmitted(true);
       } catch (error) {
         console.error('Error submitting form:', error);
@@ -356,14 +403,12 @@ export function LeadFormWizard() {
     }
   }, [currentStep, formData, isLastStep, toast]);
 
-  // Reset form
   const handleReset = useCallback(() => {
     setFormData(initialFormData);
     setCurrentStepIndex(0);
     setIsSubmitted(false);
   }, []);
 
-  // Check if can proceed
   const canGoNext = currentStep.validate ? currentStep.validate(formData) : true;
 
   if (isSubmitted) {
