@@ -79,7 +79,7 @@ export interface BuyFlowData {
 // Build flow data
 export interface BuildFlowData {
   purpose?: 'HOUSING' | 'INVESTMENT' | 'COMMERCIAL';
-  hasLand?: 'YES' | 'NEGOTIATING' | 'NO';
+  hasLand?: 'YES' | 'NEGOTIATING' | 'NO' | 'BTS_INTEREST';
   topography?: Topography;
   hasProject?: 'YES' | 'IN_PROGRESS' | 'NO';
   floors?: string;
@@ -87,7 +87,7 @@ export interface BuildFlowData {
   hasKnowledge?: boolean;
   location?: string;
   // BTS (Built To Suit)
-  isBTS?: boolean;
+  isBTSConfirmed?: boolean;
   btsRentRange?: string;
   btsMinContractTerm?: string;
   // Budget

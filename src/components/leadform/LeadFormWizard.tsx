@@ -44,6 +44,7 @@ import { BuildProjectStep } from "./steps/build/BuildProjectStep";
 import { BuildCharacteristicsStep } from "./steps/build/BuildCharacteristicsStep";
 import { BuildKnowledgeStep } from "./steps/build/BuildKnowledgeStep";
 import { BuildLocationStep } from "./steps/build/BuildLocationStep";
+import { BuildBTSConfirmStep } from "./steps/build/BuildBTSConfirmStep";
 import { BuildBTSStep } from "./steps/build/BuildBTSStep";
 import { BuildBudgetStep } from "./steps/build/BuildBudgetStep";
 import { BuildPaymentStep } from "./steps/build/BuildPaymentStep";
@@ -223,12 +224,6 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.build?.hasLand,
   },
   { 
-    id: 'build-bts', 
-    component: BuildBTSStep, 
-    isVisible: (data) => data.intention === 'BUILD' && data.build?.hasLand === 'NO',
-    validate: (data) => data.build?.isBTS !== undefined,
-  },
-  { 
     id: 'build-topography', 
     component: BuildTopographyStep, 
     isVisible: (data) => data.intention === 'BUILD' && (data.build?.hasLand === 'YES' || data.build?.hasLand === 'NEGOTIATING'),
@@ -257,6 +252,18 @@ const allSteps: StepDefinition[] = [
     component: BuildLocationStep, 
     isVisible: (data) => data.intention === 'BUILD',
     validate: (data) => !!data.build?.location,
+  },
+  { 
+    id: 'build-bts-confirm', 
+    component: BuildBTSConfirmStep, 
+    isVisible: (data) => data.intention === 'BUILD',
+    validate: (data) => data.build?.isBTSConfirmed !== undefined,
+  },
+  { 
+    id: 'build-bts', 
+    component: BuildBTSStep, 
+    isVisible: (data) => data.intention === 'BUILD' && data.build?.isBTSConfirmed === true,
+    validate: (data) => !!data.build?.btsRentRange && !!data.build?.btsMinContractTerm,
   },
   { 
     id: 'build-budget', 

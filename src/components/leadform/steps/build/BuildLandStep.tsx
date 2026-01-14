@@ -1,12 +1,13 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { OptionCard } from "../../OptionCard";
-import { Check, Clock, X } from "lucide-react";
+import { Check, Clock, X, Building2 } from "lucide-react";
 
 const options = [
   { value: 'YES', label: 'Sim', icon: <Check className="h-8 w-8" /> },
   { value: 'NEGOTIATING', label: 'Em negociação', icon: <Clock className="h-8 w-8" /> },
   { value: 'NO', label: 'Ainda não', icon: <X className="h-8 w-8" /> },
+  { value: 'BTS_INTEREST', label: 'Gostaria de fazer um Built to Suit (BTS)', icon: <Building2 className="h-8 w-8" /> },
 ];
 
 export function BuildLandStep({ data, updateFlowData }: StepProps) {
@@ -15,7 +16,7 @@ export function BuildLandStep({ data, updateFlowData }: StepProps) {
       title="Já possui terreno?"
       subtitle="Você já tem onde construir?"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {options.map((option) => (
           <OptionCard
             key={option.value}
