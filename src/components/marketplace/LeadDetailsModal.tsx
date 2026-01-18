@@ -95,7 +95,7 @@ export function LeadDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <DialogTitle className="text-2xl">
@@ -114,7 +114,7 @@ export function LeadDetailsModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           {hasFormData ? (
             <div className="py-4 space-y-6">
               {/* Organized Sections (when available) */}
