@@ -156,6 +156,21 @@ const areaLabels: Record<string, string> = {
   'over_500': 'Mais de 500 ha',
 };
 
+const accessLabels: Record<string, string> = {
+  'paved': 'Asfalto até a entrada',
+  'good_dirt': 'Estrada de terra em boas condições',
+  'difficult': 'Estrada de terra com acesso difícil',
+};
+
+// Helper to safely format values that may be string or string[]
+const formatArrayOrString = (value: string | string[] | undefined, labelMap?: Record<string, string>): string => {
+  if (!value) return '';
+  if (Array.isArray(value)) {
+    return value.map(v => labelMap?.[v] || v).join(', ');
+  }
+  return labelMap?.[value] || value;
+};
+
 const terrainPositionLabels: Record<string, string> = {
   'CORNER': 'Esquina',
   'MIDDLE': 'Meio de quadra',
@@ -292,9 +307,12 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     if (sell.propertyType === 'RURAL') {
       const ruralFields: FormField[] = [];
       if (sell.ruralArea) ruralFields.push({ label: 'Área', value: areaLabels[sell.ruralArea] || sell.ruralArea });
-      if (sell.improvements && sell.improvements.length > 0) ruralFields.push({ label: 'Benfeitorias', value: sell.improvements.join(', ') });
-      if (sell.access && sell.access.length > 0) ruralFields.push({ label: 'Acesso', value: sell.access.join(', ') });
-      if (sell.waterResources && sell.waterResources.length > 0) ruralFields.push({ label: 'Recursos hídricos', value: sell.waterResources.join(', ') });
+      const improvementsVal = formatArrayOrString(sell.improvements);
+      if (improvementsVal) ruralFields.push({ label: 'Benfeitorias', value: improvementsVal });
+      const accessVal = formatArrayOrString(sell.access, accessLabels);
+      if (accessVal) ruralFields.push({ label: 'Acesso', value: accessVal });
+      const waterVal = formatArrayOrString(sell.waterResources);
+      if (waterVal) ruralFields.push({ label: 'Recursos hídricos', value: waterVal });
       if (ruralFields.length > 0) {
         sections.push({ title: 'Detalhes Rurais', icon: '🌾', fields: ruralFields });
       }
