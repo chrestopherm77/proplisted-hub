@@ -634,7 +634,219 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     }
   }
   
+  // Add fallback section with ALL remaining fields not already shown
+  const fallbackSection = generateFallbackSection(intention, formData, sections);
+  if (fallbackSection && fallbackSection.fields.length > 0) {
+    sections.push(fallbackSection);
+  }
+  
   return sections;
+}
+
+// PII fields that should NEVER be shown in marketplace
+const PII_FIELDS = ['name', 'phone', 'email', 'telefone', 'nome', 'e-mail'];
+
+// All label maps combined for auto-translation
+const allLabelMaps: Record<string, Record<string, string>> = {
+  intention: { 'SELL': 'Vender', 'BUY': 'Comprar', 'BUILD': 'Construir', 'RENT': 'Alugar' },
+  purpose: purposeLabels,
+  propertyType: propertyTypeLabels,
+  commercialType: commercialTypeLabels,
+  residentialType: residentialTypeLabels,
+  mixedType: mixedTypeLabels,
+  ruralType: ruralTypeLabels,
+  relation: relationLabels,
+  acceptsExclusivity: exclusivityLabels,
+  hasLand: landLabels,
+  topography: topographyLabels,
+  hasProject: projectLabels,
+  paymentMethod: paymentMethodLabels,
+  paymentMethods: paymentMethodLabels,
+  guarantee: guaranteeLabels,
+  propertyReadyStatus: propertyReadyStatusLabels,
+  tradeOfferType: tradeOfferTypeLabels,
+  btsRentRange: btsRentRangeLabels,
+  btsMinContractTerm: btsContractTermLabels,
+  moveInDeadline: moveInDeadlineLabels,
+  documentation: documentationLabels,
+  deadline: deadlineLabels,
+  ruralArea: areaLabels,
+  ruralPurpose: ruralPurposeLabels,
+  motivation: motivationLabels,
+  improvements: improvementLabels,
+  waterResources: waterResourceLabels,
+  occupantHasPreference: occupantPreferenceLabels,
+  residentialTopography: topographySellLabels,
+  terrainPosition: terrainPositionLabels,
+  access: accessLabels,
+};
+
+// Human-readable field names
+const fieldNameLabels: Record<string, string> = {
+  purpose: 'Finalidade',
+  propertyType: 'Tipo de imóvel',
+  commercialType: 'Tipo comercial',
+  residentialType: 'Tipo residencial',
+  mixedType: 'Tipo misto',
+  ruralType: 'Tipo rural',
+  relation: 'Relação com imóvel',
+  acceptsExclusivity: 'Aceita exclusividade',
+  hasLand: 'Possui terreno',
+  topography: 'Topografia',
+  hasProject: 'Possui projeto',
+  paymentMethod: 'Forma de pagamento',
+  paymentMethods: 'Formas de pagamento',
+  guarantee: 'Garantia',
+  propertyReadyStatus: 'Status do imóvel',
+  tradeOfferType: 'Tipo de permuta',
+  tradeOfferValue: 'Valor da permuta',
+  tradeOfferPaidOff: 'Permuta quitada',
+  btsRentRange: 'Faixa de aluguel BTS',
+  btsMinContractTerm: 'Prazo mínimo BTS',
+  moveInDeadline: 'Prazo para mudança',
+  documentation: 'Documentação',
+  deadline: 'Prazo',
+  ruralArea: 'Área rural',
+  ruralPurpose: 'Finalidade rural',
+  motivation: 'Motivação',
+  improvements: 'Benfeitorias',
+  waterResources: 'Recursos hídricos',
+  occupantHasPreference: 'Ocupante tem preferência',
+  residentialTopography: 'Topografia',
+  terrainPosition: 'Posição do terreno',
+  access: 'Acesso',
+  region: 'Região',
+  location: 'Localização',
+  bedrooms: 'Dormitórios',
+  bathrooms: 'Banheiros',
+  parkingSpots: 'Vagas',
+  size: 'Tamanho',
+  minSize: 'Tamanho mínimo',
+  landMinSize: 'Tamanho mínimo terreno',
+  budget: 'Orçamento',
+  budgetMin: 'Orçamento mínimo',
+  budgetMax: 'Orçamento máximo',
+  expectedValue: 'Valor esperado',
+  maxRent: 'Aluguel máximo',
+  floors: 'Pavimentos',
+  area: 'Área',
+  hasKnowledge: 'Conhecimento em construção',
+  isBTSConfirmed: 'Built To Suit confirmado',
+  prefersGatedCommunity: 'Prefere condomínio fechado',
+  landPrefersGated: 'Prefere condomínio (terreno)',
+  isFinancingApproved: 'Financiamento aprovado',
+  isConsortiumContemplated: 'Consórcio contemplado',
+  wasAppraised: 'Foi avaliado',
+  isOccupied: 'Está ocupado',
+  includesCondoAndTax: 'Inclui condomínio e IPTU',
+  commercialBedrooms: 'Dormitórios (comercial)',
+  commercialBathrooms: 'Banheiros (comercial)',
+  commercialParkingSpots: 'Vagas (comercial)',
+};
+
+function formatValue(key: string, value: any): string {
+  if (value === undefined || value === null || value === '') return '';
+  
+  // Boolean
+  if (typeof value === 'boolean') {
+    return value ? 'Sim' : 'Não';
+  }
+  
+  // Array
+  if (Array.isArray(value)) {
+    const labelMap = allLabelMaps[key];
+    return value
+      .map(v => labelMap?.[v] || v)
+      .filter(Boolean)
+      .join(', ');
+  }
+  
+  // String - try to translate
+  if (typeof value === 'string') {
+    const labelMap = allLabelMaps[key];
+    if (labelMap && labelMap[value]) {
+      return labelMap[value];
+    }
+    return value;
+  }
+  
+  // Number
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  
+  // Object - stringify nicely
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  
+  return String(value);
+}
+
+function getDisplayedKeys(sections: FormSection[]): Set<string> {
+  const displayed = new Set<string>();
+  
+  // Extract all field labels that are already displayed
+  for (const section of sections) {
+    for (const field of section.fields) {
+      // Try to match label to key
+      const labelLower = field.label.toLowerCase();
+      for (const [key, label] of Object.entries(fieldNameLabels)) {
+        if (label.toLowerCase() === labelLower) {
+          displayed.add(key);
+        }
+      }
+    }
+  }
+  
+  return displayed;
+}
+
+function generateFallbackSection(intention: string, formData: any, existingSections: FormSection[]): FormSection | null {
+  if (!formData) return null;
+  
+  // Get the flow-specific data
+  let flowData: Record<string, any> | null = null;
+  if (intention === 'SELL' && formData.sell) flowData = formData.sell;
+  else if (intention === 'BUY' && formData.buy) flowData = formData.buy;
+  else if (intention === 'BUILD' && formData.build) flowData = formData.build;
+  else if (intention === 'RENT' && formData.rent) flowData = formData.rent;
+  
+  if (!flowData) return null;
+  
+  // Get keys already displayed
+  const displayedKeys = getDisplayedKeys(existingSections);
+  
+  const fields: FormField[] = [];
+  
+  for (const [key, value] of Object.entries(flowData)) {
+    // Skip PII
+    if (PII_FIELDS.includes(key.toLowerCase())) continue;
+    
+    // Skip already displayed
+    if (displayedKeys.has(key)) continue;
+    
+    // Skip empty values
+    const formatted = formatValue(key, value);
+    if (!formatted) continue;
+    
+    // Get human-readable label
+    const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+    
+    fields.push({ label, value: formatted });
+  }
+  
+  if (fields.length === 0) return null;
+  
+  return {
+    title: 'Outras Informações',
+    icon: '📌',
+    fields,
+  };
 }
 
 export const intentionLabelsExport = intentionLabels;
