@@ -129,6 +129,7 @@ export interface LeadFormData {
   name: string;
   phone: string;
   email: string;
+  acceptedTerms: boolean;
   
   // Flow-specific data
   sell?: SellFlowData;
@@ -143,6 +144,7 @@ export const initialFormData: LeadFormData = {
   name: '',
   phone: '',
   email: '',
+  acceptedTerms: false,
 };
 
 // Step definition

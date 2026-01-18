@@ -354,7 +354,7 @@ const allSteps: StepDefinition[] = [
     id: 'contact', 
     component: ContactStep, 
     isVisible: (data) => !!data.intention,
-    validate: (data) => !!data.name.trim() && data.phone.length >= 14,
+    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.acceptedTerms,
   },
 ];
 
@@ -484,7 +484,7 @@ export function LeadFormWizard() {
   const canGoNext = currentStep.validate ? currentStep.validate(formData) : true;
 
   if (isSubmitted) {
-    return <SuccessScreen onReset={handleReset} />;
+    return <SuccessScreen />;
   }
 
   const CurrentStepComponent = currentStep.component;
