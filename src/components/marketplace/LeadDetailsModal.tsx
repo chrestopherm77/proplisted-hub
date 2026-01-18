@@ -1,3 +1,4 @@
+import React from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,51 @@ interface LeadDetailsModalProps {
   formatPrice: (price: number) => string;
 }
 
+// Normalize form_data that might be string or object
+function normalizeFormData(raw: any): any {
+  if (!raw) return null;
+  
+  // If it's a string, try to parse it
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  
+  // If it's already an object, return it
+  if (typeof raw === 'object') {
+    return raw;
+  }
+  
+  return null;
+}
+
+// Infer intention from form_data if not explicit
+function inferIntention(formData: any, description: string): string {
+  // Try explicit intention field first
+  if (formData?.intention) {
+    const raw = String(formData.intention).trim().toUpperCase();
+    const map: Record<string, string> = {
+      'VENDER': 'SELL', 'SELL': 'SELL',
+      'COMPRAR': 'BUY', 'BUY': 'BUY',
+      'CONSTRUIR': 'BUILD', 'BUILD': 'BUILD',
+      'ALUGAR': 'RENT', 'RENT': 'RENT',
+    };
+    if (map[raw]) return map[raw];
+  }
+  
+  // Infer from existing flow keys
+  if (formData?.sell && Object.keys(formData.sell).length > 0) return 'SELL';
+  if (formData?.buy && Object.keys(formData.buy).length > 0) return 'BUY';
+  if (formData?.build && Object.keys(formData.build).length > 0) return 'BUILD';
+  if (formData?.rent && Object.keys(formData.rent).length > 0) return 'RENT';
+  
+  // Fallback to parsing description
+  return parseIntentionFromDescription(description);
+}
+
 export function LeadDetailsModal({
   lead,
   open,
@@ -38,9 +84,11 @@ export function LeadDetailsModal({
 }: LeadDetailsModalProps) {
   if (!lead) return null;
 
-  const hasFormData = lead.form_data && Object.keys(lead.form_data).length > 0;
-  const intention = lead.form_data?.intention || parseIntentionFromDescription(lead.description);
-  const sections = hasFormData ? formatFormDataToSections(intention, lead.form_data) : [];
+  // Normalize and process form_data
+  const normalizedFormData = normalizeFormData(lead.form_data);
+  const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
+  const intention = inferIntention(normalizedFormData, lead.description);
+  const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,10 +135,20 @@ export function LeadDetailsModal({
                 </div>
               ))}
             </div>
+          ) : hasFormData ? (
+            // Fallback: show raw form_data fields (excluding PII)
+            <div className="py-4 space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <span className="text-lg font-semibold">📋 Informações do Lead</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {renderSafeFormData(normalizedFormData)}
+              </div>
+            </div>
           ) : (
             <div className="py-4">
               <p className="text-sm text-muted-foreground">
-                Detalhes adicionais não disponíveis para este lead.
+                Este lead foi criado sem formulário completo. Apenas o resumo está disponível.
               </p>
             </div>
           )}
@@ -161,4 +219,67 @@ function parseDescriptionToDisplay(description: string) {
     }
     return <p key={idx}>{line}</p>;
   });
+}
+
+// PII fields to exclude from display
+const PII_FIELDS = ['name', 'phone', 'email', 'telefone', 'nome', 'e-mail'];
+
+// Render form_data safely, excluding PII
+function renderSafeFormData(formData: any): React.ReactNode[] {
+  const elements: React.ReactNode[] = [];
+  
+  function processObject(obj: any, prefix: string = '') {
+    if (!obj || typeof obj !== 'object') return;
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const keyLower = key.toLowerCase();
+      
+      // Skip PII
+      if (PII_FIELDS.includes(keyLower)) continue;
+      
+      // Skip nested flow keys at root level
+      if (!prefix && ['sell', 'buy', 'build', 'rent', 'intention'].includes(keyLower)) {
+        if (typeof value === 'object' && value !== null) {
+          processObject(value, key);
+        }
+        continue;
+      }
+      
+      // Handle nested objects
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        processObject(value, fullKey);
+        continue;
+      }
+      
+      // Skip empty values
+      if (value === null || value === undefined || value === '') continue;
+      
+      // Format value
+      let displayValue: string;
+      if (typeof value === 'boolean') {
+        displayValue = value ? 'Sim' : 'Não';
+      } else if (Array.isArray(value)) {
+        displayValue = value.filter(Boolean).join(', ');
+      } else {
+        displayValue = String(value);
+      }
+      
+      if (!displayValue) continue;
+      
+      // Format label
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+      
+      elements.push(
+        <div key={fullKey} className="text-sm">
+          <span className="text-muted-foreground">{label}:</span>{' '}
+          <span className="font-medium text-foreground">{displayValue}</span>
+        </div>
+      );
+    }
+  }
+  
+  processObject(formData);
+  
+  return elements;
 }

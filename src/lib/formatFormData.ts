@@ -385,11 +385,92 @@ function extractCharacteristics(data: LeadFormData): string {
   return chars.join(', ');
 }
 
-export function formatFormDataToSections(intention: string, formData: any): FormSection[] {
+// Normalize intention to uppercase standard format
+function normalizeIntention(raw: string | undefined, formData: any): string {
+  if (!raw && formData) {
+    // Infer from existing flow keys
+    if (formData.sell && Object.keys(formData.sell).length > 0) return 'SELL';
+    if (formData.buy && Object.keys(formData.buy).length > 0) return 'BUY';
+    if (formData.build && Object.keys(formData.build).length > 0) return 'BUILD';
+    if (formData.rent && Object.keys(formData.rent).length > 0) return 'RENT';
+    return '';
+  }
+  
+  const normalized = String(raw || '').trim().toUpperCase();
+  
+  // Map PT-BR variants
+  const intentionMap: Record<string, string> = {
+    'VENDER': 'SELL',
+    'COMPRAR': 'BUY',
+    'CONSTRUIR': 'BUILD',
+    'ALUGAR': 'RENT',
+    'SELL': 'SELL',
+    'BUY': 'BUY',
+    'BUILD': 'BUILD',
+    'RENT': 'RENT',
+  };
+  
+  return intentionMap[normalized] || normalized;
+}
+
+// Get the flow data regardless of intention
+function getFlowData(formData: any, intention: string): Record<string, any> | null {
+  if (!formData) return null;
+  
+  // Try direct mapping first
+  const intentionToFlow: Record<string, string> = {
+    'SELL': 'sell',
+    'BUY': 'buy',
+    'BUILD': 'build',
+    'RENT': 'rent',
+  };
+  
+  const flowKey = intentionToFlow[intention];
+  if (flowKey && formData[flowKey] && Object.keys(formData[flowKey]).length > 0) {
+    return formData[flowKey];
+  }
+  
+  // Fallback: find any existing flow
+  for (const key of ['sell', 'buy', 'build', 'rent']) {
+    if (formData[key] && typeof formData[key] === 'object' && Object.keys(formData[key]).length > 0) {
+      return formData[key];
+    }
+  }
+  
+  // Last resort: use formData itself (excluding metadata)
+  const excludeKeys = ['intention', 'name', 'phone', 'email'];
+  const directData: Record<string, any> = {};
+  for (const [key, value] of Object.entries(formData)) {
+    if (!excludeKeys.includes(key) && value !== null && value !== undefined) {
+      directData[key] = value;
+    }
+  }
+  
+  return Object.keys(directData).length > 0 ? directData : null;
+}
+
+export function formatFormDataToSections(rawIntention: string, formData: any): FormSection[] {
   const sections: FormSection[] = [];
   
-  if (intention === 'SELL' && formData?.sell) {
-    const sell = formData.sell;
+  // Normalize formData if it's a string (edge case)
+  let normalizedFormData = formData;
+  if (typeof formData === 'string') {
+    try {
+      normalizedFormData = JSON.parse(formData);
+    } catch {
+      return sections;
+    }
+  }
+  
+  if (!normalizedFormData || typeof normalizedFormData !== 'object') {
+    return sections;
+  }
+  
+  // Normalize intention
+  const intention = normalizeIntention(rawIntention, normalizedFormData);
+  
+  if (intention === 'SELL' && normalizedFormData?.sell) {
+    const sell = normalizedFormData.sell;
     
     // Sobre o vendedor
     const sellerFields: FormField[] = [];
@@ -480,8 +561,8 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     }
   }
   
-  if (intention === 'BUY' && formData?.buy) {
-    const buy = formData.buy;
+  if (intention === 'BUY' && normalizedFormData?.buy) {
+    const buy = normalizedFormData.buy;
     
     // Intenção
     const intentFields: FormField[] = [];
@@ -535,8 +616,8 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     }
   }
   
-  if (intention === 'BUILD' && formData?.build) {
-    const build = formData.build;
+  if (intention === 'BUILD' && normalizedFormData?.build) {
+    const build = normalizedFormData.build;
     
     // Intenção
     const intentFields: FormField[] = [];
@@ -594,8 +675,8 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     }
   }
   
-  if (intention === 'RENT' && formData?.rent) {
-    const rent = formData.rent;
+  if (intention === 'RENT' && normalizedFormData?.rent) {
+    const rent = normalizedFormData.rent;
     
     // Intenção
     const intentFields: FormField[] = [];
@@ -634,8 +715,9 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     }
   }
   
-  // Add fallback section with ALL remaining fields not already shown
-  const fallbackSection = generateFallbackSection(intention, formData, sections);
+  // ALWAYS add fallback section with ALL remaining fields not already shown
+  const flowData = getFlowData(normalizedFormData, intention);
+  const fallbackSection = generateFallbackSection(flowData, sections);
   if (fallbackSection && fallbackSection.fields.length > 0) {
     sections.push(fallbackSection);
   }
@@ -806,16 +888,7 @@ function getDisplayedKeys(sections: FormSection[]): Set<string> {
   return displayed;
 }
 
-function generateFallbackSection(intention: string, formData: any, existingSections: FormSection[]): FormSection | null {
-  if (!formData) return null;
-  
-  // Get the flow-specific data
-  let flowData: Record<string, any> | null = null;
-  if (intention === 'SELL' && formData.sell) flowData = formData.sell;
-  else if (intention === 'BUY' && formData.buy) flowData = formData.buy;
-  else if (intention === 'BUILD' && formData.build) flowData = formData.build;
-  else if (intention === 'RENT' && formData.rent) flowData = formData.rent;
-  
+function generateFallbackSection(flowData: Record<string, any> | null, existingSections: FormSection[]): FormSection | null {
   if (!flowData) return null;
   
   // Get keys already displayed
@@ -823,22 +896,41 @@ function generateFallbackSection(intention: string, formData: any, existingSecti
   
   const fields: FormField[] = [];
   
-  for (const [key, value] of Object.entries(flowData)) {
-    // Skip PII
-    if (PII_FIELDS.includes(key.toLowerCase())) continue;
+  // Recursively extract all fields from nested objects
+  function extractFields(obj: any, prefix: string = '') {
+    if (!obj || typeof obj !== 'object') return;
     
-    // Skip already displayed
-    if (displayedKeys.has(key)) continue;
-    
-    // Skip empty values
-    const formatted = formatValue(key, value);
-    if (!formatted) continue;
-    
-    // Get human-readable label
-    const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-    
-    fields.push({ label, value: formatted });
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const baseKey = key.toLowerCase();
+      
+      // Skip PII at any level
+      if (PII_FIELDS.includes(baseKey)) continue;
+      
+      // Skip nested flow objects (already processed)
+      if (['sell', 'buy', 'build', 'rent'].includes(baseKey)) continue;
+      
+      // Skip already displayed (check both full key and base key)
+      if (displayedKeys.has(key) || displayedKeys.has(fullKey)) continue;
+      
+      // Handle nested objects
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        extractFields(value, fullKey);
+        continue;
+      }
+      
+      // Skip empty values
+      const formatted = formatValue(key, value);
+      if (!formatted) continue;
+      
+      // Get human-readable label
+      const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+      
+      fields.push({ label, value: formatted });
+    }
   }
+  
+  extractFields(flowData);
   
   if (fields.length === 0) return null;
   
