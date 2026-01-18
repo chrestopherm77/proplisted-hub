@@ -129,6 +129,60 @@ const guaranteeLabels: Record<string, string> = {
   'INSURANCE': 'Seguro fiança',
   'TITLE_CAPITALIZATION': 'Título de capitalização',
   'NONE': 'Nenhuma',
+  // Lowercase variants
+  'guarantor': 'Fiador',
+  'deposit': 'Caução',
+  'insurance': 'Seguro fiança',
+  'title_capitalization': 'Título de capitalização',
+  'none': 'Nenhuma',
+};
+
+const propertyReadyStatusLabels: Record<string, string> = {
+  'READY': 'Pronto para morar',
+  'UNDER_CONSTRUCTION': 'Em construção',
+  'BOTH': 'Pronto ou em construção',
+};
+
+const tradeOfferTypeLabels: Record<string, string> = {
+  'PROPERTY': 'Imóvel',
+  'VEHICLE': 'Veículo',
+  'OTHER': 'Outro',
+  'property': 'Imóvel',
+  'vehicle': 'Veículo',
+  'other': 'Outro',
+};
+
+const btsRentRangeLabels: Record<string, string> = {
+  'up_to_300': 'Até R$ 300/m²',
+  'UP_TO_300': 'Até R$ 300/m²',
+  '50_to_80': 'R$ 50 a 80/m²',
+  '50_80': 'R$ 50 a 80/m²',
+  'above_80': 'Acima de R$ 80/m²',
+  'ABOVE_80': 'Acima de R$ 80/m²',
+};
+
+const btsContractTermLabels: Record<string, string> = {
+  '5_years': '5 anos',
+  '5': '5 anos',
+  '7_10_years': '7 a 10 anos',
+  '7_10': '7 a 10 anos',
+  '10_15_years': '10 a 15 anos',
+  '10_15': '10 a 15 anos',
+  '15_plus': 'Mais de 15 anos',
+  '+15': 'Mais de 15 anos',
+};
+
+const moveInDeadlineLabels: Record<string, string> = {
+  'IMMEDIATE': 'Imediato',
+  'UP_TO_1_MONTH': 'Até 1 mês',
+  'UP_TO_3_MONTHS': 'Até 3 meses',
+  '1_TO_3_MONTHS': '1 a 3 meses',
+  'FLEXIBLE': 'Flexível',
+  'immediate': 'Imediato',
+  'up_to_1_month': 'Até 1 mês',
+  'up_to_3_months': 'Até 3 meses',
+  '1_to_3_months': '1 a 3 meses',
+  'flexible': 'Flexível',
 };
 
 const documentationLabels: Record<string, string> = {
@@ -440,10 +494,11 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     // Preferências
     const prefFields: FormField[] = [];
     if (buy.prefersGatedCommunity !== undefined) prefFields.push({ label: 'Prefere condomínio fechado', value: booleanLabels(buy.prefersGatedCommunity) });
+    if (buy.landPrefersGated !== undefined) prefFields.push({ label: 'Prefere condomínio (terreno)', value: booleanLabels(buy.landPrefersGated) });
     if (buy.bedrooms) prefFields.push({ label: 'Dormitórios', value: buy.bedrooms });
     if (buy.bathrooms) prefFields.push({ label: 'Banheiros', value: buy.bathrooms });
     if (buy.parkingSpots) prefFields.push({ label: 'Vagas', value: buy.parkingSpots });
-    if (buy.propertyReadyStatus) prefFields.push({ label: 'Status', value: buy.propertyReadyStatus === 'READY' ? 'Pronto para morar' : 'Em construção' });
+    if (buy.propertyReadyStatus) prefFields.push({ label: 'Status', value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus });
     if (buy.commercialType) prefFields.push({ label: 'Tipo comercial', value: commercialTypeLabels[buy.commercialType] || buy.commercialType });
     if (buy.minSize) prefFields.push({ label: 'Tamanho mínimo', value: buy.minSize });
     if (buy.landMinSize) prefFields.push({ label: 'Tamanho mínimo do terreno', value: buy.landMinSize });
@@ -464,6 +519,10 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     const payFields: FormField[] = [];
     if (buy.paymentMethod) payFields.push({ label: 'Forma de pagamento', value: paymentMethodLabels[buy.paymentMethod] || buy.paymentMethod });
     if (buy.isFinancingApproved !== undefined) payFields.push({ label: 'Financiamento aprovado', value: booleanLabels(buy.isFinancingApproved) });
+    if (buy.isConsortiumContemplated !== undefined) payFields.push({ label: 'Consórcio contemplado', value: booleanLabels(buy.isConsortiumContemplated) });
+    if (buy.tradeOfferType) payFields.push({ label: 'Tipo de permuta', value: tradeOfferTypeLabels[buy.tradeOfferType] || buy.tradeOfferType });
+    if (buy.tradeOfferValue) payFields.push({ label: 'Valor da permuta', value: buy.tradeOfferValue });
+    if (buy.tradeOfferPaidOff !== undefined) payFields.push({ label: 'Permuta quitada', value: booleanLabels(buy.tradeOfferPaidOff) });
     if (payFields.length > 0) {
       sections.push({ title: 'Pagamento', icon: '💳', fields: payFields });
     }
@@ -509,8 +568,8 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     if (build.isBTSConfirmed) {
       const btsFields: FormField[] = [];
       btsFields.push({ label: 'Built To Suit', value: 'Sim' });
-      if (build.btsRentRange) btsFields.push({ label: 'Faixa de aluguel', value: build.btsRentRange });
-      if (build.btsMinContractTerm) btsFields.push({ label: 'Prazo mínimo de contrato', value: build.btsMinContractTerm });
+      if (build.btsRentRange) btsFields.push({ label: 'Faixa de aluguel', value: btsRentRangeLabels[build.btsRentRange] || build.btsRentRange });
+      if (build.btsMinContractTerm) btsFields.push({ label: 'Prazo mínimo de contrato', value: btsContractTermLabels[build.btsMinContractTerm] || build.btsMinContractTerm });
       sections.push({ title: 'Built To Suit', icon: '🏗️', fields: btsFields });
     }
     
@@ -518,6 +577,11 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     const budgetFields: FormField[] = [];
     if (build.budget) budgetFields.push({ label: 'Orçamento', value: build.budget });
     if (build.paymentMethod) budgetFields.push({ label: 'Forma de pagamento', value: paymentMethodLabels[build.paymentMethod] || build.paymentMethod });
+    if (build.isFinancingApproved !== undefined) budgetFields.push({ label: 'Financiamento aprovado', value: booleanLabels(build.isFinancingApproved) });
+    if (build.isConsortiumContemplated !== undefined) budgetFields.push({ label: 'Consórcio contemplado', value: booleanLabels(build.isConsortiumContemplated) });
+    if (build.tradeOfferType) budgetFields.push({ label: 'Tipo de permuta', value: tradeOfferTypeLabels[build.tradeOfferType] || build.tradeOfferType });
+    if (build.tradeOfferValue) budgetFields.push({ label: 'Valor da permuta', value: build.tradeOfferValue });
+    if (build.tradeOfferPaidOff !== undefined) budgetFields.push({ label: 'Permuta quitada', value: booleanLabels(build.tradeOfferPaidOff) });
     if (budgetFields.length > 0) {
       sections.push({ title: 'Orçamento', icon: '💰', fields: budgetFields });
     }
@@ -545,6 +609,8 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     const prefFields: FormField[] = [];
     if (rent.prefersGatedCommunity !== undefined) prefFields.push({ label: 'Prefere condomínio fechado', value: booleanLabels(rent.prefersGatedCommunity) });
     if (rent.bedrooms) prefFields.push({ label: 'Dormitórios', value: rent.bedrooms });
+    if (rent.bathrooms) prefFields.push({ label: 'Banheiros', value: rent.bathrooms });
+    if (rent.parkingSpots) prefFields.push({ label: 'Vagas', value: rent.parkingSpots });
     if (rent.minSize) prefFields.push({ label: 'Tamanho mínimo', value: rent.minSize });
     if (prefFields.length > 0) {
       sections.push({ title: 'Preferências', icon: '🏠', fields: prefFields });
@@ -562,7 +628,7 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     // Garantia
     const guaranteeFields: FormField[] = [];
     if (rent.guarantee) guaranteeFields.push({ label: 'Garantia', value: guaranteeLabels[rent.guarantee] || rent.guarantee });
-    if (rent.moveInDeadline) guaranteeFields.push({ label: 'Prazo para mudança', value: deadlineLabels[rent.moveInDeadline] || rent.moveInDeadline });
+    if (rent.moveInDeadline) guaranteeFields.push({ label: 'Prazo para mudança', value: moveInDeadlineLabels[rent.moveInDeadline] || rent.moveInDeadline });
     if (guaranteeFields.length > 0) {
       sections.push({ title: 'Garantia e Prazo', icon: '📋', fields: guaranteeFields });
     }
