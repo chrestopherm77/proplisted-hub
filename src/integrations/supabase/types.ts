@@ -90,8 +90,10 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string
+          form_data: Json | null
           id: string
           is_active: boolean | null
+          lead_submission_id: string | null
           max_purchases: number | null
           name: string
           phone: string
@@ -102,8 +104,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description: string
+          form_data?: Json | null
           id?: string
           is_active?: boolean | null
+          lead_submission_id?: string | null
           max_purchases?: number | null
           name: string
           phone: string
@@ -114,8 +118,10 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string
+          form_data?: Json | null
           id?: string
           is_active?: boolean | null
+          lead_submission_id?: string | null
           max_purchases?: number | null
           name?: string
           phone?: string
@@ -123,7 +129,15 @@ export type Database = {
           purchase_count?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_lead_submission_id_fkey"
+            columns: ["lead_submission_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
