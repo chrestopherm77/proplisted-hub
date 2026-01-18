@@ -114,6 +114,13 @@ const paymentMethodLabels: Record<string, string> = {
   'CONSORTIUM': 'Consórcio',
   'EXCHANGE': 'Permuta',
   'MIXED': 'Misto',
+  // Sell flow specific values
+  'financing': 'Financiamento bancário',
+  'consortium': 'Consórcio',
+  'property_trade': 'Permuta por imóvel',
+  'vehicle_trade': 'Permuta por veículo',
+  'installments': 'Entrada + parcelamento',
+  'cash_only': 'Somente à vista',
 };
 
 const guaranteeLabels: Record<string, string> = {
@@ -129,6 +136,11 @@ const documentationLabels: Record<string, string> = {
   'PARTIAL': 'Parcialmente regularizada',
   'PENDING': 'Pendências a resolver',
   'UNKNOWN': 'Não sei informar',
+  // Sell flow specific values
+  'regularized': 'Regularizada',
+  'in_progress': 'Em processo de regularização',
+  'unknown': 'Ainda não sei',
+  'pending': 'Possui pendências',
 };
 
 const deadlineLabels: Record<string, string> = {
@@ -141,6 +153,11 @@ const deadlineLabels: Record<string, string> = {
   'OVER_12_MONTHS': 'Mais de 12 meses',
   'NO_RUSH': 'Sem pressa',
   'FLEXIBLE': 'Flexível',
+  // Sell flow specific values
+  '30_days': 'Em até 30 dias',
+  '1_to_3_months': 'De 1 a 3 meses',
+  '3_to_6_months': 'De 3 a 6 meses',
+  'up_to_1_year': 'Até 1 ano',
 };
 
 const booleanLabels = (value: boolean | undefined): string => {
@@ -154,6 +171,56 @@ const areaLabels: Record<string, string> = {
   '50_to_100': '50 a 100 ha',
   '100_to_500': '100 a 500 ha',
   'over_500': 'Mais de 500 ha',
+  'above_500': 'Acima de 500 ha',
+  'unknown': 'Ainda não sei',
+};
+
+const ruralPurposeLabels: Record<string, string> = {
+  'agriculture': 'Agricultura',
+  'livestock': 'Pecuária',
+  'mixed': 'Mista (agropecuária)',
+  'leisure': 'Lazer / turismo rural',
+  'reserve': 'Reserva / área improdutiva',
+  'other': 'Outro',
+};
+
+const motivationLabels: Record<string, string> = {
+  'exchange': 'Troca por outro imóvel',
+  'financial': 'Necessidade financeira',
+  'inheritance': 'Inventário / herança',
+  'relocation': 'Mudança de cidade',
+  'other': 'Outro',
+};
+
+const improvementLabels: Record<string, string> = {
+  'main_house': 'Casa sede',
+  'staff_houses': 'Casas para funcionários',
+  'warehouses': 'Galpões / armazéns',
+  'corral': 'Curral / estrutura pecuária',
+  'silos': 'Silos',
+  'none': 'Não possui benfeitorias relevantes',
+};
+
+const waterResourceLabels: Record<string, string> = {
+  'river': 'Rio',
+  'stream': 'Córrego / nascente',
+  'dam': 'Represa / açude',
+  'well': 'Poço',
+  'none': 'Não possui',
+  'unknown': 'Não sei informar',
+};
+
+const occupantPreferenceLabels: Record<string, string> = {
+  'YES': 'Sim',
+  'NO': 'Não',
+  'NOT_ASKED': 'Não solicitado',
+};
+
+const topographySellLabels: Record<string, string> = {
+  'FLAT': 'Plano',
+  'UPHILL': 'Aclive',
+  'DOWNHILL': 'Declive',
+  'UNKNOWN': 'Não sei informar',
 };
 
 const accessLabels: Record<string, string> = {
@@ -299,6 +366,7 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     if (sell.parkingSpots) charFields.push({ label: 'Vagas', value: sell.parkingSpots });
     if (sell.size) charFields.push({ label: 'Tamanho', value: sell.size });
     if (sell.terrainPosition) charFields.push({ label: 'Posição do terreno', value: terrainPositionLabels[sell.terrainPosition] || sell.terrainPosition });
+    if (sell.residentialTopography) charFields.push({ label: 'Topografia', value: topographySellLabels[sell.residentialTopography] || sell.residentialTopography });
     if (charFields.length > 0) {
       sections.push({ title: 'Características', icon: '📐', fields: charFields });
     }
@@ -306,12 +374,14 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     // Rural
     if (sell.propertyType === 'RURAL') {
       const ruralFields: FormField[] = [];
+      if (sell.ruralType) ruralFields.push({ label: 'Tipo', value: ruralTypeLabels[sell.ruralType] || sell.ruralType });
       if (sell.ruralArea) ruralFields.push({ label: 'Área', value: areaLabels[sell.ruralArea] || sell.ruralArea });
-      const improvementsVal = formatArrayOrString(sell.improvements);
+      if (sell.ruralPurpose) ruralFields.push({ label: 'Finalidade', value: ruralPurposeLabels[sell.ruralPurpose] || sell.ruralPurpose });
+      const improvementsVal = formatArrayOrString(sell.improvements, improvementLabels);
       if (improvementsVal) ruralFields.push({ label: 'Benfeitorias', value: improvementsVal });
       const accessVal = formatArrayOrString(sell.access, accessLabels);
       if (accessVal) ruralFields.push({ label: 'Acesso', value: accessVal });
-      const waterVal = formatArrayOrString(sell.waterResources);
+      const waterVal = formatArrayOrString(sell.waterResources, waterResourceLabels);
       if (waterVal) ruralFields.push({ label: 'Recursos hídricos', value: waterVal });
       if (ruralFields.length > 0) {
         sections.push({ title: 'Detalhes Rurais', icon: '🌾', fields: ruralFields });
@@ -339,6 +409,9 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     const statusFields: FormField[] = [];
     if (sell.wasAppraised !== undefined) statusFields.push({ label: 'Foi avaliado', value: booleanLabels(sell.wasAppraised) });
     if (sell.isOccupied !== undefined) statusFields.push({ label: 'Está ocupado', value: booleanLabels(sell.isOccupied) });
+    if (sell.isOccupied && sell.occupantHasPreference) {
+      statusFields.push({ label: 'Ocupante tem preferência', value: occupantPreferenceLabels[sell.occupantHasPreference] || sell.occupantHasPreference });
+    }
     if (sell.documentation) statusFields.push({ label: 'Documentação', value: documentationLabels[sell.documentation] || sell.documentation });
     if (statusFields.length > 0) {
       sections.push({ title: 'Status do Imóvel', icon: '📋', fields: statusFields });
@@ -347,7 +420,7 @@ export function formatFormDataToSections(intention: string, formData: any): Form
     // Prazo
     const deadlineFields: FormField[] = [];
     if (sell.deadline) deadlineFields.push({ label: 'Prazo para venda', value: deadlineLabels[sell.deadline] || sell.deadline });
-    if (sell.motivation) deadlineFields.push({ label: 'Motivação', value: sell.motivation });
+    if (sell.motivation) deadlineFields.push({ label: 'Motivação', value: motivationLabels[sell.motivation] || sell.motivation });
     if (deadlineFields.length > 0) {
       sections.push({ title: 'Prazo e Motivação', icon: '⏰', fields: deadlineFields });
     }
