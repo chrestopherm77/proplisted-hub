@@ -10,6 +10,29 @@ import { generateDescription } from "@/lib/formatFormData";
 // Default price for leads from form (in BRL)
 const DEFAULT_LEAD_PRICE = 15.00;
 
+const createClientUuid = () => {
+  // Prefer the native UUID implementation when available
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  // RFC4122 v4 UUID fallback using cryptographically secure random values
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+
+    // Per RFC4122 section 4.4
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  // Very last resort (should practically never happen in modern browsers)
+  return `fallback-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 // Step imports
 import { IntentionStep } from "./steps/IntentionStep";
 import { ContactStep } from "./steps/ContactStep";
@@ -383,8 +406,8 @@ export function LeadFormWizard() {
       setIsSubmitting(true);
       try {
         // Generate UUID client-side to avoid needing SELECT permission
-        const submissionId = crypto.randomUUID();
-        
+        const submissionId = createClientUuid();
+
         // Prepare form_data object
         const formDataJson = {
           intention: formData.intention,
@@ -430,10 +453,18 @@ export function LeadFormWizard() {
 
         setIsSubmitted(true);
       } catch (error) {
-        console.error('Error submitting form:', error);
+        const err = error as any;
+        console.error('Error submitting form:', {
+          message: err?.message,
+          code: err?.code,
+          details: err?.details,
+          hint: err?.hint,
+          original: err,
+        });
+
         toast({
           title: "Erro ao enviar",
-          description: "Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.",
+          description: `Ocorreu um erro ao enviar o formulário. (${err?.code ?? 'SEM_CODIGO'}) ${err?.message ?? ''}`.trim(),
           variant: "destructive",
         });
       } finally {
