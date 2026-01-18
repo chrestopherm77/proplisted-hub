@@ -3,13 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShoppingCart, X, Info, Filter } from 'lucide-react';
+import { ShoppingCart, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
 
 interface Lead {
   id: string;
@@ -18,6 +18,7 @@ interface Lead {
   purchase_count: number;
   max_purchases: number;
   is_active: boolean;
+  form_data?: any;
 }
 
 interface ParsedDescription {
@@ -81,7 +82,7 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active')
+        .select('id, description, price, purchase_count, max_purchases, is_active, form_data')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -226,23 +227,6 @@ export default function Leads() {
   const isInCart = (leadId: string) => cartItems.includes(leadId);
   const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases;
 
-  const renderFormattedDescription = (description: string) => {
-    const parsed = parseDescription(description);
-    return (
-      <div className="space-y-1 text-sm">
-        {parsed.interest && (
-          <p><span className="font-medium text-foreground">Interesse:</span> {parsed.interest}</p>
-        )}
-        {parsed.region && (
-          <p><span className="font-medium text-foreground">Região:</span> {parsed.region}</p>
-        )}
-        {parsed.characteristics && (
-          <p><span className="font-medium text-foreground">Características:</span> {parsed.characteristics}</p>
-        )}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -364,79 +348,27 @@ export default function Leads() {
           })}
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            {selectedLead && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <DialogTitle className="text-2xl">
-                      Lead #{selectedLead.id.slice(0, 8)}
-                    </DialogTitle>
-                    <Badge 
-                      variant={isSoldOut(selectedLead) ? 'destructive' : 'default'}
-                    >
-                      {isSoldOut(selectedLead)
-                        ? 'Esgotado'
-                        : `${selectedLead.max_purchases - selectedLead.purchase_count}/${selectedLead.max_purchases} disponíveis`}
-                    </Badge>
-                  </div>
-                  <div className="pt-4 text-muted-foreground">
-                    {renderFormattedDescription(selectedLead.description)}
-                  </div>
-                </DialogHeader>
-
-                <div className="py-6 space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Valor do Lead</p>
-                      <p className="text-3xl font-bold text-primary">{formatPrice(selectedLead.price)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground mb-1">Status</p>
-                      <p className="text-sm font-medium">{selectedLead.purchase_count} vendidos</p>
-                    </div>
-                  </div>
-                </div>
-
-                <DialogFooter className="gap-2">
-                  {isSoldOut(selectedLead) ? (
-                    <Button disabled className="w-full" variant="secondary" size="lg">
-                      Esgotado
-                    </Button>
-                  ) : isInCart(selectedLead.id) ? (
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFromCart(selectedLead.id);
-                        setDialogOpen(false);
-                      }}
-                      variant="outline" 
-                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      size="lg"
-                    >
-                      <X className="mr-2 h-5 w-5" />
-                      Remover do Carrinho
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(selectedLead.id);
-                        setDialogOpen(false);
-                      }}
-                      className="w-full"
-                      size="lg"
-                    >
-                      <ShoppingCart className="mr-2 h-5 w-5" />
-                      Adicionar ao Carrinho
-                    </Button>
-                  )}
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Lead Details Modal */}
+        <LeadDetailsModal
+          lead={selectedLead}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          isInCart={selectedLead ? isInCart(selectedLead.id) : false}
+          isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
+          onAddToCart={() => {
+            if (selectedLead) {
+              addToCart(selectedLead.id);
+              setDialogOpen(false);
+            }
+          }}
+          onRemoveFromCart={() => {
+            if (selectedLead) {
+              removeFromCart(selectedLead.id);
+              setDialogOpen(false);
+            }
+          }}
+          formatPrice={formatPrice}
+        />
 
         {filteredLeads.length === 0 && (
           <div className="text-center py-12">

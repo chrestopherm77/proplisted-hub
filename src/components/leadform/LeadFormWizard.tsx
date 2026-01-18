@@ -5,6 +5,10 @@ import { LeadFormNavigation } from "./LeadFormNavigation";
 import { SuccessScreen } from "./SuccessScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { generateDescription } from "@/lib/formatFormData";
+
+// Default price for leads from form (in BRL)
+const DEFAULT_LEAD_PRICE = 15.00;
 
 // Step imports
 import { IntentionStep } from "./steps/IntentionStep";
@@ -378,22 +382,50 @@ export function LeadFormWizard() {
     if (isLastStep) {
       setIsSubmitting(true);
       try {
-        const { error } = await supabase
+        // Prepare form_data object
+        const formDataJson = {
+          intention: formData.intention,
+          sell: formData.sell,
+          buy: formData.buy,
+          build: formData.build,
+          rent: formData.rent,
+        };
+
+        // 1. First save to lead_submissions (backup)
+        const { data: submissionData, error: submissionError } = await supabase
           .from('lead_submissions')
           .insert([{
             name: formData.name.trim(),
             phone: formData.phone,
             email: formData.email.trim() || null,
             intention: formData.intention!,
-            form_data: JSON.parse(JSON.stringify({
-              sell: formData.sell,
-              buy: formData.buy,
-              build: formData.build,
-              rent: formData.rent,
-            })),
+            form_data: JSON.parse(JSON.stringify(formDataJson)),
+          }])
+          .select('id')
+          .single();
+
+        if (submissionError) throw submissionError;
+
+        // 2. Generate description for marketplace
+        const description = generateDescription(formData);
+
+        // 3. Create lead in marketplace
+        const { error: leadError } = await supabase
+          .from('leads')
+          .insert([{
+            name: formData.name.trim(),
+            phone: formData.phone,
+            description: description,
+            price: DEFAULT_LEAD_PRICE,
+            form_data: JSON.parse(JSON.stringify(formDataJson)),
+            lead_submission_id: submissionData.id,
+            is_active: true,
+            max_purchases: 3,
+            purchase_count: 0,
           }]);
 
-        if (error) throw error;
+        if (leadError) throw leadError;
+
         setIsSubmitted(true);
       } catch (error) {
         console.error('Error submitting form:', error);
