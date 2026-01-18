@@ -1,11 +1,12 @@
 import { LeadFormData } from "@/components/leadform/types";
 
-interface FormField {
+export interface FormField {
+  key?: string;   // Technical key for deduplication tracking
   label: string;
   value: string;
 }
 
-interface FormSection {
+export interface FormSection {
   title: string;
   icon: string;
   fields: FormField[];
@@ -882,16 +883,31 @@ function getDisplayedLabels(sections: FormSection[]): Set<string> {
   return displayed;
 }
 
+// Get displayed keys from existing sections for accurate deduplication
+function getDisplayedKeys(sections: FormSection[]): Set<string> {
+  const displayed = new Set<string>();
+  
+  for (const section of sections) {
+    for (const field of section.fields) {
+      if (field.key) {
+        displayed.add(field.key.toLowerCase());
+      }
+      // Also track by label as fallback
+      displayed.add(field.label.toLowerCase().trim());
+    }
+  }
+  
+  return displayed;
+}
+
 function generateFallbackSection(flowData: Record<string, any> | null, existingSections: FormSection[]): FormSection | null {
   if (!flowData) return null;
   
-  // Get labels already displayed (by label text, not key)
-  const displayedLabels = getDisplayedLabels(existingSections);
+  const displayedKeys = getDisplayedKeys(existingSections);
   
   const fields: FormField[] = [];
-  const addedLabels = new Set<string>(); // Track what we add to avoid duplicates
+  const addedKeys = new Set<string>();
   
-  // Recursively extract all fields from nested objects
   function extractFields(obj: any, prefix: string = '') {
     if (!obj || typeof obj !== 'object') return;
     
@@ -899,10 +915,10 @@ function generateFallbackSection(flowData: Record<string, any> | null, existingS
       const fullKey = prefix ? `${prefix}.${key}` : key;
       const baseKey = key.toLowerCase();
       
-      // Skip PII at any level
+      // Skip PII
       if (PII_FIELDS.includes(baseKey)) continue;
       
-      // Skip nested flow objects (already processed)
+      // Skip flow containers
       if (['sell', 'buy', 'build', 'rent', 'intention'].includes(baseKey)) continue;
       
       // Handle nested objects
@@ -911,19 +927,17 @@ function generateFallbackSection(flowData: Record<string, any> | null, existingS
         continue;
       }
       
-      // Skip empty values
+      // Skip empty
       const formatted = formatValue(key, value);
       if (!formatted) continue;
       
-      // Get human-readable label
+      // Check by key first, then by label
+      if (displayedKeys.has(baseKey) || addedKeys.has(baseKey)) continue;
+      
       const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-      const labelLower = label.toLowerCase().trim();
       
-      // Skip already displayed by label text (not key) OR already added in this fallback
-      if (displayedLabels.has(labelLower) || addedLabels.has(labelLower)) continue;
-      
-      fields.push({ label, value: formatted });
-      addedLabels.add(labelLower);
+      fields.push({ key, label, value: formatted });
+      addedKeys.add(baseKey);
     }
   }
   
@@ -938,4 +952,73 @@ function generateFallbackSection(flowData: Record<string, any> | null, existingS
   };
 }
 
+/**
+ * Generate a complete section with ALL form fields for guaranteed visibility
+ * This section always displays everything (except PII), regardless of other sections
+ */
+export function generateCompleteFormDataSection(formData: any): FormSection | null {
+  if (!formData || typeof formData !== 'object') return null;
+  
+  // Find flow data
+  let flowData: Record<string, any> | null = null;
+  for (const flowKey of ['sell', 'buy', 'build', 'rent']) {
+    if (formData[flowKey] && typeof formData[flowKey] === 'object' && Object.keys(formData[flowKey]).length > 0) {
+      flowData = formData[flowKey];
+      break;
+    }
+  }
+  
+  // If no flow, use formData directly
+  if (!flowData) {
+    flowData = formData;
+  }
+  
+  const fields: FormField[] = [];
+  const addedKeys = new Set<string>();
+  
+  function extractAllFields(obj: any, prefix: string = '') {
+    if (!obj || typeof obj !== 'object') return;
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const baseKey = key.toLowerCase();
+      
+      // Skip PII
+      if (PII_FIELDS.includes(baseKey)) continue;
+      
+      // Skip flow containers and intention
+      if (['sell', 'buy', 'build', 'rent', 'intention'].includes(baseKey)) continue;
+      
+      // Handle nested objects
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        extractAllFields(value, fullKey);
+        continue;
+      }
+      
+      // Skip empty values
+      const formatted = formatValue(key, value);
+      if (!formatted) continue;
+      
+      // Dedupe
+      if (addedKeys.has(baseKey)) continue;
+      
+      const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+      
+      fields.push({ key, label, value: formatted });
+      addedKeys.add(baseKey);
+    }
+  }
+  
+  extractAllFields(flowData);
+  
+  if (fields.length === 0) return null;
+  
+  return {
+    title: 'Todas as Respostas do Formulário',
+    icon: '📋',
+    fields,
+  };
+}
+
 export const intentionLabelsExport = intentionLabels;
+export { formatValue, fieldNameLabels, PII_FIELDS };
