@@ -382,6 +382,9 @@ export function LeadFormWizard() {
     if (isLastStep) {
       setIsSubmitting(true);
       try {
+        // Generate UUID client-side to avoid needing SELECT permission
+        const submissionId = crypto.randomUUID();
+        
         // Prepare form_data object
         const formDataJson = {
           intention: formData.intention,
@@ -391,18 +394,17 @@ export function LeadFormWizard() {
           rent: formData.rent,
         };
 
-        // 1. First save to lead_submissions (backup)
-        const { data: submissionData, error: submissionError } = await supabase
+        // 1. First save to lead_submissions (backup) with pre-generated ID
+        const { error: submissionError } = await supabase
           .from('lead_submissions')
           .insert([{
+            id: submissionId,
             name: formData.name.trim(),
             phone: formData.phone,
             email: formData.email.trim() || null,
             intention: formData.intention!,
             form_data: JSON.parse(JSON.stringify(formDataJson)),
-          }])
-          .select('id')
-          .single();
+          }]);
 
         if (submissionError) throw submissionError;
 
@@ -418,7 +420,7 @@ export function LeadFormWizard() {
             description: description,
             price: DEFAULT_LEAD_PRICE,
             form_data: JSON.parse(JSON.stringify(formDataJson)),
-            lead_submission_id: submissionData.id,
+            lead_submission_id: submissionId,
             is_active: true,
             max_purchases: 3,
             purchase_count: 0,
