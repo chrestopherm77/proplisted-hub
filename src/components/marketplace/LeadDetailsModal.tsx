@@ -95,8 +95,8 @@ export function LeadDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6">
           <div className="flex items-center justify-between mb-2">
             <DialogTitle className="text-2xl">
               Lead #{lead.id.slice(0, 8).toUpperCase()}
@@ -114,24 +114,46 @@ export function LeadDetailsModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
-          {hasFormData ? (
-            <div className="py-4 space-y-6">
-              {/* Organized Sections (when available) */}
-              {sections.length > 0 && (
-                <>
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                  </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="px-6">
+              {hasFormData ? (
+                <div className="py-4 space-y-6">
+                  {/* Organized Sections (when available) */}
+                  {sections.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
+                      </div>
+                      
+                      {sections.map((section, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <span>{section.icon}</span>
+                            {section.title}
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
+                            {section.fields.map((field, fieldIdx) => (
+                              <div key={fieldIdx} className="text-sm">
+                                <span className="text-muted-foreground">{field.label}:</span>{' '}
+                                <span className="font-medium text-foreground">{field.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   
-                  {sections.map((section, idx) => (
-                    <div key={idx} className="space-y-3">
-                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <span>{section.icon}</span>
-                        {section.title}
+                  {/* Complete Form Data Section - ALWAYS shows all fields */}
+                  {completeSection && completeSection.fields.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-dashed">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <span>{completeSection.icon}</span>
+                        {completeSection.title}
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
-                        {section.fields.map((field, fieldIdx) => (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6 bg-muted/30 p-3 rounded-lg">
+                        {completeSection.fields.map((field, fieldIdx) => (
                           <div key={fieldIdx} className="text-sm">
                             <span className="text-muted-foreground">{field.label}:</span>{' '}
                             <span className="font-medium text-foreground">{field.value}</span>
@@ -139,47 +161,29 @@ export function LeadDetailsModal({
                         ))}
                       </div>
                     </div>
-                  ))}
-                </>
-              )}
-              
-              {/* Complete Form Data Section - ALWAYS shows all fields */}
-              {completeSection && completeSection.fields.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-dashed">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                    <span>{completeSection.icon}</span>
-                    {completeSection.title}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6 bg-muted/30 p-3 rounded-lg">
-                    {completeSection.fields.map((field, fieldIdx) => (
-                      <div key={fieldIdx} className="text-sm">
-                        <span className="text-muted-foreground">{field.label}:</span>{' '}
-                        <span className="font-medium text-foreground">{field.value}</span>
-                      </div>
-                    ))}
-                  </div>
+                  )}
+                  
+                  {/* Message when no form data could be extracted */}
+                  {sections.length === 0 && (!completeSection || completeSection.fields.length === 0) && (
+                    <div className="py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Nenhuma informação do formulário foi fornecida.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* Message when no form data could be extracted */}
-              {sections.length === 0 && (!completeSection || completeSection.fields.length === 0) && (
+              ) : (
                 <div className="py-4">
                   <p className="text-sm text-muted-foreground">
-                    Nenhuma informação do formulário foi fornecida.
+                    Este lead foi criado sem formulário completo. Apenas o resumo está disponível.
                   </p>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="py-4">
-              <p className="text-sm text-muted-foreground">
-                Este lead foi criado sem formulário completo. Apenas o resumo está disponível.
-              </p>
-            </div>
-          )}
-        </ScrollArea>
+          </ScrollArea>
+        </div>
 
-        <div className="flex-shrink-0 pt-4 border-t space-y-4">
+        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t space-y-4">
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Valor do Lead</p>
