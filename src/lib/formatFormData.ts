@@ -493,13 +493,13 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     
     // Características
     const charFields: FormField[] = [];
-    if (sell.commercialBedrooms) charFields.push({ label: 'Dormitórios', value: sell.commercialBedrooms });
-    if (sell.bedrooms) charFields.push({ label: 'Dormitórios', value: sell.bedrooms });
-    if (sell.commercialBathrooms) charFields.push({ label: 'Banheiros', value: sell.commercialBathrooms });
-    if (sell.bathrooms) charFields.push({ label: 'Banheiros', value: sell.bathrooms });
-    if (sell.commercialParkingSpots) charFields.push({ label: 'Vagas', value: sell.commercialParkingSpots });
-    if (sell.parkingSpots) charFields.push({ label: 'Vagas', value: sell.parkingSpots });
-    if (sell.size) charFields.push({ label: 'Tamanho', value: sell.size });
+    if (sell.commercialBedrooms) charFields.push({ label: 'Dormitórios', value: String(sell.commercialBedrooms) });
+    if (sell.bedrooms) charFields.push({ label: 'Dormitórios', value: String(sell.bedrooms) });
+    if (sell.commercialBathrooms) charFields.push({ label: 'Banheiros', value: String(sell.commercialBathrooms) });
+    if (sell.bathrooms) charFields.push({ label: 'Banheiros', value: String(sell.bathrooms) });
+    if (sell.commercialParkingSpots) charFields.push({ label: 'Vagas', value: String(sell.commercialParkingSpots) });
+    if (sell.parkingSpots) charFields.push({ label: 'Vagas', value: String(sell.parkingSpots) });
+    if (sell.size) charFields.push({ label: 'Tamanho', value: String(sell.size) });
     if (sell.terrainPosition) charFields.push({ label: 'Posição do terreno', value: terrainPositionLabels[sell.terrainPosition] || sell.terrainPosition });
     if (sell.residentialTopography) charFields.push({ label: 'Topografia', value: topographySellLabels[sell.residentialTopography] || sell.residentialTopography });
     if (charFields.length > 0) {
@@ -576,13 +576,13 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     const prefFields: FormField[] = [];
     if (buy.prefersGatedCommunity !== undefined) prefFields.push({ label: 'Prefere condomínio fechado', value: booleanLabels(buy.prefersGatedCommunity) });
     if (buy.landPrefersGated !== undefined) prefFields.push({ label: 'Prefere condomínio (terreno)', value: booleanLabels(buy.landPrefersGated) });
-    if (buy.bedrooms) prefFields.push({ label: 'Dormitórios', value: buy.bedrooms });
-    if (buy.bathrooms) prefFields.push({ label: 'Banheiros', value: buy.bathrooms });
-    if (buy.parkingSpots) prefFields.push({ label: 'Vagas', value: buy.parkingSpots });
+    if (buy.bedrooms) prefFields.push({ label: 'Dormitórios', value: String(buy.bedrooms) });
+    if (buy.bathrooms) prefFields.push({ label: 'Banheiros', value: String(buy.bathrooms) });
+    if (buy.parkingSpots) prefFields.push({ label: 'Vagas', value: String(buy.parkingSpots) });
     if (buy.propertyReadyStatus) prefFields.push({ label: 'Status', value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus });
     if (buy.commercialType) prefFields.push({ label: 'Tipo comercial', value: commercialTypeLabels[buy.commercialType] || buy.commercialType });
-    if (buy.minSize) prefFields.push({ label: 'Tamanho mínimo', value: buy.minSize });
-    if (buy.landMinSize) prefFields.push({ label: 'Tamanho mínimo do terreno', value: buy.landMinSize });
+    if (buy.minSize) prefFields.push({ label: 'Tamanho mínimo', value: String(buy.minSize) });
+    if (buy.landMinSize) prefFields.push({ label: 'Tamanho mínimo do terreno', value: String(buy.landMinSize) });
     if (prefFields.length > 0) {
       sections.push({ title: 'Preferências', icon: '🏠', fields: prefFields });
     }
@@ -638,7 +638,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     // Projeto
     const projectFields: FormField[] = [];
     if (build.hasProject) projectFields.push({ label: 'Status do projeto', value: projectLabels[build.hasProject] || build.hasProject });
-    if (build.floors) projectFields.push({ label: 'Pavimentos', value: build.floors });
+    if (build.floors) projectFields.push({ label: 'Pavimentos', value: String(build.floors) });
     if (build.area) projectFields.push({ label: 'Área', value: `${build.area}m²` });
     if (build.hasKnowledge !== undefined) projectFields.push({ label: 'Conhecimento em construção', value: booleanLabels(build.hasKnowledge) });
     if (projectFields.length > 0) {
@@ -689,10 +689,10 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     // Preferências
     const prefFields: FormField[] = [];
     if (rent.prefersGatedCommunity !== undefined) prefFields.push({ label: 'Prefere condomínio fechado', value: booleanLabels(rent.prefersGatedCommunity) });
-    if (rent.bedrooms) prefFields.push({ label: 'Dormitórios', value: rent.bedrooms });
-    if (rent.bathrooms) prefFields.push({ label: 'Banheiros', value: rent.bathrooms });
-    if (rent.parkingSpots) prefFields.push({ label: 'Vagas', value: rent.parkingSpots });
-    if (rent.minSize) prefFields.push({ label: 'Tamanho mínimo', value: rent.minSize });
+    if (rent.bedrooms) prefFields.push({ label: 'Dormitórios', value: String(rent.bedrooms) });
+    if (rent.bathrooms) prefFields.push({ label: 'Banheiros', value: String(rent.bathrooms) });
+    if (rent.parkingSpots) prefFields.push({ label: 'Vagas', value: String(rent.parkingSpots) });
+    if (rent.minSize) prefFields.push({ label: 'Tamanho mínimo', value: String(rent.minSize) });
     if (prefFields.length > 0) {
       sections.push({ title: 'Preferências', icon: '🏠', fields: prefFields });
     }
@@ -869,19 +869,13 @@ function formatValue(key: string, value: any): string {
   return String(value);
 }
 
-function getDisplayedKeys(sections: FormSection[]): Set<string> {
+function getDisplayedLabels(sections: FormSection[]): Set<string> {
   const displayed = new Set<string>();
   
-  // Extract all field labels that are already displayed
+  // Extract all field labels that are already displayed (normalized to lowercase)
   for (const section of sections) {
     for (const field of section.fields) {
-      // Try to match label to key
-      const labelLower = field.label.toLowerCase();
-      for (const [key, label] of Object.entries(fieldNameLabels)) {
-        if (label.toLowerCase() === labelLower) {
-          displayed.add(key);
-        }
-      }
+      displayed.add(field.label.toLowerCase().trim());
     }
   }
   
@@ -891,10 +885,11 @@ function getDisplayedKeys(sections: FormSection[]): Set<string> {
 function generateFallbackSection(flowData: Record<string, any> | null, existingSections: FormSection[]): FormSection | null {
   if (!flowData) return null;
   
-  // Get keys already displayed
-  const displayedKeys = getDisplayedKeys(existingSections);
+  // Get labels already displayed (by label text, not key)
+  const displayedLabels = getDisplayedLabels(existingSections);
   
   const fields: FormField[] = [];
+  const addedLabels = new Set<string>(); // Track what we add to avoid duplicates
   
   // Recursively extract all fields from nested objects
   function extractFields(obj: any, prefix: string = '') {
@@ -908,10 +903,7 @@ function generateFallbackSection(flowData: Record<string, any> | null, existingS
       if (PII_FIELDS.includes(baseKey)) continue;
       
       // Skip nested flow objects (already processed)
-      if (['sell', 'buy', 'build', 'rent'].includes(baseKey)) continue;
-      
-      // Skip already displayed (check both full key and base key)
-      if (displayedKeys.has(key) || displayedKeys.has(fullKey)) continue;
+      if (['sell', 'buy', 'build', 'rent', 'intention'].includes(baseKey)) continue;
       
       // Handle nested objects
       if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -925,8 +917,13 @@ function generateFallbackSection(flowData: Record<string, any> | null, existingS
       
       // Get human-readable label
       const label = fieldNameLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+      const labelLower = label.toLowerCase().trim();
+      
+      // Skip already displayed by label text (not key) OR already added in this fallback
+      if (displayedLabels.has(labelLower) || addedLabels.has(labelLower)) continue;
       
       fields.push({ label, value: formatted });
+      addedLabels.add(labelLower);
     }
   }
   
