@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingCart, X } from "lucide-react";
-import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
+import { formatFormDataToSections, generateCompleteFormDataSection, intentionLabelsExport } from "@/lib/formatFormData";
 
 interface Lead {
   id: string;
@@ -89,6 +89,9 @@ export function LeadDetailsModal({
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
   const intention = inferIntention(normalizedFormData, lead.description);
   const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
+  
+  // Generate complete form data section for guaranteed visibility
+  const completeSection = hasFormData ? generateCompleteFormDataSection(normalizedFormData) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,20 +115,43 @@ export function LeadDetailsModal({
         </DialogHeader>
 
         <ScrollArea className="flex-1 pr-4">
-          {hasFormData && sections.length > 0 ? (
+          {hasFormData ? (
             <div className="py-4 space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <span className="text-lg font-semibold">📋 Detalhes Completos</span>
-              </div>
+              {/* Organized Sections (when available) */}
+              {sections.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
+                  </div>
+                  
+                  {sections.map((section, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <span>{section.icon}</span>
+                        {section.title}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
+                        {section.fields.map((field, fieldIdx) => (
+                          <div key={fieldIdx} className="text-sm">
+                            <span className="text-muted-foreground">{field.label}:</span>{' '}
+                            <span className="font-medium text-foreground">{field.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
               
-              {sections.map((section, idx) => (
-                <div key={idx} className="space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <span>{section.icon}</span>
-                    {section.title}
+              {/* Complete Form Data Section - ALWAYS shows all fields */}
+              {completeSection && completeSection.fields.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-dashed">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                    <span>{completeSection.icon}</span>
+                    {completeSection.title}
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
-                    {section.fields.map((field, fieldIdx) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6 bg-muted/30 p-3 rounded-lg">
+                    {completeSection.fields.map((field, fieldIdx) => (
                       <div key={fieldIdx} className="text-sm">
                         <span className="text-muted-foreground">{field.label}:</span>{' '}
                         <span className="font-medium text-foreground">{field.value}</span>
@@ -133,17 +159,16 @@ export function LeadDetailsModal({
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : hasFormData ? (
-            // Fallback: show raw form_data fields (excluding PII)
-            <div className="py-4 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <span className="text-lg font-semibold">📋 Informações do Lead</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {renderSafeFormData(normalizedFormData)}
-              </div>
+              )}
+              
+              {/* Message when no form data could be extracted */}
+              {sections.length === 0 && (!completeSection || completeSection.fields.length === 0) && (
+                <div className="py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma informação do formulário foi fornecida.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-4">
@@ -219,67 +244,4 @@ function parseDescriptionToDisplay(description: string) {
     }
     return <p key={idx}>{line}</p>;
   });
-}
-
-// PII fields to exclude from display
-const PII_FIELDS = ['name', 'phone', 'email', 'telefone', 'nome', 'e-mail'];
-
-// Render form_data safely, excluding PII
-function renderSafeFormData(formData: any): React.ReactNode[] {
-  const elements: React.ReactNode[] = [];
-  
-  function processObject(obj: any, prefix: string = '') {
-    if (!obj || typeof obj !== 'object') return;
-    
-    for (const [key, value] of Object.entries(obj)) {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-      const keyLower = key.toLowerCase();
-      
-      // Skip PII
-      if (PII_FIELDS.includes(keyLower)) continue;
-      
-      // Skip nested flow keys at root level
-      if (!prefix && ['sell', 'buy', 'build', 'rent', 'intention'].includes(keyLower)) {
-        if (typeof value === 'object' && value !== null) {
-          processObject(value, key);
-        }
-        continue;
-      }
-      
-      // Handle nested objects
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        processObject(value, fullKey);
-        continue;
-      }
-      
-      // Skip empty values
-      if (value === null || value === undefined || value === '') continue;
-      
-      // Format value
-      let displayValue: string;
-      if (typeof value === 'boolean') {
-        displayValue = value ? 'Sim' : 'Não';
-      } else if (Array.isArray(value)) {
-        displayValue = value.filter(Boolean).join(', ');
-      } else {
-        displayValue = String(value);
-      }
-      
-      if (!displayValue) continue;
-      
-      // Format label
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-      
-      elements.push(
-        <div key={fullKey} className="text-sm">
-          <span className="text-muted-foreground">{label}:</span>{' '}
-          <span className="font-medium text-foreground">{displayValue}</span>
-        </div>
-      );
-    }
-  }
-  
-  processObject(formData);
-  
-  return elements;
 }
