@@ -185,8 +185,14 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "As senhas não conferem";
       }
-      if (!formData.acceptedTerms) {
-        newErrors.acceptedTerms = "Você deve aceitar os termos";
+      if (!formData.acceptedContract) {
+        newErrors.acceptedContract = "Você deve aceitar o Contrato de Parceria";
+      }
+      if (!formData.acceptedDPA) {
+        newErrors.acceptedDPA = "Você deve aceitar o Acordo de Tratamento de Dados";
+      }
+      if (!formData.acceptedTermsOfUse) {
+        newErrors.acceptedTermsOfUse = "Você deve aceitar os Termos de Uso";
       }
     }
 
@@ -222,7 +228,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         person_type: formData.personType || '',
         phone: formData.phone,
         address: formData.address,
-        accepted_terms: formData.acceptedTerms,
+        accepted_contract: formData.acceptedContract,
+        accepted_dpa: formData.acceptedDPA,
+        accepted_terms_of_use: formData.acceptedTermsOfUse,
       };
 
       if (formData.personType === 'PF') {

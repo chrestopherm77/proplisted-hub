@@ -40,7 +40,11 @@ export interface SignupFormData {
   // Credenciais
   password: string;
   confirmPassword: string;
-  acceptedTerms: boolean;
+  
+  // Termos (3 contratos separados)
+  acceptedContract: boolean;      // Contrato de Parceria Comercial
+  acceptedDPA: boolean;           // Acordo de Tratamento de Dados (DPA)
+  acceptedTermsOfUse: boolean;    // Termo de Uso + Política de Privacidade
 }
 
 export const initialFormData: SignupFormData = {
@@ -72,7 +76,9 @@ export const initialFormData: SignupFormData = {
   rtCauUf: '',
   password: '',
   confirmPassword: '',
-  acceptedTerms: false,
+  acceptedContract: false,
+  acceptedDPA: false,
+  acceptedTermsOfUse: false,
 };
 
 export const UF_OPTIONS = [
