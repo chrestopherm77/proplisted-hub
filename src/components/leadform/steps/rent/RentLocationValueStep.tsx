@@ -4,6 +4,7 @@ import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, DollarSign, Check, X } from "lucide-react";
+import { formatCurrency } from "@/lib/validators";
 
 const includesOptions = [
   { value: 'yes', label: 'Sim', icon: <Check className="h-6 w-6" /> },
@@ -39,8 +40,8 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
           <Input
             id="maxRent"
             value={data.rent?.maxRent || ''}
-            onChange={(e) => updateFlowData('rent', { maxRent: e.target.value })}
-            placeholder="R$ 2.000"
+            onChange={(e) => updateFlowData('rent', { maxRent: formatCurrency(e.target.value) })}
+            placeholder="R$ 2.000,00"
             className="h-12"
           />
         </div>
