@@ -128,6 +128,7 @@ export interface LeadFormData {
   // Contact data (final step)
   name: string;
   phone: string;
+  phoneVerified: boolean;
   email: string;
   acceptedTerms: boolean;
   
@@ -143,6 +144,7 @@ export const initialFormData: LeadFormData = {
   intention: null,
   name: '',
   phone: '',
+  phoneVerified: false,
   email: '',
   acceptedTerms: false,
 };
