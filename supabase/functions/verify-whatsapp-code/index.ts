@@ -6,6 +6,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Formata telefone brasileiro para formato da API (remove 9º dígito extra)
+function formatPhoneForApi(phone: string): string {
+  let cleanPhone = phone.replace(/\D/g, '');
+  
+  // Remove código do país se presente
+  if (cleanPhone.startsWith('55') && cleanPhone.length > 11) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+  
+  // Se tem 11 dígitos (DDD + 9 + 8 dígitos), remove o 9
+  // Padrão: DD9XXXXXXXX -> DDXXXXXXXX
+  if (cleanPhone.length === 11 && cleanPhone[2] === '9') {
+    cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(3);
+  }
+  
+  return cleanPhone;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -25,11 +43,8 @@ serve(async (req) => {
       });
     }
 
-    // Clean phone number (remove non-digits and country code if present)
-    let cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.startsWith('55') && cleanPhone.length > 11) {
-      cleanPhone = cleanPhone.substring(2);
-    }
+    // Format phone using same logic as send function
+    const cleanPhone = formatPhoneForApi(phone);
 
     console.log(`Verifying code for phone: ${cleanPhone}`);
 

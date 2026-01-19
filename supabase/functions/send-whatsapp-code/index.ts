@@ -6,6 +6,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Formata telefone brasileiro para formato da API (remove 9º dígito extra)
+function formatPhoneForApi(phone: string): string {
+  let cleanPhone = phone.replace(/\D/g, '');
+  
+  // Remove código do país se presente
+  if (cleanPhone.startsWith('55') && cleanPhone.length > 11) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+  
+  // Se tem 11 dígitos (DDD + 9 + 8 dígitos), remove o 9
+  // Padrão: DD9XXXXXXXX -> DDXXXXXXXX
+  if (cleanPhone.length === 11 && cleanPhone[2] === '9') {
+    cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(3);
+  }
+  
+  return cleanPhone;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -23,10 +41,15 @@ serve(async (req) => {
     }
 
     // Clean and validate phone number
-    const cleanPhone = phone.replace(/\D/g, '');
+    let cleanPhone = phone.replace(/\D/g, '');
     
-    // Brazilian phone: 10-11 digits (with area code), or 12-13 digits (with country code 55)
-    if (cleanPhone.length < 10 || cleanPhone.length > 13) {
+    // Remove country code if present for validation
+    if (cleanPhone.startsWith('55') && cleanPhone.length > 11) {
+      cleanPhone = cleanPhone.substring(2);
+    }
+    
+    // Brazilian phone: 10-11 digits (with area code)
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
       return new Response(JSON.stringify({ error: 'Número de telefone inválido. Verifique o DDD e número.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -36,16 +59,14 @@ serve(async (req) => {
     // Generate 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Format for WhatsApp (ensure 55 country code prefix)
-    let whatsappNumber: string;
-    if (cleanPhone.startsWith('55')) {
-      whatsappNumber = `${cleanPhone}@s.whatsapp.net`;
-    } else {
-      whatsappNumber = `55${cleanPhone}@s.whatsapp.net`;
-    }
+    // Format phone for API (remove 9th digit if present)
+    const formattedPhone = formatPhoneForApi(cleanPhone);
+    
+    // Format for WhatsApp with country code
+    const whatsappNumber = `55${formattedPhone}@s.whatsapp.net`;
 
-    // Store phone without country code for consistency
-    const phoneToStore = cleanPhone.startsWith('55') ? cleanPhone.substring(2) : cleanPhone;
+    // Store formatted phone for consistency
+    const phoneToStore = formattedPhone;
 
     console.log(`Sending verification code to: ${whatsappNumber}`);
 
