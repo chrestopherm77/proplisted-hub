@@ -3,6 +3,7 @@ import { StepContainer } from "../../StepContainer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign } from "lucide-react";
+import { formatCurrency } from "@/lib/validators";
 
 export function SellValueStep({ data, updateFlowData }: StepProps) {
   return (
@@ -19,7 +20,7 @@ export function SellValueStep({ data, updateFlowData }: StepProps) {
           <Input
             id="expectedValue"
             value={data.sell?.expectedValue || ''}
-            onChange={(e) => updateFlowData('sell', { expectedValue: e.target.value })}
+            onChange={(e) => updateFlowData('sell', { expectedValue: formatCurrency(e.target.value) })}
             placeholder="Ex: R$ 500.000,00"
             className="h-12"
           />

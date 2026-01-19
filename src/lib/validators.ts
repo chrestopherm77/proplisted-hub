@@ -111,3 +111,19 @@ export function validatePassword(password: string): { valid: boolean; message: s
   }
   return { valid: true, message: '' };
 }
+
+// Formatação de moeda brasileira (R$ X.XXX,XX)
+export function formatCurrency(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  const amount = parseInt(numbers, 10);
+  
+  const formatted = (amount / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  
+  return `R$ ${formatted}`;
+}
