@@ -171,7 +171,11 @@ export function CredentialsStep({ formData, onChange, errors }: CredentialsStepP
               id="acceptedContract"
               checked={formData.acceptedContract}
               className="mt-0.5"
-              disabled
+              onCheckedChange={() => {
+                if (!formData.acceptedContract) {
+                  setIsContractOpen(true);
+                }
+              }}
             />
             <div className="grid gap-1 leading-none flex-1">
               <label
@@ -203,7 +207,11 @@ export function CredentialsStep({ formData, onChange, errors }: CredentialsStepP
               id="acceptedDPA"
               checked={formData.acceptedDPA}
               className="mt-0.5"
-              disabled
+              onCheckedChange={() => {
+                if (!formData.acceptedDPA) {
+                  setIsDPAOpen(true);
+                }
+              }}
             />
             <div className="grid gap-1 leading-none flex-1">
               <label
@@ -235,7 +243,11 @@ export function CredentialsStep({ formData, onChange, errors }: CredentialsStepP
               id="acceptedTermsOfUse"
               checked={formData.acceptedTermsOfUse}
               className="mt-0.5"
-              disabled
+              onCheckedChange={() => {
+                if (!formData.acceptedTermsOfUse) {
+                  setIsTermsOfUseOpen(true);
+                }
+              }}
             />
             <div className="grid gap-1 leading-none flex-1">
               <label

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Profession } from "@/types/signup";
-import { UserCheck, Compass, HardHat, UserX } from "lucide-react";
+import { UserCheck, Compass, HardHat } from "lucide-react";
 
 interface PFProfessionStepProps {
   value: Profession | null;
@@ -26,12 +26,6 @@ const professions = [
     label: 'Engenheiro',
     description: 'Profissional com CREA',
     icon: HardHat,
-  },
-  {
-    value: 'NONE' as Profession,
-    label: 'Nenhuma das opções',
-    description: 'Não possuo registro profissional',
-    icon: UserX,
   },
 ];
 
