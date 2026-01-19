@@ -354,7 +354,7 @@ const allSteps: StepDefinition[] = [
     id: 'contact', 
     component: ContactStep, 
     isVisible: (data) => !!data.intention,
-    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.acceptedTerms,
+    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.phoneVerified && data.acceptedTerms,
   },
 ];
 

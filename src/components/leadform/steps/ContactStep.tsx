@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatPhone } from "@/lib/validators";
-import { User, Phone, Mail, FileText, Check } from "lucide-react";
+import { User, Phone, Mail, FileText, Check, CheckCircle, Loader2, Send } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const CONSENT_TERMS = `TERMO DE CONSENTIMENTO PARA TRATAMENTO E COMPARTILHAMENTO DE DADOS PESSOAIS
 
@@ -119,13 +126,107 @@ c) Poderá ser contatado por até 5 (cinco) parceiros comerciais, no prazo máxi
 
 d) Leu e concorda integralmente com este Termo, a Política de Privacidade e os Termos de Uso.`;
 
+type VerificationStep = 'input' | 'verify' | 'verified';
+
 export function ContactStep({ data, updateData }: StepProps) {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<VerificationStep>(
+    data.phoneVerified ? 'verified' : 'input'
+  );
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
-    updateData({ phone: formatted });
+    updateData({ phone: formatted, phoneVerified: false });
+    // Reset verification if phone changes
+    if (verificationStep !== 'input') {
+      setVerificationStep('input');
+      setOtpValue('');
+      setError(null);
+    }
+  };
+
+  const handleSendCode = async () => {
+    if (!data.phone || data.phone.length < 14) {
+      setError('Digite um número de telefone válido');
+      return;
+    }
+
+    setIsSendingCode(true);
+    setError(null);
+
+    try {
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke('send-whatsapp-code', {
+        body: { phone: data.phone }
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message);
+      }
+
+      if (responseData?.error) {
+        setError(responseData.error);
+        return;
+      }
+
+      setVerificationStep('verify');
+      toast({
+        title: "Código enviado!",
+        description: "Verifique seu WhatsApp e digite o código de 6 dígitos.",
+      });
+    } catch (err: any) {
+      console.error('Error sending code:', err);
+      setError(err.message || 'Erro ao enviar código. Tente novamente.');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (otpValue.length !== 6) {
+      setError('Digite o código completo de 6 dígitos');
+      return;
+    }
+
+    setIsVerifying(true);
+    setError(null);
+
+    try {
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke('verify-whatsapp-code', {
+        body: { phone: data.phone, code: otpValue }
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message);
+      }
+
+      if (responseData?.valid) {
+        updateData({ phoneVerified: true });
+        setVerificationStep('verified');
+        toast({
+          title: "WhatsApp verificado!",
+          description: "Seu número foi verificado com sucesso.",
+        });
+      } else {
+        setError(responseData?.error || 'Código inválido ou expirado');
+      }
+    } catch (err: any) {
+      console.error('Error verifying code:', err);
+      setError(err.message || 'Erro ao verificar código. Tente novamente.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendCode = () => {
+    setOtpValue('');
+    setError(null);
+    handleSendCode();
   };
 
   const handleCheckboxClick = () => {
@@ -142,6 +243,8 @@ export function ContactStep({ data, updateData }: StepProps) {
     setIsTermsOpen(false);
   };
 
+  const canValidatePhone = data.name.trim().length > 0 && data.phone.length >= 14;
+
   return (
     <>
       <StepContainer
@@ -149,6 +252,7 @@ export function ContactStep({ data, updateData }: StepProps) {
         subtitle="Preencha suas informações para que possamos entrar em contato"
       >
         <div className="space-y-6 max-w-md mx-auto">
+          {/* Name Input */}
           <div className="space-y-2">
             <Label htmlFor="name" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -160,9 +264,11 @@ export function ContactStep({ data, updateData }: StepProps) {
               onChange={(e) => updateData({ name: e.target.value })}
               placeholder="Digite seu nome completo"
               className="h-12"
+              disabled={verificationStep === 'verified'}
             />
           </div>
 
+          {/* Phone Input */}
           <div className="space-y-2">
             <Label htmlFor="phone" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
@@ -175,55 +281,149 @@ export function ContactStep({ data, updateData }: StepProps) {
               placeholder="(00) 00000-0000"
               className="h-12"
               maxLength={15}
+              disabled={verificationStep === 'verified'}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              E-mail (opcional)
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={data.email}
-              onChange={(e) => updateData({ email: e.target.value })}
-              placeholder="seu@email.com"
-              className="h-12"
-            />
-          </div>
-
-          {/* Consent Checkbox */}
-          <div className="pt-4 border-t">
-            <div
-              className="flex items-start gap-3 cursor-pointer group"
-              onClick={handleCheckboxClick}
+          {/* Validation Button (Step: input) */}
+          {verificationStep === 'input' && (
+            <Button
+              onClick={handleSendCode}
+              disabled={!canValidatePhone || isSendingCode}
+              className="w-full h-12 gap-2"
+              variant="outline"
             >
-              <Checkbox
-                id="consent"
-                checked={data.acceptedTerms}
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <Label
-                  htmlFor="consent"
-                  className="flex items-center gap-2 cursor-pointer text-sm font-medium leading-relaxed"
+              {isSendingCode ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enviando código...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Validar WhatsApp
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* OTP Input (Step: verify) */}
+          {verificationStep === 'verify' && (
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+              <p className="text-sm text-center text-muted-foreground">
+                Digite o código de 6 dígitos enviado para seu WhatsApp
+              </p>
+              
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otpValue}
+                  onChange={setOtpValue}
                 >
-                  <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span>
-                    Concordo com o{" "}
-                    <span className="text-primary underline underline-offset-2 group-hover:text-primary/80">
-                      Termo de Consentimento para Tratamento e Compartilhamento de Dados
-                    </span>{" "}
-                    *
-                  </span>
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1 ml-6">
-                  Clique para ler e aceitar os termos
-                </p>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleVerifyCode}
+                  disabled={otpValue.length !== 6 || isVerifying}
+                  className="flex-1 gap-2"
+                >
+                  {isVerifying ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Verificar Código
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={isSendingCode}
+                className="w-full text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                Reenviar código
+              </button>
             </div>
-          </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
+
+          {/* Verified Success (Step: verified) */}
+          {verificationStep === 'verified' && (
+            <>
+              <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg border border-green-200 dark:border-green-900">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">WhatsApp verificado com sucesso!</span>
+              </div>
+
+              {/* Email Input (optional, only shown after verification) */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  E-mail (opcional)
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={data.email}
+                  onChange={(e) => updateData({ email: e.target.value })}
+                  placeholder="seu@email.com"
+                  className="h-12"
+                />
+              </div>
+
+              {/* Consent Checkbox (only shown after verification) */}
+              <div className="pt-4 border-t">
+                <div
+                  className="flex items-start gap-3 cursor-pointer group"
+                  onClick={handleCheckboxClick}
+                >
+                  <Checkbox
+                    id="consent"
+                    checked={data.acceptedTerms}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="consent"
+                      className="flex items-center gap-2 cursor-pointer text-sm font-medium leading-relaxed"
+                    >
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span>
+                        Concordo com o{" "}
+                        <span className="text-primary underline underline-offset-2 group-hover:text-primary/80">
+                          Termo de Consentimento para Tratamento e Compartilhamento de Dados
+                        </span>{" "}
+                        *
+                      </span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1 ml-6">
+                      Clique para ler e aceitar os termos
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </StepContainer>
 
