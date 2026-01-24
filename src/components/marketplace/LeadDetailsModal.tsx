@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingCart, X } from "lucide-react";
-import { formatFormDataToSections, generateCompleteFormDataSection, intentionLabelsExport } from "@/lib/formatFormData";
+import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
 
 interface Lead {
   id: string;
@@ -89,9 +89,8 @@ export function LeadDetailsModal({
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
   const intention = inferIntention(normalizedFormData, lead.description);
   const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
-  
-  // Generate complete form data section for guaranteed visibility
-  const completeSection = hasFormData ? generateCompleteFormDataSection(normalizedFormData) : null;
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,26 +144,8 @@ export function LeadDetailsModal({
                     </>
                   )}
                   
-                  {/* Complete Form Data Section - ALWAYS shows all fields */}
-                  {completeSection && completeSection.fields.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-dashed">
-                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                        <span>{completeSection.icon}</span>
-                        {completeSection.title}
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6 bg-muted/30 p-3 rounded-lg">
-                        {completeSection.fields.map((field, fieldIdx) => (
-                          <div key={fieldIdx} className="text-sm">
-                            <span className="text-muted-foreground">{field.label}:</span>{' '}
-                            <span className="font-medium text-foreground">{field.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Message when no form data could be extracted */}
-                  {sections.length === 0 && (!completeSection || completeSection.fields.length === 0) && (
+                  {sections.length === 0 && (
                     <div className="py-4">
                       <p className="text-sm text-muted-foreground">
                         Nenhuma informação do formulário foi fornecida.
