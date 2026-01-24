@@ -27,6 +27,109 @@ interface ParsedDescription {
   characteristics: string;
 }
 
+// Value range definitions
+const valueRanges = [
+  { value: 'all', label: 'Todos os valores', min: 0, max: Infinity },
+  { value: 'up_to_100k', label: 'Até R$ 100.000', min: 0, max: 100000 },
+  { value: '100k_to_250k', label: 'R$ 100.000 - R$ 250.000', min: 100000, max: 250000 },
+  { value: '250k_to_500k', label: 'R$ 250.000 - R$ 500.000', min: 250000, max: 500000 },
+  { value: '500k_to_1m', label: 'R$ 500.000 - R$ 1.000.000', min: 500000, max: 1000000 },
+  { value: 'above_1m', label: 'Acima de R$ 1.000.000', min: 1000000, max: Infinity },
+];
+
+// Objective labels in Portuguese
+const objectiveLabels: Record<string, string> = {
+  'SELL': 'Vender',
+  'BUY': 'Comprar',
+  'BUILD': 'Construir',
+  'RENT': 'Alugar',
+};
+
+// Normalize form_data that might be string or object
+function normalizeFormData(raw: any): any {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === 'object') {
+    return raw;
+  }
+  return null;
+}
+
+// Extract UF from region field
+function extractUF(region: string | undefined): string {
+  if (!region) return '';
+  // Formats: "MG", "betim/mg", "Betim - MG", "betim - mg"
+  const upper = region.toUpperCase();
+  const match = upper.match(/\b([A-Z]{2})\b/);
+  return match ? match[1] : '';
+}
+
+// Extract city from region field
+function extractCity(region: string | undefined): string {
+  if (!region) return '';
+  // Formats: "betim/mg" → "Betim", "Betim - MG" → "Betim"
+  const parts = region.split(/[\/\-,]/);
+  const city = parts[0].trim();
+  if (!city) return '';
+  return city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+}
+
+// Extract neighborhood from form_data based on intention
+function extractBairro(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  
+  switch(intention) {
+    case 'SELL':
+      return formData?.sell?.neighborhood || '';
+    case 'BUY':
+      return formData?.buy?.neighborhood || '';
+    case 'BUILD':
+      return formData?.build?.neighborhood || '';
+    case 'RENT':
+      return formData?.rent?.neighborhood || '';
+    default:
+      return '';
+  }
+}
+
+// Extract objective from form_data
+function extractObjective(formData: any): string {
+  return formData?.intention || '';
+}
+
+// Extract value and convert to number
+function extractValue(formData: any): number | null {
+  const intention = formData?.intention;
+  let valueStr = '';
+  
+  switch(intention) {
+    case 'SELL':
+      valueStr = formData?.sell?.expectedValue;
+      break;
+    case 'BUY':
+      valueStr = formData?.buy?.budgetMax || formData?.buy?.budget;
+      break;
+    case 'BUILD':
+      valueStr = formData?.build?.budget;
+      break;
+    case 'RENT':
+      valueStr = formData?.rent?.maxRent;
+      break;
+  }
+  
+  if (!valueStr) return null;
+  // Parse "R$ 250.000,00" → 250000
+  const numbers = String(valueStr).replace(/\D/g, '');
+  return numbers ? parseInt(numbers, 10) / 100 : null;
+}
+
 const parseDescription = (description: string): ParsedDescription => {
   const lines = description.split('\n').map(line => line.trim());
   let interest = '';
@@ -58,12 +161,21 @@ export default function Leads() {
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
   // Temporary filter states (before clicking "Filtrar")
-  const [tempInterest, setTempInterest] = useState<string>('all');
-  const [tempRegion, setTempRegion] = useState<string>('all');
+  const [tempUF, setTempUF] = useState<string>('all');
+  const [tempCity, setTempCity] = useState<string>('all');
+  const [tempBairro, setTempBairro] = useState<string>('all');
+  const [tempObjective, setTempObjective] = useState<string>('all');
+  const [tempValueRange, setTempValueRange] = useState<string>('all');
+  
   // Applied filter states
-  const [filterInterest, setFilterInterest] = useState<string>('all');
-  const [filterRegion, setFilterRegion] = useState<string>('all');
+  const [filterUF, setFilterUF] = useState<string>('all');
+  const [filterCity, setFilterCity] = useState<string>('all');
+  const [filterBairro, setFilterBairro] = useState<string>('all');
+  const [filterObjective, setFilterObjective] = useState<string>('all');
+  const [filterValueRange, setFilterValueRange] = useState<string>('all');
+  
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -116,51 +228,133 @@ export default function Leads() {
     }
   };
 
-  // Extract unique interests and regions for filters
-  const { uniqueInterests, uniqueRegions } = useMemo(() => {
-    const interests = new Set<string>();
-    const regions = new Set<string>();
+  // Extract unique filter options from leads
+  const filterOptions = useMemo(() => {
+    const ufs = new Set<string>();
+    const cities = new Set<string>();
+    const bairros = new Set<string>();
+    const objectives = new Set<string>();
 
     leads.forEach(lead => {
       const parsed = parseDescription(lead.description);
-      if (parsed.interest) interests.add(parsed.interest);
-      if (parsed.region) regions.add(parsed.region);
+      const formData = normalizeFormData(lead.form_data);
+      const region = formData?.region || parsed.region;
+      
+      const uf = extractUF(region);
+      const city = extractCity(region);
+      const bairro = extractBairro(formData);
+      const objective = extractObjective(formData);
+      
+      if (uf) ufs.add(uf);
+      if (city) cities.add(city);
+      if (bairro) bairros.add(bairro);
+      if (objective) objectives.add(objective);
     });
 
     return {
-      uniqueInterests: Array.from(interests).sort(),
-      uniqueRegions: Array.from(regions).sort(),
+      uniqueUFs: Array.from(ufs).sort(),
+      uniqueCities: Array.from(cities).sort(),
+      uniqueBairros: Array.from(bairros).sort(),
+      uniqueObjectives: Array.from(objectives).sort(),
     };
   }, [leads]);
 
+  // Get cities filtered by selected UF
+  const filteredCities = useMemo(() => {
+    if (tempUF === 'all') {
+      return filterOptions.uniqueCities;
+    }
+    
+    const citiesForUF = new Set<string>();
+    leads.forEach(lead => {
+      const parsed = parseDescription(lead.description);
+      const formData = normalizeFormData(lead.form_data);
+      const region = formData?.region || parsed.region;
+      
+      const uf = extractUF(region);
+      const city = extractCity(region);
+      
+      if (uf === tempUF && city) {
+        citiesForUF.add(city);
+      }
+    });
+    
+    return Array.from(citiesForUF).sort();
+  }, [leads, tempUF, filterOptions.uniqueCities]);
+
   // Apply filters when button is clicked
   const applyFilters = () => {
-    setFilterInterest(tempInterest);
-    setFilterRegion(tempRegion);
+    setFilterUF(tempUF);
+    setFilterCity(tempCity);
+    setFilterBairro(tempBairro);
+    setFilterObjective(tempObjective);
+    setFilterValueRange(tempValueRange);
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setTempInterest('all');
-    setTempRegion('all');
-    setFilterInterest('all');
-    setFilterRegion('all');
+    setTempUF('all');
+    setTempCity('all');
+    setTempBairro('all');
+    setTempObjective('all');
+    setTempValueRange('all');
+    setFilterUF('all');
+    setFilterCity('all');
+    setFilterBairro('all');
+    setFilterObjective('all');
+    setFilterValueRange('all');
+  };
+
+  // Reset city when UF changes
+  const handleUFChange = (value: string) => {
+    setTempUF(value);
+    setTempCity('all'); // Reset city when UF changes
   };
 
   // Filter leads based on applied filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const parsed = parseDescription(lead.description);
+      const formData = normalizeFormData(lead.form_data);
+      const region = formData?.region || parsed.region;
       
-      if (filterInterest !== 'all' && parsed.interest !== filterInterest) {
+      const leadUF = extractUF(region);
+      const leadCity = extractCity(region);
+      const leadBairro = extractBairro(formData);
+      const leadObjective = extractObjective(formData);
+      const leadValue = extractValue(formData);
+      
+      // Filter by UF
+      if (filterUF !== 'all' && leadUF !== filterUF) {
         return false;
       }
-      if (filterRegion !== 'all' && parsed.region !== filterRegion) {
+      
+      // Filter by City
+      if (filterCity !== 'all' && leadCity !== filterCity) {
         return false;
       }
+      
+      // Filter by Bairro
+      if (filterBairro !== 'all' && leadBairro !== filterBairro) {
+        return false;
+      }
+      
+      // Filter by Objective
+      if (filterObjective !== 'all' && leadObjective !== filterObjective) {
+        return false;
+      }
+      
+      // Filter by Value Range
+      if (filterValueRange !== 'all' && leadValue !== null) {
+        const range = valueRanges.find(r => r.value === filterValueRange);
+        if (range && (leadValue < range.min || leadValue > range.max)) {
+          return false;
+        }
+      }
+      
       return true;
     });
-  }, [leads, filterInterest, filterRegion]);
+  }, [leads, filterUF, filterCity, filterBairro, filterObjective, filterValueRange]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
@@ -251,46 +445,98 @@ export default function Leads() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1.5 min-w-[180px]">
-              <label className="text-xs text-muted-foreground">Região</label>
-              <Select value={tempRegion} onValueChange={setTempRegion}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* UF Filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">UF</label>
+              <Select value={tempUF} onValueChange={handleUFChange}>
                 <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todas as regiões" />
+                  <SelectValue placeholder="Todos os estados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as regiões</SelectItem>
-                  {uniqueRegions.map(region => (
-                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  <SelectItem value="all">Todos os estados</SelectItem>
+                  {filterOptions.uniqueUFs.map(uf => (
+                    <SelectItem key={uf} value={uf}>{uf}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[180px]">
-              <label className="text-xs text-muted-foreground">Interesse</label>
-              <Select value={tempInterest} onValueChange={setTempInterest}>
+            
+            {/* City Filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Cidade</label>
+              <Select value={tempCity} onValueChange={setTempCity}>
                 <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os interesses" />
+                  <SelectValue placeholder="Todas as cidades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os interesses</SelectItem>
-                  {uniqueInterests.map(interest => (
-                    <SelectItem key={interest} value={interest}>{interest}</SelectItem>
+                  <SelectItem value="all">Todas as cidades</SelectItem>
+                  {filteredCities.map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={applyFilters}>
-                Filtrar
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-              >
-                Limpar
-              </Button>
+            
+            {/* Bairro Filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Bairro</label>
+              <Select value={tempBairro} onValueChange={setTempBairro}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todos os bairros" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os bairros</SelectItem>
+                  {filterOptions.uniqueBairros.map(bairro => (
+                    <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            
+            {/* Objective Filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Objetivo</label>
+              <Select value={tempObjective} onValueChange={setTempObjective}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todos os objetivos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os objetivos</SelectItem>
+                  {filterOptions.uniqueObjectives.map(obj => (
+                    <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || obj}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Value Range Filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Valor</label>
+              <Select value={tempValueRange} onValueChange={setTempValueRange}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todos os valores" />
+                </SelectTrigger>
+                <SelectContent>
+                  {valueRanges.map(range => (
+                    <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Filter Buttons */}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button onClick={applyFilters}>
+              Filtrar
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+            >
+              Limpar
+            </Button>
           </div>
         </div>
 
