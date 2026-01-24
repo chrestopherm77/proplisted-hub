@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Package, TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
+import FakeNotification from '@/components/FakeNotification';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -62,7 +63,7 @@ const Index = () => {
         <section className="container mx-auto px-4 py-12 md:py-20">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadBay?</h2>
           <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
-            A plataforma mais confiável para corretores de imóveis encontrarem clientes qualificados
+            A plataforma que corretores confiam para encontrar clientes com intenção real de compra
           </p>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
@@ -71,8 +72,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Leads Qualificados</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Todos os leads são verificados e qualificados antes de serem disponibilizados. 
-                Apenas contatos reais e com interesse genuíno.
+                Leads 100% verificados com interesse real de compra ou venda. Economize tempo com contatos desqualificados.
               </p>
             </div>
             <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
@@ -81,8 +81,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Seguro e Confiável</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Plataforma segura em conformidade com LGPD para proteção de dados. 
-                Seus investimentos e informações estão protegidos.
+                Total segurança e conformidade com a LGPD. Seus dados e investimentos protegidos em cada transação.
               </p>
             </div>
             <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
@@ -103,7 +102,7 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Como Funciona</h2>
             <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Processo simples e rápido para você começar a fechar negócios hoje mesmo
+              3 passos simples para começar a fechar negócios hoje
             </p>
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               <div className="text-center">
@@ -169,7 +168,7 @@ const Index = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Leads Exclusivos por Região</h3>
                     <p className="text-muted-foreground">
-                      Cada lead pode ser vendido para no máximo 3 corretores, garantindo exclusividade
+                      Cada lead é compartilhado com no máximo 3 corretores. Mais exclusividade, menos concorrência.
                     </p>
                   </div>
                 </div>
@@ -187,7 +186,7 @@ const Index = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Pagamento Seguro</h3>
                     <p className="text-muted-foreground">
-                      Múltiplas formas de pagamento com a segurança do Asaas
+                      Pagamento 100% seguro via PIX ou cartão, processado pela Asaas
                     </p>
                   </div>
                 </div>
@@ -196,7 +195,7 @@ const Index = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Histórico Completo</h3>
                     <p className="text-muted-foreground">
-                      Acesse todos os seus leads comprados a qualquer momento
+                      Histórico completo de todos os leads adquiridos disponível 24/7
                     </p>
                   </div>
                 </div>
@@ -239,6 +238,8 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <FakeNotification />
     </div>
   );
 };
