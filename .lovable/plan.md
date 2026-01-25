@@ -1,64 +1,102 @@
 
-
-## Plano: Atualizar URL de Redirecionamento Pós-Pagamento
+## Plano: Corrigir Dupla Contagem de Compras no Webhook
 
 ### Problema Identificado
-Na Edge Function `create-payment`, a URL de redirecionamento após o pagamento está configurada com o domínio antigo:
 
-```typescript
-// Linha 110
-const FRONTEND_URL = 'https://proplisted-hub.lovable.app';
-```
+O Asaas envia **dois eventos diferentes** para a mesma transação de pagamento:
+1. `CHECKOUT_PAID` (confirmação do checkout)
+2. `PAYMENT_RECEIVED` (confirmação do pagamento)
 
-Isso faz com que, após a confirmação do pagamento pelo Asaas, o usuário seja redirecionado para o domínio errado.
+Atualmente, o webhook processa ambos os eventos separadamente, e cada um:
+- Atualiza o status da compra para `PAID`
+- Incrementa o `purchase_count` do lead em +1
+
+Isso resulta em:
+- **purchase_count = 2** quando deveria ser **1**
+- Inconsistência entre o que aparece no card (1/3) e no modal (2 vendidos)
+
+### Evidência no Banco de Dados
+
+| Campo | Valor |
+|-------|-------|
+| Lead ID | f6fcdfb7-f9ab-4442-b7b2-1cf52261d3a1 |
+| purchase_count na tabela leads | 2 |
+| Registros reais na tabela purchases | 1 |
+
+Eventos do webhook processados:
+- `CHECKOUT_PAID` às 00:16:31 - processed: true
+- `PAYMENT_RECEIVED` às 00:16:29 - processed: true
 
 ---
 
 ### Solução
 
-**Arquivo a modificar:** `supabase/functions/create-payment/index.ts`
+**Arquivo a modificar:** `supabase/functions/asaas-webhook/index.ts`
 
-#### Alteração na linha 110
+#### 1. Adicionar verificação se a compra já está PAID
 
-| Antes | Depois |
-|-------|--------|
-| `const FRONTEND_URL = 'https://proplisted-hub.lovable.app';` | `const FRONTEND_URL = 'https://leadbay.com.br';` |
+Antes de processar qualquer evento de confirmação, verificar se a compra já foi marcada como `PAID`:
+
+```typescript
+// Dentro de processPaymentConfirmation, após encontrar as purchases:
+
+for (const purchase of purchases) {
+  // NEW: Skip if purchase is already PAID
+  if (purchase.status === 'PAID') {
+    console.log('⏭️ Purchase already PAID, skipping:', purchase.id);
+    continue;
+  }
+  
+  // ... resto do processamento
+}
+```
+
+#### 2. Localização exata da alteração
+
+**Linha 305-306** (início do loop `for`):
+
+Adicionar verificação logo após `for (const purchase of purchases) {`:
+
+```typescript
+for (const purchase of purchases) {
+  // Check if purchase is already PAID to prevent double processing
+  if (purchase.status === 'PAID') {
+    console.log('⏭️ Purchase already PAID, skipping:', purchase.id);
+    continue;
+  }
+  
+  console.log('Processing purchase:', purchase.id);
+  // ... resto do código
+}
+```
 
 ---
 
-### URLs de Callback Afetadas
+### Correção do Dado Incorreto
 
-Após a alteração, os redirecionamentos serão:
+Além de corrigir o código, será necessário corrigir o `purchase_count` do lead afetado no banco de dados:
 
-| Evento | URL Atual | URL Nova |
-|--------|-----------|----------|
-| Pagamento Confirmado | `https://proplisted-hub.lovable.app/checkout-success` | `https://leadbay.com.br/checkout-success` |
-| Erro no Pagamento | `https://proplisted-hub.lovable.app/checkout-error` | `https://leadbay.com.br/checkout-error` |
-| Checkout Expirado | `https://proplisted-hub.lovable.app/checkout-expired` | `https://leadbay.com.br/checkout-expired` |
-| Cancelamento | `https://proplisted-hub.lovable.app/checkout-error` | `https://leadbay.com.br/checkout-error` |
+**Opção 1:** Executar manualmente via Cloud View > Run SQL:
+```sql
+UPDATE leads 
+SET purchase_count = 1 
+WHERE id = 'f6fcdfb7-f9ab-4442-b7b2-1cf52261d3a1';
+```
 
----
-
-### Sobre o Login do Usuário
-
-O login permanecerá ativo após o redirecionamento desde que:
-1. O domínio `leadbay.com.br` esteja configurado nas URLs permitidas do sistema de autenticação
-2. O usuário tenha feito login pelo mesmo domínio (`leadbay.com.br`)
-
-**Importante:** Se o usuário fizer login por `proplisted-hub.lovable.app` e for redirecionado para `leadbay.com.br`, a sessão não será mantida porque são domínios diferentes. O ideal é que o usuário sempre acesse o sistema pelo domínio `leadbay.com.br`.
+**Opção 2:** Eu posso incluir uma migração para corrigir automaticamente.
 
 ---
 
-### Fluxo Após a Correção
+### Fluxo Corrigido
 
 ```text
-1. Usuário acessa leadbay.com.br
-2. Faz login e adiciona leads ao carrinho
-3. Finaliza compra → Redirecionado para Asaas
-4. Confirma pagamento no Asaas
-5. Asaas redireciona para leadbay.com.br/checkout-success
-6. Página mostra confirmação e redireciona para /my-leads
-7. Usuário vê seus leads comprados (sessão mantida)
+ANTES (problemático):
+1. PAYMENT_RECEIVED → processPaymentConfirmation → purchase_count = 1
+2. CHECKOUT_PAID → processPaymentConfirmation → purchase_count = 2 ❌
+
+DEPOIS (corrigido):
+1. PAYMENT_RECEIVED → processPaymentConfirmation → purchase.status = 'PAID', purchase_count = 1
+2. CHECKOUT_PAID → processPaymentConfirmation → purchase.status já é 'PAID' → skip ✅
 ```
 
 ---
@@ -67,8 +105,36 @@ O login permanecerá ativo após o redirecionamento desde que:
 
 | Item | Valor |
 |------|-------|
-| Arquivo | `supabase/functions/create-payment/index.ts` |
-| Linha | 110 |
-| Alteração | Trocar domínio de `proplisted-hub.lovable.app` para `leadbay.com.br` |
-| Deploy | Automático após edição |
+| Arquivo | `supabase/functions/asaas-webhook/index.ts` |
+| Função | `processPaymentConfirmation` |
+| Linha | 305 |
+| Tipo de alteração | Adicionar verificação de idempotência por status |
 
+---
+
+### Sobre a Exibição no Modal
+
+A diferença entre o card e o modal acontece porque:
+
+**Card (Leads.tsx):**
+```tsx
+{lead.max_purchases - lead.purchase_count}/{lead.max_purchases} disponíveis
+// Com purchase_count = 2: "1/3 disponíveis"
+```
+
+**Modal (LeadDetailsModal.tsx):**
+```tsx
+<p className="text-sm font-medium">{lead.purchase_count} vendidos</p>
+// Com purchase_count = 2: "2 vendidos"
+```
+
+Após corrigir o `purchase_count` para 1, ambos mostrarão valores consistentes:
+- Card: "2/3 disponíveis"
+- Modal: "1 vendidos"
+
+---
+
+### Resumo das Alterações
+
+1. **Edge Function** (`asaas-webhook/index.ts`): Adicionar verificação `if (purchase.status === 'PAID') continue;`
+2. **Correção de dados**: Atualizar o `purchase_count` do lead afetado para o valor correto
