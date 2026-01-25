@@ -107,7 +107,7 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     // Frontend URL onde o usuário deve ser redirecionado após o pagamento
-    const FRONTEND_URL = 'https://proplisted-hub.lovable.app';
+    const FRONTEND_URL = 'https://leadbay.com.br';
 
     if (!ASAAS_API_KEY) {
       throw new Error('ASAAS_API_KEY não configurada');
