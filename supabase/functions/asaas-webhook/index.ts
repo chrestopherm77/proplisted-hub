@@ -303,6 +303,12 @@ async function processPaymentConfirmation(
 
   // Process each purchase
   for (const purchase of purchases) {
+    // Check if purchase is already PAID to prevent double processing
+    if (purchase.status === 'PAID') {
+      console.log('⏭️ Purchase already PAID, skipping:', purchase.id);
+      continue;
+    }
+    
     console.log('Processing purchase:', purchase.id);
 
     // Update purchase status to PAID
