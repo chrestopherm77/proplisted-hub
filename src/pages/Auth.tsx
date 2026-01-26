@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Package } from 'lucide-react';
 import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -101,17 +103,30 @@ export default function Auth() {
               {loading ? 'Carregando...' : 'Entrar'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center space-y-2">
             <button
               type="button"
               onClick={() => setIsLogin(false)}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline text-sm"
             >
               Não tem conta? Cadastre-se
+            </button>
+            <br />
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              Esqueci minha senha
             </button>
           </div>
         </CardContent>
       </Card>
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 }

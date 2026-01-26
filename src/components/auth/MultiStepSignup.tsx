@@ -10,6 +10,7 @@ import { PJCompanyTypeStep } from "./steps/PJCompanyTypeStep";
 import { PFProfessionalDataStep } from "./steps/PFProfessionalDataStep";
 import { PJProfessionalDataStep } from "./steps/PJProfessionalDataStep";
 import { CredentialsStep } from "./steps/CredentialsStep";
+import { EmailVerificationModal } from "./EmailVerificationModal";
 import { SignupFormData, initialFormData, PersonType, CompanyType, Profession } from "@/types/signup";
 import { validateCPF, validateCNPJ, validateEmail, validatePhone, validatePassword } from "@/lib/validators";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
   const [formData, setFormData] = useState<SignupFormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
 
   const getTotalSteps = () => {
     if (!formData.personType) return 4;
@@ -59,6 +63,10 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         delete newErrors[field];
         return newErrors;
       });
+    }
+    // If email changes, reset verification status
+    if (field === 'email') {
+      setEmailVerified(false);
     }
   };
 
@@ -200,16 +208,53 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
     return Object.keys(newErrors).length === 0;
   };
 
+  const sendEmailVerificationCode = async () => {
+    setIsSendingCode(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-email-code", {
+        body: { email: formData.email },
+      });
+
+      if (error) throw error;
+
+      toast.success("Código de verificação enviado para seu e-mail");
+      setShowEmailVerification(true);
+    } catch (error: any) {
+      console.error("Error sending verification code:", error);
+      toast.error("Erro ao enviar código de verificação");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
   const handleNext = async () => {
     if (!validateStep()) return;
 
     const totalSteps = getTotalSteps();
+    
+    // If on step 2 (general data) and email not verified, send code
+    if (currentStep === 2 && !emailVerified) {
+      await sendEmailVerificationCode();
+      return;
+    }
     
     if (currentStep < totalSteps) {
       setCurrentStep(prev => prev + 1);
     } else {
       await handleSubmit();
     }
+  };
+
+  const handleEmailVerified = () => {
+    setEmailVerified(true);
+    setShowEmailVerification(false);
+    // Advance to next step after email is verified
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const handleChangeEmail = () => {
+    setShowEmailVerification(false);
+    setEmailVerified(false);
   };
 
   const handleBack = () => {
@@ -313,6 +358,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
             formData={formData}
             onChange={handleFieldChange}
             errors={errors}
+            emailVerified={emailVerified}
           />
         );
       } else {
@@ -321,6 +367,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
             formData={formData}
             onChange={handleFieldChange}
             errors={errors}
+            emailVerified={emailVerified}
           />
         );
       }
@@ -422,15 +469,22 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
 
             <Button
               onClick={handleNext}
-              disabled={isLoading}
+              disabled={isLoading || isSendingCode}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Criando conta...
                 </>
+              ) : isSendingCode ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando código...
+                </>
               ) : isLastStep ? (
                 "Finalizar Cadastro"
+              ) : currentStep === 2 && !emailVerified ? (
+                "Verificar E-mail"
               ) : (
                 <>
                   Avançar
@@ -451,6 +505,14 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
           </div>
         </CardContent>
       </Card>
+
+      <EmailVerificationModal
+        isOpen={showEmailVerification}
+        onClose={() => setShowEmailVerification(false)}
+        email={formData.email}
+        onVerified={handleEmailVerified}
+        onChangeEmail={handleChangeEmail}
+      />
     </div>
   );
 }
