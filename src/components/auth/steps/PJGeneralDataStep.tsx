@@ -2,15 +2,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SignupFormData } from "@/types/signup";
 import { formatCNPJ, formatPhone } from "@/lib/validators";
-import { Building2, CreditCard, MapPin, Mail, Phone } from "lucide-react";
+import { Building2, CreditCard, MapPin, Mail, Phone, CheckCircle } from "lucide-react";
 
 interface PJGeneralDataStepProps {
   formData: SignupFormData;
   onChange: (field: keyof SignupFormData, value: string) => void;
   errors: Record<string, string>;
+  emailVerified?: boolean;
 }
 
-export function PJGeneralDataStep({ formData, onChange, errors }: PJGeneralDataStepProps) {
+export function PJGeneralDataStep({ formData, onChange, errors, emailVerified }: PJGeneralDataStepProps) {
   const handleCNPJChange = (value: string) => {
     onChange('cnpj', formatCNPJ(value));
   };
@@ -78,6 +79,12 @@ export function PJGeneralDataStep({ formData, onChange, errors }: PJGeneralDataS
           <Label htmlFor="email" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
             E-mail *
+            {emailVerified && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-green-600">
+                <CheckCircle className="w-3 h-3" />
+                Verificado
+              </span>
+            )}
           </Label>
           <Input
             id="email"
@@ -85,7 +92,8 @@ export function PJGeneralDataStep({ formData, onChange, errors }: PJGeneralDataS
             placeholder="empresa@email.com"
             value={formData.email}
             onChange={(e) => onChange('email', e.target.value)}
-            className={errors.email ? "border-destructive" : ""}
+            className={errors.email ? "border-destructive" : emailVerified ? "border-green-500" : ""}
+            disabled={emailVerified}
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
         </div>
