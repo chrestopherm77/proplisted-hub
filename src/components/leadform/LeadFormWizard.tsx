@@ -283,13 +283,15 @@ const allSteps: StepDefinition[] = [
   { 
     id: 'build-bts-confirm', 
     component: BuildBTSConfirmStep, 
-    isVisible: (data) => data.intention === 'BUILD',
+    // Só mostra se NÃO escolheu BTS_INTEREST na etapa do terreno
+    isVisible: (data) => data.intention === 'BUILD' && data.build?.hasLand !== 'BTS_INTEREST',
     validate: (data) => data.build?.isBTSConfirmed !== undefined,
   },
   { 
     id: 'build-bts', 
     component: BuildBTSStep, 
-    isVisible: (data) => data.intention === 'BUILD' && data.build?.isBTSConfirmed === true,
+    // Mostra se confirmou BTS OU se já escolheu BTS_INTEREST antes
+    isVisible: (data) => data.intention === 'BUILD' && (data.build?.isBTSConfirmed === true || data.build?.hasLand === 'BTS_INTEREST'),
     validate: (data) => !!data.build?.btsRentRange && !!data.build?.btsMinContractTerm,
   },
   { 
