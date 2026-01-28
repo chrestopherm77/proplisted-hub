@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limit: max 3 attempts per phone per minute
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+
 // Formata telefone brasileiro para formato da API (remove 9º dígito extra)
 function formatPhoneForApi(phone: string): string {
   let cleanPhone = phone.replace(/\D/g, '');
@@ -56,11 +60,40 @@ serve(async (req) => {
       });
     }
 
-    // Generate 6-digit random code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
     // Format phone for API (remove 9th digit if present)
     const formattedPhone = formatPhoneForApi(cleanPhone);
+    
+    // Initialize Supabase client with service role
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Rate limiting: Check recent attempts for this phone
+    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    
+    const { count: recentAttempts, error: countError } = await supabase
+      .from('whatsapp_verification_codes')
+      .select('*', { count: 'exact', head: true })
+      .eq('phone', formattedPhone)
+      .gte('created_at', rateLimitCutoff);
+
+    if (countError) {
+      console.error('Error checking rate limit:', countError);
+    }
+
+    if (recentAttempts !== null && recentAttempts >= RATE_LIMIT_MAX_ATTEMPTS) {
+      console.log(`Rate limit exceeded for phone: ${formattedPhone} (${recentAttempts} attempts)`);
+      return new Response(JSON.stringify({ 
+        error: 'Muitas tentativas. Aguarde 1 minuto antes de solicitar um novo código.' 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Generate 6-digit random code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     
     // Format for WhatsApp with country code
     const whatsappNumber = `55${formattedPhone}@s.whatsapp.net`;
@@ -114,11 +147,6 @@ serve(async (req) => {
     console.log('WhatsApp message sent successfully');
 
     // Save code to database (expires in 5 minutes)
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     
     const { error: dbError } = await supabase

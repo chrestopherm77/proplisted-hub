@@ -9,6 +9,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit: max 3 attempts per email per minute
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+
 interface SendCodeRequest {
   email: string;
 }
@@ -30,19 +34,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const normalizedEmail = email.toLowerCase();
 
     // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Delete any existing codes for this email
+    // Rate limiting: Check recent attempts for this email
+    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    
+    const { count: recentAttempts, error: countError } = await supabase
+      .from("email_verification_codes")
+      .select("*", { count: "exact", head: true })
+      .eq("email", normalizedEmail)
+      .gte("created_at", rateLimitCutoff);
+
+    if (countError) {
+      console.error("Error checking rate limit:", countError);
+    }
+
+    if (recentAttempts !== null && recentAttempts >= RATE_LIMIT_MAX_ATTEMPTS) {
+      console.log(`Rate limit exceeded for email: ${normalizedEmail} (${recentAttempts} attempts)`);
+      return new Response(
+        JSON.stringify({ error: "Muitas tentativas. Aguarde 1 minuto antes de solicitar um novo código." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Delete any existing codes for this email (cleanup)
     await supabase
       .from("email_verification_codes")
       .delete()
-      .eq("email", email.toLowerCase());
+      .eq("email", normalizedEmail)
+      .lt("created_at", rateLimitCutoff);
 
     // Save code to database with 5-minute expiration
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
@@ -50,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: insertError } = await supabase
       .from("email_verification_codes")
       .insert({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         code,
         expires_at: expiresAt,
         verified: false,
