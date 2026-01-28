@@ -11,8 +11,8 @@ const options = [
 export function BuildKnowledgeStep({ data, updateFlowData }: StepProps) {
   return (
     <StepContainer
-      title="Você já possui conhecimento definido para executar a obra?"
-      subtitle="Conhece o processo de construção?"
+      title="Você já possui construtor definido para executar a obra?"
+      subtitle="Já tem uma construtora ou engenheiro responsável?"
     >
       <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
         {options.map((option) => (
