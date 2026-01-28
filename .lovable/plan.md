@@ -1,232 +1,110 @@
 
-## Plano: Modal de Detalhes na Página "Meus Leads"
+
+## Plano: Ajustes no Formulário de Cadastro (/lp)
 
 ### Resumo
 
-Implementar um modal na página "Meus Leads" que exibe os dados completos do lead comprado, incluindo informações de contato (nome, telefone) e todos os dados do formulário com formatação adequada (R$ para valores monetários e m² para medidas).
+Realizar 3 ajustes de copy e lógica no formulário de leads:
+
+1. Alterar subtítulo do orçamento no fluxo "Construir"
+2. Remover pergunta de dormitórios para imóveis comerciais no fluxo "Vender"
+3. Alterar "possui" para "recusou" na pergunta sobre preferência do ocupante
 
 ---
 
-## Problema Atual
+## Alterações a Realizar
 
-1. A página `MyLeads.tsx` não busca o campo `form_data` da tabela `leads`
-2. Não existe modal para visualizar detalhes completos do lead comprado
-3. Apenas a descrição resumida é exibida no card
+### 1. Orçamento Estimado (Construir)
 
----
+**Arquivo:** `src/components/leadform/steps/build/BuildBudgetStep.tsx` (linha 18)
 
-## Solução
-
-### Arquivos a Criar
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/components/marketplace/PurchasedLeadModal.tsx` | Modal específico para leads comprados que mostra dados de contato + form_data formatado |
-
-### Arquivos a Modificar
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/pages/MyLeads.tsx` | Adicionar busca de form_data, estado do modal e integração |
-| `src/lib/formatFormData.ts` | Adicionar função de formatação que adiciona m² e R$ automaticamente |
+| Atual | Novo |
+|-------|------|
+| "Qual o orçamento estimado para a obra (considerando ou não o terreno)?" | "Qual o orçamento estimado para a obra sem considerar o terreno" |
 
 ---
 
-## Detalhes da Implementação
+### 2. Remover Pergunta de Dormitórios (Comercial)
 
-### 1. Novo Modal: PurchasedLeadModal.tsx
+**Arquivo:** `src/components/leadform/steps/sell/SellCommercialTypeStep.tsx`
 
-**Estrutura visual:**
+**Remover:** Linhas 41-57 (bloco inteiro da pergunta de dormitórios)
 
-```text
-┌─────────────────────────────────────────────┐
-│  Lead: João Silva                    [Pago] │
-│  📞 (31) 99999-9999                         │
-│  📧 joao@email.com (se disponível)          │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📋 Detalhes do Lead                        │
-│                                             │
-│  🎯 Intenção                                │
-│     Finalidade: Moradia                     │
-│     Tipo: Casa                              │
-│                                             │
-│  🏠 Preferências                            │
-│     Dormitórios: 3                          │
-│     Banheiros: 2                            │
-│     Vagas: 2                                │
-│     Área mínima: 150 m²                     │
-│                                             │
-│  📍 Localização e Orçamento                 │
-│     Região: Betim - MG                      │
-│     Orçamento: R$ 300.000,00 - R$ 500.000,00│
-│                                             │
-│  💳 Pagamento                               │
-│     Forma: Financiamento                    │
-│     Aprovado: Sim                           │
-│                                             │
-├─────────────────────────────────────────────┤
-│  Comprado em: 28/01/2026                    │
-│  Valor pago: R$ 15,00                       │
-└─────────────────────────────────────────────┘
+```jsx
+// REMOVER ESTE BLOCO:
+<div className="space-y-4">
+  <h3 className="text-lg font-medium flex items-center gap-2">
+    <Bed className="h-5 w-5 text-primary" />
+    Quantos dormitórios o imóvel possui?
+  </h3>
+  <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
+    {bedroomOptions.map((option) => (
+      <OptionCard
+        key={option}
+        label={option}
+        isSelected={data.sell?.commercialBedrooms === option}
+        onClick={() => updateFlowData('sell', { commercialBedrooms: option })}
+        className="py-4"
+      />
+    ))}
+  </div>
+</div>
 ```
 
-**Características:**
-- Usa o mesmo sistema de seções do `LeadDetailsModal`
-- Mostra nome e telefone no header (informações liberadas após compra)
-- Exibe email se disponível
-- Formata valores monetários com R$
-- Formata medidas com m²
-- Mostra data da compra e valor pago
+**Também remover:**
+- Linha 4: Import de `Bed` (deixar apenas Bath, Car, etc.)
+- Linha 15: `const bedroomOptions = ['1', '2', '3', '4+'];`
 
 ---
 
-### 2. Modificações no MyLeads.tsx
+### 3. Alterar Texto da Preferência do Ocupante
 
-**Query atualizada:**
-```typescript
-.select(`
-  id,
-  amount,
-  purchased_at,
-  leads (
-    id,
-    name,
-    phone,
-    description,
-    form_data    // ← NOVO
-  )
-`)
-```
+**Arquivo:** `src/components/leadform/steps/sell/SellPropertyStatusStep.tsx` (linha 64)
 
-**Novos estados:**
-```typescript
-const [selectedPurchase, setSelectedPurchase] = useState<PurchasedLead | null>(null);
-const [modalOpen, setModalOpen] = useState(false);
-```
-
-**Comportamento:**
-- Ao clicar no card, abre o modal com detalhes completos
-- Card permanece clicável (cursor-pointer, hover effect)
-
----
-
-### 3. Melhorias no formatFormData.ts
-
-**Nova função de formatação inteligente:**
-
-```typescript
-function formatValueWithUnits(key: string, value: any): string {
-  // Campos de área/tamanho → adiciona m²
-  const areaFields = ['size', 'minSize', 'landMinSize', 'area'];
-  if (areaFields.includes(key)) {
-    const numValue = String(value).replace(/[^\d.,]/g, '');
-    if (numValue) return `${numValue} m²`;
-  }
-  
-  // Campos monetários → garante R$
-  const moneyFields = ['expectedValue', 'budget', 'budgetMin', 'budgetMax', 
-                       'maxRent', 'tradeOfferValue'];
-  if (moneyFields.includes(key)) {
-    const strValue = String(value);
-    // Se já tem R$, retorna como está
-    if (strValue.includes('R$')) return strValue;
-    // Se é número puro, formata
-    return `R$ ${strValue}`;
-  }
-  
-  return String(value);
-}
-```
-
-**Campos afetados:**
-
-| Campo | Unidade | Exemplo |
-|-------|---------|---------|
-| size | m² | 150 m² |
-| minSize | m² | 80 m² |
-| landMinSize | m² | 300 m² |
-| area | m² | 200 m² |
-| expectedValue | R$ | R$ 250.000,00 |
-| budget | R$ | R$ 300.000,00 |
-| budgetMin | R$ | R$ 200.000,00 |
-| budgetMax | R$ | R$ 500.000,00 |
-| maxRent | R$ | R$ 2.000,00 |
-| tradeOfferValue | R$ | R$ 150.000,00 |
-
----
-
-## Interface do PurchasedLeadModal
-
-### Props
-
-```typescript
-interface PurchasedLeadModalProps {
-  purchase: {
-    id: string;
-    amount: number;
-    purchased_at: string;
-    lead: {
-      id: string;
-      name: string;
-      phone: string;
-      description: string;
-      form_data?: any;
-    };
-  } | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-```
-
-### Diferenças do LeadDetailsModal
-
-| Aspecto | LeadDetailsModal (Marketplace) | PurchasedLeadModal (Meus Leads) |
-|---------|-------------------------------|--------------------------------|
-| Header | Lead #ID | Nome completo |
-| Contato | Oculto | Telefone + Email visíveis |
-| Botões | Adicionar/Remover carrinho | Nenhum (já comprou) |
-| Footer | Preço do lead | Data compra + Valor pago |
-| Badge | X disponíveis | Pago |
-
----
-
-## Fluxo de Uso
-
-1. Usuário acessa `/my-leads`
-2. Vê cards resumidos dos leads comprados
-3. Clica em um card
-4. Modal abre com:
-   - Nome e telefone do lead (visível)
-   - Seções organizadas do form_data
-   - Valores formatados (R$, m²)
-   - Data da compra e valor pago
-5. Fecha o modal clicando fora ou no X
+| Atual | Novo |
+|-------|------|
+| "O ocupante possui direito de preferência?" | "O ocupante recusou direito de preferência?" |
 
 ---
 
 ## Detalhes Técnicos
 
-### Reuso de Código
+### Arquivos a Modificar
 
-O modal vai reutilizar:
-- `formatFormDataToSections()` do formatFormData.ts
-- Componentes de UI existentes (Dialog, ScrollArea, Badge)
-- Mesma estrutura visual do LeadDetailsModal
+| Arquivo | Alteração |
+|---------|-----------|
+| `BuildBudgetStep.tsx` | Alterar subtítulo (1 linha) |
+| `SellCommercialTypeStep.tsx` | Remover pergunta de dormitórios e imports não utilizados |
+| `SellPropertyStatusStep.tsx` | Alterar texto da pergunta (1 linha) |
 
-### Formatação de Unidades
+### Validação
 
-A lógica de formatação será adicionada na função `formatValue()` existente no formatFormData.ts, garantindo que:
-- Campos de área sempre mostrem "m²" no final
-- Campos monetários sempre tenham "R$" no início
-- Não duplique símbolos se já existirem
+A validação do step comercial (`validate: (data) => !!data.sell?.commercialType`) não será afetada, pois só verifica o tipo do imóvel comercial, não os dormitórios.
 
 ---
 
-## Resumo das Alterações
+## Resumo Visual das Mudanças
 
-| Tipo | Arquivo | Descrição |
-|------|---------|-----------|
-| Criar | `PurchasedLeadModal.tsx` | Modal de detalhes para leads comprados |
-| Modificar | `MyLeads.tsx` | Buscar form_data + integrar modal |
-| Modificar | `formatFormData.ts` | Adicionar formatação com m² e R$ |
+```text
+ANTES (Comercial):
+┌────────────────────────────────┐
+│ Qual tipo de imóvel comercial? │
+│ [Prédio] [Galpão] [Sala] ...   │
+├────────────────────────────────┤
+│ Quantos dormitórios?           │  ← REMOVER
+│ [1] [2] [3] [4+]               │  ← REMOVER
+├────────────────────────────────┤
+│ Quantos banheiros?             │
+│ [1] [2] [3] [4+]               │
+└────────────────────────────────┘
+
+DEPOIS (Comercial):
+┌────────────────────────────────┐
+│ Qual tipo de imóvel comercial? │
+│ [Prédio] [Galpão] [Sala] ...   │
+├────────────────────────────────┤
+│ Quantos banheiros?             │
+│ [1] [2] [3] [4+]               │
+└────────────────────────────────┘
+```
+
