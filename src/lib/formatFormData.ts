@@ -827,6 +827,46 @@ const fieldNameLabels: Record<string, string> = {
   commercialParkingSpots: 'Vagas (comercial)',
 };
 
+// Fields that represent area/size - should have m² suffix
+const AREA_FIELDS = ['size', 'minSize', 'landMinSize', 'area'];
+
+// Fields that represent monetary values - should have R$ prefix
+const MONEY_FIELDS = ['expectedValue', 'budget', 'budgetMin', 'budgetMax', 'maxRent', 'tradeOfferValue'];
+
+function formatValueWithUnits(key: string, value: string): string {
+  // Area fields - add m² if not present
+  if (AREA_FIELDS.includes(key)) {
+    const strValue = String(value).trim();
+    // Skip if already has m² or is a label like "Até 10 ha"
+    if (strValue.includes('m²') || strValue.includes('ha') || strValue.includes('hectare')) {
+      return strValue;
+    }
+    // Extract numeric part and add m²
+    const numericPart = strValue.replace(/[^\d.,]/g, '');
+    if (numericPart) {
+      return `${numericPart} m²`;
+    }
+    return strValue;
+  }
+  
+  // Money fields - ensure R$ prefix
+  if (MONEY_FIELDS.includes(key)) {
+    const strValue = String(value).trim();
+    // Skip if already has R$
+    if (strValue.includes('R$')) {
+      return strValue;
+    }
+    // If it's a pure number, format it
+    const cleanValue = strValue.replace(/[^\d.,]/g, '');
+    if (cleanValue) {
+      return `R$ ${strValue}`;
+    }
+    return strValue;
+  }
+  
+  return value;
+}
+
 function formatValue(key: string, value: any): string {
   if (value === undefined || value === null || value === '') return '';
   
@@ -844,18 +884,21 @@ function formatValue(key: string, value: any): string {
       .join(', ');
   }
   
-  // String - try to translate
+  // String - try to translate, then add units
   if (typeof value === 'string') {
     const labelMap = allLabelMaps[key];
+    let result = value;
     if (labelMap && labelMap[value]) {
-      return labelMap[value];
+      result = labelMap[value];
     }
-    return value;
+    // Apply unit formatting
+    return formatValueWithUnits(key, result);
   }
   
-  // Number
+  // Number - convert and add units
   if (typeof value === 'number') {
-    return String(value);
+    const strValue = String(value);
+    return formatValueWithUnits(key, strValue);
   }
   
   // Object - stringify nicely
