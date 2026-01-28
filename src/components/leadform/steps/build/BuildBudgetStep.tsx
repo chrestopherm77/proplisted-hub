@@ -15,7 +15,7 @@ export function BuildBudgetStep({ data, updateFlowData }: StepProps) {
   return (
     <StepContainer
       title="Orçamento estimado"
-      subtitle="Qual o orçamento estimado para a obra (considerando ou não o terreno)?"
+      subtitle="Qual o orçamento estimado para a obra sem considerar o terreno"
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
