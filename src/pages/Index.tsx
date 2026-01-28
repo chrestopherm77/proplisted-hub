@@ -63,7 +63,7 @@ const Index = () => {
         <section className="container mx-auto px-4 py-12 md:py-20">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadBay?</h2>
           <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
-            A plataforma que corretores confiam para encontrar clientes com intenção real de compra
+            A plataforma que corretores, imobiliárias e construtoras confiam para encontrar clientes com intenção real de compra
           </p>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             <div className="bg-card p-8 rounded-xl shadow-lg border border-border hover:shadow-xl transition-shadow">
@@ -111,7 +111,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Escolha o Lead</h3>
                 <p className="text-muted-foreground">
-                  Navegue pelo marketplace e escolha leads que se encaixam no seu perfil de cliente
+                  Navegue pela plataforma e escolha leads que se encaixam no seu perfil de cliente
                 </p>
               </div>
               <div className="text-center">
@@ -168,7 +168,7 @@ const Index = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Leads Exclusivos por Região</h3>
                     <p className="text-muted-foreground">
-                      Cada lead é compartilhado com no máximo 3 corretores. Mais exclusividade, menos concorrência.
+                      Cada lead é compartilhado com no máximo 5 corretores. Mais exclusividades, menos concorrência.
                     </p>
                   </div>
                 </div>
