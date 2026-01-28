@@ -1,110 +1,169 @@
 
 
-## Plano: Ajustes no Formulário de Cadastro (/lp)
+## Plano: Ajustes no Fluxo de Construir Imóvel
 
 ### Resumo
 
-Realizar 3 ajustes de copy e lógica no formulário de leads:
+Realizar 2 ajustes no fluxo "Construir um imóvel":
 
-1. Alterar subtítulo do orçamento no fluxo "Construir"
-2. Remover pergunta de dormitórios para imóveis comerciais no fluxo "Vender"
-3. Alterar "possui" para "recusou" na pergunta sobre preferência do ocupante
+1. Substituir "conhecimento" por "construtor" na pergunta sobre quem vai executar a obra
+2. Otimizar o fluxo BTS para evitar pergunta duplicada
 
 ---
 
 ## Alterações a Realizar
 
-### 1. Orçamento Estimado (Construir)
+### 1. Substituir "conhecimento" por "construtor"
 
-**Arquivo:** `src/components/leadform/steps/build/BuildBudgetStep.tsx` (linha 18)
+**Arquivo:** `src/components/leadform/steps/build/BuildKnowledgeStep.tsx`
 
-| Atual | Novo |
-|-------|------|
-| "Qual o orçamento estimado para a obra (considerando ou não o terreno)?" | "Qual o orçamento estimado para a obra sem considerar o terreno" |
+| Campo | Atual | Novo |
+|-------|-------|------|
+| Título (linha 14) | "Você já possui conhecimento definido para executar a obra?" | "Você já possui construtor definido para executar a obra?" |
+| Subtítulo (linha 15) | "Conhece o processo de construção?" | "Já tem uma construtora ou engenheiro responsável?" |
 
 ---
 
-### 2. Remover Pergunta de Dormitórios (Comercial)
+### 2. Otimizar Fluxo BTS (Evitar Pergunta Duplicada)
 
-**Arquivo:** `src/components/leadform/steps/sell/SellCommercialTypeStep.tsx`
+**Problema:** Se o usuário seleciona "Gostaria de fazer um Built to Suit (BTS)" na etapa 3 (BuildLandStep), lá na etapa 8 o sistema pergunta novamente "É BTS?".
 
-**Remover:** Linhas 41-57 (bloco inteiro da pergunta de dormitórios)
+**Solução:** 
+- Se `hasLand === 'BTS_INTEREST'`, pular o `BuildBTSConfirmStep` e ir direto para o `BuildBTSStep`
+- Se `hasLand !== 'BTS_INTEREST'`, mostrar o `BuildBTSConfirmStep` normalmente
 
-```jsx
-// REMOVER ESTE BLOCO:
-<div className="space-y-4">
-  <h3 className="text-lg font-medium flex items-center gap-2">
-    <Bed className="h-5 w-5 text-primary" />
-    Quantos dormitórios o imóvel possui?
-  </h3>
-  <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
-    {bedroomOptions.map((option) => (
-      <OptionCard
-        key={option}
-        label={option}
-        isSelected={data.sell?.commercialBedrooms === option}
-        onClick={() => updateFlowData('sell', { commercialBedrooms: option })}
-        className="py-4"
-      />
-    ))}
-  </div>
-</div>
+**Arquivo:** `src/components/leadform/LeadFormWizard.tsx`
+
+**Alterações nas regras de visibilidade:**
+
+```text
+ANTES:
+┌─────────────────────────────────────────────────────────────┐
+│ build-bts-confirm                                           │
+│   isVisible: data.intention === 'BUILD'                     │
+│   (sempre visível no fluxo BUILD)                           │
+├─────────────────────────────────────────────────────────────┤
+│ build-bts                                                   │
+│   isVisible: data.build?.isBTSConfirmed === true            │
+│   (só mostra se confirmou BTS)                              │
+└─────────────────────────────────────────────────────────────┘
+
+DEPOIS:
+┌─────────────────────────────────────────────────────────────┐
+│ build-bts-confirm                                           │
+│   isVisible: data.intention === 'BUILD' &&                  │
+│              data.build?.hasLand !== 'BTS_INTEREST'         │
+│   (só mostra se NÃO selecionou BTS_INTEREST na etapa 3)     │
+├─────────────────────────────────────────────────────────────┤
+│ build-bts                                                   │
+│   isVisible: data.build?.isBTSConfirmed === true ||         │
+│              data.build?.hasLand === 'BTS_INTEREST'         │
+│   (mostra se confirmou OU se já escolheu BTS antes)         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Também remover:**
-- Linha 4: Import de `Bed` (deixar apenas Bath, Car, etc.)
-- Linha 15: `const bedroomOptions = ['1', '2', '3', '4+'];`
+---
+
+## Fluxo Visual Após Alteração
+
+```text
+                    BuildLandStep
+                    "Já possui terreno?"
+                          │
+      ┌───────────────────┼───────────────────┐
+      │                   │                   │
+    [SIM]           [EM NEGOCIAÇÃO]     [BTS_INTEREST]
+    [NÃO]                 │                   │
+      │                   │                   │
+      ▼                   ▼                   ▼
+   (fluxo              (fluxo         ┌──────────────┐
+   normal)             normal)        │  PULA etapa  │
+      │                   │           │  "É BTS?"    │
+      │                   │           └──────┬───────┘
+      ▼                   ▼                  │
+BuildBTSConfirmStep  BuildBTSConfirmStep     │
+   "É BTS?"             "É BTS?"             │
+      │                   │                  │
+   [SIM]──────────────────┼──────────────────┤
+      │                   │                  │
+      ▼                   ▼                  ▼
+         BuildBTSStep (Detalhes do BTS)
+           - Faixa de aluguel
+           - Prazo mínimo de contrato
+```
 
 ---
 
-### 3. Alterar Texto da Preferência do Ocupante
+## Arquivos a Modificar
 
-**Arquivo:** `src/components/leadform/steps/sell/SellPropertyStatusStep.tsx` (linha 64)
-
-| Atual | Novo |
-|-------|------|
-| "O ocupante possui direito de preferência?" | "O ocupante recusou direito de preferência?" |
+| Arquivo | Alteração |
+|---------|-----------|
+| `BuildKnowledgeStep.tsx` | Alterar texto de "conhecimento" para "construtor" |
+| `LeadFormWizard.tsx` | Ajustar condições de visibilidade para BTS |
 
 ---
 
 ## Detalhes Técnicos
 
-### Arquivos a Modificar
+### BuildKnowledgeStep.tsx - Linhas 13-16
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `BuildBudgetStep.tsx` | Alterar subtítulo (1 linha) |
-| `SellCommercialTypeStep.tsx` | Remover pergunta de dormitórios e imports não utilizados |
-| `SellPropertyStatusStep.tsx` | Alterar texto da pergunta (1 linha) |
+```tsx
+// ANTES
+<StepContainer
+  title="Você já possui conhecimento definido para executar a obra?"
+  subtitle="Conhece o processo de construção?"
+>
 
-### Validação
+// DEPOIS
+<StepContainer
+  title="Você já possui construtor definido para executar a obra?"
+  subtitle="Já tem uma construtora ou engenheiro responsável?"
+>
+```
 
-A validação do step comercial (`validate: (data) => !!data.sell?.commercialType`) não será afetada, pois só verifica o tipo do imóvel comercial, não os dormitórios.
+### LeadFormWizard.tsx - Linhas 283-294
+
+```tsx
+// ANTES
+{ 
+  id: 'build-bts-confirm', 
+  component: BuildBTSConfirmStep, 
+  isVisible: (data) => data.intention === 'BUILD',
+  validate: (data) => data.build?.isBTSConfirmed !== undefined,
+},
+{ 
+  id: 'build-bts', 
+  component: BuildBTSStep, 
+  isVisible: (data) => data.intention === 'BUILD' && data.build?.isBTSConfirmed === true,
+  validate: (data) => !!data.build?.btsRentRange && !!data.build?.btsMinContractTerm,
+},
+
+// DEPOIS
+{ 
+  id: 'build-bts-confirm', 
+  component: BuildBTSConfirmStep, 
+  // Só mostra se NÃO escolheu BTS_INTEREST na etapa do terreno
+  isVisible: (data) => data.intention === 'BUILD' && data.build?.hasLand !== 'BTS_INTEREST',
+  validate: (data) => data.build?.isBTSConfirmed !== undefined,
+},
+{ 
+  id: 'build-bts', 
+  component: BuildBTSStep, 
+  // Mostra se confirmou BTS OU se já escolheu BTS_INTEREST antes
+  isVisible: (data) => data.intention === 'BUILD' && (data.build?.isBTSConfirmed === true || data.build?.hasLand === 'BTS_INTEREST'),
+  validate: (data) => !!data.build?.btsRentRange && !!data.build?.btsMinContractTerm,
+},
+```
 
 ---
 
-## Resumo Visual das Mudanças
+## Validação
 
-```text
-ANTES (Comercial):
-┌────────────────────────────────┐
-│ Qual tipo de imóvel comercial? │
-│ [Prédio] [Galpão] [Sala] ...   │
-├────────────────────────────────┤
-│ Quantos dormitórios?           │  ← REMOVER
-│ [1] [2] [3] [4+]               │  ← REMOVER
-├────────────────────────────────┤
-│ Quantos banheiros?             │
-│ [1] [2] [3] [4+]               │
-└────────────────────────────────┘
+A validação do step `build-bts-confirm` não será afetada porque:
+- Se `hasLand === 'BTS_INTEREST'`, o step é pulado (não precisa validar)
+- Se `hasLand !== 'BTS_INTEREST'`, o step aparece e exige `isBTSConfirmed`
 
-DEPOIS (Comercial):
-┌────────────────────────────────┐
-│ Qual tipo de imóvel comercial? │
-│ [Prédio] [Galpão] [Sala] ...   │
-├────────────────────────────────┤
-│ Quantos banheiros?             │
-│ [1] [2] [3] [4+]               │
-└────────────────────────────────┘
-```
+O step `build-bts` continua funcionando porque:
+- Aparece quando `isBTSConfirmed === true` (fluxo normal)
+- OU quando `hasLand === 'BTS_INTEREST'` (atalho direto)
 
