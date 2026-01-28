@@ -61,7 +61,7 @@ export function SellPropertyStatusStep({ data, updateFlowData }: StepProps) {
 
         {data.sell?.isOccupied && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-            <h3 className="text-lg font-medium">O ocupante possui direito de preferência?</h3>
+            <h3 className="text-lg font-medium">O ocupante recusou direito de preferência?</h3>
             <div className="grid grid-cols-3 gap-4">
               {preferenceOptions.map((option) => (
                 <OptionCard
