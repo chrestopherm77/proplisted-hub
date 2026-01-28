@@ -7,21 +7,27 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Calendar, DollarSign } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { PurchasedLeadModal } from '@/components/marketplace/PurchasedLeadModal';
 
 interface PurchasedLead {
   id: string;
   amount: number;
   purchased_at: string;
   lead: {
+    id: string;
     name: string;
     phone: string;
+    email?: string;
     description: string;
+    form_data?: any;
   };
 }
 
 export default function MyLeads() {
   const [purchases, setPurchases] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPurchase, setSelectedPurchase] = useState<PurchasedLead | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -53,9 +59,11 @@ export default function MyLeads() {
           amount,
           purchased_at,
           leads (
+            id,
             name,
             phone,
-            description
+            description,
+            form_data
           )
         `)
         .eq('user_id', user.id)
@@ -70,7 +78,13 @@ export default function MyLeads() {
           id: purchase.id,
           amount: purchase.amount,
           purchased_at: purchase.purchased_at,
-          lead: purchase.leads,
+          lead: {
+            id: purchase.leads.id,
+            name: purchase.leads.name,
+            phone: purchase.leads.phone,
+            description: purchase.leads.description,
+            form_data: purchase.leads.form_data,
+          },
         })) || [];
 
       setPurchases(formattedData);
@@ -101,6 +115,11 @@ export default function MyLeads() {
     });
   };
 
+  const handleCardClick = (purchase: PurchasedLead) => {
+    setSelectedPurchase(purchase);
+    setModalOpen(true);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -121,7 +140,11 @@ export default function MyLeads() {
 
         <div className="grid gap-4 md:gap-6 sm:grid-cols-2">
           {purchases.map((purchase) => (
-            <Card key={purchase.id} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={purchase.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleCardClick(purchase)}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -139,7 +162,7 @@ export default function MyLeads() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Descrição:</p>
-                  <p className="text-sm">{purchase.lead.description}</p>
+                  <p className="text-sm line-clamp-2">{purchase.lead.description}</p>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t">
                   <div className="flex items-center text-sm text-muted-foreground">
@@ -165,6 +188,12 @@ export default function MyLeads() {
           </div>
         )}
       </div>
+
+      <PurchasedLeadModal
+        purchase={selectedPurchase}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </Layout>
   );
 }
