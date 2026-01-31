@@ -1,218 +1,222 @@
 
 
-## Plano: Correção de 5 Erros de Segurança
+## Plano: Ajustes Críticos em Campos de Valor e Unidade de Medida
 
 ### Resumo
 
-O sistema detectou 5 vulnerabilidades de segurança que precisam ser corrigidas:
-
-1. **Políticas RLS muito permissivas** nas tabelas de verificação (SELECT e UPDATE com `USING (true)`)
-2. **Proteção contra senhas vazadas desabilitada**
-3. **Sintaxe incorreta no search_path** da função `handle_new_user()`
+Este plano implementa validações e formatações para:
+1. **Campos de valor em REAIS** - Apenas numéricos com limite de R$ 50,00 (mín) a R$ 10.000.000,00 (máx)
+2. **Campos de unidade de medida (m²)** - Apenas números, sem texto
 
 ---
 
-## Problemas Identificados
+## Campos Identificados
 
-| # | Problema | Severidade | Tabela/Função |
-|---|----------|------------|---------------|
-| 1 | SELECT público permite ler todos os códigos de verificação | Alto | whatsapp_verification_codes |
-| 2 | UPDATE público permite marcar qualquer código como verificado | Alto | whatsapp_verification_codes |
-| 3 | SELECT público expõe códigos de email | Alto | email_verification_codes |
-| 4 | UPDATE público permite bypass de verificação de email | Alto | email_verification_codes |
-| 5 | Proteção contra senhas vazadas desabilitada | Médio | Auth settings |
+### Campos de Valor em REAIS (6 campos)
+
+| Campo | Arquivo | Flow |
+|-------|---------|------|
+| expectedValue | SellValueStep.tsx | SELL |
+| budgetMin | BuyLocationBudgetStep.tsx | BUY |
+| budgetMax | BuyLocationBudgetStep.tsx | BUY |
+| tradeOfferValue | BuyPaymentMethodStep.tsx | BUY |
+| tradeOfferValue | BuildPaymentStep.tsx | BUILD |
+| maxRent | RentLocationValueStep.tsx | RENT |
+
+### Campos de Metragem em m² (5 campos)
+
+| Campo | Arquivo | Flow |
+|-------|---------|------|
+| size | SellGeneralInfoStep.tsx | SELL |
+| minSize | BuyCommercialPrefsStep.tsx | BUY |
+| landMinSize | BuyLandPrefsStep.tsx | BUY |
+| minSize | RentCommercialPrefsStep.tsx | RENT |
 
 ---
 
-## Análise das Políticas Atuais
+## Alterações
+
+### 1. Atualizar `src/lib/validators.ts`
+
+Adicionar novas funções:
+
+```typescript
+// Constantes de limites monetários
+export const CURRENCY_MIN = 5000;      // R$ 50,00 em centavos
+export const CURRENCY_MAX = 1000000000; // R$ 10.000.000,00 em centavos
+
+// Formatação de moeda com limite (R$ 50 a R$ 10.000.000)
+export function formatCurrencyWithLimits(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  let amount = parseInt(numbers, 10);
+  
+  // Aplicar limite máximo (R$ 10.000.000,00 = 1.000.000.000 centavos)
+  if (amount > CURRENCY_MAX) {
+    amount = CURRENCY_MAX;
+  }
+  
+  const formatted = (amount / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  
+  return `R$ ${formatted}`;
+}
+
+// Validar se o valor está dentro dos limites
+export function validateCurrencyLimits(value: string): { 
+  valid: boolean; 
+  message: string;
+  amountInCents: number;
+} {
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) {
+    return { valid: false, message: 'Valor é obrigatório', amountInCents: 0 };
+  }
+  
+  const amount = parseInt(numbers, 10);
+  
+  if (amount < CURRENCY_MIN) {
+    return { 
+      valid: false, 
+      message: 'Valor mínimo é R$ 50,00',
+      amountInCents: amount
+    };
+  }
+  
+  if (amount > CURRENCY_MAX) {
+    return { 
+      valid: false, 
+      message: 'Valor máximo é R$ 10.000.000,00',
+      amountInCents: amount
+    };
+  }
+  
+  return { valid: true, message: '', amountInCents: amount };
+}
+
+// Formatar apenas números para campos de área (m²)
+export function formatArea(value: string): string {
+  // Remove tudo exceto dígitos
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  // Limitar a um valor razoável (máximo 99.999.999 m²)
+  const num = Math.min(parseInt(numbers, 10), 99999999);
+  
+  return num.toString();
+}
+```
+
+---
+
+### 2. Atualizar Campos de Valor em REAIS
+
+#### 2.1 `SellValueStep.tsx`
+- Substituir `formatCurrency` por `formatCurrencyWithLimits`
+
+#### 2.2 `BuyLocationBudgetStep.tsx`
+- Substituir `formatCurrency` por `formatCurrencyWithLimits` nos campos `budgetMin` e `budgetMax`
+
+#### 2.3 `BuyPaymentMethodStep.tsx`
+- Substituir `formatCurrency` por `formatCurrencyWithLimits` no campo `tradeOfferValue`
+
+#### 2.4 `BuildPaymentStep.tsx`
+- Substituir `formatCurrency` por `formatCurrencyWithLimits` no campo `tradeOfferValue`
+
+#### 2.5 `RentLocationValueStep.tsx`
+- Substituir `formatCurrency` por `formatCurrencyWithLimits` no campo `maxRent`
+
+---
+
+### 3. Atualizar Campos de Metragem (m²)
+
+#### 3.1 `SellGeneralInfoStep.tsx`
+- Importar `formatArea` e usar no campo `size`
+- Atualizar placeholder para "Ex: 150" (sem "m²" no input)
+- O sufixo "m²" será exibido na label
+
+#### 3.2 `BuyCommercialPrefsStep.tsx`
+- Importar `formatArea` e usar no campo `minSize`
+- Atualizar placeholder para "Ex: 50"
+
+#### 3.3 `BuyLandPrefsStep.tsx`
+- Importar `formatArea` e usar no campo `landMinSize`
+- Atualizar placeholder para "Ex: 300"
+
+#### 3.4 `RentCommercialPrefsStep.tsx`
+- Importar `formatArea` e usar no campo `minSize`
+- Atualizar placeholder para "Ex: 50"
+
+---
+
+### 4. Adicionar Validação no Wizard
+
+Atualizar `LeadFormWizard.tsx` para validar os limites monetários antes de avançar nas etapas relevantes.
+
+---
+
+## Resumo Visual das Mudanças
 
 ```text
-whatsapp_verification_codes:
-├── INSERT → WITH CHECK (true) ✓ (necessário para enviar código)
-├── SELECT → USING (true) ✗ (PERIGO: qualquer um lê tudo)
-├── UPDATE → USING (true) ✗ (PERIGO: qualquer um marca como verificado)
-└── DELETE → has_role('MASTER_ADMIN') ✓
+ANTES (Campos de Valor):
+├── Input aceita qualquer texto
+├── Sem limite mínimo/máximo
+└── Formatação: R$ X.XXX,XX
 
-email_verification_codes:
-├── INSERT → WITH CHECK (true) ✓ (necessário para enviar código)
-├── SELECT → USING (true) ✗ (PERIGO: qualquer um lê tudo)
-├── UPDATE → USING (true) ✗ (PERIGO: qualquer um marca como verificado)
-└── DELETE → has_role('MASTER_ADMIN') ✓
+DEPOIS (Campos de Valor):
+├── Input aceita APENAS números
+├── Limite: R$ 50,00 a R$ 10.000.000,00
+└── Formatação: R$ X.XXX,XX (com cap automático)
+
+ANTES (Campos de Área):
+├── Input aceita texto (Ex: "150 m²")
+└── Sem formatação
+
+DEPOIS (Campos de Área):
+├── Input aceita APENAS números
+├── Placeholder mostra apenas número
+└── Sufixo "m²" na label do campo
 ```
 
 ---
 
-## Solução
+## Arquivos a Modificar
 
-### Por que podemos remover SELECT e UPDATE públicos?
-
-A verificação de código **já acontece via Edge Function** usando a `SERVICE_ROLE_KEY`, que **bypassa completamente o RLS**. Isso significa:
-
-1. **send-whatsapp-code** → Usa service role para INSERT (funciona)
-2. **verify-whatsapp-code** → Usa service role para SELECT/UPDATE (funciona)
-3. **send-email-code** → Usa service role para INSERT (funciona)
-4. **verify-email-code** → Usa service role para SELECT/UPDATE (funciona)
-
-**Conclusão**: O cliente nunca precisa fazer SELECT ou UPDATE direto nas tabelas de verificação. Podemos remover essas políticas sem quebrar nada!
-
----
-
-## Alterações a Realizar
-
-### 1. Migração SQL - Remover Políticas Perigosas
-
-```sql
--- =====================================================
--- Correção de Segurança: Remover políticas RLS perigosas
--- =====================================================
-
--- WHATSAPP VERIFICATION CODES
--- Remover SELECT público (dados sensíveis expostos)
-DROP POLICY IF EXISTS "Allow public select" ON whatsapp_verification_codes;
-
--- Remover UPDATE público (permite bypass de verificação)
-DROP POLICY IF EXISTS "Allow public update" ON whatsapp_verification_codes;
-
--- EMAIL VERIFICATION CODES
--- Remover SELECT público (dados sensíveis expostos)
-DROP POLICY IF EXISTS "Allow public select for email verification" ON email_verification_codes;
-
--- Remover UPDATE público (permite bypass de verificação)
-DROP POLICY IF EXISTS "Allow public update for email verification" ON email_verification_codes;
-
--- =====================================================
--- Correção: search_path da função handle_new_user
--- =====================================================
-
--- Recriar função com sintaxe correta (= ao invés de TO)
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-BEGIN
-  INSERT INTO public.profiles (
-    id, 
-    name, 
-    phone, 
-    creci_number, 
-    accepted_terms,
-    person_type,
-    cpf,
-    address,
-    company_name,
-    cnpj,
-    company_type,
-    creci_pj,
-    creci_pj_uf,
-    crea_pj,
-    crea_pj_uf,
-    rt_name,
-    rt_cpf,
-    rt_crea,
-    rt_crea_uf,
-    rt_cau,
-    rt_cau_uf,
-    profession,
-    creci,
-    creci_uf,
-    cau,
-    cau_uf,
-    crea,
-    crea_uf
-  )
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'company_name'),
-    NEW.raw_user_meta_data->>'phone',
-    NEW.raw_user_meta_data->>'creci_number',
-    COALESCE((NEW.raw_user_meta_data->>'accepted_terms')::BOOLEAN, false),
-    NEW.raw_user_meta_data->>'person_type',
-    NEW.raw_user_meta_data->>'cpf',
-    NEW.raw_user_meta_data->>'address',
-    NEW.raw_user_meta_data->>'company_name',
-    NEW.raw_user_meta_data->>'cnpj',
-    NEW.raw_user_meta_data->>'company_type',
-    NEW.raw_user_meta_data->>'creci_pj',
-    NEW.raw_user_meta_data->>'creci_pj_uf',
-    NEW.raw_user_meta_data->>'crea_pj',
-    NEW.raw_user_meta_data->>'crea_pj_uf',
-    NEW.raw_user_meta_data->>'rt_name',
-    NEW.raw_user_meta_data->>'rt_cpf',
-    NEW.raw_user_meta_data->>'rt_crea',
-    NEW.raw_user_meta_data->>'rt_crea_uf',
-    NEW.raw_user_meta_data->>'rt_cau',
-    NEW.raw_user_meta_data->>'rt_cau_uf',
-    NEW.raw_user_meta_data->>'profession',
-    NEW.raw_user_meta_data->>'creci',
-    NEW.raw_user_meta_data->>'creci_uf',
-    NEW.raw_user_meta_data->>'cau',
-    NEW.raw_user_meta_data->>'cau_uf',
-    NEW.raw_user_meta_data->>'crea',
-    NEW.raw_user_meta_data->>'crea_uf'
-  );
-  
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'USER');
-  
-  RETURN NEW;
-END;
-$function$;
-```
+| Arquivo | Alteração |
+|---------|-----------|
+| src/lib/validators.ts | Adicionar funções de formatação/validação |
+| src/components/leadform/steps/sell/SellValueStep.tsx | Usar formatCurrencyWithLimits |
+| src/components/leadform/steps/sell/SellGeneralInfoStep.tsx | Usar formatArea |
+| src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx | Usar formatCurrencyWithLimits |
+| src/components/leadform/steps/buy/BuyCommercialPrefsStep.tsx | Usar formatArea |
+| src/components/leadform/steps/buy/BuyLandPrefsStep.tsx | Usar formatArea |
+| src/components/leadform/steps/buy/BuyPaymentMethodStep.tsx | Usar formatCurrencyWithLimits |
+| src/components/leadform/steps/build/BuildPaymentStep.tsx | Usar formatCurrencyWithLimits |
+| src/components/leadform/steps/rent/RentLocationValueStep.tsx | Usar formatCurrencyWithLimits |
+| src/components/leadform/steps/rent/RentCommercialPrefsStep.tsx | Usar formatArea |
 
 ---
 
-### 2. Habilitar Proteção contra Senhas Vazadas
+## Detalhes Técnicos
 
-Usar a ferramenta de configuração de autenticação para habilitar:
-- `leaked_password_protection: enabled`
+### Constantes de Limite
+- **Mínimo**: R$ 50,00 = 5000 centavos
+- **Máximo**: R$ 10.000.000,00 = 1.000.000.000 centavos
 
----
+### Comportamento do Input
+1. Usuário digita números
+2. Sistema formata em tempo real com máscara
+3. Se exceder máximo, trunca para R$ 10.000.000,00
+4. Validação final no submit verifica mínimo de R$ 50,00
 
-### 3. Atualizar Findings de Segurança
-
-Após aplicar as correções:
-- Deletar findings corrigidos
-- Marcar como ignorado o finding sobre `dangerouslySetInnerHTML` (já seguro)
-- Atualizar finding sobre admin client-side (risco baixo, RLS protege os dados)
-
----
-
-## Impacto nas Funcionalidades
-
-| Funcionalidade | Afetada? | Motivo |
-|----------------|----------|--------|
-| Verificação WhatsApp no /lp | Não | Edge function usa service role |
-| Verificação Email no cadastro | Não | Edge function usa service role |
-| Cadastro de usuário | Não | Apenas corrige sintaxe |
-| Login/Senha | Melhorado | Proteção contra senhas vazadas |
-
----
-
-## Resumo das Ações
-
-| Tipo | Ação |
-|------|------|
-| Migração SQL | Remover 4 políticas RLS perigosas + corrigir função |
-| Configuração Auth | Habilitar leaked password protection |
-| Findings | Atualizar status após correções |
-
----
-
-## Segurança Após Correções
-
-```text
-whatsapp_verification_codes:
-├── INSERT → WITH CHECK (true) ✓
-├── SELECT → [REMOVIDO] (via service role apenas)
-├── UPDATE → [REMOVIDO] (via service role apenas)
-└── DELETE → has_role('MASTER_ADMIN') ✓
-
-email_verification_codes:
-├── INSERT → WITH CHECK (true) ✓
-├── SELECT → [REMOVIDO] (via service role apenas)
-├── UPDATE → [REMOVIDO] (via service role apenas)
-└── DELETE → has_role('MASTER_ADMIN') ✓
-```
+### Campos de Área
+1. Aceita apenas dígitos
+2. Limite máximo de 99.999.999 m² (prevenção de overflow)
+3. Não exibe "m²" no input, apenas na label
 
