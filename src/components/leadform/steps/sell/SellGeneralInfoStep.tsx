@@ -3,6 +3,7 @@ import { StepContainer } from "../../StepContainer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, Ruler } from "lucide-react";
+import { formatArea } from "@/lib/validators";
 
 export function SellGeneralInfoStep({ data, updateFlowData }: StepProps) {
   return (
@@ -14,13 +15,13 @@ export function SellGeneralInfoStep({ data, updateFlowData }: StepProps) {
         <div className="space-y-2">
           <Label htmlFor="size" className="flex items-center gap-2">
             <Ruler className="h-4 w-4" />
-            Qual a metragem do imóvel?
+            Qual a metragem do imóvel? (m²)
           </Label>
           <Input
             id="size"
             value={data.sell?.size || ''}
-            onChange={(e) => updateFlowData('sell', { size: e.target.value })}
-            placeholder="Ex: 150 m²"
+            onChange={(e) => updateFlowData('sell', { size: formatArea(e.target.value) })}
+            placeholder="Ex: 150"
             className="h-12"
           />
         </div>

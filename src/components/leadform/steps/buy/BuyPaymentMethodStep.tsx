@@ -4,7 +4,7 @@ import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wallet, Building, CreditCard, ArrowLeftRight, Layers, Check, X } from "lucide-react";
-import { formatCurrency } from "@/lib/validators";
+import { formatCurrencyWithLimits } from "@/lib/validators";
 
 const paymentOptions = [
   { value: 'cash', label: 'Recursos próprios', icon: <Wallet className="h-6 w-6" /> },
@@ -109,7 +109,7 @@ export function BuyPaymentMethodStep({ data, updateFlowData }: StepProps) {
               <Input
                 id="tradeValue"
                 value={data.buy?.tradeOfferValue || ''}
-                onChange={(e) => updateFlowData('buy', { tradeOfferValue: formatCurrency(e.target.value) })}
+                onChange={(e) => updateFlowData('buy', { tradeOfferValue: formatCurrencyWithLimits(e.target.value) })}
                 placeholder="R$ 100.000,00"
                 className="h-12"
               />

@@ -4,6 +4,7 @@ import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building, Warehouse, DoorOpen, Store, Layers, Ruler, Bath, Car } from "lucide-react";
+import { formatArea } from "@/lib/validators";
 
 const typeOptions = [
   { value: 'COMMERCIAL_BUILDING', label: 'Prédio comercial', icon: <Building className="h-6 w-6" /> },
@@ -42,13 +43,13 @@ export function RentCommercialPrefsStep({ data, updateFlowData }: StepProps) {
         <div className="space-y-2 max-w-md mx-auto">
           <Label htmlFor="minSize" className="flex items-center gap-2">
             <Ruler className="h-4 w-4" />
-            Qual a metragem mínima desejada?
+            Qual a metragem mínima desejada? (m²)
           </Label>
           <Input
             id="minSize"
             value={data.rent?.minSize || ''}
-            onChange={(e) => updateFlowData('rent', { minSize: e.target.value })}
-            placeholder="Ex: 50 m²"
+            onChange={(e) => updateFlowData('rent', { minSize: formatArea(e.target.value) })}
+            placeholder="Ex: 50"
             className="h-12"
           />
         </div>
