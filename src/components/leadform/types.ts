@@ -34,6 +34,9 @@ export interface SellFlowData {
   access?: string;
   waterResources?: string[];
   region?: string;
+  uf?: string;
+  city?: string;
+  neighborhood?: string;
   size?: string;
   terrainPosition?: 'CORNER' | 'MIDDLE' | 'UNKNOWN';
   expectedValue?: string;
@@ -64,6 +67,9 @@ export interface BuyFlowData {
   landPrefersGated?: boolean;
   // Location/Budget
   region?: string;
+  uf?: string;
+  city?: string;
+  neighborhood?: string;
   budgetMin?: string;
   budgetMax?: string;
   // Payment
@@ -87,6 +93,9 @@ export interface BuildFlowData {
   area?: string;
   hasKnowledge?: boolean;
   location?: string;
+  uf?: string;
+  city?: string;
+  neighborhood?: string;
   // BTS (Built To Suit)
   isBTSConfirmed?: boolean;
   btsRentRange?: string;
@@ -114,6 +123,9 @@ export interface RentFlowData {
   parkingSpots?: string;
   minSize?: string;
   region?: string;
+  uf?: string;
+  city?: string;
+  neighborhood?: string;
   maxRent?: string;
   includesCondoAndTax?: boolean;
   guarantee?: string;

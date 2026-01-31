@@ -1,9 +1,10 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
+import { LocationSelector } from "../../LocationSelector";
 import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, DollarSign, Check, X } from "lucide-react";
+import { DollarSign, Check, X } from "lucide-react";
 import { formatCurrencyWithLimits } from "@/lib/validators";
 
 const includesOptions = [
@@ -12,23 +13,31 @@ const includesOptions = [
 ];
 
 export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
+  // Gera o campo region para compatibilidade
+  const updateLocationAndRegion = (updates: Partial<typeof data.rent>) => {
+    const newData = { ...data.rent, ...updates };
+    const region = newData.neighborhood && newData.city && newData.uf
+      ? `${newData.neighborhood} - ${newData.city}/${newData.uf}`
+      : newData.city && newData.uf
+        ? `${newData.city}/${newData.uf}`
+        : '';
+    updateFlowData('rent', { ...updates, region });
+  };
+
   return (
     <StepContainer
       title="Localização e valor"
       subtitle="Onde você quer alugar e quanto pode pagar?"
     >
       <div className="space-y-8">
-        <div className="space-y-2 max-w-md mx-auto">
-          <Label htmlFor="region" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Região desejada
-          </Label>
-          <Input
-            id="region"
-            value={data.rent?.region || ''}
-            onChange={(e) => updateFlowData('rent', { region: e.target.value })}
-            placeholder="Bairro, cidade ou região"
-            className="h-12"
+        <div className="max-w-md mx-auto">
+          <LocationSelector
+            uf={data.rent?.uf || ''}
+            city={data.rent?.city || ''}
+            neighborhood={data.rent?.neighborhood || ''}
+            onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '' })}
+            onCityChange={(city) => updateLocationAndRegion({ city })}
+            onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
           />
         </div>
 
