@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { SignupFormData } from "@/types/signup";
 import { formatCNPJ, formatPhone } from "@/lib/validators";
 import { Building2, CreditCard, MapPin, Mail, Phone, CheckCircle } from "lucide-react";
+import { LocationSelector } from "../LocationSelector";
 
 interface PJGeneralDataStepProps {
   formData: SignupFormData;
@@ -60,14 +61,33 @@ export function PJGeneralDataStep({ formData, onChange, errors, emailVerified }:
           {errors.cnpj && <p className="text-sm text-destructive">{errors.cnpj}</p>}
         </div>
 
+        {/* Localização estruturada */}
+        <LocationSelector
+          uf={formData.addressUf}
+          city={formData.addressCity}
+          neighborhood={formData.addressNeighborhood}
+          onUFChange={(uf) => {
+            onChange('addressUf', uf);
+            onChange('addressCity', '');
+            onChange('addressNeighborhood', '');
+          }}
+          onCityChange={(city) => onChange('addressCity', city)}
+          onNeighborhoodChange={(neighborhood) => onChange('addressNeighborhood', neighborhood)}
+          errors={{
+            uf: errors.addressUf,
+            city: errors.addressCity,
+            neighborhood: errors.addressNeighborhood,
+          }}
+        />
+
         <div className="space-y-2">
           <Label htmlFor="address" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Endereço *
+            Endereço (Rua, número, complemento) *
           </Label>
           <Input
             id="address"
-            placeholder="Rua, número, bairro, cidade - UF"
+            placeholder="Rua, número, complemento"
             value={formData.address}
             onChange={(e) => onChange('address', e.target.value)}
             className={errors.address ? "border-destructive" : ""}

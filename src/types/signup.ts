@@ -10,6 +10,9 @@ export interface SignupFormData {
   email: string;
   phone: string;
   address: string;
+  addressUf: string;
+  addressCity: string;
+  addressNeighborhood: string;
   
   // Dados PF
   name: string;
@@ -52,6 +55,9 @@ export const initialFormData: SignupFormData = {
   email: '',
   phone: '',
   address: '',
+  addressUf: '',
+  addressCity: '',
+  addressNeighborhood: '',
   name: '',
   cpf: '',
   profession: null,

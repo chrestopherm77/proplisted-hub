@@ -100,6 +100,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         } else if (!validateCPF(formData.cpf)) {
           newErrors.cpf = "CPF inválido";
         }
+        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
+        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
+        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
         if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
         if (!formData.email.trim()) {
           newErrors.email = "E-mail é obrigatório";
@@ -118,6 +121,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         } else if (!validateCNPJ(formData.cnpj)) {
           newErrors.cnpj = "CNPJ inválido";
         }
+        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
+        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
+        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
         if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
         if (!formData.email.trim()) {
           newErrors.email = "E-mail é obrigatório";
@@ -273,6 +279,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         person_type: formData.personType || '',
         phone: formData.phone,
         address: formData.address,
+        address_uf: formData.addressUf,
+        address_city: formData.addressCity,
+        address_neighborhood: formData.addressNeighborhood,
         accepted_contract: formData.acceptedContract,
         accepted_dpa: formData.acceptedDPA,
         accepted_terms_of_use: formData.acceptedTermsOfUse,
