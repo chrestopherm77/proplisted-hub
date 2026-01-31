@@ -3,7 +3,7 @@ import { StepContainer } from "../../StepContainer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, DollarSign } from "lucide-react";
-import { formatCurrency } from "@/lib/validators";
+import { formatCurrencyWithLimits } from "@/lib/validators";
 
 export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
   return (
@@ -35,7 +35,7 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
             <Input
               id="budgetMin"
               value={data.buy?.budgetMin || ''}
-              onChange={(e) => updateFlowData('buy', { budgetMin: formatCurrency(e.target.value) })}
+              onChange={(e) => updateFlowData('buy', { budgetMin: formatCurrencyWithLimits(e.target.value) })}
               placeholder="R$ 200.000,00"
               className="h-12"
             />
@@ -49,7 +49,7 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
             <Input
               id="budgetMax"
               value={data.buy?.budgetMax || ''}
-              onChange={(e) => updateFlowData('buy', { budgetMax: formatCurrency(e.target.value) })}
+              onChange={(e) => updateFlowData('buy', { budgetMax: formatCurrencyWithLimits(e.target.value) })}
               placeholder="R$ 500.000,00"
               className="h-12"
             />

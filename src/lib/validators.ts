@@ -112,6 +112,10 @@ export function validatePassword(password: string): { valid: boolean; message: s
   return { valid: true, message: '' };
 }
 
+// Constantes de limites monetários
+export const CURRENCY_MIN = 5000;      // R$ 50,00 em centavos
+export const CURRENCY_MAX = 1000000000; // R$ 10.000.000,00 em centavos
+
 // Formatação de moeda brasileira (R$ X.XXX,XX)
 export function formatCurrency(value: string): string {
   const numbers = value.replace(/\D/g, '');
@@ -126,4 +130,71 @@ export function formatCurrency(value: string): string {
   });
   
   return `R$ ${formatted}`;
+}
+
+// Formatação de moeda com limite (R$ 50 a R$ 10.000.000)
+export function formatCurrencyWithLimits(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  let amount = parseInt(numbers, 10);
+  
+  // Aplicar limite máximo (R$ 10.000.000,00 = 1.000.000.000 centavos)
+  if (amount > CURRENCY_MAX) {
+    amount = CURRENCY_MAX;
+  }
+  
+  const formatted = (amount / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  
+  return `R$ ${formatted}`;
+}
+
+// Validar se o valor está dentro dos limites
+export function validateCurrencyLimits(value: string): { 
+  valid: boolean; 
+  message: string;
+  amountInCents: number;
+} {
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) {
+    return { valid: false, message: 'Valor é obrigatório', amountInCents: 0 };
+  }
+  
+  const amount = parseInt(numbers, 10);
+  
+  if (amount < CURRENCY_MIN) {
+    return { 
+      valid: false, 
+      message: 'Valor mínimo é R$ 50,00',
+      amountInCents: amount
+    };
+  }
+  
+  if (amount > CURRENCY_MAX) {
+    return { 
+      valid: false, 
+      message: 'Valor máximo é R$ 10.000.000,00',
+      amountInCents: amount
+    };
+  }
+  
+  return { valid: true, message: '', amountInCents: amount };
+}
+
+// Formatar apenas números para campos de área (m²)
+export function formatArea(value: string): string {
+  // Remove tudo exceto dígitos
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  // Limitar a um valor razoável (máximo 99.999.999 m²)
+  const num = Math.min(parseInt(numbers, 10), 99999999);
+  
+  return num.toString();
 }

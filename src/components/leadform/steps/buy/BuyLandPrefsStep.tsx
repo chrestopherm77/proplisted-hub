@@ -4,6 +4,7 @@ import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Ruler, Shield, ShieldOff } from "lucide-react";
+import { formatArea } from "@/lib/validators";
 
 const gatedOptions = [
   { value: 'yes', label: 'Sim', icon: <Shield className="h-6 w-6" /> },
@@ -20,13 +21,13 @@ export function BuyLandPrefsStep({ data, updateFlowData }: StepProps) {
         <div className="space-y-2 max-w-md mx-auto">
           <Label htmlFor="landMinSize" className="flex items-center gap-2">
             <Ruler className="h-4 w-4" />
-            Qual a metragem mínima desejada?
+            Qual a metragem mínima desejada? (m²)
           </Label>
           <Input
             id="landMinSize"
             value={data.buy?.landMinSize || ''}
-            onChange={(e) => updateFlowData('buy', { landMinSize: e.target.value })}
-            placeholder="Ex: 300 m²"
+            onChange={(e) => updateFlowData('buy', { landMinSize: formatArea(e.target.value) })}
+            placeholder="Ex: 300"
             className="h-12"
           />
         </div>
