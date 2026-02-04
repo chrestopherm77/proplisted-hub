@@ -170,6 +170,9 @@ export type Database = {
         Row: {
           accepted_terms: boolean | null
           address: string | null
+          address_city: string | null
+          address_neighborhood: string | null
+          address_uf: string | null
           cau: string | null
           cau_uf: string | null
           cnpj: string | null
@@ -202,6 +205,9 @@ export type Database = {
         Insert: {
           accepted_terms?: boolean | null
           address?: string | null
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_uf?: string | null
           cau?: string | null
           cau_uf?: string | null
           cnpj?: string | null
@@ -234,6 +240,9 @@ export type Database = {
         Update: {
           accepted_terms?: boolean | null
           address?: string | null
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_uf?: string | null
           cau?: string | null
           cau_uf?: string | null
           cnpj?: string | null

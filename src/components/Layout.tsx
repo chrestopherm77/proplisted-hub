@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MobileMenu } from '@/components/MobileMenu';
+import { FloatingCart } from '@/components/FloatingCart';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: ReactNode;
@@ -21,6 +23,55 @@ export const Layout = ({ children }: LayoutProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [cartCount, setCartCount] = useState(0);
+
+  // Fetch cart count when user is logged in
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from('shopping_cart')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if (!error && count !== null) {
+          setCartCount(count);
+        }
+      } catch (err) {
+        console.error('Error fetching cart count:', err);
+      }
+    };
+
+    fetchCartCount();
+
+    // Subscribe to cart changes for realtime updates
+    if (user) {
+      const channel = supabase
+        .channel('cart-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'shopping_cart',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchCartCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -118,6 +169,9 @@ export const Layout = ({ children }: LayoutProps) => {
           © 2025 LeadBay. Todos os direitos reservados.
         </div>
       </footer>
+
+      {/* Floating Cart Button */}
+      {user && <FloatingCart itemCount={cartCount} />}
     </div>
   );
 };

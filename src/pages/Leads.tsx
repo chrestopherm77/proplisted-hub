@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShoppingCart, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
 
 interface Lead {
@@ -179,6 +179,21 @@ export default function Leads() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle deep linking from email notifications
+  useEffect(() => {
+    const leadIdFromUrl = searchParams.get('leadId');
+    if (leadIdFromUrl && leads.length > 0) {
+      const targetLead = leads.find(l => l.id === leadIdFromUrl);
+      if (targetLead) {
+        setSelectedLead(targetLead);
+        setDialogOpen(true);
+        // Clear the URL parameter after opening the modal
+        setSearchParams({});
+      }
+    }
+  }, [leads, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (authLoading) return;

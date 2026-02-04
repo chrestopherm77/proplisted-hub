@@ -436,10 +436,14 @@ export function LeadFormWizard() {
         // 2. Generate description for marketplace
         const description = generateDescription(formData);
 
-        // 3. Create lead in marketplace
+        // 3. Generate a UUID for the lead
+        const leadId = createClientUuid();
+
+        // 4. Create lead in marketplace
         const { error: leadError } = await supabase
           .from('leads')
           .insert([{
+            id: leadId,
             name: formData.name.trim(),
             phone: formData.phone,
             description: description,
@@ -452,6 +456,37 @@ export function LeadFormWizard() {
           }]);
 
         if (leadError) throw leadError;
+
+        // 5. Notify users in the same city (fire-and-forget)
+        const leadCity = formData.sell?.city || formData.buy?.city || 
+                         formData.build?.city || formData.rent?.city;
+        const leadUf = formData.sell?.uf || formData.buy?.uf || 
+                       formData.build?.uf || formData.rent?.uf;
+
+        if (leadCity) {
+          // Remove sensitive data before sending
+          const safeFormData = {
+            intention: formData.intention,
+            sell: formData.sell ? { ...formData.sell } : undefined,
+            buy: formData.buy ? { ...formData.buy } : undefined,
+            build: formData.build ? { ...formData.build } : undefined,
+            rent: formData.rent ? { ...formData.rent } : undefined,
+          };
+
+          supabase.functions.invoke('notify-new-lead', {
+            body: {
+              leadId,
+              city: leadCity,
+              uf: leadUf,
+              intention: formData.intention,
+              description,
+              formData: safeFormData,
+            }
+          }).catch(err => {
+            // Log but don't fail the submission
+            console.error('Error sending notifications:', err);
+          });
+        }
 
         setIsSubmitted(true);
       } catch (error) {
