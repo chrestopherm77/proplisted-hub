@@ -1,279 +1,236 @@
 
 
-## Plano: Notificação por Email de Novo Lead + Carrinho Fixo Lateral
+## Plano: Melhorar Email de Notificação e Traduzir Labels para Português
 
 ### Resumo
 
-Este plano implementa duas funcionalidades:
+Este plano aborda três problemas identificados:
 
-1. **Sistema de Notificação por Email**: Quando um lead é cadastrado no `/lp`, enviar email para todos os usuários cadastrados na mesma **cidade** informando sobre o novo lead (sem dados pessoais)
-2. **Carrinho Flutuante Lateral**: Adicionar um botão fixo "Meu Carrinho" na lateral da tela para maior visibilidade
-
----
-
-## Parte 1: Sistema de Notificação por Email
-
-### Pré-requisitos de Banco de Dados
-
-A tabela `profiles` precisa armazenar a cidade dos usuários para fazer o matching. Será necessário adicionar os campos:
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `address_uf` | `TEXT` | Estado (ex: "MG") |
-| `address_city` | `TEXT` | Cidade (ex: "Belo Horizonte") |
-| `address_neighborhood` | `TEXT` | Bairro (ex: "Savassi") |
+1. **Email muito simples** - Adicionar todas as informações do lead (igual ao modal "Detalhes do Lead") e mais cores/design
+2. **Labels em inglês** - Traduzir valores como "30_days" para "Em até 30 dias" no card do lead e no email
+3. **Placeholders incorretos** - Alterar exemplos de valores de 200k-500k para 100k-10M
 
 ---
 
-### Fluxo da Notificação
+## Problema 1: Email Muito Simples
+
+### Causa
+A Edge Function `notify-new-lead` usa uma função `extractCharacteristics` muito básica que só extrai ~6 campos:
+- Tipo de imóvel
+- Quartos/Banheiros
+- Tamanho
+- Valor/Orçamento
+- Finalidade
+- Prazo
+
+Mas o sistema já tem toda a lógica completa no arquivo `formatFormData.ts` que extrai TODOS os campos organizados em seções!
+
+### Solução
+
+Reescrever a Edge Function para:
+1. Usar a mesma lógica de extração de dados do `formatFormData.ts`
+2. Gerar HTML mais colorido e organizado
+3. Incluir todas as seções: Intenção, Preferências, Localização, Pagamento, Prazo, etc.
+
+### Novo Design do Email
 
 ```text
-1. Lead preenche formulário em /lp
-   ↓
-2. LeadFormWizard salva o lead no banco
-   ↓
-3. Frontend chama Edge Function "notify-new-lead"
-   ↓
-4. Edge Function:
-   a. Extrai cidade do lead (form_data.sell.city / buy.city / etc.)
-   b. Busca profiles com address_city igual
-   c. Busca emails desses profiles via auth.users
-   d. Para cada usuário:
-      - Gera HTML do email com características do lead
-      - Envia via Resend
-   ↓
-5. Usuários recebem email com:
-   - Características do lead (SEM nome/telefone)
-   - Botão "Ver Lead" que abre direto o card no Marketplace
+┌─────────────────────────────────────────────────────────────┐
+│           🏠 LeadBay (logo em verde teal)                   │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  🎉 Novo lead na sua região!                          │  │
+│  │  📍 Belo Horizonte/MG (badge colorido)                │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Interesse: Comprar imóvel                             │  │
+│  │  (card com background teal claro)                      │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  🎯 Intenção                                          │  │
+│  │  Finalidade: Moradia                                   │  │
+│  │  Tipo: Casa                                            │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  🏠 Preferências                                      │  │
+│  │  Dormitórios: 3                                        │  │
+│  │  Banheiros: 2                                          │  │
+│  │  Vagas: 2                                              │  │
+│  │  Status: Pronto para morar                             │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  💰 Orçamento                                          │  │
+│  │  Mínimo: R$ 300.000,00                                 │  │
+│  │  Máximo: R$ 500.000,00                                 │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  💳 Pagamento                                          │  │
+│  │  Forma: Financiamento                                  │  │
+│  │  Financiamento aprovado: Sim                           │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  ⏰ Prazo                                              │  │
+│  │  Prazo: Em até 30 dias                                 │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│           [ Ver Lead → ] (botão verde)                       │
+│                                                              │
+│  ⚠️ Não inclui: Nome, telefone, email do lead               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Nova Edge Function: `notify-new-lead`
+## Problema 2: Labels em Inglês ("30_days")
 
-**Localização**: `supabase/functions/notify-new-lead/index.ts`
+### Causa
+O campo `deadline` no email está mostrando o valor bruto (ex: `30_days`) porque a Edge Function não tem as mesmas traduções que existem em `formatFormData.ts`.
 
-**Parâmetros de entrada**:
-```typescript
-{
-  leadId: string;        // ID do lead criado
-  city: string;          // Cidade do lead
-  intention: string;     // SELL, BUY, BUILD, RENT
-  description: string;   // Descrição gerada
-  formData: object;      // Dados do formulário (sem nome/telefone)
-}
-```
+### Solução
+Adicionar todos os mapeamentos de labels na Edge Function, incluindo:
 
-**Lógica da função**:
-1. Buscar profiles onde `address_city` = `city`
-2. Para cada profile, buscar email em `auth.users` via `id`
-3. Gerar HTML do email com:
-   - Título: "Novo lead disponível na sua região!"
-   - Subtítulo: "[Cidade] - [Tipo de interesse]"
-   - Características do lead formatadas
-   - Botão: "Ver Lead" com link para `/leads?leadId={leadId}`
-4. Enviar emails via Resend (em lote ou sequencial)
-5. Logar resultados
+| Campo | Valor Bruto | Tradução |
+|-------|-------------|----------|
+| deadline | `30_days` | "Em até 30 dias" |
+| deadline | `1_to_3_months` | "De 1 a 3 meses" |
+| deadline | `3_to_6_months` | "De 3 a 6 meses" |
+| deadline | `up_to_1_year` | "Até 1 ano" |
+| moveInDeadline | `IMMEDIATE` | "Imediato" |
+| etc. | ... | ... |
 
 ---
 
-### Conteúdo do Email
+## Problema 3: Placeholders de Valores
 
-```text
-Assunto: 🏠 Novo lead em [Cidade]! Confira agora
+### Localização
+`src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx`
 
-Corpo:
-- Logo LeadBay
-- "Um novo lead chegou na sua região!"
-- Cidade: [Cidade/UF]
-- Interesse: [Comprar/Vender/Alugar/Construir]
-- Características:
-  - Tipo: [Casa, Apartamento, etc.]
-  - Quartos: X
-  - Orçamento: R$ X.XXX,XX
-  - etc.
-- [BOTÃO] "Ver Lead" → https://proplisted-hub.lovable.app/leads?leadId=XXX
-
-⚠️ NÃO inclui: Nome, Telefone, Email do lead
-```
+### Alteração
+| Campo | Antes | Depois |
+|-------|-------|--------|
+| Valor mínimo | `R$ 200.000,00` | `R$ 100.000,00` |
+| Valor máximo | `R$ 500.000,00` | `R$ 10.000.000,00` |
 
 ---
 
-### Atualização do LeadFormWizard
+## Arquivos a Modificar
 
-Após salvar o lead com sucesso, chamar a Edge Function:
-
-```typescript
-// Após criar o lead no marketplace
-const leadCity = formData.sell?.city || formData.buy?.city || 
-                 formData.build?.city || formData.rent?.city;
-
-// Chamar edge function para notificar (fire-and-forget)
-supabase.functions.invoke('notify-new-lead', {
-  body: {
-    leadId: createdLeadId,
-    city: leadCity,
-    intention: formData.intention,
-    description: description,
-    formData: formDataJson, // Sem name/phone
-  }
-});
-```
-
----
-
-### Arquivos a Criar/Modificar (Parte 1)
-
-| Arquivo | Ação |
-|---------|------|
-| `supabase/functions/notify-new-lead/index.ts` | **CRIAR** - Edge Function para enviar emails |
-| `supabase/config.toml` | **MODIFICAR** - Adicionar configuração da nova função |
-| `src/components/leadform/LeadFormWizard.tsx` | **MODIFICAR** - Chamar edge function após submit |
-| **Migration SQL** | **CRIAR** - Adicionar campos `address_uf`, `address_city`, `address_neighborhood` na tabela `profiles` |
-
----
-
-## Parte 2: Carrinho Flutuante Lateral
-
-### Design
-
-Botão fixo no canto inferior direito da tela:
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│                      Conteúdo                           │
-│                                                         │
-│                                              ┌────────┐ │
-│                                              │ 🛒 (3) │ │
-│                                              │Carrinho│ │
-│                                              └────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
-
-- Posição: `fixed bottom-6 right-6`
-- Mostra contador de itens no carrinho
-- Ao clicar, navega para `/cart`
-- Aparece apenas para usuários logados
-- Animação sutil ao adicionar item
-
----
-
-### Novo Componente: `FloatingCart.tsx`
-
-```typescript
-// src/components/FloatingCart.tsx
-interface FloatingCartProps {
-  itemCount: number;
-}
-
-export function FloatingCart({ itemCount }: FloatingCartProps) {
-  const navigate = useNavigate();
-  
-  return (
-    <button
-      onClick={() => navigate('/cart')}
-      className="fixed bottom-6 right-6 z-50 flex flex-col items-center 
-                 bg-primary text-primary-foreground rounded-full p-4 shadow-lg
-                 hover:scale-105 transition-transform"
-    >
-      <ShoppingCart className="h-6 w-6" />
-      {itemCount > 0 && (
-        <Badge className="absolute -top-2 -right-2">{itemCount}</Badge>
-      )}
-      <span className="text-xs mt-1 font-medium">Carrinho</span>
-    </button>
-  );
-}
-```
-
----
-
-### Integração no Layout
-
-O `FloatingCart` será adicionado ao `Layout.tsx` para aparecer em todas as páginas quando o usuário estiver logado:
-
-```typescript
-// Layout.tsx
-const [cartCount, setCartCount] = useState(0);
-
-useEffect(() => {
-  if (user) {
-    fetchCartCount();
-    // Opcional: Realtime subscription para atualizar contador
-  }
-}, [user]);
-
-return (
-  <div>
-    {/* ... header, main, footer ... */}
-    {user && <FloatingCart itemCount={cartCount} />}
-  </div>
-);
-```
-
----
-
-### Arquivos a Criar/Modificar (Parte 2)
-
-| Arquivo | Ação |
-|---------|------|
-| `src/components/FloatingCart.tsx` | **CRIAR** - Componente do carrinho flutuante |
-| `src/components/Layout.tsx` | **MODIFICAR** - Adicionar FloatingCart e lógica de contagem |
-
----
-
-## Resumo de Arquivos
-
-### Novos Arquivos (3)
-1. `supabase/functions/notify-new-lead/index.ts` - Edge Function de notificação
-2. `src/components/FloatingCart.tsx` - Componente do carrinho flutuante
-3. Migration SQL para adicionar campos de localização em `profiles`
-
-### Arquivos Modificados (4)
-1. `supabase/config.toml` - Adicionar nova Edge Function
-2. `src/components/leadform/LeadFormWizard.tsx` - Chamar edge function
-3. `src/components/Layout.tsx` - Adicionar FloatingCart
-4. `src/components/auth/MultiStepSignup.tsx` - Garantir que campos de cidade são salvos no profile
-
----
-
-## Considerações de Segurança
-
-| Aspecto | Implementação |
-|---------|---------------|
-| **Privacidade** | Email NÃO inclui nome, telefone ou email do lead |
-| **RLS** | Edge function usa service role para queries |
-| **Rate Limit** | Limitar envios por lead (apenas 1x por lead) |
-| **Opt-out** | Futuro: campo `receive_notifications` no profile |
-
----
-
-## Dependências
-
-- **Resend API Key**: Já configurado (`RESEND_API_KEY`)
-- **Domínio verificado**: leadbay.com.br (já configurado para outros emails)
+| Arquivo | Alteração |
+|---------|-----------|
+| `supabase/functions/notify-new-lead/index.ts` | Reescrever para incluir todos os dados e melhorar design do HTML |
+| `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx` | Alterar placeholders de valores |
 
 ---
 
 ## Detalhes Técnicos
 
-### Link Direto para o Lead
+### Edge Function: Mapeamentos Completos
 
-O botão "Ver Lead" no email terá a URL:
+Adicionar todos os labels à Edge Function:
+
+```typescript
+// Todos os mapeamentos necessários
+const deadlineLabels: Record<string, string> = {
+  '30_days': 'Em até 30 dias',
+  '1_to_3_months': 'De 1 a 3 meses',
+  '3_to_6_months': 'De 3 a 6 meses',
+  'up_to_1_year': 'Até 1 ano',
+  'IMMEDIATE': 'Imediato',
+  'UP_TO_1_MONTH': 'Até 1 mês',
+  'UP_TO_3_MONTHS': 'Até 3 meses',
+  '1_TO_3_MONTHS': '1 a 3 meses',
+  '3_TO_6_MONTHS': '3 a 6 meses',
+  '6_TO_12_MONTHS': '6 a 12 meses',
+  'OVER_12_MONTHS': 'Mais de 12 meses',
+  'NO_RUSH': 'Sem pressa',
+  'FLEXIBLE': 'Flexível',
+};
+
+const propertyReadyStatusLabels: Record<string, string> = {
+  'READY': 'Pronto para morar',
+  'UNDER_CONSTRUCTION': 'Em construção',
+  'BOTH': 'Pronto ou em construção',
+};
+
+// + todos os outros mapeamentos existentes em formatFormData.ts
 ```
-https://proplisted-hub.lovable.app/leads?leadId={LEAD_ID}
+
+### Edge Function: Estrutura de Seções
+
+Organizar os dados em seções igual ao modal:
+
+```typescript
+interface EmailSection {
+  icon: string;
+  title: string;
+  fields: { label: string; value: string }[];
+}
+
+function extractAllCharacteristics(formData: Record<string, any>): EmailSection[] {
+  const sections: EmailSection[] = [];
+  const intention = formData.intention;
+  const flowData = formData[intention?.toLowerCase()] || {};
+  
+  // Seção: Intenção
+  const intentSection: EmailSection = { icon: '🎯', title: 'Intenção', fields: [] };
+  if (flowData.purpose) {
+    intentSection.fields.push({ 
+      label: 'Finalidade', 
+      value: purposeLabels[flowData.purpose] || flowData.purpose 
+    });
+  }
+  if (flowData.propertyType) {
+    intentSection.fields.push({ 
+      label: 'Tipo', 
+      value: propertyTypeLabels[flowData.propertyType] || flowData.propertyType 
+    });
+  }
+  if (intentSection.fields.length > 0) sections.push(intentSection);
+  
+  // Seção: Preferências
+  // Seção: Localização e Orçamento
+  // Seção: Pagamento
+  // Seção: Prazo
+  // ... etc
+  
+  return sections;
+}
 ```
 
-Isso exigirá uma pequena modificação em `Leads.tsx` para:
-1. Ler o parâmetro `leadId` da URL
-2. Abrir automaticamente o modal `LeadDetailsModal` com esse lead
+### Edge Function: HTML Colorido
 
-### Matching de Cidade
+Usar cores do tema LeadBay:
 
-O matching será feito comparando:
-- `profiles.address_city` (do usuário cadastrado)
-- `form_data.{flow}.city` (do lead do formulário)
+```typescript
+// Cores
+const colors = {
+  primary: '#0d9488',      // Teal (verde principal)
+  primaryLight: '#f0fdfa', // Teal claro (backgrounds)
+  text: '#18181b',         // Texto escuro
+  muted: '#71717a',        // Texto secundário
+  border: '#e4e4e7',       // Bordas
+  white: '#ffffff',
+  background: '#f4f4f5',   // Fundo geral
+};
+```
 
-Ambos serão normalizados para uppercase antes da comparação.
+---
+
+## Resumo das Alterações
+
+1. **Edge Function `notify-new-lead`**:
+   - Adicionar todos os mapeamentos de labels (deadline, purpose, propertyType, etc.)
+   - Criar função que extrai dados organizados em seções
+   - Gerar HTML com cards coloridos para cada seção
+   - Incluir todas as informações do formulário
+
+2. **BuyLocationBudgetStep**:
+   - Placeholder mínimo: `R$ 100.000,00`
+   - Placeholder máximo: `R$ 10.000.000,00`
 
