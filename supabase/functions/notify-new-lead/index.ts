@@ -18,105 +18,708 @@ interface NotifyNewLeadRequest {
   formData: Record<string, any>;
 }
 
-// Map intention to Portuguese label
+interface EmailSection {
+  icon: string;
+  title: string;
+  fields: { label: string; value: string }[];
+}
+
+// ===== LABEL MAPPINGS (translated from formatFormData.ts) =====
+
 const intentionLabels: Record<string, string> = {
-  SELL: "Vender",
-  BUY: "Comprar",
+  SELL: "Vender imóvel",
+  BUY: "Comprar imóvel",
   BUILD: "Construir",
   RENT: "Alugar",
 };
 
-// Format currency
-const formatCurrency = (value: string | number | undefined): string => {
-  if (!value) return "Não informado";
-  const numValue = typeof value === "string" 
-    ? parseFloat(value.replace(/[^\d,]/g, "").replace(",", "."))
-    : value;
-  if (isNaN(numValue)) return "Não informado";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(numValue);
+const purposeLabels: Record<string, string> = {
+  HOUSING: "Moradia",
+  INVESTMENT: "Investimento",
+  COMMERCIAL: "Comercial",
+  TEMPORARY: "Temporário",
 };
 
-// Extract characteristics from form data
-const extractCharacteristics = (formData: Record<string, any>): string[] => {
-  const characteristics: string[] = [];
+const propertyTypeLabels: Record<string, string> = {
+  COMMERCIAL: "Comercial",
+  MIXED: "Misto",
+  RESIDENTIAL: "Residencial",
+  LAND: "Terreno",
+  RURAL: "Rural",
+  HOUSE: "Casa",
+  APARTMENT: "Apartamento",
+  KITNET: "Kitnet",
+};
+
+const commercialTypeLabels: Record<string, string> = {
+  BUILDING: "Prédio comercial",
+  WAREHOUSE: "Galpão",
+  OFFICE: "Sala comercial",
+  STORE: "Loja",
+  HOUSE: "Casa",
+  OTHER: "Outro",
+  MULTIPLE: "Múltiplos tipos",
+};
+
+const residentialTypeLabels: Record<string, string> = {
+  HOUSE: "Casa",
+  APARTMENT: "Apartamento",
+  KITNET: "Kitnet",
+  TOWNHOUSE: "Sobrado",
+  CONDO_HOUSE: "Casa de condomínio",
+  PENTHOUSE: "Cobertura",
+  LOFT: "Loft",
+  STUDIO: "Studio",
+  MULTIPLE: "Múltiplos tipos",
+};
+
+const mixedTypeLabels: Record<string, string> = {
+  RESIDENTIAL_COMMERCIAL: "Residencial + Comercial",
+  STORE_APARTMENT: "Loja + Apartamento",
+  OFFICE_RESIDENTIAL: "Escritório + Residencial",
+  OTHER: "Outro",
+};
+
+const ruralTypeLabels: Record<string, string> = {
+  FARM: "Fazenda",
+  SITIO: "Sítio",
+  CHACARA: "Chácara",
+  OTHER: "Outro",
+};
+
+const relationLabels: Record<string, string> = {
+  OWNER: "Proprietário",
+  LEGAL_REP: "Representante Legal",
+  FAMILY: "Familiar do proprietário",
+  BROKER: "Corretor/Imobiliária",
+};
+
+const exclusivityLabels: Record<string, string> = {
+  YES: "Sim",
+  NO: "Não",
+  DEPENDS: "Depende das condições",
+};
+
+const landLabels: Record<string, string> = {
+  YES: "Sim, já possui",
+  NEGOTIATING: "Em negociação",
+  NO: "Não possui",
+  BTS_INTEREST: "Interesse em BTS",
+};
+
+const topographyLabels: Record<string, string> = {
+  FLAT: "Plano",
+  SLIGHT_SLOPE: "Leve declive",
+  STEEP: "Acentuado",
+  IRREGULAR: "Irregular",
+  UPHILL: "Aclive",
+  DOWNHILL: "Declive",
+  UNKNOWN: "Não sei informar",
+};
+
+const projectLabels: Record<string, string> = {
+  YES: "Projeto completo",
+  COMPLETE: "Projeto completo",
+  IN_PROGRESS: "Em andamento",
+  NO: "Não possui",
+  NONE: "Não possui",
+  NEED_HELP: "Precisa de ajuda",
+};
+
+const paymentMethodLabels: Record<string, string> = {
+  CASH: "À vista",
+  FINANCING: "Financiamento",
+  INSTALLMENTS: "Parcelado",
+  FGTS: "FGTS",
+  CONSORTIUM: "Consórcio",
+  EXCHANGE: "Permuta",
+  MIXED: "Misto",
+  financing: "Financiamento bancário",
+  consortium: "Consórcio",
+  property_trade: "Permuta por imóvel",
+  vehicle_trade: "Permuta por veículo",
+  installments: "Entrada + parcelamento",
+  cash_only: "Somente à vista",
+};
+
+const guaranteeLabels: Record<string, string> = {
+  GUARANTOR: "Fiador",
+  DEPOSIT: "Caução",
+  INSURANCE: "Seguro fiança",
+  TITLE_CAPITALIZATION: "Título de capitalização",
+  NONE: "Nenhuma",
+  guarantor: "Fiador",
+  deposit: "Caução",
+  insurance: "Seguro fiança",
+  title_capitalization: "Título de capitalização",
+  none: "Nenhuma",
+};
+
+const propertyReadyStatusLabels: Record<string, string> = {
+  READY: "Pronto para morar",
+  UNDER_CONSTRUCTION: "Em construção",
+  BOTH: "Pronto ou em construção",
+};
+
+const tradeOfferTypeLabels: Record<string, string> = {
+  PROPERTY: "Imóvel",
+  VEHICLE: "Veículo",
+  OTHER: "Outro",
+  property: "Imóvel",
+  vehicle: "Veículo",
+  other: "Outro",
+};
+
+const btsRentRangeLabels: Record<string, string> = {
+  up_to_300: "Até R$ 300/m²",
+  UP_TO_300: "Até R$ 300/m²",
+  "50_to_80": "R$ 50 a 80/m²",
+  "50_80": "R$ 50 a 80/m²",
+  above_80: "Acima de R$ 80/m²",
+  ABOVE_80: "Acima de R$ 80/m²",
+};
+
+const btsContractTermLabels: Record<string, string> = {
+  "5_years": "5 anos",
+  "5": "5 anos",
+  "7_10_years": "7 a 10 anos",
+  "7_10": "7 a 10 anos",
+  "10_15_years": "10 a 15 anos",
+  "10_15": "10 a 15 anos",
+  "15_plus": "Mais de 15 anos",
+  "+15": "Mais de 15 anos",
+};
+
+const moveInDeadlineLabels: Record<string, string> = {
+  IMMEDIATE: "Imediato",
+  UP_TO_1_MONTH: "Até 1 mês",
+  UP_TO_3_MONTHS: "Até 3 meses",
+  "1_TO_3_MONTHS": "1 a 3 meses",
+  FLEXIBLE: "Flexível",
+  immediate: "Imediato",
+  up_to_1_month: "Até 1 mês",
+  up_to_3_months: "Até 3 meses",
+  "1_to_3_months": "1 a 3 meses",
+  flexible: "Flexível",
+};
+
+const documentationLabels: Record<string, string> = {
+  COMPLETE: "Toda regularizada",
+  PARTIAL: "Parcialmente regularizada",
+  PENDING: "Pendências a resolver",
+  UNKNOWN: "Não sei informar",
+  regularized: "Regularizada",
+  in_progress: "Em processo de regularização",
+  unknown: "Ainda não sei",
+  pending: "Possui pendências",
+};
+
+const deadlineLabels: Record<string, string> = {
+  IMMEDIATE: "Imediato",
+  UP_TO_1_MONTH: "Até 1 mês",
+  UP_TO_3_MONTHS: "Até 3 meses",
+  "1_TO_3_MONTHS": "1 a 3 meses",
+  "3_TO_6_MONTHS": "3 a 6 meses",
+  "6_TO_12_MONTHS": "6 a 12 meses",
+  OVER_12_MONTHS: "Mais de 12 meses",
+  NO_RUSH: "Sem pressa",
+  FLEXIBLE: "Flexível",
+  "30_days": "Em até 30 dias",
+  "1_to_3_months": "De 1 a 3 meses",
+  "3_to_6_months": "De 3 a 6 meses",
+  up_to_1_year: "Até 1 ano",
+};
+
+const areaLabels: Record<string, string> = {
+  up_to_10: "Até 10 ha",
+  "10_to_50": "10 a 50 ha",
+  "50_to_100": "50 a 100 ha",
+  "100_to_500": "100 a 500 ha",
+  over_500: "Mais de 500 ha",
+  above_500: "Acima de 500 ha",
+  unknown: "Ainda não sei",
+};
+
+const ruralPurposeLabels: Record<string, string> = {
+  agriculture: "Agricultura",
+  livestock: "Pecuária",
+  mixed: "Mista (agropecuária)",
+  leisure: "Lazer / turismo rural",
+  reserve: "Reserva / área improdutiva",
+  other: "Outro",
+};
+
+const motivationLabels: Record<string, string> = {
+  exchange: "Troca por outro imóvel",
+  financial: "Necessidade financeira",
+  inheritance: "Inventário / herança",
+  relocation: "Mudança de cidade",
+  other: "Outro",
+};
+
+const improvementLabels: Record<string, string> = {
+  main_house: "Casa sede",
+  staff_houses: "Casas para funcionários",
+  warehouses: "Galpões / armazéns",
+  corral: "Curral / estrutura pecuária",
+  silos: "Silos",
+  none: "Não possui benfeitorias relevantes",
+};
+
+const waterResourceLabels: Record<string, string> = {
+  river: "Rio",
+  stream: "Córrego / nascente",
+  dam: "Represa / açude",
+  well: "Poço",
+  none: "Não possui",
+  unknown: "Não sei informar",
+};
+
+const occupantPreferenceLabels: Record<string, string> = {
+  YES: "Sim",
+  NO: "Não",
+  NOT_ASKED: "Não solicitado",
+};
+
+const terrainPositionLabels: Record<string, string> = {
+  CORNER: "Esquina",
+  MIDDLE: "Meio de quadra",
+  THROUGH: "De uma rua a outra",
+  IRREGULAR: "Formato irregular",
+  UNKNOWN: "Não sei informar",
+};
+
+const accessLabels: Record<string, string> = {
+  paved: "Asfalto até a entrada",
+  good_dirt: "Estrada de terra em boas condições",
+  difficult: "Estrada de terra com acesso difícil",
+};
+
+// ===== HELPER FUNCTIONS =====
+
+const booleanLabels = (value: boolean | undefined): string => {
+  if (value === undefined) return "";
+  return value ? "Sim" : "Não";
+};
+
+const formatArrayOrString = (
+  value: string | string[] | undefined,
+  labelMap?: Record<string, string>
+): string => {
+  if (!value) return "";
+  if (Array.isArray(value)) {
+    return value.map((v) => labelMap?.[v] || v).join(", ");
+  }
+  return labelMap?.[value] || value;
+};
+
+// ===== EXTRACT ALL CHARACTERISTICS =====
+
+function extractAllCharacteristics(
+  formData: Record<string, any>
+): EmailSection[] {
+  const sections: EmailSection[] = [];
   const intention = formData.intention;
-  const flowData = formData[intention?.toLowerCase()] || {};
 
-  // Property type
-  const propertyTypeLabels: Record<string, string> = {
-    HOUSE: "Casa",
-    APARTMENT: "Apartamento",
-    KITNET: "Kitnet",
-    COMMERCIAL: "Comercial",
-    LAND: "Terreno",
-    RURAL: "Rural",
-    MIXED: "Misto",
-  };
-  if (flowData.propertyType) {
-    characteristics.push(`Tipo: ${propertyTypeLabels[flowData.propertyType] || flowData.propertyType}`);
+  // SELL FLOW
+  if (intention === "SELL" && formData.sell) {
+    const sell = formData.sell;
+
+    // Sobre o vendedor
+    const sellerFields: { label: string; value: string }[] = [];
+    if (sell.relation)
+      sellerFields.push({
+        label: "Relação com o imóvel",
+        value: relationLabels[sell.relation] || sell.relation,
+      });
+    if (sell.acceptsExclusivity)
+      sellerFields.push({
+        label: "Aceita exclusividade",
+        value: exclusivityLabels[sell.acceptsExclusivity] || sell.acceptsExclusivity,
+      });
+    if (sellerFields.length > 0) {
+      sections.push({ title: "Sobre o Vendedor", icon: "👤", fields: sellerFields });
+    }
+
+    // Tipo de imóvel
+    const propertyFields: { label: string; value: string }[] = [];
+    if (sell.propertyType)
+      propertyFields.push({
+        label: "Tipo de imóvel",
+        value: propertyTypeLabels[sell.propertyType] || sell.propertyType,
+      });
+    if (sell.commercialType)
+      propertyFields.push({
+        label: "Tipo comercial",
+        value: commercialTypeLabels[sell.commercialType] || sell.commercialType,
+      });
+    if (sell.residentialType)
+      propertyFields.push({
+        label: "Tipo residencial",
+        value: residentialTypeLabels[sell.residentialType] || sell.residentialType,
+      });
+    if (sell.mixedType)
+      propertyFields.push({
+        label: "Tipo misto",
+        value: mixedTypeLabels[sell.mixedType] || sell.mixedType,
+      });
+    if (sell.ruralType)
+      propertyFields.push({
+        label: "Tipo rural",
+        value: ruralTypeLabels[sell.ruralType] || sell.ruralType,
+      });
+    if (propertyFields.length > 0) {
+      sections.push({ title: "Tipo de Imóvel", icon: "🏠", fields: propertyFields });
+    }
+
+    // Características
+    const charFields: { label: string; value: string }[] = [];
+    if (sell.commercialBedrooms || sell.bedrooms)
+      charFields.push({ label: "Dormitórios", value: String(sell.commercialBedrooms || sell.bedrooms) });
+    if (sell.commercialBathrooms || sell.bathrooms)
+      charFields.push({ label: "Banheiros", value: String(sell.commercialBathrooms || sell.bathrooms) });
+    if (sell.commercialParkingSpots || sell.parkingSpots)
+      charFields.push({ label: "Vagas", value: String(sell.commercialParkingSpots || sell.parkingSpots) });
+    if (sell.size) charFields.push({ label: "Tamanho", value: sell.size });
+    if (sell.terrainPosition)
+      charFields.push({
+        label: "Posição do terreno",
+        value: terrainPositionLabels[sell.terrainPosition] || sell.terrainPosition,
+      });
+    if (sell.residentialTopography)
+      charFields.push({
+        label: "Topografia",
+        value: topographyLabels[sell.residentialTopography] || sell.residentialTopography,
+      });
+    if (charFields.length > 0) {
+      sections.push({ title: "Características", icon: "📐", fields: charFields });
+    }
+
+    // Rural
+    if (sell.propertyType === "RURAL") {
+      const ruralFields: { label: string; value: string }[] = [];
+      if (sell.ruralArea)
+        ruralFields.push({ label: "Área", value: areaLabels[sell.ruralArea] || sell.ruralArea });
+      if (sell.ruralPurpose)
+        ruralFields.push({ label: "Finalidade", value: ruralPurposeLabels[sell.ruralPurpose] || sell.ruralPurpose });
+      if (sell.improvements)
+        ruralFields.push({ label: "Benfeitorias", value: formatArrayOrString(sell.improvements, improvementLabels) });
+      if (sell.access)
+        ruralFields.push({ label: "Acesso", value: formatArrayOrString(sell.access, accessLabels) });
+      if (sell.waterResources)
+        ruralFields.push({ label: "Recursos hídricos", value: formatArrayOrString(sell.waterResources, waterResourceLabels) });
+      if (ruralFields.length > 0) {
+        sections.push({ title: "Detalhes Rurais", icon: "🌾", fields: ruralFields });
+      }
+    }
+
+    // Localização
+    if (sell.region) {
+      sections.push({ title: "Localização", icon: "📍", fields: [{ label: "Região", value: sell.region }] });
+    }
+
+    // Valor e pagamento
+    const valueFields: { label: string; value: string }[] = [];
+    if (sell.expectedValue)
+      valueFields.push({ label: "Valor esperado", value: sell.expectedValue });
+    if (sell.paymentMethods && sell.paymentMethods.length > 0) {
+      valueFields.push({
+        label: "Formas de pagamento",
+        value: sell.paymentMethods.map((m: string) => paymentMethodLabels[m] || m).join(", "),
+      });
+    }
+    if (valueFields.length > 0) {
+      sections.push({ title: "Valor e Pagamento", icon: "💰", fields: valueFields });
+    }
+
+    // Status
+    const statusFields: { label: string; value: string }[] = [];
+    if (sell.wasAppraised !== undefined)
+      statusFields.push({ label: "Foi avaliado", value: booleanLabels(sell.wasAppraised) });
+    if (sell.isOccupied !== undefined)
+      statusFields.push({ label: "Está ocupado", value: booleanLabels(sell.isOccupied) });
+    if (sell.isOccupied && sell.occupantHasPreference) {
+      statusFields.push({
+        label: "Ocupante tem preferência",
+        value: occupantPreferenceLabels[sell.occupantHasPreference] || sell.occupantHasPreference,
+      });
+    }
+    if (sell.documentation)
+      statusFields.push({ label: "Documentação", value: documentationLabels[sell.documentation] || sell.documentation });
+    if (statusFields.length > 0) {
+      sections.push({ title: "Status do Imóvel", icon: "📋", fields: statusFields });
+    }
+
+    // Prazo
+    const deadlineFields: { label: string; value: string }[] = [];
+    if (sell.deadline)
+      deadlineFields.push({ label: "Prazo para venda", value: deadlineLabels[sell.deadline] || sell.deadline });
+    if (sell.motivation)
+      deadlineFields.push({ label: "Motivação", value: motivationLabels[sell.motivation] || sell.motivation });
+    if (deadlineFields.length > 0) {
+      sections.push({ title: "Prazo e Motivação", icon: "⏰", fields: deadlineFields });
+    }
   }
 
-  // Bedrooms
-  if (flowData.bedrooms) {
-    characteristics.push(`Quartos: ${flowData.bedrooms}`);
+  // BUY FLOW
+  if (intention === "BUY" && formData.buy) {
+    const buy = formData.buy;
+
+    // Intenção
+    const intentFields: { label: string; value: string }[] = [];
+    if (buy.purpose)
+      intentFields.push({ label: "Finalidade", value: purposeLabels[buy.purpose] || buy.purpose });
+    if (buy.propertyType)
+      intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[buy.propertyType] || buy.propertyType });
+    if (intentFields.length > 0) {
+      sections.push({ title: "Intenção", icon: "🎯", fields: intentFields });
+    }
+
+    // Preferências
+    const prefFields: { label: string; value: string }[] = [];
+    if (buy.prefersGatedCommunity !== undefined)
+      prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(buy.prefersGatedCommunity) });
+    if (buy.landPrefersGated !== undefined)
+      prefFields.push({ label: "Prefere condomínio (terreno)", value: booleanLabels(buy.landPrefersGated) });
+    if (buy.bedrooms) prefFields.push({ label: "Dormitórios", value: String(buy.bedrooms) });
+    if (buy.bathrooms) prefFields.push({ label: "Banheiros", value: String(buy.bathrooms) });
+    if (buy.parkingSpots) prefFields.push({ label: "Vagas", value: String(buy.parkingSpots) });
+    if (buy.propertyReadyStatus)
+      prefFields.push({
+        label: "Status",
+        value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus,
+      });
+    if (buy.commercialType)
+      prefFields.push({
+        label: "Tipo comercial",
+        value: commercialTypeLabels[buy.commercialType] || buy.commercialType,
+      });
+    if (buy.minSize) prefFields.push({ label: "Tamanho mínimo", value: `${buy.minSize} m²` });
+    if (buy.landMinSize) prefFields.push({ label: "Tamanho mínimo terreno", value: `${buy.landMinSize} m²` });
+    if (prefFields.length > 0) {
+      sections.push({ title: "Preferências", icon: "🏠", fields: prefFields });
+    }
+
+    // Localização e orçamento
+    const budgetFields: { label: string; value: string }[] = [];
+    if (buy.region) budgetFields.push({ label: "Região", value: buy.region });
+    if (buy.budgetMin) budgetFields.push({ label: "Orçamento mínimo", value: buy.budgetMin });
+    if (buy.budgetMax) budgetFields.push({ label: "Orçamento máximo", value: buy.budgetMax });
+    if (budgetFields.length > 0) {
+      sections.push({ title: "Localização e Orçamento", icon: "📍", fields: budgetFields });
+    }
+
+    // Pagamento
+    const payFields: { label: string; value: string }[] = [];
+    if (buy.paymentMethod)
+      payFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[buy.paymentMethod] || buy.paymentMethod });
+    if (buy.isFinancingApproved !== undefined)
+      payFields.push({ label: "Financiamento aprovado", value: booleanLabels(buy.isFinancingApproved) });
+    if (buy.isConsortiumContemplated !== undefined)
+      payFields.push({ label: "Consórcio contemplado", value: booleanLabels(buy.isConsortiumContemplated) });
+    if (buy.tradeOfferType)
+      payFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[buy.tradeOfferType] || buy.tradeOfferType });
+    if (buy.tradeOfferValue) payFields.push({ label: "Valor da permuta", value: buy.tradeOfferValue });
+    if (buy.tradeOfferPaidOff !== undefined)
+      payFields.push({ label: "Permuta quitada", value: booleanLabels(buy.tradeOfferPaidOff) });
+    if (payFields.length > 0) {
+      sections.push({ title: "Pagamento", icon: "💳", fields: payFields });
+    }
+
+    // Prazo
+    if (buy.deadline) {
+      sections.push({
+        title: "Prazo",
+        icon: "⏰",
+        fields: [{ label: "Prazo", value: deadlineLabels[buy.deadline] || buy.deadline }],
+      });
+    }
   }
 
-  // Bathrooms
-  if (flowData.bathrooms) {
-    characteristics.push(`Banheiros: ${flowData.bathrooms}`);
+  // BUILD FLOW
+  if (intention === "BUILD" && formData.build) {
+    const build = formData.build;
+
+    // Intenção
+    if (build.purpose) {
+      sections.push({
+        title: "Intenção",
+        icon: "🎯",
+        fields: [{ label: "Finalidade", value: purposeLabels[build.purpose] || build.purpose }],
+      });
+    }
+
+    // Terreno
+    const landFields: { label: string; value: string }[] = [];
+    if (build.hasLand)
+      landFields.push({ label: "Possui terreno", value: landLabels[build.hasLand] || build.hasLand });
+    if (build.topography)
+      landFields.push({ label: "Topografia", value: topographyLabels[build.topography] || build.topography });
+    if (build.location || build.uf || build.city) {
+      const loc = build.location || `${build.city || ""}${build.uf ? "/" + build.uf : ""}`;
+      if (loc) landFields.push({ label: "Localização", value: loc });
+    }
+    if (landFields.length > 0) {
+      sections.push({ title: "Terreno", icon: "🏞️", fields: landFields });
+    }
+
+    // Projeto
+    const projectFields: { label: string; value: string }[] = [];
+    if (build.hasProject)
+      projectFields.push({ label: "Status do projeto", value: projectLabels[build.hasProject] || build.hasProject });
+    if (build.floors) projectFields.push({ label: "Pavimentos", value: String(build.floors) });
+    if (build.area) projectFields.push({ label: "Área", value: `${build.area} m²` });
+    if (build.hasKnowledge !== undefined)
+      projectFields.push({ label: "Conhecimento em construção", value: booleanLabels(build.hasKnowledge) });
+    if (projectFields.length > 0) {
+      sections.push({ title: "Projeto", icon: "📝", fields: projectFields });
+    }
+
+    // BTS
+    if (build.isBTSConfirmed) {
+      const btsFields: { label: string; value: string }[] = [{ label: "Built To Suit", value: "Sim" }];
+      if (build.btsRentRange)
+        btsFields.push({
+          label: "Faixa de aluguel",
+          value: btsRentRangeLabels[build.btsRentRange] || build.btsRentRange,
+        });
+      if (build.btsMinContractTerm)
+        btsFields.push({
+          label: "Prazo mínimo de contrato",
+          value: btsContractTermLabels[build.btsMinContractTerm] || build.btsMinContractTerm,
+        });
+      sections.push({ title: "Built To Suit", icon: "🏗️", fields: btsFields });
+    }
+
+    // Orçamento
+    const budgetFields: { label: string; value: string }[] = [];
+    if (build.budget) budgetFields.push({ label: "Orçamento", value: build.budget });
+    if (build.paymentMethod)
+      budgetFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[build.paymentMethod] || build.paymentMethod });
+    if (build.isFinancingApproved !== undefined)
+      budgetFields.push({ label: "Financiamento aprovado", value: booleanLabels(build.isFinancingApproved) });
+    if (build.isConsortiumContemplated !== undefined)
+      budgetFields.push({ label: "Consórcio contemplado", value: booleanLabels(build.isConsortiumContemplated) });
+    if (build.tradeOfferType)
+      budgetFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[build.tradeOfferType] || build.tradeOfferType });
+    if (build.tradeOfferValue) budgetFields.push({ label: "Valor da permuta", value: build.tradeOfferValue });
+    if (build.tradeOfferPaidOff !== undefined)
+      budgetFields.push({ label: "Permuta quitada", value: booleanLabels(build.tradeOfferPaidOff) });
+    if (budgetFields.length > 0) {
+      sections.push({ title: "Orçamento", icon: "💰", fields: budgetFields });
+    }
+
+    // Prazo
+    if (build.deadline) {
+      sections.push({
+        title: "Prazo",
+        icon: "⏰",
+        fields: [{ label: "Prazo", value: deadlineLabels[build.deadline] || build.deadline }],
+      });
+    }
   }
 
-  // Size
-  if (flowData.size) {
-    characteristics.push(`Área: ${flowData.size} m²`);
+  // RENT FLOW
+  if (intention === "RENT" && formData.rent) {
+    const rent = formData.rent;
+
+    // Intenção
+    const intentFields: { label: string; value: string }[] = [];
+    if (rent.purpose)
+      intentFields.push({ label: "Finalidade", value: purposeLabels[rent.purpose] || rent.purpose });
+    if (rent.propertyType)
+      intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[rent.propertyType] || rent.propertyType });
+    if (intentFields.length > 0) {
+      sections.push({ title: "Intenção", icon: "🎯", fields: intentFields });
+    }
+
+    // Preferências
+    const prefFields: { label: string; value: string }[] = [];
+    if (rent.prefersGatedCommunity !== undefined)
+      prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(rent.prefersGatedCommunity) });
+    if (rent.bedrooms) prefFields.push({ label: "Dormitórios", value: String(rent.bedrooms) });
+    if (rent.bathrooms) prefFields.push({ label: "Banheiros", value: String(rent.bathrooms) });
+    if (rent.parkingSpots) prefFields.push({ label: "Vagas", value: String(rent.parkingSpots) });
+    if (rent.minSize) prefFields.push({ label: "Tamanho mínimo", value: `${rent.minSize} m²` });
+    if (prefFields.length > 0) {
+      sections.push({ title: "Preferências", icon: "🏠", fields: prefFields });
+    }
+
+    // Localização e valor
+    const budgetFields: { label: string; value: string }[] = [];
+    if (rent.region) budgetFields.push({ label: "Região", value: rent.region });
+    if (rent.maxRent) budgetFields.push({ label: "Valor máximo", value: rent.maxRent });
+    if (rent.includesCondoAndTax !== undefined)
+      budgetFields.push({ label: "Inclui condomínio e IPTU", value: booleanLabels(rent.includesCondoAndTax) });
+    if (budgetFields.length > 0) {
+      sections.push({ title: "Localização e Valor", icon: "📍", fields: budgetFields });
+    }
+
+    // Garantia e prazo
+    const guaranteeFields: { label: string; value: string }[] = [];
+    if (rent.guarantee)
+      guaranteeFields.push({ label: "Garantia", value: guaranteeLabels[rent.guarantee] || rent.guarantee });
+    if (rent.moveInDeadline)
+      guaranteeFields.push({
+        label: "Prazo para mudança",
+        value: moveInDeadlineLabels[rent.moveInDeadline] || rent.moveInDeadline,
+      });
+    if (guaranteeFields.length > 0) {
+      sections.push({ title: "Garantia e Prazo", icon: "📋", fields: guaranteeFields });
+    }
   }
 
-  // Value based on intention
-  if (intention === "SELL" && flowData.expectedValue) {
-    characteristics.push(`Valor pretendido: ${formatCurrency(flowData.expectedValue)}`);
-  }
-  if (intention === "BUY" && flowData.budgetMax) {
-    characteristics.push(`Orçamento: até ${formatCurrency(flowData.budgetMax)}`);
-  }
-  if (intention === "BUILD" && flowData.budget) {
-    characteristics.push(`Orçamento: ${formatCurrency(flowData.budget)}`);
-  }
-  if (intention === "RENT" && flowData.maxRent) {
-    characteristics.push(`Aluguel máximo: ${formatCurrency(flowData.maxRent)}/mês`);
-  }
+  return sections;
+}
 
-  // Purpose
-  const purposeLabels: Record<string, string> = {
-    HOUSING: "Moradia",
-    INVESTMENT: "Investimento",
-    COMMERCIAL: "Comercial",
-    TEMPORARY: "Temporada",
-  };
-  if (flowData.purpose) {
-    characteristics.push(`Finalidade: ${purposeLabels[flowData.purpose] || flowData.purpose}`);
-  }
+// ===== EMAIL COLORS =====
 
-  // Deadline
-  if (flowData.deadline || flowData.moveInDeadline) {
-    characteristics.push(`Prazo: ${flowData.deadline || flowData.moveInDeadline}`);
-  }
-
-  return characteristics;
+const colors = {
+  primary: "#0d9488",
+  primaryLight: "#f0fdfa",
+  primaryDark: "#0f766e",
+  text: "#18181b",
+  muted: "#71717a",
+  border: "#e4e4e7",
+  white: "#ffffff",
+  background: "#f4f4f5",
 };
 
-// Generate email HTML
+// ===== GENERATE EMAIL HTML =====
+
 const generateEmailHTML = (
   city: string,
   uf: string,
   intention: string,
-  characteristics: string[],
+  sections: EmailSection[],
   leadId: string
 ): string => {
   const leadUrl = `https://proplisted-hub.lovable.app/leads?leadId=${leadId}`;
-  
+
+  const sectionsHTML = sections
+    .map(
+      (section) => `
+        <div style="background-color: ${colors.white}; border: 1px solid ${colors.border}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+          <h3 style="color: ${colors.primary}; font-size: 16px; font-weight: 600; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">${section.icon}</span> ${section.title}
+          </h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${section.fields
+              .map(
+                (field) => `
+              <tr>
+                <td style="color: ${colors.muted}; font-size: 14px; padding: 6px 0; width: 45%; vertical-align: top;">${field.label}:</td>
+                <td style="color: ${colors.text}; font-size: 14px; padding: 6px 0; font-weight: 500;">${field.value}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </table>
+        </div>
+      `
+    )
+    .join("");
+
   return `
     <!DOCTYPE html>
     <html>
@@ -124,81 +727,78 @@ const generateEmailHTML = (
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; padding: 40px 20px; margin: 0;">
-      <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: ${colors.background}; padding: 40px 20px; margin: 0;">
+      <div style="max-width: 600px; margin: 0 auto;">
         
-        <!-- Logo -->
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="color: #0d9488; font-size: 28px; font-weight: 700; margin: 0;">🏠 LeadBay</h1>
-        </div>
-        
-        <!-- Title -->
-        <h2 style="color: #18181b; font-size: 22px; font-weight: 600; text-align: center; margin-bottom: 8px;">
-          Novo lead na sua região!
-        </h2>
-        
-        <!-- Location Badge -->
+        <!-- Header -->
         <div style="text-align: center; margin-bottom: 24px;">
-          <span style="display: inline-block; background-color: #f0fdfa; color: #0d9488; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 500;">
-            📍 ${city}${uf ? `/${uf}` : ""}
-          </span>
+          <h1 style="color: ${colors.primary}; font-size: 32px; font-weight: 700; margin: 0;">🏠 LeadBay</h1>
         </div>
         
-        <!-- Intention -->
-        <div style="background-color: #f4f4f5; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-          <p style="color: #71717a; font-size: 14px; margin: 0 0 8px 0;">Interesse:</p>
-          <p style="color: #18181b; font-size: 18px; font-weight: 600; margin: 0;">
+        <!-- Hero Card -->
+        <div style="background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%); border-radius: 16px; padding: 32px; margin-bottom: 24px; text-align: center;">
+          <h2 style="color: ${colors.white}; font-size: 24px; font-weight: 700; margin: 0 0 12px 0;">
+            🎉 Novo lead na sua região!
+          </h2>
+          <div style="display: inline-block; background-color: rgba(255,255,255,0.2); color: ${colors.white}; padding: 8px 20px; border-radius: 24px; font-size: 16px; font-weight: 500;">
+            📍 ${city}${uf ? `/${uf}` : ""}
+          </div>
+        </div>
+        
+        <!-- Intention Card -->
+        <div style="background-color: ${colors.primaryLight}; border: 2px solid ${colors.primary}; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+          <p style="color: ${colors.muted}; font-size: 14px; margin: 0 0 4px 0;">Interesse:</p>
+          <p style="color: ${colors.primary}; font-size: 22px; font-weight: 700; margin: 0;">
             ${intentionLabels[intention] || intention}
           </p>
         </div>
         
-        <!-- Characteristics -->
-        ${characteristics.length > 0 ? `
-        <div style="margin-bottom: 32px;">
-          <p style="color: #71717a; font-size: 14px; margin: 0 0 12px 0;">Características:</p>
-          <ul style="list-style: none; padding: 0; margin: 0;">
-            ${characteristics.map(char => `
-              <li style="color: #3f3f46; font-size: 15px; padding: 8px 0; border-bottom: 1px solid #e4e4e7;">
-                ${char}
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-        ` : ""}
+        <!-- Sections -->
+        ${sectionsHTML}
         
         <!-- CTA Button -->
-        <div style="text-align: center; margin-top: 32px;">
-          <a href="${leadUrl}" style="display: inline-block; background-color: #0d9488; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${leadUrl}" style="display: inline-block; background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%); color: ${colors.white}; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">
             Ver Lead →
           </a>
         </div>
         
-        <!-- Footer Note -->
-        <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 32px; line-height: 18px;">
-          Você recebeu este e-mail porque está cadastrado na mesma cidade deste lead.<br>
-          Para deixar de receber notificações, atualize suas preferências no LeadBay.
-        </p>
+        <!-- Privacy Note -->
+        <div style="background-color: ${colors.white}; border: 1px solid ${colors.border}; border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center;">
+          <p style="color: ${colors.muted}; font-size: 13px; margin: 0;">
+            ⚠️ <strong>Privacidade:</strong> Este email não inclui nome, telefone ou email do lead.<br>
+            Essas informações são reveladas apenas após a compra.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center;">
+          <p style="color: ${colors.muted}; font-size: 12px; line-height: 20px; margin: 0 0 16px 0;">
+            Você recebeu este e-mail porque está cadastrado na mesma cidade deste lead.<br>
+            Para deixar de receber notificações, atualize suas preferências no LeadBay.
+          </p>
+          <p style="color: ${colors.muted}; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} LeadBay. Todos os direitos reservados.
+          </p>
+        </div>
         
       </div>
-      
-      <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 24px;">
-        © ${new Date().getFullYear()} LeadBay. Todos os direitos reservados.
-      </p>
     </body>
     </html>
   `;
 };
 
+// ===== HANDLER =====
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { leadId, city, uf, intention, description, formData }: NotifyNewLeadRequest = await req.json();
+    const { leadId, city, uf, intention, description, formData }: NotifyNewLeadRequest =
+      await req.json();
 
-    // Validate required fields
     if (!leadId || !city || !intention) {
       console.error("Missing required fields:", { leadId, city, intention });
       return new Response(
@@ -209,15 +809,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Processing notification for lead ${leadId} in ${city}/${uf}`);
 
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Normalize city for comparison (uppercase, trim)
     const normalizedCity = city.toUpperCase().trim();
 
-    // Find all profiles in the same city
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, address_city, address_uf")
@@ -231,7 +828,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Filter profiles by normalized city
     const matchingProfiles = (profiles || []).filter(
       (p) => p.address_city?.toUpperCase().trim() === normalizedCity
     );
@@ -245,7 +841,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get emails for matching profiles from auth.users
     const userIds = matchingProfiles.map((p) => p.id);
     const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
 
@@ -257,7 +852,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Filter to only users with matching IDs
     const targetUsers = authUsers.users.filter((u) => userIds.includes(u.id));
     const emails = targetUsers.map((u) => u.email).filter(Boolean) as string[];
 
@@ -270,13 +864,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Extract characteristics from form data
-    const characteristics = extractCharacteristics(formData);
+    // Extract ALL characteristics from form data
+    const sections = extractAllCharacteristics(formData);
+    console.log(`Extracted ${sections.length} sections from form data`);
 
     // Generate email HTML
-    const emailHTML = generateEmailHTML(city, uf || "", intention, characteristics, leadId);
+    const emailHTML = generateEmailHTML(city, uf || "", intention, sections, leadId);
 
-    // Send emails (in batches to avoid rate limits)
     let successCount = 0;
     let failCount = 0;
 
@@ -299,11 +893,11 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Notification complete: ${successCount} sent, ${failCount} failed`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Notifications sent`, 
+      JSON.stringify({
+        success: true,
+        message: `Notifications sent`,
         emailsSent: successCount,
-        emailsFailed: failCount 
+        emailsFailed: failCount,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
