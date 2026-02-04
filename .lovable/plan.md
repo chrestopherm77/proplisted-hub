@@ -1,346 +1,279 @@
 
-## Plano: Seleção Hierárquica de Localização (Estado, Cidade, Bairro)
+
+## Plano: Notificação por Email de Novo Lead + Carrinho Fixo Lateral
 
 ### Resumo
 
-Implementar um sistema de seleção hierárquica de localização usando a API do IBGE que será utilizado em:
-1. **Formulário de Leads (/lp)** - Todos os 4 fluxos (SELL, BUY, BUILD, RENT)
-2. **Cadastro de Usuários** - Tanto para Pessoa Física (PF) quanto Pessoa Jurídica (PJ)
+Este plano implementa duas funcionalidades:
 
-A estrutura será: **Estado (Select)** → **Cidade (Combobox com busca)** → **Bairro (Input livre)**
+1. **Sistema de Notificação por Email**: Quando um lead é cadastrado no `/lp`, enviar email para todos os usuários cadastrados na mesma **cidade** informando sobre o novo lead (sem dados pessoais)
+2. **Carrinho Flutuante Lateral**: Adicionar um botão fixo "Meu Carrinho" na lateral da tela para maior visibilidade
 
 ---
 
-## Arquitetura da Solução
+## Parte 1: Sistema de Notificação por Email
+
+### Pré-requisitos de Banco de Dados
+
+A tabela `profiles` precisa armazenar a cidade dos usuários para fazer o matching. Será necessário adicionar os campos:
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `address_uf` | `TEXT` | Estado (ex: "MG") |
+| `address_city` | `TEXT` | Cidade (ex: "Belo Horizonte") |
+| `address_neighborhood` | `TEXT` | Bairro (ex: "Savassi") |
+
+---
+
+### Fluxo da Notificação
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    LocationSelector Component                    │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
-│  │   Estado     │ →  │   Cidade     │ →  │   Bairro     │      │
-│  │   (Select)   │    │  (Combobox)  │    │   (Input)    │      │
-│  │  27 opções   │    │   Pesquisa   │    │    Livre     │      │
-│  └──────────────┘    └──────────────┘    └──────────────┘      │
-│         ↓                   ↓                   ↓               │
-│    API IBGE            API IBGE           Digitação            │
-│   /estados         /estados/{uf}/         Livre                │
-│                       municipios                               │
-└─────────────────────────────────────────────────────────────────┘
+1. Lead preenche formulário em /lp
+   ↓
+2. LeadFormWizard salva o lead no banco
+   ↓
+3. Frontend chama Edge Function "notify-new-lead"
+   ↓
+4. Edge Function:
+   a. Extrai cidade do lead (form_data.sell.city / buy.city / etc.)
+   b. Busca profiles com address_city igual
+   c. Busca emails desses profiles via auth.users
+   d. Para cada usuário:
+      - Gera HTML do email com características do lead
+      - Envia via Resend
+   ↓
+5. Usuários recebem email com:
+   - Características do lead (SEM nome/telefone)
+   - Botão "Ver Lead" que abre direto o card no Marketplace
 ```
 
 ---
 
-## Endpoints da API do IBGE
+### Nova Edge Function: `notify-new-lead`
 
-| Recurso | URL | Resposta |
-|---------|-----|----------|
-| Estados | `https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome` | `[{ id, sigla, nome }]` |
-| Cidades | `https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios?orderBy=nome` | `[{ id, nome }]` |
+**Localização**: `supabase/functions/notify-new-lead/index.ts`
+
+**Parâmetros de entrada**:
+```typescript
+{
+  leadId: string;        // ID do lead criado
+  city: string;          // Cidade do lead
+  intention: string;     // SELL, BUY, BUILD, RENT
+  description: string;   // Descrição gerada
+  formData: object;      // Dados do formulário (sem nome/telefone)
+}
+```
+
+**Lógica da função**:
+1. Buscar profiles onde `address_city` = `city`
+2. Para cada profile, buscar email em `auth.users` via `id`
+3. Gerar HTML do email com:
+   - Título: "Novo lead disponível na sua região!"
+   - Subtítulo: "[Cidade] - [Tipo de interesse]"
+   - Características do lead formatadas
+   - Botão: "Ver Lead" com link para `/leads?leadId={leadId}`
+4. Enviar emails via Resend (em lote ou sequencial)
+5. Logar resultados
 
 ---
 
-## Arquivos a Criar
+### Conteúdo do Email
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/hooks/useIBGELocation.ts` | Hook para gerenciar estados e cidades da API IBGE |
-| `src/components/leadform/LocationSelector.tsx` | Componente para o formulário de leads |
-| `src/components/auth/LocationSelector.tsx` | Componente para o cadastro de usuários |
+```text
+Assunto: 🏠 Novo lead em [Cidade]! Confira agora
+
+Corpo:
+- Logo LeadBay
+- "Um novo lead chegou na sua região!"
+- Cidade: [Cidade/UF]
+- Interesse: [Comprar/Vender/Alugar/Construir]
+- Características:
+  - Tipo: [Casa, Apartamento, etc.]
+  - Quartos: X
+  - Orçamento: R$ X.XXX,XX
+  - etc.
+- [BOTÃO] "Ver Lead" → https://proplisted-hub.lovable.app/leads?leadId=XXX
+
+⚠️ NÃO inclui: Nome, Telefone, Email do lead
+```
 
 ---
 
-## Arquivos a Modificar
+### Atualização do LeadFormWizard
 
-### Tipos e Dados
+Após salvar o lead com sucesso, chamar a Edge Function:
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/leadform/types.ts` | Adicionar campos `uf`, `city`, `neighborhood` em cada FlowData |
-| `src/types/signup.ts` | Adicionar campos `addressUf`, `addressCity`, `addressNeighborhood` |
+```typescript
+// Após criar o lead no marketplace
+const leadCity = formData.sell?.city || formData.buy?.city || 
+                 formData.build?.city || formData.rent?.city;
 
-### Formulário de Leads (/lp)
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/leadform/steps/sell/SellGeneralInfoStep.tsx` | Substituir input `region` pelo LocationSelector |
-| `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx` | Substituir input `region` pelo LocationSelector |
-| `src/components/leadform/steps/build/BuildLocationStep.tsx` | Substituir input `location` pelo LocationSelector |
-| `src/components/leadform/steps/rent/RentLocationValueStep.tsx` | Substituir input `region` pelo LocationSelector |
-
-### Cadastro de Usuários
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/auth/steps/PFGeneralDataStep.tsx` | Substituir input `address` pelo LocationSelector + complemento |
-| `src/components/auth/steps/PJGeneralDataStep.tsx` | Substituir input `address` pelo LocationSelector + complemento |
-| `src/components/auth/MultiStepSignup.tsx` | Atualizar validação para novos campos |
+// Chamar edge function para notificar (fire-and-forget)
+supabase.functions.invoke('notify-new-lead', {
+  body: {
+    leadId: createdLeadId,
+    city: leadCity,
+    intention: formData.intention,
+    description: description,
+    formData: formDataJson, // Sem name/phone
+  }
+});
+```
 
 ---
 
-## Detalhes de Implementação
+### Arquivos a Criar/Modificar (Parte 1)
 
-### 1. Hook `useIBGELocation.ts`
+| Arquivo | Ação |
+|---------|------|
+| `supabase/functions/notify-new-lead/index.ts` | **CRIAR** - Edge Function para enviar emails |
+| `supabase/config.toml` | **MODIFICAR** - Adicionar configuração da nova função |
+| `src/components/leadform/LeadFormWizard.tsx` | **MODIFICAR** - Chamar edge function após submit |
+| **Migration SQL** | **CRIAR** - Adicionar campos `address_uf`, `address_city`, `address_neighborhood` na tabela `profiles` |
 
-```typescript
-import { useState, useCallback, useEffect } from 'react';
+---
 
-interface IBGEState { id: number; sigla: string; nome: string; }
-interface IBGECity { id: number; nome: string; }
+## Parte 2: Carrinho Flutuante Lateral
 
-const IBGE_API = 'https://servicodados.ibge.gov.br/api/v1/localidades';
+### Design
 
-export function useIBGELocation() {
-  const [states, setStates] = useState<IBGEState[]>([]);
-  const [cities, setCities] = useState<IBGECity[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+Botão fixo no canto inferior direito da tela:
 
-  const fetchStates = useCallback(async () => {
-    setLoadingStates(true);
-    setError(null);
-    try {
-      const res = await fetch(`${IBGE_API}/estados?orderBy=nome`);
-      if (!res.ok) throw new Error('Falha ao carregar estados');
-      const data = await res.json();
-      setStates(data);
-    } catch (err) {
-      setError('Erro ao carregar estados');
-      console.error('Erro ao buscar estados:', err);
-    } finally {
-      setLoadingStates(false);
-    }
-  }, []);
-
-  const fetchCities = useCallback(async (uf: string) => {
-    if (!uf) { setCities([]); return; }
-    setLoadingCities(true);
-    setError(null);
-    try {
-      const res = await fetch(`${IBGE_API}/estados/${uf}/municipios?orderBy=nome`);
-      if (!res.ok) throw new Error('Falha ao carregar cidades');
-      const data = await res.json();
-      setCities(data);
-    } catch (err) {
-      setError('Erro ao carregar cidades');
-      console.error('Erro ao buscar cidades:', err);
-    } finally {
-      setLoadingCities(false);
-    }
-  }, []);
-
-  // Carregar estados automaticamente
-  useEffect(() => {
-    fetchStates();
-  }, [fetchStates]);
-
-  return { 
-    states, 
-    cities, 
-    loadingStates, 
-    loadingCities, 
-    error,
-    fetchStates, 
-    fetchCities 
-  };
-}
+```text
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│                      Conteúdo                           │
+│                                                         │
+│                                              ┌────────┐ │
+│                                              │ 🛒 (3) │ │
+│                                              │Carrinho│ │
+│                                              └────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### 2. Componente LocationSelector (Lead Form)
+- Posição: `fixed bottom-6 right-6`
+- Mostra contador de itens no carrinho
+- Ao clicar, navega para `/cart`
+- Aparece apenas para usuários logados
+- Animação sutil ao adicionar item
 
-Estrutura do componente:
+---
 
-```typescript
-interface LocationSelectorProps {
-  uf: string;
-  city: string;
-  neighborhood: string;
-  onUFChange: (uf: string) => void;
-  onCityChange: (city: string) => void;
-  onNeighborhoodChange: (neighborhood: string) => void;
-  showNeighborhood?: boolean; // Opcional, default true
-}
-
-// Layout:
-// - Select para Estado (usa componente Select do shadcn)
-// - Combobox para Cidade (usa Command + Popover para busca)
-// - Input para Bairro (digitacao livre)
-```
-
-### 3. Atualizar Types
-
-**Lead Form Types (`src/components/leadform/types.ts`):**
+### Novo Componente: `FloatingCart.tsx`
 
 ```typescript
-// Adicionar em cada FlowData:
-interface SellFlowData {
-  // ... campos existentes ...
-  region?: string;      // MANTER para compatibilidade
-  uf?: string;          // NOVO
-  city?: string;        // NOVO  
-  neighborhood?: string; // NOVO
+// src/components/FloatingCart.tsx
+interface FloatingCartProps {
+  itemCount: number;
 }
 
-interface BuyFlowData {
-  // ... campos existentes ...
-  region?: string;      
-  uf?: string;          
-  city?: string;        
-  neighborhood?: string; 
-}
-
-interface BuildFlowData {
-  // ... campos existentes ...
-  location?: string;    // MANTER para compatibilidade
-  uf?: string;          
-  city?: string;        
-  neighborhood?: string; 
-}
-
-interface RentFlowData {
-  // ... campos existentes ...
-  region?: string;      
-  uf?: string;          
-  city?: string;        
-  neighborhood?: string; 
-}
-```
-
-**Signup Types (`src/types/signup.ts`):**
-
-```typescript
-export interface SignupFormData {
-  // ... campos existentes ...
-  address: string;         // MANTER para compatibilidade (logradouro + numero)
-  addressUf: string;       // NOVO - Estado
-  addressCity: string;     // NOVO - Cidade
-  addressNeighborhood: string; // NOVO - Bairro
-}
-```
-
-### 4. Atualizar Steps de Localização (Lead Form)
-
-**Exemplo: SellGeneralInfoStep.tsx**
-
-```typescript
-import { LocationSelector } from "../LocationSelector";
-
-export function SellGeneralInfoStep({ data, updateFlowData }: StepProps) {
+export function FloatingCart({ itemCount }: FloatingCartProps) {
+  const navigate = useNavigate();
+  
   return (
-    <StepContainer title="Informações do imóvel" subtitle="...">
-      <div className="space-y-6 max-w-md mx-auto">
-        {/* Metragem */}
-        <div className="space-y-2">
-          <Label>Metragem (m²)</Label>
-          <Input ... />
-        </div>
-
-        {/* Localização - NOVO */}
-        <LocationSelector
-          uf={data.sell?.uf || ''}
-          city={data.sell?.city || ''}
-          neighborhood={data.sell?.neighborhood || ''}
-          onUFChange={(uf) => updateFlowData('sell', { uf, city: '', neighborhood: '' })}
-          onCityChange={(city) => updateFlowData('sell', { city })}
-          onNeighborhoodChange={(neighborhood) => updateFlowData('sell', { neighborhood })}
-        />
-      </div>
-    </StepContainer>
+    <button
+      onClick={() => navigate('/cart')}
+      className="fixed bottom-6 right-6 z-50 flex flex-col items-center 
+                 bg-primary text-primary-foreground rounded-full p-4 shadow-lg
+                 hover:scale-105 transition-transform"
+    >
+      <ShoppingCart className="h-6 w-6" />
+      {itemCount > 0 && (
+        <Badge className="absolute -top-2 -right-2">{itemCount}</Badge>
+      )}
+      <span className="text-xs mt-1 font-medium">Carrinho</span>
+    </button>
   );
 }
 ```
 
-### 5. Atualizar Cadastro de Usuários
+---
 
-**Novo layout do campo Endereço:**
+### Integração no Layout
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│ Localização                                              │
-├──────────────────┬───────────────────────────────────────┤
-│ Estado (Select)  │ Cidade (Combobox com busca)          │
-├──────────────────┴───────────────────────────────────────┤
-│ Bairro (Input)                                           │
-├──────────────────────────────────────────────────────────┤
-│ Endereço (Rua, número, complemento)                      │
-└──────────────────────────────────────────────────────────┘
-```
-
-O campo `address` atual passará a armazenar apenas logradouro, número e complemento.
-
-### 6. Gerar `region` para Compatibilidade
-
-Ao submeter, gerar automaticamente o campo `region` concatenando:
+O `FloatingCart` será adicionado ao `Layout.tsx` para aparecer em todas as páginas quando o usuário estiver logado:
 
 ```typescript
-// No LeadFormWizard, antes de submeter:
-const generateRegion = (uf: string, city: string, neighborhood: string) => {
-  if (!city || !uf) return '';
-  return neighborhood 
-    ? `${neighborhood} - ${city}/${uf}`
-    : `${city}/${uf}`;
-};
+// Layout.tsx
+const [cartCount, setCartCount] = useState(0);
 
-// Exemplo de saída: "Savassi - Belo Horizonte/MG"
+useEffect(() => {
+  if (user) {
+    fetchCartCount();
+    // Opcional: Realtime subscription para atualizar contador
+  }
+}, [user]);
+
+return (
+  <div>
+    {/* ... header, main, footer ... */}
+    {user && <FloatingCart itemCount={cartCount} />}
+  </div>
+);
 ```
 
 ---
 
-## Fluxo de Uso
+### Arquivos a Criar/Modificar (Parte 2)
 
-```text
-1. Componente monta
-   ↓
-2. Hook carrega 27 estados da API do IBGE (ordenados por nome)
-   ↓
-3. Usuário seleciona Estado (ex: "Minas Gerais")
-   ↓
-4. Hook carrega cidades de MG (~850 cidades)
-   ↓
-5. Usuário digita no combobox para filtrar (ex: "Belo")
-   ↓
-6. Usuário seleciona cidade (ex: "Belo Horizonte")
-   ↓
-7. Usuário digita bairro livremente (ex: "Savassi")
-   ↓
-8. Dados armazenados:
-   - uf: "MG"
-   - city: "Belo Horizonte"
-   - neighborhood: "Savassi"
-   - region: "Savassi - Belo Horizonte/MG" (gerado automaticamente)
-```
+| Arquivo | Ação |
+|---------|------|
+| `src/components/FloatingCart.tsx` | **CRIAR** - Componente do carrinho flutuante |
+| `src/components/Layout.tsx` | **MODIFICAR** - Adicionar FloatingCart e lógica de contagem |
 
 ---
 
-## Considerações de UX
+## Resumo de Arquivos
+
+### Novos Arquivos (3)
+1. `supabase/functions/notify-new-lead/index.ts` - Edge Function de notificação
+2. `src/components/FloatingCart.tsx` - Componente do carrinho flutuante
+3. Migration SQL para adicionar campos de localização em `profiles`
+
+### Arquivos Modificados (4)
+1. `supabase/config.toml` - Adicionar nova Edge Function
+2. `src/components/leadform/LeadFormWizard.tsx` - Chamar edge function
+3. `src/components/Layout.tsx` - Adicionar FloatingCart
+4. `src/components/auth/MultiStepSignup.tsx` - Garantir que campos de cidade são salvos no profile
+
+---
+
+## Considerações de Segurança
 
 | Aspecto | Implementação |
 |---------|---------------|
-| **Loading** | Skeleton/spinner enquanto carrega estados/cidades |
-| **Fallback** | Se API falhar, mostrar mensagem e permitir digitação livre |
-| **Ordem** | Estados e cidades ordenados alfabeticamente |
-| **Busca** | Combobox de cidades permite filtrar digitando |
-| **Reset** | Ao mudar estado, cidade e bairro são limpos |
-| **Responsivo** | Layout em coluna no mobile |
+| **Privacidade** | Email NÃO inclui nome, telefone ou email do lead |
+| **RLS** | Edge function usa service role para queries |
+| **Rate Limit** | Limitar envios por lead (apenas 1x por lead) |
+| **Opt-out** | Futuro: campo `receive_notifications` no profile |
 
 ---
 
-## Compatibilidade
+## Dependências
 
-O campo `region`/`location` continuará sendo gerado automaticamente para manter compatibilidade com:
-
-- Filtros do Marketplace (que usam `extractUF` e `extractCity`)
-- Exibição de leads existentes no sistema
-- Exportação de dados
-- Dados históricos
+- **Resend API Key**: Já configurado (`RESEND_API_KEY`)
+- **Domínio verificado**: leadbay.com.br (já configurado para outros emails)
 
 ---
 
-## Resumo das Mudanças
+## Detalhes Técnicos
 
-| Local | Antes | Depois |
-|-------|-------|--------|
-| **Lead Form** | Input livre "Bairro, cidade ou região" | Estado (Select) + Cidade (Combobox) + Bairro (Input) |
-| **Cadastro PF/PJ** | Input livre "Rua, número, bairro, cidade - UF" | Localização estruturada + Endereço (apenas logradouro) |
-| **Armazenamento** | `region: "Savassi, Belo Horizonte - MG"` | `uf: "MG"`, `city: "Belo Horizonte"`, `neighborhood: "Savassi"`, `region: "Savassi - Belo Horizonte/MG"` |
+### Link Direto para o Lead
+
+O botão "Ver Lead" no email terá a URL:
+```
+https://proplisted-hub.lovable.app/leads?leadId={LEAD_ID}
+```
+
+Isso exigirá uma pequena modificação em `Leads.tsx` para:
+1. Ler o parâmetro `leadId` da URL
+2. Abrir automaticamente o modal `LeadDetailsModal` com esse lead
+
+### Matching de Cidade
+
+O matching será feito comparando:
+- `profiles.address_city` (do usuário cadastrado)
+- `form_data.{flow}.city` (do lead do formulário)
+
+Ambos serão normalizados para uppercase antes da comparação.
+
