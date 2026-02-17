@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Package } from 'lucide-react';
+import leadbayLogo from '@/assets/leadbay-logo.png';
 import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 
@@ -55,10 +55,7 @@ export default function Auth() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
         <div className="w-full max-w-lg">
           <div className="flex justify-center mb-6">
-            <div className="flex items-center gap-2">
-              <Package className="h-10 w-10 text-primary" />
-              <span className="text-2xl font-bold">LeadBay</span>
-            </div>
+            <img src={leadbayLogo} alt="LeadBay" className="h-12" />
           </div>
           <MultiStepSignup onSwitchToLogin={() => setIsLogin(true)} />
         </div>
@@ -72,7 +69,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Package className="h-12 w-12 text-primary" />
+            <img src={leadbayLogo} alt="LeadBay" className="h-12" />
           </div>
           <CardTitle className="text-2xl">Entrar no LeadBay</CardTitle>
           <CardDescription>Acesse sua conta para comprar leads</CardDescription>

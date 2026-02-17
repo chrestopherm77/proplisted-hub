@@ -2,7 +2,8 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Package, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,9 +88,8 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center justify-between h-16">
             {user && <MobileMenu isAdmin={isAdmin} onSignOut={handleSignOut} />}
             
-            <Link to="/" className="flex items-center space-x-2">
-              <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              <span className="text-lg md:text-xl font-bold text-primary">LeadBay</span>
+            <Link to="/" className="flex items-center">
+              <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
             </Link>
 
             {user && (
