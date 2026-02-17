@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Package, TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
+import { TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
+import leadbayLogo from '@/assets/leadbay-logo.png';
 import FakeNotification from '@/components/FakeNotification';
 
 const Index = () => {
@@ -27,10 +28,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Package className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-primary">LeadBay</span>
-          </div>
+          <img src={leadbayLogo} alt="LeadBay" className="h-10" />
           <Button onClick={() => navigate('/auth')} size="lg">
             Entrar
           </Button>
@@ -228,10 +226,7 @@ const Index = () => {
       <footer className="bg-card border-t border-border">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Package className="h-6 w-6 text-primary" />
-              <span className="font-bold text-primary">LeadBay</span>
-            </div>
+            <img src={leadbayLogo} alt="LeadBay" className="h-7" />
             <div className="text-sm text-muted-foreground text-center">
               © 2025 LeadBay. Todos os direitos reservados.
             </div>
