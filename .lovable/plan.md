@@ -1,45 +1,22 @@
 
 
-## Plano: Substituir Ícone + Texto "LeadBay" pela Logo
+## Alterar Valor Fixo do Lead para R$ 27,00
 
 ### Resumo
 
-Copiar a imagem da logo enviada para o projeto e substituir todas as ocorrências do ícone `Package` + texto "LeadBay" pela imagem da logo.
+Atualmente, os leads criados pelo formulario `/lp` sao publicados com preco fixo de **R$ 15,00**. Vamos alterar para **R$ 27,00**.
 
 ---
 
-### Passo 1: Copiar a logo para o projeto
+### Alteracao
 
-Salvar `user-uploads://white.png` em `src/assets/leadbay-logo.png` para uso via import nos componentes React.
+| Arquivo | O que muda |
+|---------|------------|
+| `src/components/leadform/LeadFormWizard.tsx` | Alterar `DEFAULT_LEAD_PRICE` de `15.00` para `27.00` |
 
----
+Essa e a unica variavel que controla o preco dos leads criados via formulario. Os leads ja existentes no banco nao serao afetados -- apenas novos leads criados a partir da mudanca terao o valor de R$ 27,00.
 
-### Passo 2: Substituir logo em todos os arquivos
+### Observacao
 
-| Arquivo | O que mudar |
-|---------|-------------|
-| `src/components/Layout.tsx` | Header: trocar `<Package>` + `<span>LeadBay</span>` por `<img>` da logo (~h-8 no desktop) |
-| `src/components/MobileMenu.tsx` | Sheet title: trocar ícone + texto pela logo (~h-6) |
-| `src/pages/Index.tsx` | Hero header, footer: trocar ícone + texto pela logo |
-| `src/pages/Auth.tsx` | Topo e card de login: trocar ícone + texto pela logo |
-| `src/pages/LeadForm.tsx` | Header do formulário: trocar `<h1>LeadBay</h1>` pela logo |
-
-### Detalhes Técnicos
-
-Em cada componente, a substituição segue o padrão:
-
-**Antes:**
-```tsx
-<Package className="h-6 w-6 text-primary" />
-<span className="text-lg font-bold text-primary">LeadBay</span>
-```
-
-**Depois:**
-```tsx
-import leadbayLogo from "@/assets/leadbay-logo.png";
-// ...
-<img src={leadbayLogo} alt="LeadBay" className="h-8" />
-```
-
-O tamanho (`h-6`, `h-8`, `h-10`, `h-12`) será ajustado conforme o contexto de cada local. Textos como "Por que escolher o LeadBay?" e "© 2025 LeadBay" permanecem como texto puro pois fazem parte do conteúdo, nao do logo.
+O preco de cada lead e validado no backend (Edge Function `create-payment`) buscando o valor diretamente do banco de dados, entao nao ha risco de inconsistencia. O valor R$ 27,00 tambem esta acima do minimo de R$ 5,00 exigido pelo Asaas.
 
