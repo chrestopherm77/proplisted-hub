@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateDescription } from "@/lib/formatFormData";
 
 // Default price for leads from form (in BRL)
-const DEFAULT_LEAD_PRICE = 15.00;
+const DEFAULT_LEAD_PRICE = 27.00;
 
 const createClientUuid = () => {
   // Prefer the native UUID implementation when available
