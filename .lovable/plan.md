@@ -1,25 +1,39 @@
 
 
-## Adicionar Meta Pixel na pagina /lp
+## Mover Meta Pixel para a pagina /lp apenas
 
-### O que sera feito
+### Problema atual
 
-Adicionar o codigo do Meta Pixel (Facebook Pixel) no `index.html` para que ele carregue em todas as paginas do site, incluindo a pagina `/lp` onde os clientes fazem cadastro.
+O Meta Pixel esta no `index.html`, o que causa erro de build (tag `<noscript>` com `<img>` no `<head>`) e carrega em todas as paginas. O usuario quer o pixel apenas na rota `/lp`.
 
-### Alteracao
+### Solucao
 
 | Arquivo | O que muda |
 |---------|------------|
-| `index.html` | Adicionar o script do Meta Pixel dentro do `<head>`, logo antes do fechamento `</head>` |
+| `index.html` | Remover todo o bloco do Meta Pixel (script + noscript) |
+| `src/pages/LeadForm.tsx` | Adicionar o Meta Pixel via `useEffect` -- carrega o script dinamicamente quando o componente monta e remove quando desmonta |
 
-### Codigo que sera adicionado
+### Como vai funcionar
 
-O Meta Pixel com ID `1267609825231112` sera inserido no `<head>` do `index.html`. Isso inclui:
-- O script principal do Facebook Pixel
-- O evento `PageView` para rastrear visitas
-- A tag `<noscript>` como fallback para navegadores sem JavaScript
+1. Remover o script do Meta Pixel e a tag `<noscript>` do `index.html`
+2. No componente `LeadForm.tsx`, usar um `useEffect` que:
+   - Injeta o script do Facebook Pixel no `<head>` da pagina
+   - Inicializa o pixel com `fbq('init', '1267609825231112')`
+   - Dispara o evento `fbq('track', 'PageView')`
+   - Remove o script quando o usuario sair da pagina `/lp`
 
-### Observacao
+### Detalhe tecnico
 
-Como o site e uma SPA (Single Page Application), o pixel sera carregado uma vez e o evento `PageView` sera disparado no carregamento inicial. Se futuramente quiser rastrear eventos especificos (como envio de formulario, clique em botao), podemos adicionar chamadas `fbq('track', 'Lead')` nos componentes React relevantes.
+```text
+Usuario acessa /lp
+    -> useEffect monta
+    -> Script fbevents.js carregado
+    -> fbq('init') + fbq('track', 'PageView')
+
+Usuario sai de /lp
+    -> useEffect cleanup
+    -> Script removido do DOM
+```
+
+Assim o pixel so sera carregado e executado quando o usuario estiver na pagina `/lp`.
 
