@@ -36,7 +36,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     setIsLoading(true);
     try {
       const { error: fnError } = await supabase.functions.invoke("send-password-reset", {
-        body: { email },
+        body: { email, redirectUrl: window.location.origin },
       });
 
       if (fnError) throw fnError;
