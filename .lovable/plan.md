@@ -1,43 +1,51 @@
 
 
-## Limitar cadastros por numero de telefone (maximo 2 contas)
+## Corrigir fluxo de recuperacao de senha
+
+### Problema
+
+O link de recuperacao de senha no e-mail esta redirecionando para `https://leadbay.com.br/reset-password`, que nao e o dominio correto da aplicacao. Por isso, o usuario nao consegue acessar a pagina para criar uma nova senha.
 
 ### O que sera feito
 
-Impedir que um mesmo numero de telefone seja usado para criar mais de 2 contas no sistema. A validacao sera feita em duas camadas: no banco de dados (seguranca) e no frontend (experiencia do usuario).
-
-### Alteracoes
-
-| Arquivo / Recurso | O que muda |
+| Arquivo | Alteracao |
 |---|---|
-| **Banco de dados** (migration) | Criar uma funcao + trigger na tabela `profiles` que verifica, antes de inserir, se ja existem 2 registros com o mesmo telefone. Se sim, bloqueia o INSERT |
-| **`src/components/auth/MultiStepSignup.tsx`** | Antes de prosseguir do step 2 (dados gerais), consultar o banco para verificar se o telefone ja tem 2 contas. Mostrar erro caso positivo |
+| `supabase/functions/send-password-reset/index.ts` | Receber a URL de origem do frontend e usar como base para o `redirectTo`, em vez do dominio fixo `leadbay.com.br` |
+| `src/components/auth/ForgotPasswordModal.tsx` | Enviar `window.location.origin` junto com o e-mail para que o backend saiba para onde redirecionar |
+| `src/pages/ResetPassword.tsx` | Melhorar o tratamento da sessao de recovery -- detectar o token na URL e estabelecer a sessao antes de permitir a troca de senha |
 
 ### Detalhes tecnicos
 
-**1. Migration SQL - Trigger de validacao**
+**1. Edge Function (`send-password-reset`)**
 
-Criar uma funcao `check_phone_limit()` que conta quantos perfis existem com o mesmo telefone (ignorando formatacao). Se ja houver 2, lanca uma excecao impedindo o INSERT.
+Atualmente o `redirectTo` esta fixo em `https://leadbay.com.br/reset-password`. Sera alterado para usar a URL enviada pelo frontend:
 
 ```text
-profiles INSERT
-  -> trigger BEFORE INSERT
-  -> check_phone_limit()
-  -> conta registros com mesmo phone
-  -> se >= 2, RAISE EXCEPTION
+Frontend envia: { email, redirectUrl: "https://proplisted-hub.lovable.app" }
+Edge Function usa: redirectTo = redirectUrl + "/reset-password"
 ```
 
-**2. Frontend - Validacao antecipada**
+**2. Frontend - ForgotPasswordModal**
 
-No `MultiStepSignup.tsx`, ao validar o step 2, fazer uma consulta RPC (funcao no banco) que retorna a contagem de perfis com aquele telefone. Se ja tiver 2, exibir mensagem de erro no campo telefone: "Este telefone ja esta vinculado ao numero maximo de contas permitidas."
+Adicionar `redirectUrl: window.location.origin` no body da requisicao para que o link no e-mail aponte para o dominio correto.
 
-Para isso, sera criada uma funcao RPC `check_phone_availability(p_phone text)` que retorna `true` se ainda pode cadastrar (menos de 2 contas) ou `false` se ja atingiu o limite. Essa funcao sera acessivel sem autenticacao (para funcionar durante o cadastro).
+**3. ResetPassword page**
 
-### Fluxo do usuario
+Adicionar logica para detectar o evento `PASSWORD_RECOVERY` do Supabase Auth via `onAuthStateChange`. Quando o usuario clica no link do e-mail, o Supabase automaticamente cria uma sessao de recovery. A pagina vai:
+- Escutar o evento `PASSWORD_RECOVERY`
+- Mostrar o formulario de nova senha quando a sessao estiver ativa
+- Mostrar mensagem de link invalido/expirado se nao houver sessao apos alguns segundos
 
-1. Usuario preenche dados no step 2 (incluindo telefone)
-2. Ao clicar "Avancar", o sistema consulta se o telefone ja tem 2 contas
-3. Se sim: mostra erro "Este telefone ja possui o limite maximo de contas cadastradas"
-4. Se nao: segue normalmente para o proximo passo
-5. Mesmo que alguem burle o frontend, o trigger no banco impede a insercao
+### Fluxo corrigido
+
+```text
+1. Usuario clica "Esqueci minha senha"
+2. Digita o e-mail e envia
+3. Edge Function gera link com redirectTo apontando para o dominio correto
+4. Usuario recebe e-mail com botao "Redefinir Senha"
+5. Clica no link -> abre /reset-password no dominio correto
+6. Supabase processa o token e cria sessao de recovery
+7. Pagina detecta a sessao e mostra formulario de nova senha
+8. Usuario define nova senha -> redirecionado para /auth
+```
 
