@@ -11,6 +11,7 @@ const corsHeaders = {
 
 interface PasswordResetRequest {
   email: string;
+  redirectUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,7 +21,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email }: PasswordResetRequest = await req.json();
+    const { email, redirectUrl }: PasswordResetRequest = await req.json();
 
     // Validate email
     if (!email || !email.includes("@")) {
@@ -29,6 +30,10 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Use the redirectUrl from frontend or fall back to default
+    const baseUrl = redirectUrl || "https://leadbay.com.br";
+    const resetRedirectUrl = `${baseUrl}/reset-password`;
 
     // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -40,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: "recovery",
       email: email,
       options: {
-        redirectTo: "https://leadbay.com.br/reset-password",
+        redirectTo: resetRedirectUrl,
       },
     });
 

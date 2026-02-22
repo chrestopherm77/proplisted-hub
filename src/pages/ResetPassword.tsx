@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Package, Loader2, Eye, EyeOff, CheckCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { validatePassword } from "@/lib/validators";
 
@@ -16,19 +16,40 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user has a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // If no session, the link might be invalid or expired
-        console.log("No active session for password reset");
+    // Listen for PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setIsReady(true);
+        }
       }
+    );
+
+    // Also check if there's already a session (user may have landed with token already processed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsReady(true);
+      }
+    });
+
+    // Timeout: if no recovery session after 5 seconds, show expired message
+    const timeout = setTimeout(() => {
+      setIsReady((prev) => {
+        if (!prev) setIsExpired(true);
+        return prev;
+      });
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
     };
-    checkSession();
   }, []);
 
   const validateForm = (): boolean => {
@@ -70,7 +91,6 @@ export default function ResetPassword() {
       setIsSuccess(true);
       toast.success("Senha alterada com sucesso!");
 
-      // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate("/auth");
       }, 3000);
@@ -98,6 +118,44 @@ export default function ResetPassword() {
               <Button onClick={() => navigate("/auth")} className="mt-4">
                 Ir para o login
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-yellow-500" />
+              </div>
+              <h2 className="text-xl font-semibold text-center">Link Inválido ou Expirado</h2>
+              <p className="text-muted-foreground text-center">
+                Este link de recuperação de senha é inválido ou já expirou. Solicite um novo link.
+              </p>
+              <Button onClick={() => navigate("/auth")} className="mt-4">
+                Voltar ao login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Verificando link de recuperação...</p>
             </div>
           </CardContent>
         </Card>
