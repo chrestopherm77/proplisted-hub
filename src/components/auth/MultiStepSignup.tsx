@@ -238,10 +238,38 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
 
     const totalSteps = getTotalSteps();
     
-    // If on step 2 (general data) and email not verified, send code
-    if (currentStep === 2 && !emailVerified) {
-      await sendEmailVerificationCode();
-      return;
+    // If on step 2, check phone availability before proceeding
+    if (currentStep === 2) {
+      try {
+        const { data: isAvailable, error } = await supabase.rpc('check_phone_availability', {
+          p_phone: formData.phone,
+        });
+
+        if (error) {
+          console.error("Error checking phone:", error);
+          toast.error("Erro ao verificar telefone. Tente novamente.");
+          return;
+        }
+
+        if (!isAvailable) {
+          setErrors(prev => ({
+            ...prev,
+            phone: "Este telefone já possui o limite máximo de contas cadastradas",
+          }));
+          toast.error("Este telefone já possui o limite máximo de contas cadastradas");
+          return;
+        }
+      } catch (err) {
+        console.error("Error checking phone availability:", err);
+        toast.error("Erro ao verificar telefone. Tente novamente.");
+        return;
+      }
+
+      // If email not verified, send code
+      if (!emailVerified) {
+        await sendEmailVerificationCode();
+        return;
+      }
     }
     
     if (currentStep < totalSteps) {
