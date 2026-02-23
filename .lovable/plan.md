@@ -1,71 +1,81 @@
 
 
-## Nova logica de recuperacao de senha (sem depender do redirect do Supabase)
+## Tela de Usuarios no Painel Admin
 
-### Problema raiz
+### O que sera feito
 
-O Supabase redireciona para o "Site URL" do projeto (`proplisted-hub.lovable.app`) ao processar o token de recuperacao. Mesmo configurando `redirectTo` para `leadbay.com.br`, o Supabase ignora se o dominio nao esta na lista de URLs permitidas ou se o Site URL esta diferente. Resultado: o usuario cai em `proplisted-hub.lovable.app/#error=...` em vez de ir para `leadbay.com.br`.
-
-### Solucao: fluxo 100% customizado
-
-Abandonar completamente o fluxo de recovery nativo do Supabase. Em vez disso, vamos gerar nosso proprio token, salvar no banco e enviar por e-mail. O usuario clica no link, vai para uma pagina dedicada em `leadbay.com.br`, digita o e-mail + nova senha, e uma edge function valida o token e atualiza a senha via admin API.
+Adicionar uma aba "Usuarios" no painel administrativo com listagem completa de todos os usuarios cadastrados, mostrando todas as informacoes de perfil e com a opcao de inativar/ativar cada usuario. Usuarios inativos serao bloqueados no login.
 
 ### Alteracoes
 
 | Arquivo | O que muda |
 |---|---|
-| **Nova tabela** `password_reset_tokens` | Armazena tokens de recuperacao (email, token, expires_at, used) |
-| `supabase/functions/send-password-reset/index.ts` | Gera um token UUID customizado, salva na tabela, envia e-mail com link para `https://www.leadbay.com.br/reset-password?token=xxx` |
-| **Nova edge function** `reset-password/index.ts` | Recebe token + nova senha, valida o token no banco, atualiza a senha via `admin.updateUserById` |
-| `src/pages/ResetPassword.tsx` | Reescrever completamente: le o token da URL, mostra formulario com e-mail + nova senha + confirmacao, chama a edge function `reset-password` |
-| `supabase/config.toml` | Adicionar config da nova edge function `reset-password` com `verify_jwt = false` |
+| **Migracao SQL** | Adicionar coluna `is_active` (boolean, default true) na tabela `profiles` |
+| `src/pages/Admin.tsx` | Adicionar 4a aba "Usuarios" no TabsList |
+| `src/components/admin/UsersManagement.tsx` | Reescrever: de modal para componente de aba completa, com tabela detalhada, busca, e botao de ativar/inativar por usuario |
+| `src/components/admin/DashboardStats.tsx` | Remover a referencia ao modal UsersManagement (o card de usuarios nao abrira mais modal, pois agora e uma aba) |
+| `src/pages/Auth.tsx` | Apos login bem-sucedido, verificar se o perfil esta ativo antes de permitir acesso |
 
 ### Detalhes tecnicos
 
-**1. Nova tabela `password_reset_tokens`**
-- Colunas: `id` (uuid PK), `email` (text), `token` (text unique), `expires_at` (timestamptz), `used` (boolean default false), `created_at` (timestamptz)
-- RLS habilitado, sem policies publicas (somente edge functions com service role acessam)
+**1. Migracao - Nova coluna `is_active` na tabela `profiles`**
+```text
+ALTER TABLE public.profiles ADD COLUMN is_active boolean NOT NULL DEFAULT true;
+```
+Todos os usuarios existentes ficam ativos por padrao.
 
-**2. Edge Function `send-password-reset` (atualizada)**
-- Gera um UUID como token
-- Salva na tabela `password_reset_tokens` com expiracao de 1 hora
-- Monta o link: `https://www.leadbay.com.br/reset-password?token=UUID`
-- Envia e-mail via Resend com esse link (sem usar `generateLink` do Supabase)
+**2. Admin.tsx - Nova aba**
+- Mudar o grid de 3 para 4 colunas no TabsList
+- Adicionar `<TabsTrigger value="users">Usuarios</TabsTrigger>`
+- Adicionar `<TabsContent value="users"><UsersManagement /></TabsContent>`
 
-**3. Nova Edge Function `reset-password`**
-- Recebe: `{ token, email, newPassword }`
-- Busca o token na tabela: valida se existe, nao foi usado e nao expirou
-- Busca o usuario pelo e-mail via `admin.listUsers`
-- Atualiza a senha via `admin.updateUserById`
-- Marca o token como usado
-- Retorna sucesso ou erro
+**3. UsersManagement.tsx - Reescrita completa**
+- Deixa de ser um Dialog/modal e passa a ser um componente de pagina completa (como LeadsManagement)
+- Busca todos os perfis com `supabase.from('profiles').select(...)` incluindo o e-mail via join com dados do auth (ou exibindo o e-mail salvo)
+- Tabela com colunas: Nome/Razao Social, E-mail, Telefone, Tipo (PF/PJ), CPF/CNPJ, Profissao, Registro (CRECI/CAU/CREA), UF/Cidade, Bairro, Status (Ativo/Inativo), Data de Cadastro
+- Campo de busca por nome, telefone ou empresa
+- Botao de toggle (Switch) em cada linha para ativar/inativar o usuario
+- Ao inativar: `supabase.from('profiles').update({ is_active: false }).eq('id', userId)`
+- Badge colorido mostrando status: verde para Ativo, vermelho para Inativo
+- Para obter o e-mail dos usuarios, sera criada uma edge function `list-users` que usa a Admin API (`supabase.auth.admin.listUsers()`) e retorna id + email, que o frontend cruza com os perfis
 
-**4. Pagina `ResetPassword.tsx` (reescrita)**
-- Le o `token` dos query params da URL
-- Se nao tem token: mostra mensagem de erro com botao para voltar ao login
-- Se tem token: mostra formulario com campos de e-mail, nova senha e confirmacao
-- Ao submeter: chama `supabase.functions.invoke("reset-password", { body: { token, email, newPassword } })`
-- Se sucesso: mostra tela de confirmacao com botao para ir ao login
-- Se erro (token expirado/invalido): mostra mensagem adequada
+**4. Edge Function `list-users`**
+- Nova edge function protegida (apenas admin pode chamar)
+- Usa `supabase.auth.admin.listUsers()` para retornar a lista de {id, email} de todos os usuarios
+- O frontend faz merge dos emails com os dados de profiles
 
-### Fluxo completo
+**5. DashboardStats.tsx**
+- Remover o estado `showUsers` e o componente `<UsersManagement open={...} />`
+- O card de Usuarios perde o `onClick` e `cursor-pointer` (ou redireciona para a aba)
+
+**6. Auth.tsx - Bloqueio de login para inativos**
+- Apos `signInWithPassword` com sucesso, buscar o perfil do usuario
+- Se `is_active === false`: fazer `signOut()`, exibir toast "Sua conta foi desativada. Entre em contato com o suporte." e nao redirecionar
+- Se ativo: prosseguir normalmente
+
+### Fluxo de inativacao
 
 ```text
-1. Usuario clica "Esqueci minha senha" no login
-2. ForgotPasswordModal envia e-mail para edge function send-password-reset
-3. Edge function gera token, salva no banco, envia e-mail com link
-4. Link no e-mail: https://www.leadbay.com.br/reset-password?token=abc123
-5. Usuario clica -> abre pagina /reset-password no leadbay.com.br
-6. Digita e-mail + nova senha + confirmacao
-7. Frontend chama edge function reset-password
-8. Edge function valida token, atualiza senha, marca token como usado
-9. Usuario ve tela de sucesso e vai para o login
+1. Admin acessa /admin -> aba "Usuarios"
+2. Ve a lista completa de todos os usuarios com todas as informacoes
+3. Clica no switch de um usuario para inativa-lo
+4. Profile e atualizado com is_active = false
+5. Na proxima tentativa de login desse usuario:
+   - Login no Supabase funciona (credenciais validas)
+   - Frontend verifica is_active no perfil
+   - Se false: faz signOut, exibe mensagem de conta desativada
+   - Usuario nao consegue acessar o sistema
 ```
 
-### Por que isso resolve
+### Informacoes exibidas por usuario
 
-- Nao depende do redirect nativo do Supabase (que sempre vai para proplisted-hub.lovable.app)
-- O link no e-mail aponta diretamente para `leadbay.com.br` -- sem intermediarios
-- O token e validado pela nossa edge function, nao pelo fluxo de recovery do Supabase
-- Funciona independente das configuracoes de Site URL ou Redirect URLs do Supabase
-
+- Nome ou Razao Social
+- E-mail (vindo da edge function list-users)
+- Telefone
+- Tipo: PF ou PJ
+- CPF ou CNPJ
+- Profissao (Corretor/Arquiteto/Engenheiro)
+- Registro profissional (CRECI/CAU/CREA com UF)
+- Localizacao (UF, Cidade, Bairro)
+- Status (Ativo/Inativo com switch)
+- Data de cadastro
