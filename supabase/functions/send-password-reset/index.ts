@@ -9,21 +9,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface PasswordResetRequest {
-  email: string;
-  redirectUrl?: string;
-}
-
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, redirectUrl }: PasswordResetRequest = await req.json();
+    const { email } = await req.json();
 
-    // Validate email
     if (!email || !email.includes("@")) {
       return new Response(
         JSON.stringify({ error: "Email inválido" }),
@@ -31,42 +24,46 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Use the redirectUrl from frontend or fall back to default
-    const resetRedirectUrl = "https://www.leadbay.com.br/profile?recovery=true";
-
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Generate password reset link using Supabase Auth
-    const { data, error: resetError } = await supabase.auth.admin.generateLink({
-      type: "recovery",
-      email: email,
-      options: {
-        redirectTo: resetRedirectUrl,
-      },
-    });
+    // Check if user exists (silently - don't reveal to client)
+    const { data: users } = await supabase.auth.admin.listUsers();
+    const userExists = users?.users?.some(
+      (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+    );
 
-    if (resetError) {
-      console.error("Error generating reset link:", resetError);
-      // For security, we always return success even if email doesn't exist
+    if (!userExists) {
+      // For security, always return success
       return new Response(
         JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const resetLink = data?.properties?.action_link;
+    // Generate custom token
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    if (!resetLink) {
-      console.log("No reset link generated - email may not exist");
-      // For security, we always return success
+    // Save token to database
+    const { error: insertError } = await supabase
+      .from("password_reset_tokens")
+      .insert({
+        email: email.toLowerCase(),
+        token,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (insertError) {
+      console.error("Error saving token:", insertError);
       return new Response(
         JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const resetLink = `https://www.leadbay.com.br/reset-password?token=${token}`;
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
@@ -128,14 +125,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error("Resend error:", emailResponse.error);
-      // Still return success for security
-      return new Response(
-        JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    } else {
+      console.log("Password reset email sent successfully to:", email);
     }
-
-    console.log("Password reset email sent successfully to:", email);
 
     return new Response(
       JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
@@ -143,7 +135,6 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in send-password-reset:", error);
-    // For security, always return success
     return new Response(
       JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
