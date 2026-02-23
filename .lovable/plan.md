@@ -1,55 +1,49 @@
 
+## Corrigir dominio de recuperacao de senha
 
-## Modal de redefinicao de senha no Perfil (apenas via link de recuperacao)
+### Problema
 
-### Como vai funcionar
+O frontend envia `window.location.origin` como `redirectUrl`, que no ambiente Lovable e `https://proplisted-hub.lovable.app`. Mas o site real esta em `https://www.leadbay.com.br`. Por isso o link no e-mail aponta para o dominio errado.
 
-Quando o usuario clicar no link de recuperacao de senha no e-mail, ele sera redirecionado para `/profile`. A URL tera um parametro especial (`?recovery=true`) que indica que o usuario veio do fluxo de recuperacao. Um modal abrira automaticamente pedindo a nova senha. Se o usuario acessar `/profile` normalmente, o modal nao aparece.
+### Solucao
+
+Fixar o dominio de producao (`https://www.leadbay.com.br`) diretamente na Edge Function, ignorando o `redirectUrl` do frontend. O modal de recuperacao de senha ja existe no perfil e continuara funcionando.
 
 ### Alteracoes
 
 | Arquivo | O que muda |
 |---|---|
-| `supabase/functions/send-password-reset/index.ts` | Mudar o `redirectTo` de `/profile` para `/profile?recovery=true` |
-| `src/components/profile/PasswordRecoveryModal.tsx` | **Novo arquivo** - Modal com campos de nova senha e confirmacao, validacao e chamada a `supabase.auth.updateUser` |
-| `src/pages/Profile.tsx` | Detectar `?recovery=true` na URL e abrir o modal automaticamente. Remover a secao fixa de "Alterar Senha" do card (a funcionalidade ficara no modal) |
-| `src/pages/ResetPassword.tsx` | Redirecionar para `/profile?recovery=true` em vez de `/profile` |
+| `supabase/functions/send-password-reset/index.ts` | Fixar o `redirectTo` para `https://www.leadbay.com.br/profile?recovery=true`, ignorando o `redirectUrl` enviado pelo frontend |
+| `src/components/auth/ForgotPasswordModal.tsx` | Remover o envio de `redirectUrl` (nao e mais necessario) |
 
 ### Detalhes tecnicos
 
-**1. Edge Function** - Adicionar `?recovery=true` ao redirect:
+**Edge Function** - Linha 35-36 muda de:
 ```text
-Antes: redirectTo = baseUrl + "/profile"
-Depois: redirectTo = baseUrl + "/profile?recovery=true"
+const baseUrl = redirectUrl || "https://leadbay.com.br";
+const resetRedirectUrl = `${baseUrl}/profile?recovery=true`;
+```
+Para:
+```text
+const resetRedirectUrl = "https://www.leadbay.com.br/profile?recovery=true";
 ```
 
-**2. Novo componente PasswordRecoveryModal**
-- Recebe props `isOpen` e `onClose`
-- Campos: Nova Senha e Confirmar Senha (com toggle de visibilidade)
-- Validacao usando `validatePassword` existente
-- Ao salvar: chama `supabase.auth.updateUser({ password })`
-- Apos sucesso: exibe mensagem de confirmacao, limpa o parametro `?recovery=true` da URL e fecha o modal
-
-**3. Profile.tsx**
-- Ao montar, verifica `searchParams.get("recovery")` 
-- Se `recovery=true`, abre o `PasswordRecoveryModal`
-- A secao "Alterar Senha" que ja existe no card permanece para uso normal, e o modal e apenas o gatilho automatico quando vindo do link de recuperacao
-- Ao fechar o modal, remove o parametro `recovery` da URL para evitar reaberturas
-
-**4. ResetPassword.tsx**
-- Muda o redirect de `/profile` para `/profile?recovery=true`
-
-### Fluxo completo
-
+**ForgotPasswordModal** - Linha 39 muda de:
 ```text
-1. Usuario clica "Esqueci minha senha" no login
-2. Recebe e-mail com link de recuperacao
-3. Clica no link -> Supabase processa token e cria sessao
-4. Redirecionado para /profile?recovery=true (ja logado)
-5. Modal abre automaticamente pedindo nova senha
-6. Usuario define nova senha e confirma
-7. Senha atualizada -> modal fecha -> usuario fica no perfil
+body: { email, redirectUrl: window.location.origin }
+```
+Para:
+```text
+body: { email }
 ```
 
-Se o usuario acessar `/profile` diretamente (sem `?recovery=true`), ve a pagina de perfil normal com a secao de alterar senha no card, sem modal.
+### Fluxo
 
+```text
+1. Usuario clica "Esqueci minha senha"
+2. Edge Function gera link com redirect para https://www.leadbay.com.br/profile?recovery=true
+3. Usuario clica no link do e-mail
+4. Supabase processa token, cria sessao, redireciona para o perfil
+5. Pagina de perfil detecta ?recovery=true e abre o modal
+6. Usuario define nova senha
+```
