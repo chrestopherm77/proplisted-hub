@@ -1,51 +1,49 @@
 
 
-## Corrigir fluxo de recuperacao de senha
+## Mover recuperacao de senha para a pagina de Perfil
 
-### Problema
+### Problema atual
 
-O link de recuperacao de senha no e-mail esta redirecionando para `https://leadbay.com.br/reset-password`, que nao e o dominio correto da aplicacao. Por isso, o usuario nao consegue acessar a pagina para criar uma nova senha.
+O fluxo de recuperacao de senha usando a rota `/reset-password` nao esta funcionando de forma confiavel. A deteccao do evento `PASSWORD_RECOVERY` falha e o usuario ve "Link Expirado".
 
-### O que sera feito
+### Solucao
 
-| Arquivo | Alteracao |
+Simplificar o fluxo: o link do e-mail vai redirecionar direto para `/profile`, onde o usuario ja estara logado (o token de recovery cria uma sessao automaticamente). Na pagina de perfil, sera adicionada uma secao para alterar a senha.
+
+### Alteracoes
+
+| Arquivo | O que muda |
 |---|---|
-| `supabase/functions/send-password-reset/index.ts` | Receber a URL de origem do frontend e usar como base para o `redirectTo`, em vez do dominio fixo `leadbay.com.br` |
-| `src/components/auth/ForgotPasswordModal.tsx` | Enviar `window.location.origin` junto com o e-mail para que o backend saiba para onde redirecionar |
-| `src/pages/ResetPassword.tsx` | Melhorar o tratamento da sessao de recovery -- detectar o token na URL e estabelecer a sessao antes de permitir a troca de senha |
+| `supabase/functions/send-password-reset/index.ts` | Trocar o `redirectTo` de `/reset-password` para `/profile` |
+| `src/pages/Profile.tsx` | Adicionar uma secao "Alterar Senha" com campos de nova senha, confirmacao e botao de salvar. Usa `supabase.auth.updateUser({ password })` |
+| `src/pages/ResetPassword.tsx` | Manter como fallback, mas redirecionar para `/profile` caso o usuario ja tenha sessao ativa |
 
 ### Detalhes tecnicos
 
-**1. Edge Function (`send-password-reset`)**
-
-Atualmente o `redirectTo` esta fixo em `https://leadbay.com.br/reset-password`. Sera alterado para usar a URL enviada pelo frontend:
-
+**1. Edge Function** - Mudar a linha do `redirectTo`:
 ```text
-Frontend envia: { email, redirectUrl: "https://proplisted-hub.lovable.app" }
-Edge Function usa: redirectTo = redirectUrl + "/reset-password"
+Antes: redirectTo = baseUrl + "/reset-password"
+Depois: redirectTo = baseUrl + "/profile"
 ```
 
-**2. Frontend - ForgotPasswordModal**
+**2. Pagina de Perfil** - Adicionar um segundo Card abaixo dos dados do perfil com:
+- Campo "Nova Senha" (com toggle de visibilidade)
+- Campo "Confirmar Nova Senha" (com toggle de visibilidade)
+- Validacao de senha (minimo 6 caracteres, maiuscula, minuscula, numero)
+- Botao "Alterar Senha"
+- Usa `supabase.auth.updateUser({ password })` para salvar
 
-Adicionar `redirectUrl: window.location.origin` no body da requisicao para que o link no e-mail aponte para o dominio correto.
-
-**3. ResetPassword page**
-
-Adicionar logica para detectar o evento `PASSWORD_RECOVERY` do Supabase Auth via `onAuthStateChange`. Quando o usuario clica no link do e-mail, o Supabase automaticamente cria uma sessao de recovery. A pagina vai:
-- Escutar o evento `PASSWORD_RECOVERY`
-- Mostrar o formulario de nova senha quando a sessao estiver ativa
-- Mostrar mensagem de link invalido/expirado se nao houver sessao apos alguns segundos
+**3. ResetPassword** - Redirecionar para `/profile` se ja houver sessao ativa, para nao deixar o usuario preso na tela de loading.
 
 ### Fluxo corrigido
 
 ```text
 1. Usuario clica "Esqueci minha senha"
-2. Digita o e-mail e envia
-3. Edge Function gera link com redirectTo apontando para o dominio correto
-4. Usuario recebe e-mail com botao "Redefinir Senha"
-5. Clica no link -> abre /reset-password no dominio correto
-6. Supabase processa o token e cria sessao de recovery
-7. Pagina detecta a sessao e mostra formulario de nova senha
-8. Usuario define nova senha -> redirecionado para /auth
+2. Recebe e-mail com link
+3. Clica no link -> Supabase processa o token e cria sessao
+4. Redirecionado para /profile (ja logado)
+5. Ve a secao "Alterar Senha" na pagina de perfil
+6. Define nova senha e salva
 ```
 
+Esse fluxo e mais confiavel porque nao depende da deteccao do evento `PASSWORD_RECOVERY` - o usuario simplesmente chega logado na pagina de perfil e altera a senha.
