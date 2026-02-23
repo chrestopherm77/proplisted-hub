@@ -22,23 +22,21 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen for PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsReady(true);
+        if (event === "PASSWORD_RECOVERY" || session) {
+          // Redirect to profile where they can change password
+          navigate("/profile", { replace: true });
         }
       }
     );
 
-    // Also check if there's already a session (user may have landed with token already processed)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setIsReady(true);
+        navigate("/profile", { replace: true });
       }
     });
 
-    // Timeout: if no recovery session after 5 seconds, show expired message
     const timeout = setTimeout(() => {
       setIsReady((prev) => {
         if (!prev) setIsExpired(true);
@@ -50,7 +48,7 @@ export default function ResetPassword() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [navigate]);
 
   const validateForm = (): boolean => {
     const newErrors: { password?: string; confirmPassword?: string } = {};
