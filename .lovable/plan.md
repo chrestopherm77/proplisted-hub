@@ -1,49 +1,55 @@
 
 
-## Mover recuperacao de senha para a pagina de Perfil
+## Modal de redefinicao de senha no Perfil (apenas via link de recuperacao)
 
-### Problema atual
+### Como vai funcionar
 
-O fluxo de recuperacao de senha usando a rota `/reset-password` nao esta funcionando de forma confiavel. A deteccao do evento `PASSWORD_RECOVERY` falha e o usuario ve "Link Expirado".
-
-### Solucao
-
-Simplificar o fluxo: o link do e-mail vai redirecionar direto para `/profile`, onde o usuario ja estara logado (o token de recovery cria uma sessao automaticamente). Na pagina de perfil, sera adicionada uma secao para alterar a senha.
+Quando o usuario clicar no link de recuperacao de senha no e-mail, ele sera redirecionado para `/profile`. A URL tera um parametro especial (`?recovery=true`) que indica que o usuario veio do fluxo de recuperacao. Um modal abrira automaticamente pedindo a nova senha. Se o usuario acessar `/profile` normalmente, o modal nao aparece.
 
 ### Alteracoes
 
 | Arquivo | O que muda |
 |---|---|
-| `supabase/functions/send-password-reset/index.ts` | Trocar o `redirectTo` de `/reset-password` para `/profile` |
-| `src/pages/Profile.tsx` | Adicionar uma secao "Alterar Senha" com campos de nova senha, confirmacao e botao de salvar. Usa `supabase.auth.updateUser({ password })` |
-| `src/pages/ResetPassword.tsx` | Manter como fallback, mas redirecionar para `/profile` caso o usuario ja tenha sessao ativa |
+| `supabase/functions/send-password-reset/index.ts` | Mudar o `redirectTo` de `/profile` para `/profile?recovery=true` |
+| `src/components/profile/PasswordRecoveryModal.tsx` | **Novo arquivo** - Modal com campos de nova senha e confirmacao, validacao e chamada a `supabase.auth.updateUser` |
+| `src/pages/Profile.tsx` | Detectar `?recovery=true` na URL e abrir o modal automaticamente. Remover a secao fixa de "Alterar Senha" do card (a funcionalidade ficara no modal) |
+| `src/pages/ResetPassword.tsx` | Redirecionar para `/profile?recovery=true` em vez de `/profile` |
 
 ### Detalhes tecnicos
 
-**1. Edge Function** - Mudar a linha do `redirectTo`:
+**1. Edge Function** - Adicionar `?recovery=true` ao redirect:
 ```text
-Antes: redirectTo = baseUrl + "/reset-password"
-Depois: redirectTo = baseUrl + "/profile"
+Antes: redirectTo = baseUrl + "/profile"
+Depois: redirectTo = baseUrl + "/profile?recovery=true"
 ```
 
-**2. Pagina de Perfil** - Adicionar um segundo Card abaixo dos dados do perfil com:
-- Campo "Nova Senha" (com toggle de visibilidade)
-- Campo "Confirmar Nova Senha" (com toggle de visibilidade)
-- Validacao de senha (minimo 6 caracteres, maiuscula, minuscula, numero)
-- Botao "Alterar Senha"
-- Usa `supabase.auth.updateUser({ password })` para salvar
+**2. Novo componente PasswordRecoveryModal**
+- Recebe props `isOpen` e `onClose`
+- Campos: Nova Senha e Confirmar Senha (com toggle de visibilidade)
+- Validacao usando `validatePassword` existente
+- Ao salvar: chama `supabase.auth.updateUser({ password })`
+- Apos sucesso: exibe mensagem de confirmacao, limpa o parametro `?recovery=true` da URL e fecha o modal
 
-**3. ResetPassword** - Redirecionar para `/profile` se ja houver sessao ativa, para nao deixar o usuario preso na tela de loading.
+**3. Profile.tsx**
+- Ao montar, verifica `searchParams.get("recovery")` 
+- Se `recovery=true`, abre o `PasswordRecoveryModal`
+- A secao "Alterar Senha" que ja existe no card permanece para uso normal, e o modal e apenas o gatilho automatico quando vindo do link de recuperacao
+- Ao fechar o modal, remove o parametro `recovery` da URL para evitar reaberturas
 
-### Fluxo corrigido
+**4. ResetPassword.tsx**
+- Muda o redirect de `/profile` para `/profile?recovery=true`
+
+### Fluxo completo
 
 ```text
-1. Usuario clica "Esqueci minha senha"
-2. Recebe e-mail com link
-3. Clica no link -> Supabase processa o token e cria sessao
-4. Redirecionado para /profile (ja logado)
-5. Ve a secao "Alterar Senha" na pagina de perfil
-6. Define nova senha e salva
+1. Usuario clica "Esqueci minha senha" no login
+2. Recebe e-mail com link de recuperacao
+3. Clica no link -> Supabase processa token e cria sessao
+4. Redirecionado para /profile?recovery=true (ja logado)
+5. Modal abre automaticamente pedindo nova senha
+6. Usuario define nova senha e confirma
+7. Senha atualizada -> modal fecha -> usuario fica no perfil
 ```
 
-Esse fluxo e mais confiavel porque nao depende da deteccao do evento `PASSWORD_RECOVERY` - o usuario simplesmente chega logado na pagina de perfil e altera a senha.
+Se o usuario acessar `/profile` diretamente (sem `?recovery=true`), ve a pagina de perfil normal com a secao de alterar senha no card, sem modal.
+
