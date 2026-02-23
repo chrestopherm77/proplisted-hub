@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeadsManagement } from '@/components/admin/LeadsManagement';
 import { PurchasesOverview } from '@/components/admin/PurchasesOverview';
 import { DashboardStats } from '@/components/admin/DashboardStats';
+import { UsersManagement } from '@/components/admin/UsersManagement';
 
 export default function Admin() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -55,10 +56,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-4 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Gerenciar Leads</TabsTrigger>
             <TabsTrigger value="purchases">Compras</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -71,6 +73,10 @@ export default function Admin() {
 
           <TabsContent value="purchases">
             <PurchasesOverview />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UsersManagement />
           </TabsContent>
         </Tabs>
       </div>

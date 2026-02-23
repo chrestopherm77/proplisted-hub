@@ -33,6 +33,23 @@ export default function Auth() {
 
       if (error) throw error;
 
+      // Check if user is active
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile && profile.is_active === false) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Conta desativada',
+          description: 'Sua conta foi desativada. Entre em contato com o suporte.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       toast({
         title: 'Login realizado com sucesso!',
         description: 'Bem-vindo de volta.',

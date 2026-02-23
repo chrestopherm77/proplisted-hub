@@ -5,7 +5,6 @@ import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
 import { RevenueChart } from './RevenueChart';
 import { LeadsPerformanceChart } from './LeadsPerformanceChart';
 import { SalesByStatusChart } from './SalesByStatusChart';
-import { UsersManagement } from './UsersManagement';
 
 interface Stats {
   totalRevenue: number;
@@ -22,7 +21,6 @@ export function DashboardStats() {
     totalUsers: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [showUsers, setShowUsers] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -116,14 +114,14 @@ export function DashboardStats() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all" onClick={() => setShowUsers(true)}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium">Usuários</CardTitle>
             <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-lg md:text-2xl font-bold text-secondary">{stats.totalUsers}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Clique para ver detalhes</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Cadastrados na plataforma</p>
           </CardContent>
         </Card>
       </div>
@@ -138,7 +136,6 @@ export function DashboardStats() {
         <LeadsPerformanceChart />
       </div>
 
-      <UsersManagement open={showUsers} onOpenChange={setShowUsers} />
     </div>
   );
 }

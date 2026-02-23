@@ -217,6 +217,7 @@ export type Database = {
           creci_pj_uf: string | null
           creci_uf: string | null
           id: string
+          is_active: boolean
           name: string
           person_type: string | null
           phone: string
@@ -252,6 +253,7 @@ export type Database = {
           creci_pj_uf?: string | null
           creci_uf?: string | null
           id: string
+          is_active?: boolean
           name: string
           person_type?: string | null
           phone: string
@@ -287,6 +289,7 @@ export type Database = {
           creci_pj_uf?: string | null
           creci_uf?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           person_type?: string | null
           phone?: string
