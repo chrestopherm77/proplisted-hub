@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use the redirectUrl from frontend or fall back to default
     const baseUrl = redirectUrl || "https://leadbay.com.br";
-    const resetRedirectUrl = `${baseUrl}/reset-password`;
+    const resetRedirectUrl = `${baseUrl}/profile`;
 
     // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
