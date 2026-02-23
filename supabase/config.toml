@@ -24,3 +24,6 @@ verify_jwt = false
 [functions.notify-new-lead]
 verify_jwt = false
 
+[functions.list-users]
+verify_jwt = false
+
