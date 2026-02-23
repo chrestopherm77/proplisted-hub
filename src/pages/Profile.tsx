@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import PasswordRecoveryModal from '@/components/profile/PasswordRecoveryModal';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,11 @@ import { validatePassword } from '@/lib/validators';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  
+  const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,8 +44,17 @@ const Profile = () => {
     
     if (user) {
       fetchProfile();
+      if (searchParams.get('recovery') === 'true') {
+        setIsRecoveryModalOpen(true);
+      }
     }
   }, [user, authLoading, navigate]);
+
+  const handleCloseRecoveryModal = () => {
+    setIsRecoveryModalOpen(false);
+    searchParams.delete('recovery');
+    setSearchParams(searchParams, { replace: true });
+  };
 
   const fetchProfile = async () => {
     try {
@@ -152,6 +165,7 @@ const Profile = () => {
 
   return (
     <Layout>
+      <PasswordRecoveryModal isOpen={isRecoveryModalOpen} onClose={handleCloseRecoveryModal} />
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
         <Card>
           <CardHeader>

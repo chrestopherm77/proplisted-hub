@@ -25,15 +25,14 @@ export default function ResetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "PASSWORD_RECOVERY" || session) {
-          // Redirect to profile where they can change password
-          navigate("/profile", { replace: true });
+          navigate("/profile?recovery=true", { replace: true });
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/profile", { replace: true });
+        navigate("/profile?recovery=true", { replace: true });
       }
     });
 
