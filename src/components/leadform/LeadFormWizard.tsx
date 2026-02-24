@@ -451,7 +451,7 @@ export function LeadFormWizard() {
             form_data: JSON.parse(JSON.stringify(formDataJson)),
             lead_submission_id: submissionId,
             is_active: true,
-            max_purchases: 3,
+            max_purchases: 5,
             purchase_count: 0,
           }]);
 
