@@ -825,6 +825,17 @@ const fieldNameLabels: Record<string, string> = {
   commercialBedrooms: 'Dormitórios (comercial)',
   commercialBathrooms: 'Banheiros (comercial)',
   commercialParkingSpots: 'Vagas (comercial)',
+  city: 'Cidade',
+  neighborhood: 'Bairro',
+  uf: 'UF',
+  street: 'Rua',
+  number: 'Número',
+  complement: 'Complemento',
+  zipCode: 'CEP',
+  cep: 'CEP',
+  state: 'Estado',
+  country: 'País',
+  address: 'Endereço',
 };
 
 // Fields that represent area/size - should have m² suffix

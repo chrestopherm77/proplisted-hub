@@ -34,7 +34,7 @@ export function LeadsManagement() {
     phone: '',
     description: '',
     price: '',
-    max_purchases: '3',
+    max_purchases: '5',
   });
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export function LeadsManagement() {
 
       setIsDialogOpen(false);
       setEditingLead(null);
-      setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '3' });
+      setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '5' });
       fetchLeads();
     } catch (error: any) {
       toast({
@@ -195,7 +195,7 @@ export function LeadsManagement() {
             <Button 
               onClick={() => { 
                 setEditingLead(null); 
-                setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '3' }); 
+                setFormData({ name: '', phone: '', description: '', price: '', max_purchases: '5' }); 
               }}
               size="sm"
               className="w-full sm:w-auto"

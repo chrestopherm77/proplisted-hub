@@ -117,7 +117,7 @@ export function CsvImport({ onImportComplete }: CsvImportProps) {
         phone: row.phone.trim(),
         description: row.description.trim(),
         price,
-        max_purchases: row.max_purchases ? parseInt(row.max_purchases) : 3,
+        max_purchases: row.max_purchases ? parseInt(row.max_purchases) : 5,
       });
     }
 
@@ -149,7 +149,7 @@ export function CsvImport({ onImportComplete }: CsvImportProps) {
           phone: lead.phone,
           description: lead.description,
           price: lead.price,
-          max_purchases: lead.max_purchases || 3,
+          max_purchases: lead.max_purchases || 5,
           is_active: true,
           purchase_count: 0,
         }));
@@ -235,7 +235,7 @@ export function CsvImport({ onImportComplete }: CsvImportProps) {
 
         <div className="text-xs text-muted-foreground space-y-1">
           <p><strong>Colunas obrigatórias:</strong> name, phone, description, price</p>
-          <p><strong>Coluna opcional:</strong> max_purchases (padrão: 3)</p>
+          <p><strong>Coluna opcional:</strong> max_purchases (padrão: 5)</p>
           <p className="text-amber-600 dark:text-amber-400">
             ⚠️ Na vitrine, apenas a descrição e o preço são exibidos. Nome e telefone são liberados após a compra.
           </p>
