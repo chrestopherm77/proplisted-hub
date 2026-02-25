@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { LeadFormData, initialFormData, StepProps } from "./types";
 import { LeadFormProgress } from "./LeadFormProgress";
 import { LeadFormNavigation } from "./LeadFormNavigation";
-import { SuccessScreen } from "./SuccessScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateDescription } from "@/lib/formatFormData";
@@ -365,7 +365,7 @@ export function LeadFormWizard() {
   const [formData, setFormData] = useState<LeadFormData>(initialFormData);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // --- Tracking ---
@@ -629,7 +629,7 @@ export function LeadFormWizard() {
           .eq('session_id', sessionIdRef.current)
           .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
 
-        setIsSubmitted(true);
+        navigate('/lp-obrigado');
       } catch (error) {
         const err = error as any;
         console.error('Error submitting form:', {
@@ -658,14 +658,9 @@ export function LeadFormWizard() {
   const handleReset = useCallback(() => {
     setFormData(initialFormData);
     setCurrentStepIndex(0);
-    setIsSubmitted(false);
   }, []);
 
   const canGoNext = currentStep.validate ? currentStep.validate(formData) : true;
-
-  if (isSubmitted) {
-    return <SuccessScreen />;
-  }
 
   const CurrentStepComponent = currentStep.component;
 
