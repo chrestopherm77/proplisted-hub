@@ -1,49 +1,29 @@
 
+## Redirecionar para /lp-obrigado apos envio do formulario
 
-## Corrigir rastreamento de Page Views
+### O que muda
 
-### Problema identificado
+Ao inves de mostrar a tela de sucesso inline no formulario, o usuario sera redirecionado para a pagina `/lp-obrigado` apos o envio. Essa pagina tera a mesma mensagem de agradecimento com o logo da LeadBay.
 
-O tracking de page views nao funciona por dois motivos:
+### Alteracoes
 
-1. **Permissao de banco**: O `upsert` do Supabase exige permissoes de INSERT **e** UPDATE. A tabela `lp_page_views` so tem politica de INSERT para anonimos, sem UPDATE. O upsert falha silenciosamente.
+**1. Criar `src/pages/ThankYou.tsx`**
 
-2. **Design do session_id**: O visitor ID e salvo no localStorage e reutilizado para sempre. Combinado com a constraint UNIQUE em `session_id`, o mesmo visitante nunca teria mais de 1 page view registrado — mesmo que o upsert funcionasse.
+Nova pagina com o conteudo da tela de sucesso (logo LeadBay + mensagem de agradecimento). Reutiliza o mesmo visual do `SuccessScreen`.
 
-### Solucao
+**2. Registrar rota em `src/App.tsx`**
 
-| Alteracao | Detalhe |
-|---|---|
-| Remover constraint UNIQUE de `session_id` | Permite multiplas visitas do mesmo visitante |
-| Trocar `.upsert()` por `.insert()` no codigo | Elimina necessidade de permissao UPDATE |
+Adicionar `<Route path="/lp-obrigado" element={<ThankYou />} />` nas rotas.
 
-### Detalhes tecnicos
+**3. Alterar `src/components/leadform/LeadFormWizard.tsx`**
 
-**1. Migracao SQL**
+- Importar `useNavigate` do react-router-dom
+- Apos o envio bem-sucedido (onde hoje faz `setIsSubmitted(true)`), trocar por `navigate('/lp-obrigado')`
+- Remover o import do `SuccessScreen` e o bloco `if (isSubmitted)` que renderiza essa tela
+- Remover o estado `isSubmitted` que nao sera mais necessario
 
-```sql
-ALTER TABLE lp_page_views DROP CONSTRAINT lp_page_views_session_id_unique;
-```
+### Resultado
 
-**2. Alteracao em `src/components/leadform/LeadFormWizard.tsx`**
-
-Trocar o bloco de tracking (linha ~388):
-
-De:
-```typescript
-supabase.from('lp_page_views').upsert([{...}], { onConflict: 'session_id' })
-```
-
-Para:
-```typescript
-supabase.from('lp_page_views').insert([{...}])
-```
-
-O `session_id` continua sendo enviado (para analytics), mas agora cada visita cria um novo registro.
-
-### Resultado esperado
-
-- Cada acesso a pagina `/lp` registra 1 page view, independente do dispositivo ou visitante
-- O painel admin mostra o total real de visitas
-- O tracking de leads parciais nao e afetado (usa o mesmo `session_id` do localStorage normalmente)
-
+- O formulario envia os dados e redireciona para `leadbay.com.br/lp-obrigado`
+- A pagina de obrigado funciona como URL independente (pode ser compartilhada, usada como destino de pixel, etc.)
+- O fluxo de reset do formulario continua funcionando normalmente
