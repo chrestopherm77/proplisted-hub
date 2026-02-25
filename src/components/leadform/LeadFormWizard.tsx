@@ -478,6 +478,10 @@ export function LeadFormWizard() {
     const step = visibleSteps[stepIndex];
     if (!step) return;
 
+    // Only track after contact has been validated (name + phone required)
+    const hasContact = formData.name.trim().length > 0 && formData.phone.length >= 14;
+    if (!hasContact) return;
+
     const formDataJson = {
       intention: formData.intention,
       sell: formData.sell || {},
@@ -517,9 +521,10 @@ export function LeadFormWizard() {
     }
   }, [formData, visibleSteps]);
 
-  // Auto-save progress with debounce (captures state even if user minimizes)
+  // Auto-save progress with debounce — only after contact is validated
   useEffect(() => {
-    if (currentStepIndex === 0 && !formData.intention) return;
+    const hasContact = formData.name.trim().length > 0 && formData.phone.length >= 14;
+    if (!hasContact) return;
     const timer = setTimeout(() => {
       trackPartialLead(currentStepIndex);
     }, 2000);
