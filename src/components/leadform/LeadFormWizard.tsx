@@ -100,6 +100,14 @@ const allSteps: StepDefinition[] = [
     isVisible: () => true,
     validate: (data) => !!data.intention,
   },
+
+  // Step 2: Contact (right after intention)
+  { 
+    id: 'contact', 
+    component: ContactStep, 
+    isVisible: (data) => !!data.intention,
+    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.phoneVerified && data.acceptedTerms,
+  },
   
   // ============ SELL FLOW ============
   { 
@@ -351,13 +359,6 @@ const allSteps: StepDefinition[] = [
     validate: (data) => !!data.rent?.guarantee && !!data.rent?.moveInDeadline,
   },
   
-  // ============ CONTACT (always last) ============
-  { 
-    id: 'contact', 
-    component: ContactStep, 
-    isVisible: (data) => !!data.intention,
-    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.phoneVerified && data.acceptedTerms,
-  },
 ];
 
 export function LeadFormWizard() {
