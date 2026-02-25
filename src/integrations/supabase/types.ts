@@ -204,6 +204,7 @@ export type Database = {
           completed: boolean | null
           created_at: string | null
           current_step: string | null
+          form_data: Json | null
           id: string
           intention: string | null
           name: string | null
@@ -217,6 +218,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string | null
           current_step?: string | null
+          form_data?: Json | null
           id?: string
           intention?: string | null
           name?: string | null
@@ -230,6 +232,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string | null
           current_step?: string | null
+          form_data?: Json | null
           id?: string
           intention?: string | null
           name?: string | null
