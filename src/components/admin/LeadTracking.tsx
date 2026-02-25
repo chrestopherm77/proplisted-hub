@@ -124,6 +124,36 @@ export function LeadTracking() {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase
+      .channel('partial-leads-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'lp_partial_leads',
+      }, (payload) => {
+        const newLead = payload.new as PartialLead;
+        if (!newLead.completed) {
+          setPartialLeads(prev => [newLead, ...prev]);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'lp_partial_leads',
+      }, (payload) => {
+        const updated = payload.new as PartialLead;
+        if (updated.completed) {
+          setPartialLeads(prev => prev.filter(l => l.id !== updated.id));
+        } else {
+          setPartialLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+        }
+        // Also update the selected lead modal if open
+        setSelectedLead(prev => prev?.id === updated.id ? (updated.completed ? null : updated) : prev);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   async function fetchData() {

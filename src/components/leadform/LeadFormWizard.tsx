@@ -474,12 +474,9 @@ export function LeadFormWizard() {
   }, [detectedCity, detectedUf, formData.intention]);
 
   // Helper: track partial lead creation/update (fire-and-forget)
-  const trackPartialLead = useCallback((nextIndex: number) => {
-    const nextStep = visibleSteps[nextIndex];
-    if (!nextStep) return;
-
-    const hasContact = !!formData.name.trim() && formData.phone.length >= 14;
-    if (!hasContact) return;
+  const trackPartialLead = useCallback((stepIndex: number) => {
+    const step = visibleSteps[stepIndex];
+    if (!step) return;
 
     const formDataJson = {
       intention: formData.intention,
@@ -491,11 +488,11 @@ export function LeadFormWizard() {
 
     const payload = {
       session_id: sessionIdRef.current,
-      name: formData.name.trim(),
-      phone: formData.phone,
+      name: formData.name.trim() || null,
+      phone: formData.phone || null,
       intention: formData.intention || null,
-      current_step: nextStep.id,
-      step_index: nextIndex,
+      current_step: step.id,
+      step_index: stepIndex,
       total_steps: visibleSteps.length,
       form_data: JSON.parse(JSON.stringify(formDataJson)),
     };
@@ -519,6 +516,15 @@ export function LeadFormWizard() {
         .then(({ error }) => { if (error) console.error('Partial lead update error:', error); });
     }
   }, [formData, visibleSteps]);
+
+  // Auto-save progress with debounce (captures state even if user minimizes)
+  useEffect(() => {
+    if (currentStepIndex === 0 && !formData.intention) return;
+    const timer = setTimeout(() => {
+      trackPartialLead(currentStepIndex);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [currentStepIndex, formData, trackPartialLead]);
 
   const handleNext = useCallback(async () => {
     if (currentStep.validate && !currentStep.validate(formData)) {
