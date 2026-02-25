@@ -369,21 +369,30 @@ export function LeadFormWizard() {
   const { toast } = useToast();
 
   // --- Tracking ---
-  const sessionIdRef = useRef<string>(createClientUuid());
+  const sessionIdRef = useRef<string>('');
+  if (!sessionIdRef.current) {
+    const VISITOR_KEY = 'lb_visitor_id';
+    let visitorId = localStorage.getItem(VISITOR_KEY);
+    if (!visitorId) {
+      visitorId = createClientUuid();
+      localStorage.setItem(VISITOR_KEY, visitorId);
+    }
+    sessionIdRef.current = visitorId;
+  }
   const partialLeadCreatedRef = useRef(false);
   const [detectedCity, setDetectedCity] = useState<string | null>(null);
   const [detectedUf, setDetectedUf] = useState<string | null>(null);
 
-  // Track page view on mount
+  // Track page view on mount (upsert to avoid duplicates)
   useEffect(() => {
-    supabase.from('lp_page_views').insert([{
+    supabase.from('lp_page_views').upsert([{
       session_id: sessionIdRef.current,
       user_agent: navigator.userAgent,
       referrer: document.referrer || null,
       screen_width: screen.width,
       screen_height: screen.height,
       language: navigator.language,
-    }]).then(({ error }) => {
+    }], { onConflict: 'session_id' }).then(({ error }) => {
       if (error) console.error('Page view tracking error:', error);
     });
 

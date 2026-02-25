@@ -1,0 +1,1 @@
+ALTER TABLE lp_page_views ADD CONSTRAINT lp_page_views_session_id_unique UNIQUE (session_id);
