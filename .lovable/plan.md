@@ -1,29 +1,17 @@
 
-## Redirecionar para /lp-obrigado apos envio do formulario
+
+## Adicionar Meta Pixel na página /lp-obrigado
 
 ### O que muda
 
-Ao inves de mostrar a tela de sucesso inline no formulario, o usuario sera redirecionado para a pagina `/lp-obrigado` apos o envio. Essa pagina tera a mesma mensagem de agradecimento com o logo da LeadBay.
+Adicionar o mesmo Meta Pixel (ID: 1267609825231112) na página `ThankYou.tsx` (`/lp-obrigado`), usando o mesmo padrão de injeção dinâmica já utilizado no `LeadForm.tsx`.
 
-### Alteracoes
+### Alteração
 
-**1. Criar `src/pages/ThankYou.tsx`**
+**Arquivo: `src/pages/ThankYou.tsx`**
 
-Nova pagina com o conteudo da tela de sucesso (logo LeadBay + mensagem de agradecimento). Reutiliza o mesmo visual do `SuccessScreen`.
+- Importar `useEffect` do React
+- Adicionar o mesmo bloco `useEffect` do `LeadForm.tsx` que injeta o script do Facebook Pixel, dispara `PageView`, e remove tudo no cleanup
 
-**2. Registrar rota em `src/App.tsx`**
+O código do pixel será idêntico ao já existente na `/lp`, garantindo que o Meta Pixel rastreie também os acessos à página de obrigado — útil para medir conversões no Facebook Ads.
 
-Adicionar `<Route path="/lp-obrigado" element={<ThankYou />} />` nas rotas.
-
-**3. Alterar `src/components/leadform/LeadFormWizard.tsx`**
-
-- Importar `useNavigate` do react-router-dom
-- Apos o envio bem-sucedido (onde hoje faz `setIsSubmitted(true)`), trocar por `navigate('/lp-obrigado')`
-- Remover o import do `SuccessScreen` e o bloco `if (isSubmitted)` que renderiza essa tela
-- Remover o estado `isSubmitted` que nao sera mais necessario
-
-### Resultado
-
-- O formulario envia os dados e redireciona para `leadbay.com.br/lp-obrigado`
-- A pagina de obrigado funciona como URL independente (pode ser compartilhada, usada como destino de pixel, etc.)
-- O fluxo de reset do formulario continua funcionando normalmente
