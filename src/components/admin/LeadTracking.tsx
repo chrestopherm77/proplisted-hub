@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Eye, UserX, Clock, Monitor } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatFormDataToSections } from '@/lib/formatFormData';
 
 interface PageView {
   id: string;
@@ -29,6 +31,7 @@ interface PartialLead {
   completed: boolean | null;
   created_at: string | null;
   updated_at: string | null;
+  form_data: any;
 }
 
 const intentionLabels: Record<string, string> = {
@@ -43,6 +46,55 @@ const intentionColors: Record<string, string> = {
   BUY: 'bg-blue-100 text-blue-800',
   BUILD: 'bg-amber-100 text-amber-800',
   RENT: 'bg-green-100 text-green-800',
+};
+
+const stepLabels: Record<string, string> = {
+  'intention': 'Intenção',
+  'contact': 'Contato',
+  // Sell
+  'sell-relation': 'Relação com imóvel',
+  'sell-exclusivity': 'Exclusividade',
+  'sell-property-type': 'Tipo de imóvel',
+  'sell-commercial-type': 'Tipo comercial',
+  'sell-residential-type': 'Tipo residencial',
+  'sell-mixed-type': 'Tipo misto',
+  'sell-rural-details': 'Detalhes rurais',
+  'sell-general-info': 'Informações gerais',
+  'sell-terrain-position': 'Posição do terreno',
+  'sell-value': 'Valor',
+  'sell-payment-methods': 'Formas de pagamento',
+  'sell-property-status': 'Status do imóvel',
+  'sell-documentation': 'Documentação',
+  'sell-deadline': 'Prazo',
+  // Buy
+  'buy-purpose': 'Finalidade',
+  'buy-property-type': 'Tipo de imóvel',
+  'buy-residential-prefs': 'Preferências residenciais',
+  'buy-commercial-prefs': 'Preferências comerciais',
+  'buy-land-prefs': 'Preferências de terreno',
+  'buy-location-budget': 'Localização e orçamento',
+  'buy-payment-method': 'Forma de pagamento',
+  'buy-deadline': 'Prazo',
+  // Build
+  'build-purpose': 'Finalidade',
+  'build-land': 'Terreno',
+  'build-topography': 'Topografia',
+  'build-project': 'Projeto',
+  'build-characteristics': 'Características',
+  'build-knowledge': 'Conhecimento',
+  'build-location': 'Localização',
+  'build-bts-confirm': 'Confirmação BTS',
+  'build-bts': 'Built To Suit',
+  'build-budget': 'Orçamento',
+  'build-payment': 'Pagamento',
+  'build-deadline': 'Prazo',
+  // Rent
+  'rent-purpose': 'Finalidade',
+  'rent-property-type': 'Tipo de imóvel',
+  'rent-residential-prefs': 'Preferências residenciais',
+  'rent-commercial-prefs': 'Preferências comerciais',
+  'rent-location-value': 'Localização e valor',
+  'rent-guarantee': 'Garantia',
 };
 
 function parseBrowser(ua: string | null): string {
@@ -68,6 +120,7 @@ export function LeadTracking() {
   const [totalViews, setTotalViews] = useState(0);
   const [chartData, setChartData] = useState<{ date: string; views: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLead, setSelectedLead] = useState<PartialLead | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -93,7 +146,6 @@ export function LeadTracking() {
       setPageViews(viewsRes.data as PageView[]);
       setTotalViews(viewsRes.data.length);
 
-      // Group by day for chart
       const grouped: Record<string, number> = {};
       viewsRes.data.forEach((v) => {
         const day = v.created_at ? new Date(v.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'N/A';
@@ -109,6 +161,10 @@ export function LeadTracking() {
 
     setLoading(false);
   }
+
+  const detailSections = selectedLead?.form_data && selectedLead?.intention
+    ? formatFormDataToSections(selectedLead.intention, selectedLead.form_data)
+    : [];
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">Carregando dados de rastreamento...</div>;
@@ -198,7 +254,11 @@ export function LeadTracking() {
                 </TableHeader>
                 <TableBody>
                   {partialLeads.map((lead) => (
-                    <TableRow key={lead.id}>
+                    <TableRow
+                      key={lead.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedLead(lead)}
+                    >
                       <TableCell className="font-medium">{lead.name || '-'}</TableCell>
                       <TableCell>{lead.phone || '-'}</TableCell>
                       <TableCell>
@@ -208,7 +268,9 @@ export function LeadTracking() {
                           </Badge>
                         ) : '-'}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{lead.current_step || '-'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {lead.current_step ? (stepLabels[lead.current_step] || lead.current_step) : '-'}
+                      </TableCell>
                       <TableCell>
                         {lead.step_index != null && lead.total_steps ? (
                           <span className="text-xs">
@@ -225,6 +287,46 @@ export function LeadTracking() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail modal */}
+      <Dialog open={!!selectedLead} onOpenChange={(open) => { if (!open) setSelectedLead(null); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Lead Parcial</DialogTitle>
+          </DialogHeader>
+          {selectedLead && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-muted-foreground">Nome:</span> {selectedLead.name || '-'}</div>
+                <div><span className="text-muted-foreground">Telefone:</span> {selectedLead.phone || '-'}</div>
+                <div><span className="text-muted-foreground">Intenção:</span> {selectedLead.intention ? intentionLabels[selectedLead.intention] || selectedLead.intention : '-'}</div>
+                <div><span className="text-muted-foreground">Parou em:</span> {selectedLead.current_step ? stepLabels[selectedLead.current_step] || selectedLead.current_step : '-'}</div>
+              </div>
+
+              {detailSections.length > 0 ? (
+                <div className="space-y-3 border-t pt-3">
+                  <h4 className="text-sm font-semibold">Respostas preenchidas</h4>
+                  {detailSections.map((section, i) => (
+                    <div key={i} className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">{section.icon} {section.title}</p>
+                      {section.fields.map((field, j) => (
+                        <div key={j} className="flex justify-between text-sm pl-4">
+                          <span className="text-muted-foreground">{field.label}</span>
+                          <span className="text-right max-w-[60%]">{field.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma resposta registrada ainda.
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Recent page views */}
       <Card>

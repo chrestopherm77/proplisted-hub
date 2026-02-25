@@ -371,6 +371,8 @@ export function LeadFormWizard() {
   // --- Tracking ---
   const sessionIdRef = useRef<string>(createClientUuid());
   const partialLeadCreatedRef = useRef(false);
+  const [detectedCity, setDetectedCity] = useState<string | null>(null);
+  const [detectedUf, setDetectedUf] = useState<string | null>(null);
 
   // Track page view on mount
   useEffect(() => {
@@ -384,6 +386,42 @@ export function LeadFormWizard() {
     }]).then(({ error }) => {
       if (error) console.error('Page view tracking error:', error);
     });
+
+    // Geolocation: detect city on mobile
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=pt-BR`,
+              { headers: { 'User-Agent': 'LeadBay/1.0' } }
+            );
+            const data = await res.json();
+            const city = data?.address?.city || data?.address?.town || data?.address?.village;
+            const state = data?.address?.state;
+            if (city) setDetectedCity(city);
+            if (state) {
+              // Map full state name to UF abbreviation
+              const stateToUf: Record<string, string> = {
+                'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
+                'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
+                'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS',
+                'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
+                'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
+                'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
+                'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO',
+              };
+              setDetectedUf(stateToUf[state] || state);
+            }
+          } catch (err) {
+            console.warn('Geolocation reverse geocode failed:', err);
+          }
+        },
+        () => { /* user denied or unavailable */ },
+        { timeout: 10000, maximumAge: 300000 }
+      );
+    }
   }, []);
 
   const visibleSteps = useMemo(() => {
@@ -413,6 +451,19 @@ export function LeadFormWizard() {
     }
   }, [currentStepIndex]);
 
+  // Auto-fill location from geolocation when intention is set
+  useEffect(() => {
+    if (!detectedCity || !formData.intention) return;
+    const flow = formData.intention.toLowerCase() as 'sell' | 'buy' | 'build' | 'rent';
+    const flowData = formData[flow];
+    // Only pre-fill if city is not already set
+    if (flowData && !flowData.city) {
+      const updates: Record<string, string> = { city: detectedCity };
+      if (detectedUf && !flowData.uf) updates.uf = detectedUf;
+      updateFlowData(flow, updates);
+    }
+  }, [detectedCity, detectedUf, formData.intention]);
+
   // Helper: track partial lead creation/update (fire-and-forget)
   const trackPartialLead = useCallback((nextIndex: number) => {
     const nextStep = visibleSteps[nextIndex];
@@ -420,6 +471,14 @@ export function LeadFormWizard() {
 
     const hasContact = !!formData.name.trim() && formData.phone.length >= 14;
     if (!hasContact) return;
+
+    const formDataJson = {
+      intention: formData.intention,
+      sell: formData.sell,
+      buy: formData.buy,
+      build: formData.build,
+      rent: formData.rent,
+    };
 
     const payload = {
       session_id: sessionIdRef.current,
@@ -429,6 +488,7 @@ export function LeadFormWizard() {
       current_step: nextStep.id,
       step_index: nextIndex,
       total_steps: visibleSteps.length,
+      form_data: JSON.parse(JSON.stringify(formDataJson)),
     };
 
     if (!partialLeadCreatedRef.current) {
@@ -444,6 +504,7 @@ export function LeadFormWizard() {
           intention: payload.intention,
           name: payload.name,
           phone: payload.phone,
+          form_data: payload.form_data,
         })
         .eq('session_id', sessionIdRef.current)
         .then(({ error }) => { if (error) console.error('Partial lead update error:', error); });
