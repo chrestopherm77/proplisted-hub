@@ -122,6 +122,10 @@ const paymentMethodLabels: Record<string, string> = {
   'vehicle_trade': 'Permuta por veículo',
   'installments': 'Entrada + parcelamento',
   'cash_only': 'Somente à vista',
+  // Buy/Build flow lowercase variants
+  'cash': 'Recursos próprios',
+  'trade': 'Permuta',
+  'combined': 'Combinação de formas',
 };
 
 const guaranteeLabels: Record<string, string> = {
