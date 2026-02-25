@@ -1,34 +1,24 @@
 
-## Corrigir exibicao de respostas no modal de Lead Parcial
+## Traduzir valores de forma de pagamento para portugues
 
 ### Problema
 
-O `form_data` salvo no banco contem apenas `{"intention":"BUY"}` sem o objeto `buy` (ou `sell`, `build`, `rent`). Isso acontece porque:
-
-1. Os sub-objetos (`formData.buy`, `formData.sell`, etc.) sao `undefined` ate que o usuario preencha a primeira resposta do fluxo especifico via `updateFlowData`.
-2. Quando `JSON.stringify` serializa `undefined`, a chave simplesmente desaparece do JSON.
-3. O `formatFormDataToSections` verifica `normalizedFormData?.buy` e nao encontra nada, exibindo "Nenhuma resposta registrada ainda".
+Os fluxos de Compra e Construcao usam valores em minusculo (`cash`, `financing`, `consortium`, `trade`, `combined`) para `paymentMethod`. O mapa `paymentMethodLabels` em `formatFormData.ts` so tem traducao para `financing` e `consortium` em minusculo — faltam `cash`, `trade` e `combined`.
 
 ### Solucao
 
-Alterar o `trackPartialLead` no `LeadFormWizard.tsx` para garantir que os sub-objetos sejam sempre salvos como objetos (mesmo que vazios), em vez de `undefined`:
+Adicionar as traducoes faltantes no `paymentMethodLabels` em `src/lib/formatFormData.ts`:
 
 ```text
-const formDataJson = {
-  intention: formData.intention,
-  sell: formData.sell || {},
-  buy: formData.buy || {},
-  build: formData.build || {},
-  rent: formData.rent || {},
-};
+'cash': 'Recursos proprios',
+'trade': 'Permuta',
+'combined': 'Combinacao de formas',
 ```
 
-Isso garante que o JSON salvo sempre contenha as chaves dos fluxos. Quando o usuario seleciona "Comprar" e depois escolhe "Finalidade: Moradia", o `buy` ja existira no JSON e a resposta aparecera no modal.
-
-### Alteracoes
+### Alteracao
 
 | Arquivo | Acao |
 |---|---|
-| `src/components/leadform/LeadFormWizard.tsx` | Trocar `formData.sell` por `formData.sell \|\| {}` (e o mesmo para buy, build, rent) no objeto `formDataJson` dentro de `trackPartialLead` |
+| `src/lib/formatFormData.ts` | Adicionar 3 entradas ao `paymentMethodLabels` (linhas ~124-125) |
 
-Alteracao de uma unica linha, sem impacto em outros componentes.
+Alteracao de 3 linhas, sem impacto em outros componentes.
