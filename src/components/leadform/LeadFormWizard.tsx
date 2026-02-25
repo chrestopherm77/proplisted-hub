@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { LeadFormData, initialFormData, StepProps } from "./types";
 import { LeadFormProgress } from "./LeadFormProgress";
 import { LeadFormNavigation } from "./LeadFormNavigation";
@@ -368,6 +368,24 @@ export function LeadFormWizard() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
+  // --- Tracking ---
+  const sessionIdRef = useRef<string>(createClientUuid());
+  const partialLeadCreatedRef = useRef(false);
+
+  // Track page view on mount
+  useEffect(() => {
+    supabase.from('lp_page_views').insert([{
+      session_id: sessionIdRef.current,
+      user_agent: navigator.userAgent,
+      referrer: document.referrer || null,
+      screen_width: screen.width,
+      screen_height: screen.height,
+      language: navigator.language,
+    }]).then(({ error }) => {
+      if (error) console.error('Page view tracking error:', error);
+    });
+  }, []);
+
   const visibleSteps = useMemo(() => {
     return allSteps.filter(step => step.isVisible(formData));
   }, [formData]);
@@ -394,6 +412,43 @@ export function LeadFormWizard() {
       setCurrentStepIndex(prev => prev - 1);
     }
   }, [currentStepIndex]);
+
+  // Helper: track partial lead creation/update (fire-and-forget)
+  const trackPartialLead = useCallback((nextIndex: number) => {
+    const nextStep = visibleSteps[nextIndex];
+    if (!nextStep) return;
+
+    const hasContact = !!formData.name.trim() && formData.phone.length >= 14;
+    if (!hasContact) return;
+
+    const payload = {
+      session_id: sessionIdRef.current,
+      name: formData.name.trim(),
+      phone: formData.phone,
+      intention: formData.intention || null,
+      current_step: nextStep.id,
+      step_index: nextIndex,
+      total_steps: visibleSteps.length,
+    };
+
+    if (!partialLeadCreatedRef.current) {
+      partialLeadCreatedRef.current = true;
+      supabase.from('lp_partial_leads').insert([payload])
+        .then(({ error }) => { if (error) console.error('Partial lead insert error:', error); });
+    } else {
+      supabase.from('lp_partial_leads')
+        .update({
+          current_step: payload.current_step,
+          step_index: payload.step_index,
+          total_steps: payload.total_steps,
+          intention: payload.intention,
+          name: payload.name,
+          phone: payload.phone,
+        })
+        .eq('session_id', sessionIdRef.current)
+        .then(({ error }) => { if (error) console.error('Partial lead update error:', error); });
+    }
+  }, [formData, visibleSteps]);
 
   const handleNext = useCallback(async () => {
     if (currentStep.validate && !currentStep.validate(formData)) {
@@ -465,7 +520,6 @@ export function LeadFormWizard() {
                        formData.build?.uf || formData.rent?.uf;
 
         if (leadCity) {
-          // Remove sensitive data before sending
           const safeFormData = {
             intention: formData.intention,
             sell: formData.sell ? { ...formData.sell } : undefined,
@@ -484,10 +538,15 @@ export function LeadFormWizard() {
               formData: safeFormData,
             }
           }).catch(err => {
-            // Log but don't fail the submission
             console.error('Error sending notifications:', err);
           });
         }
+
+        // 6. Mark partial lead as completed
+        supabase.from('lp_partial_leads')
+          .update({ completed: true })
+          .eq('session_id', sessionIdRef.current)
+          .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
 
         setIsSubmitted(true);
       } catch (error) {
@@ -509,7 +568,9 @@ export function LeadFormWizard() {
         setIsSubmitting(false);
       }
     } else {
-      setCurrentStepIndex(prev => prev + 1);
+      const nextIndex = currentStepIndex + 1;
+      trackPartialLead(nextIndex);
+      setCurrentStepIndex(nextIndex);
     }
   }, [currentStep, formData, isLastStep, toast]);
 

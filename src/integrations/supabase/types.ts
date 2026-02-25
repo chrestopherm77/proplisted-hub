@@ -166,6 +166,81 @@ export type Database = {
           },
         ]
       }
+      lp_page_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          language: string | null
+          referrer: string | null
+          screen_height: number | null
+          screen_width: number | null
+          session_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          referrer?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          referrer?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      lp_partial_leads: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          current_step: string | null
+          id: string
+          intention: string | null
+          name: string | null
+          phone: string | null
+          session_id: string
+          step_index: number | null
+          total_steps: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          id?: string
+          intention?: string | null
+          name?: string | null
+          phone?: string | null
+          session_id: string
+          step_index?: number | null
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          id?: string
+          intention?: string | null
+          name?: string | null
+          phone?: string | null
+          session_id?: string
+          step_index?: number | null
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
