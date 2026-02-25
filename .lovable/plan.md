@@ -1,26 +1,49 @@
 
 
-## Reverter rastreamento: criar lead parcial somente apos validacao do contato
+## Corrigir rastreamento de Page Views
 
-### O que muda
+### Problema identificado
 
-O rastreamento voltara a funcionar como antes: o lead parcial so e criado na tabela `lp_partial_leads` **depois** que o usuario validar nome e telefone na etapa de Contato. Isso garante que nome e telefone sempre aparecam na tabela do admin.
+O tracking de page views nao funciona por dois motivos:
 
-### Alteracoes em `src/components/leadform/LeadFormWizard.tsx`
+1. **Permissao de banco**: O `upsert` do Supabase exige permissoes de INSERT **e** UPDATE. A tabela `lp_page_views` so tem politica de INSERT para anonimos, sem UPDATE. O upsert falha silenciosamente.
 
-1. **Restaurar verificacao `hasContact` no `trackPartialLead`**: Adicionar de volta a condicao que exige `name` e `phone` preenchidos antes de criar/atualizar o lead parcial. Se nao tiver contato validado, a funcao retorna sem fazer nada.
+2. **Design do session_id**: O visitor ID e salvo no localStorage e reutilizado para sempre. Combinado com a constraint UNIQUE em `session_id`, o mesmo visitante nunca teria mais de 1 page view registrado — mesmo que o upsert funcionasse.
 
-2. **Ajustar o debounce `useEffect`**: Ao inves de disparar desde a etapa 0, so disparar apos o contato ter sido validado (etapa >= 2, ou seja, apos a etapa de contato).
+### Solucao
 
-3. **Manter o progresso funcionando**: O tracking continua atualizando `current_step`, `step_index`, `total_steps` e `form_data` a cada mudanca de etapa — so que agora so comeca apos o contato.
-
-### Resultado
-
-| Campo | Comportamento |
+| Alteracao | Detalhe |
 |---|---|
-| Nome | Sempre preenchido (obrigatorio) |
-| Telefone | Sempre preenchido (obrigatorio) |
-| Intencao | Salva junto com o contato |
-| Progresso | Atualizado a cada etapa apos contato |
-| Respostas | Salvas no form_data em tempo real |
+| Remover constraint UNIQUE de `session_id` | Permite multiplas visitas do mesmo visitante |
+| Trocar `.upsert()` por `.insert()` no codigo | Elimina necessidade de permissao UPDATE |
+
+### Detalhes tecnicos
+
+**1. Migracao SQL**
+
+```sql
+ALTER TABLE lp_page_views DROP CONSTRAINT lp_page_views_session_id_unique;
+```
+
+**2. Alteracao em `src/components/leadform/LeadFormWizard.tsx`**
+
+Trocar o bloco de tracking (linha ~388):
+
+De:
+```typescript
+supabase.from('lp_page_views').upsert([{...}], { onConflict: 'session_id' })
+```
+
+Para:
+```typescript
+supabase.from('lp_page_views').insert([{...}])
+```
+
+O `session_id` continua sendo enviado (para analytics), mas agora cada visita cria um novo registro.
+
+### Resultado esperado
+
+- Cada acesso a pagina `/lp` registra 1 page view, independente do dispositivo ou visitante
+- O painel admin mostra o total real de visitas
+- O tracking de leads parciais nao e afetado (usa o mesmo `session_id` do localStorage normalmente)
 
