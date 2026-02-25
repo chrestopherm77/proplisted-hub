@@ -1,42 +1,24 @@
 
 
-## Traducao de labels e ajuste de max_purchases
+## Inversao da Ordem: Contato antes do Formulario
 
-### Problema 1: Nomes em ingles no modal
-Campos como `city`, `neighborhood`, `uf`, `street` nao estao no mapeamento `fieldNameLabels` em `src/lib/formatFormData.ts`. Quando aparecem na secao "Outras Informacoes" (fallback), o codigo converte camelCase para texto legivel mas mantem em ingles.
+### O que muda
 
-### Problema 2: Quantidade maxima de vendas
-Atualmente o `max_purchases` esta configurado como 3 em varios lugares. Precisa ser alterado para 5.
+Mover a etapa de Contato (nome, telefone, verificacao WhatsApp, e-mail, termos LGPD) da ultima posicao para a segunda posicao, logo apos a escolha da intencao. O usuario primeiro escolhe a intencao, depois preenche dados de contato e valida o WhatsApp, e so entao preenche o formulario especifico. A ultima etapa do fluxo (ex: prazo/deadline) passa a ser a etapa de envio.
 
-### Alteracoes
+### Alteracao
 
 | Arquivo | O que muda |
 |---|---|
-| `src/lib/formatFormData.ts` | Adicionar traducoes para `city`, `neighborhood`, `uf`, `street`, `number`, `complement`, `zipCode` e outros campos de localizacao no `fieldNameLabels` |
-| `src/components/leadform/LeadFormWizard.tsx` | Alterar `max_purchases: 3` para `max_purchases: 5` (linha 454) |
-| `src/components/admin/LeadsManagement.tsx` | Alterar valor padrao de `max_purchases` de `'3'` para `'5'` (linhas 37, 105, 198) |
-| `src/components/admin/CsvImport.tsx` | Alterar fallback de `max_purchases` de `3` para `5` (linhas 120, 152) |
+| `src/components/leadform/LeadFormWizard.tsx` | Mover a entrada `contact` do final do array `allSteps` para a posicao 2 (indice 1, logo apos `intention`) |
 
 ### Detalhes tecnicos
 
-**1. Novas entradas em `fieldNameLabels`** (src/lib/formatFormData.ts):
+No array `allSteps` em `LeadFormWizard.tsx`, a entrada com `id: 'contact'` esta atualmente no final (apos todos os fluxos). Sera movida para logo apos a entrada `id: 'intention'`.
 
-```text
-city: 'Cidade',
-neighborhood: 'Bairro',
-uf: 'UF',
-street: 'Rua',
-number: 'Numero',
-complement: 'Complemento',
-zipCode: 'CEP',
-cep: 'CEP',
-state: 'Estado',
-country: 'Pais',
-address: 'Endereco',
-```
+A condicao de visibilidade do contact (`isVisible: (data) => !!data.intention`) ja garante que so aparece apos escolher a intencao.
 
-**2. max_purchases default de 3 para 5** em:
-- `LeadFormWizard.tsx` linha 454: `max_purchases: 5`
-- `LeadsManagement.tsx` linhas 37, 105, 198: valor padrao `'5'`
-- `CsvImport.tsx` linhas 120, 152: fallback `5`
+A logica de submit (`isLastStep`) ja funciona automaticamente pois depende do indice relativo ao array de steps visiveis - a ultima etapa visivel do fluxo (prazo, garantia, etc.) passara a ter o botao "Enviar".
+
+Nenhuma outra alteracao e necessaria pois toda a logica de navegacao e submit ja e baseada em posicao relativa no array filtrado.
 
