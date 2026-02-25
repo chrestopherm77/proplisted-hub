@@ -1,24 +1,26 @@
 
-## Traduzir valores de forma de pagamento para portugues
 
-### Problema
+## Reverter rastreamento: criar lead parcial somente apos validacao do contato
 
-Os fluxos de Compra e Construcao usam valores em minusculo (`cash`, `financing`, `consortium`, `trade`, `combined`) para `paymentMethod`. O mapa `paymentMethodLabels` em `formatFormData.ts` so tem traducao para `financing` e `consortium` em minusculo — faltam `cash`, `trade` e `combined`.
+### O que muda
 
-### Solucao
+O rastreamento voltara a funcionar como antes: o lead parcial so e criado na tabela `lp_partial_leads` **depois** que o usuario validar nome e telefone na etapa de Contato. Isso garante que nome e telefone sempre aparecam na tabela do admin.
 
-Adicionar as traducoes faltantes no `paymentMethodLabels` em `src/lib/formatFormData.ts`:
+### Alteracoes em `src/components/leadform/LeadFormWizard.tsx`
 
-```text
-'cash': 'Recursos proprios',
-'trade': 'Permuta',
-'combined': 'Combinacao de formas',
-```
+1. **Restaurar verificacao `hasContact` no `trackPartialLead`**: Adicionar de volta a condicao que exige `name` e `phone` preenchidos antes de criar/atualizar o lead parcial. Se nao tiver contato validado, a funcao retorna sem fazer nada.
 
-### Alteracao
+2. **Ajustar o debounce `useEffect`**: Ao inves de disparar desde a etapa 0, so disparar apos o contato ter sido validado (etapa >= 2, ou seja, apos a etapa de contato).
 
-| Arquivo | Acao |
+3. **Manter o progresso funcionando**: O tracking continua atualizando `current_step`, `step_index`, `total_steps` e `form_data` a cada mudanca de etapa — so que agora so comeca apos o contato.
+
+### Resultado
+
+| Campo | Comportamento |
 |---|---|
-| `src/lib/formatFormData.ts` | Adicionar 3 entradas ao `paymentMethodLabels` (linhas ~124-125) |
+| Nome | Sempre preenchido (obrigatorio) |
+| Telefone | Sempre preenchido (obrigatorio) |
+| Intencao | Salva junto com o contato |
+| Progresso | Atualizado a cada etapa apos contato |
+| Respostas | Salvas no form_data em tempo real |
 
-Alteracao de 3 linhas, sem impacto em outros componentes.
