@@ -383,16 +383,16 @@ export function LeadFormWizard() {
   const [detectedCity, setDetectedCity] = useState<string | null>(null);
   const [detectedUf, setDetectedUf] = useState<string | null>(null);
 
-  // Track page view on mount (upsert to avoid duplicates)
+  // Track page view on mount
   useEffect(() => {
-    supabase.from('lp_page_views').upsert([{
+    supabase.from('lp_page_views').insert([{
       session_id: sessionIdRef.current,
       user_agent: navigator.userAgent,
       referrer: document.referrer || null,
       screen_width: screen.width,
       screen_height: screen.height,
       language: navigator.language,
-    }], { onConflict: 'session_id' }).then(({ error }) => {
+    }]).then(({ error }) => {
       if (error) console.error('Page view tracking error:', error);
     });
 
