@@ -1,68 +1,71 @@
 
 
-## Ajustes no Rastreamento de Page Views
+## Rastreamento em tempo real e progresso atualizado
 
-### Problema atual
+### Problema
 
-Cada vez que alguem abre a pagina /lp, um novo UUID e gerado como `sessionId`, criando uma nova entrada em `lp_page_views`. Se a mesma pessoa abrir e fechar varias vezes, aparecem multiplas entradas sem conexao entre si.
+1. **O progresso so e rastreado apos a etapa de contato** — `trackPartialLead` exige nome e telefone preenchidos (`hasContact`). Antes disso, nada aparece no admin.
+2. **O admin so carrega dados uma vez** — `LeadTracking` faz `fetchData()` no mount e nunca mais atualiza. Nao ha subscricao realtime, entao o admin precisa recarregar a pagina para ver mudancas.
+3. **O tracking so dispara ao clicar "Proximo"** — se o usuario preenche e minimiza o celular, o progresso atual nao e salvo.
 
 ### Solucao
 
-**1. Zerar todos os page views existentes**
+**1. Rastrear desde a primeira etapa (sem exigir contato)**
 
-Deletar todos os registros atuais das tabelas `lp_page_views` e `lp_partial_leads` para comecar do zero.
+Remover a verificacao `hasContact` do `trackPartialLead`. Permitir que o lead parcial seja criado mesmo sem nome/telefone — basta ter um `session_id`. Isso faz com que o admin veja o lead desde a escolha da intencao.
 
-**2. Identificador unico por visitante via localStorage**
+**2. Salvar progresso a cada mudanca de etapa e tambem no estado atual**
 
-Ao inves de gerar um novo UUID a cada montagem do componente, salvar o ID do visitante no `localStorage`. Se o visitante ja tiver um ID salvo, reutiliza-lo. Assim:
-- Primeira visita: gera UUID, salva no localStorage, insere page view
-- Visitas seguintes: recupera UUID do localStorage, NAO insere novo page view (verifica se ja existe)
+Alem de chamar `trackPartialLead` no `handleNext`, adicionar um `useEffect` que dispara o tracking sempre que `currentStepIndex` ou `formData` mudam (com debounce para nao sobrecarregar o banco). Isso captura o estado mesmo se o usuario minimizar o celular.
 
-Logica no `LeadFormWizard.tsx`:
+**3. Ativar realtime na tabela `lp_partial_leads`**
+
+Criar uma migracao SQL para habilitar realtime na tabela:
 
 ```text
-const VISITOR_KEY = 'lb_visitor_id';
-let visitorId = localStorage.getItem(VISITOR_KEY);
-if (!visitorId) {
-  visitorId = createClientUuid();
-  localStorage.setItem(VISITOR_KEY, visitorId);
-}
-sessionIdRef.current = visitorId;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.lp_partial_leads;
 ```
 
-Para o page view, adicionar uma constraint `UNIQUE` na coluna `session_id` da tabela `lp_page_views` e usar `upsert` com `onConflict: 'session_id'` para evitar duplicatas. Assim, mesmo se o localStorage for limpo, o banco garante unicidade.
+**4. Adicionar subscricao realtime no LeadTracking**
 
-**3. Geolocalizacao - verificacao**
-
-A geolocalizacao ja esta implementada no codigo atual. Ela:
-- Pede permissao ao usuario via `navigator.geolocation.getCurrentPosition()`
-- Faz reverse geocode via Nominatim (OpenStreetMap)
-- Pre-preenche cidade e estado nos campos de localizacao do formulario
-
-Nao ha mudancas necessarias na geolocalizacao, apenas garantir que continua funcionando corretamente.
+No componente `LeadTracking`, alem do `fetchData()` inicial, assinar o canal realtime da tabela `lp_partial_leads`. Quando houver INSERT ou UPDATE, atualizar o estado local automaticamente — o lead aparece e atualiza seu progresso em tempo real sem recarregar a pagina.
 
 ### Alteracoes por arquivo
 
 | Arquivo | Acao |
 |---|---|
-| Migracao SQL | Deletar dados existentes; adicionar constraint UNIQUE em `lp_page_views.session_id` |
-| `src/components/leadform/LeadFormWizard.tsx` | Usar localStorage para persistir visitor ID; usar upsert no page view |
+| Migracao SQL | Habilitar realtime em `lp_partial_leads` |
+| `src/components/leadform/LeadFormWizard.tsx` | Remover exigencia de contato; adicionar tracking com debounce no `useEffect` |
+| `src/components/admin/LeadTracking.tsx` | Adicionar subscricao realtime para atualizar leads em tempo real |
 
 ### Detalhes tecnicos
 
-**Limpeza de dados (via insert tool):**
+**LeadFormWizard.tsx — tracking sem exigir contato:**
+- Remover o bloco `if (!hasContact) return;` do `trackPartialLead`
+- O payload ja envia `name` e `phone` como opcionais (podem ser null/vazio)
+- Adicionar `useEffect` com debounce de ~2 segundos observando `currentStepIndex` e `formData` para salvar progresso automaticamente
+
+**LeadTracking.tsx — realtime:**
 ```text
-DELETE FROM lp_page_views;
-DELETE FROM lp_partial_leads;
+useEffect(() => {
+  fetchData();
+
+  const channel = supabase
+    .channel('partial-leads-realtime')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'lp_partial_leads',
+    }, (payload) => {
+      // INSERT: adicionar ao array
+      // UPDATE: atualizar o item existente
+      // DELETE: remover do array
+    })
+    .subscribe();
+
+  return () => { supabase.removeChannel(channel); };
+}, []);
 ```
 
-**Migracao SQL:**
-```text
-ALTER TABLE lp_page_views ADD CONSTRAINT lp_page_views_session_id_unique UNIQUE (session_id);
-```
-
-**LeadFormWizard.tsx - mudancas no useEffect de mount:**
-- Trocar `useRef(createClientUuid())` por logica que verifica localStorage primeiro
-- Trocar `.insert()` por `.upsert()` com `onConflict: 'session_id'` para que visitas repetidas atualizem o registro existente ao inves de criar duplicatas
-- Manter a logica de geolocalizacao como esta
+Quando o admin abrir a aba Rastreamento, vera os leads aparecendo e atualizando seu progresso em tempo real conforme o usuario preenche o formulario no celular.
 
