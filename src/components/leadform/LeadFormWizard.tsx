@@ -480,10 +480,10 @@ export function LeadFormWizard() {
 
     const formDataJson = {
       intention: formData.intention,
-      sell: formData.sell,
-      buy: formData.buy,
-      build: formData.build,
-      rent: formData.rent,
+      sell: formData.sell || {},
+      buy: formData.buy || {},
+      build: formData.build || {},
+      rent: formData.rent || {},
     };
 
     const payload = {
