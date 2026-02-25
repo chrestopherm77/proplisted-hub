@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import LeadForm from "./pages/LeadForm";
 import ResetPassword from "./pages/ResetPassword";
+import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/lp-obrigado" element={<ThankYou />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
