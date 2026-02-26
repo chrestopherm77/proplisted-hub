@@ -16,8 +16,10 @@ import CheckoutExpired from "./pages/CheckoutExpired";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import LeadForm from "./pages/LeadForm";
+import LeadForm01 from "./pages/LeadForm01";
 import ResetPassword from "./pages/ResetPassword";
 import ThankYou from "./pages/ThankYou";
+import ThankYou01 from "./pages/ThankYou01";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,8 +60,10 @@ const App = () => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
+          <Route path="/lp-01" element={<LeadForm01 />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/lp-obrigado" element={<ThankYou />} />
+          <Route path="/lp-obrigado-01" element={<ThankYou01 />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
