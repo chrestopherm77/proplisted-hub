@@ -92,23 +92,21 @@ interface StepDefinition {
   validate?: (data: LeadFormData) => boolean;
 }
 
-const allSteps: StepDefinition[] = [
-  // Step 1: Intention (always visible)
-  { 
-    id: 'intention', 
-    component: IntentionStep, 
-    isVisible: () => true,
-    validate: (data) => !!data.intention,
-  },
+const intentionStep: StepDefinition = { 
+  id: 'intention', 
+  component: IntentionStep, 
+  isVisible: () => true,
+  validate: (data) => !!data.intention,
+};
 
-  // Step 2: Contact (right after intention)
-  { 
-    id: 'contact', 
-    component: ContactStep, 
-    isVisible: (data) => !!data.intention,
-    validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.phoneVerified && data.acceptedTerms,
-  },
-  
+const contactStep: StepDefinition = { 
+  id: 'contact', 
+  component: ContactStep, 
+  isVisible: (data) => !!data.intention,
+  validate: (data) => !!data.name.trim() && data.phone.length >= 14 && data.phoneVerified && data.acceptedTerms,
+};
+
+const flowSteps: StepDefinition[] = [
   // ============ SELL FLOW ============
   { 
     id: 'sell-relation', 
@@ -361,7 +359,12 @@ const allSteps: StepDefinition[] = [
   
 ];
 
-export function LeadFormWizard() {
+interface LeadFormWizardProps {
+  contactAtEnd?: boolean;
+  thankYouPath?: string;
+}
+
+export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrigado' }: LeadFormWizardProps) {
   const [formData, setFormData] = useState<LeadFormData>(initialFormData);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -433,9 +436,16 @@ export function LeadFormWizard() {
     }
   }, []);
 
+  const allSteps = useMemo(() => {
+    if (contactAtEnd) {
+      return [intentionStep, ...flowSteps, contactStep];
+    }
+    return [intentionStep, contactStep, ...flowSteps];
+  }, [contactAtEnd]);
+
   const visibleSteps = useMemo(() => {
     return allSteps.filter(step => step.isVisible(formData));
-  }, [formData]);
+  }, [formData, allSteps]);
 
   const currentStep = visibleSteps[currentStepIndex];
   const isLastStep = currentStepIndex === visibleSteps.length - 1;
@@ -629,7 +639,7 @@ export function LeadFormWizard() {
           .eq('session_id', sessionIdRef.current)
           .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
 
-        navigate('/lp-obrigado');
+        navigate(thankYouPath);
       } catch (error) {
         const err = error as any;
         console.error('Error submitting form:', {
