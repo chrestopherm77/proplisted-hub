@@ -27,7 +27,7 @@ interface ParsedDescription {
   characteristics: string;
 }
 
-// Value range definitions
+// Value range definitions for buy/sell/build
 const valueRanges = [
   { value: 'all', label: 'Todos os valores', min: 0, max: Infinity },
   { value: 'up_to_100k', label: 'Até R$ 100.000', min: 0, max: 100000 },
@@ -35,6 +35,16 @@ const valueRanges = [
   { value: '250k_to_500k', label: 'R$ 250.000 - R$ 500.000', min: 250000, max: 500000 },
   { value: '500k_to_1m', label: 'R$ 500.000 - R$ 1.000.000', min: 500000, max: 1000000 },
   { value: 'above_1m', label: 'Acima de R$ 1.000.000', min: 1000000, max: Infinity },
+];
+
+// Value range definitions for rent
+const rentValueRanges = [
+  { value: 'all', label: 'Todos os valores', min: 0, max: Infinity },
+  { value: 'up_to_1k', label: 'Até R$ 1.000', min: 0, max: 1000 },
+  { value: '1k_to_3k', label: 'R$ 1.000 - R$ 3.000', min: 1000, max: 3000 },
+  { value: '3k_to_5k', label: 'R$ 3.000 - R$ 5.000', min: 3000, max: 5000 },
+  { value: '5k_to_9k', label: 'R$ 5.000 - R$ 9.000', min: 5000, max: 9000 },
+  { value: 'above_10k', label: 'Acima de R$ 10.000', min: 10000, max: Infinity },
 ];
 
 // Objective labels in Portuguese
