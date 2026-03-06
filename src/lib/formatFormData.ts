@@ -141,13 +141,17 @@ const guaranteeLabels: Record<string, string> = {
   'DEPOSIT': 'Caução',
   'INSURANCE': 'Seguro fiança',
   'TITLE_CAPITALIZATION': 'Título de capitalização',
+  'CAPITALIZATION': 'Título de capitalização',
   'NONE': 'Nenhuma',
+  'UNKNOWN': 'Ainda não sei',
   // Lowercase variants
   'guarantor': 'Fiador',
   'deposit': 'Caução',
   'insurance': 'Seguro fiança',
   'title_capitalization': 'Título de capitalização',
+  'capitalization': 'Título de capitalização',
   'none': 'Nenhuma',
+  'unknown': 'Ainda não sei',
 };
 
 const propertyReadyStatusLabels: Record<string, string> = {
