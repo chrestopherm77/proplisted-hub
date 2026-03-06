@@ -16,11 +16,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 
 const CONSENT_TERMS = `TERMO DE CONSENTIMENTO PARA TRATAMENTO E COMPARTILHAMENTO DE DADOS PESSOAIS
 
@@ -126,7 +121,7 @@ c) Poderá ser contatado por até 5 (cinco) parceiros comerciais, no prazo máxi
 
 d) Leu e concorda integralmente com este Termo, a Política de Privacidade e os Termos de Uso.`;
 
-type VerificationStep = 'input' | 'verify' | 'verified';
+type VerificationStep = 'input' | 'verified';
 
 export function ContactStep({ data, updateData }: StepProps) {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -134,34 +129,30 @@ export function ContactStep({ data, updateData }: StepProps) {
   const [verificationStep, setVerificationStep] = useState<VerificationStep>(
     data.phoneVerified ? 'verified' : 'input'
   );
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [otpValue, setOtpValue] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
     updateData({ phone: formatted, phoneVerified: false });
-    // Reset verification if phone changes
     if (verificationStep !== 'input') {
       setVerificationStep('input');
-      setOtpValue('');
       setError(null);
     }
   };
 
-  const handleSendCode = async () => {
+  const handleCheckWhatsApp = async () => {
     if (!data.phone || data.phone.length < 14) {
       setError('Digite um número de telefone válido');
       return;
     }
 
-    setIsSendingCode(true);
+    setIsChecking(true);
     setError(null);
 
     try {
-      const { data: responseData, error: invokeError } = await supabase.functions.invoke('send-whatsapp-code', {
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke('check-whatsapp', {
         body: { phone: data.phone }
       });
 
@@ -169,43 +160,7 @@ export function ContactStep({ data, updateData }: StepProps) {
         throw new Error(invokeError.message);
       }
 
-      if (responseData?.error) {
-        setError(responseData.error);
-        return;
-      }
-
-      setVerificationStep('verify');
-      toast({
-        title: "Código enviado!",
-        description: "Verifique seu WhatsApp e digite o código de 6 dígitos.",
-      });
-    } catch (err: any) {
-      console.error('Error sending code:', err);
-      setError(err.message || 'Erro ao enviar código. Tente novamente.');
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (otpValue.length !== 6) {
-      setError('Digite o código completo de 6 dígitos');
-      return;
-    }
-
-    setIsVerifying(true);
-    setError(null);
-
-    try {
-      const { data: responseData, error: invokeError } = await supabase.functions.invoke('verify-whatsapp-code', {
-        body: { phone: data.phone, code: otpValue }
-      });
-
-      if (invokeError) {
-        throw new Error(invokeError.message);
-      }
-
-      if (responseData?.valid) {
+      if (responseData?.exists) {
         updateData({ phoneVerified: true });
         setVerificationStep('verified');
         toast({
@@ -213,20 +168,14 @@ export function ContactStep({ data, updateData }: StepProps) {
           description: "Seu número foi verificado com sucesso.",
         });
       } else {
-        setError(responseData?.error || 'Código inválido ou expirado');
+        setError('Este número não possui WhatsApp ativo. Verifique o número e tente novamente.');
       }
     } catch (err: any) {
-      console.error('Error verifying code:', err);
-      setError(err.message || 'Erro ao verificar código. Tente novamente.');
+      console.error('Error checking WhatsApp:', err);
+      setError(err.message || 'Erro ao verificar WhatsApp. Tente novamente.');
     } finally {
-      setIsVerifying(false);
+      setIsChecking(false);
     }
-  };
-
-  const handleResendCode = () => {
-    setOtpValue('');
-    setError(null);
-    handleSendCode();
   };
 
   const handleCheckboxClick = () => {
@@ -285,18 +234,18 @@ export function ContactStep({ data, updateData }: StepProps) {
             />
           </div>
 
-          {/* Validation Button (Step: input) */}
+          {/* Validate WhatsApp Button */}
           {verificationStep === 'input' && (
             <Button
-              onClick={handleSendCode}
-              disabled={!canValidatePhone || isSendingCode}
+              onClick={handleCheckWhatsApp}
+              disabled={!canValidatePhone || isChecking}
               className="w-full h-12 gap-2"
               variant="outline"
             >
-              {isSendingCode ? (
+              {isChecking ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Enviando código...
+                  Verificando WhatsApp...
                 </>
               ) : (
                 <>
@@ -307,67 +256,12 @@ export function ContactStep({ data, updateData }: StepProps) {
             </Button>
           )}
 
-          {/* OTP Input (Step: verify) */}
-          {verificationStep === 'verify' && (
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-              <p className="text-sm text-center text-muted-foreground">
-                Digite o código de 6 dígitos enviado para seu WhatsApp
-              </p>
-              
-              <div className="flex justify-center">
-                <InputOTP
-                  maxLength={6}
-                  value={otpValue}
-                  onChange={setOtpValue}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleVerifyCode}
-                  disabled={otpValue.length !== 6 || isVerifying}
-                  className="flex-1 gap-2"
-                >
-                  {isVerifying ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Verificando...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Verificar Código
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleResendCode}
-                disabled={isSendingCode}
-                className="w-full text-sm text-primary hover:underline disabled:opacity-50"
-              >
-                Reenviar código
-              </button>
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          {/* Verified Success (Step: verified) */}
+          {/* Verified Success */}
           {verificationStep === 'verified' && (
             <>
               <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg border border-green-200 dark:border-green-900">
