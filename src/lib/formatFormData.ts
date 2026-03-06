@@ -46,8 +46,10 @@ const propertyTypeLabels: Record<string, string> = {
 
 const commercialTypeLabels: Record<string, string> = {
   'BUILDING': 'Prédio comercial',
+  'COMMERCIAL_BUILDING': 'Prédio comercial',
   'WAREHOUSE': 'Galpão',
   'ROOM': 'Sala comercial',
+  'OFFICE': 'Sala comercial',
   'STORE': 'Loja',
   'OTHER': 'Outro',
   'MULTIPLE': 'Múltiplos tipos',
