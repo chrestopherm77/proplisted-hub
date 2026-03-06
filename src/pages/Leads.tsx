@@ -542,7 +542,7 @@ export default function Leads() {
             {/* Objective Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Objetivo</label>
-              <Select value={tempObjective} onValueChange={setTempObjective}>
+              <Select value={tempObjective} onValueChange={handleObjectiveChange}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Todos os objetivos" />
                 </SelectTrigger>
