@@ -29,6 +29,7 @@ const purposeLabels: Record<string, string> = {
 
 const propertyTypeLabels: Record<string, string> = {
   'COMMERCIAL': 'Comercial',
+  'COMMERCIAL_BUILDING': 'Prédio comercial',
   'MIXED': 'Misto',
   'RESIDENTIAL': 'Residencial',
   'LAND': 'Terreno',
@@ -36,12 +37,19 @@ const propertyTypeLabels: Record<string, string> = {
   'HOUSE': 'Casa',
   'APARTMENT': 'Apartamento',
   'KITNET': 'Kitnet',
+  'OFFICE': 'Sala comercial',
+  'STORE': 'Loja',
+  'WAREHOUSE': 'Galpão',
+  'EVALUATING': 'Avaliando opções',
+  'MULTIPLE': 'Múltiplos tipos',
 };
 
 const commercialTypeLabels: Record<string, string> = {
   'BUILDING': 'Prédio comercial',
+  'COMMERCIAL_BUILDING': 'Prédio comercial',
   'WAREHOUSE': 'Galpão',
   'ROOM': 'Sala comercial',
+  'OFFICE': 'Sala comercial',
   'STORE': 'Loja',
   'OTHER': 'Outro',
   'MULTIPLE': 'Múltiplos tipos',
@@ -133,13 +141,17 @@ const guaranteeLabels: Record<string, string> = {
   'DEPOSIT': 'Caução',
   'INSURANCE': 'Seguro fiança',
   'TITLE_CAPITALIZATION': 'Título de capitalização',
+  'CAPITALIZATION': 'Título de capitalização',
   'NONE': 'Nenhuma',
+  'UNKNOWN': 'Ainda não sei',
   // Lowercase variants
   'guarantor': 'Fiador',
   'deposit': 'Caução',
   'insurance': 'Seguro fiança',
   'title_capitalization': 'Título de capitalização',
+  'capitalization': 'Título de capitalização',
   'none': 'Nenhuma',
+  'unknown': 'Ainda não sei',
 };
 
 const propertyReadyStatusLabels: Record<string, string> = {
@@ -179,14 +191,20 @@ const btsContractTermLabels: Record<string, string> = {
 
 const moveInDeadlineLabels: Record<string, string> = {
   'IMMEDIATE': 'Imediato',
+  'IMMEDIATELY': 'Imediatamente',
   'UP_TO_1_MONTH': 'Até 1 mês',
+  'UP_TO_30_DAYS': 'Até 30 dias',
   'UP_TO_3_MONTHS': 'Até 3 meses',
   '1_TO_3_MONTHS': '1 a 3 meses',
+  'MORE_THAN_3_MONTHS': 'Mais de 3 meses',
   'FLEXIBLE': 'Flexível',
   'immediate': 'Imediato',
+  'immediately': 'Imediatamente',
   'up_to_1_month': 'Até 1 mês',
+  'up_to_30_days': 'Até 30 dias',
   'up_to_3_months': 'Até 3 meses',
   '1_to_3_months': '1 a 3 meses',
+  'more_than_3_months': 'Mais de 3 meses',
   'flexible': 'Flexível',
 };
 
