@@ -1,58 +1,45 @@
 
 
-## Clonar /lp para /lp-01 com contato no final
+## Trocar validacao por codigo OTP para checagem de existencia no WhatsApp
 
 ### O que muda
 
-A rota `/lp-01` tera o mesmo formulario da `/lp`, com a unica diferenca de que a etapa de contato (nome, WhatsApp, verificacao, termos) aparece no **final** do fluxo, apos todas as perguntas tecnicas. A pagina de obrigado sera `/lp-obrigado-01`.
+Hoje o usuario clica "Validar WhatsApp", recebe um codigo de 6 digitos no WhatsApp, digita o codigo, e so entao o numero e validado. O novo fluxo sera muito mais simples:
 
-### Abordagem
+1. Usuario preenche nome e telefone
+2. Clica em "Validar WhatsApp"
+3. O sistema faz uma chamada API para checar se o numero existe no WhatsApp (sem enviar mensagem)
+4. Se existe: marca como verificado, mostra email + termos
+5. Se nao existe: mostra erro
 
-Em vez de duplicar todo o codigo do wizard, vamos adicionar uma **prop** ao `LeadFormWizard` que controla a posicao do contato. Isso evita manter dois componentes identicos.
+Sem OTP, sem digitar codigo, sem esperar mensagem.
 
 ### Alteracoes
 
-**1. Alterar `LeadFormWizard.tsx`**
+**1. Criar edge function `check-whatsapp` (`supabase/functions/check-whatsapp/index.ts`)**
 
-- Aceitar prop `contactAtEnd?: boolean` (default `false`, mantendo o comportamento atual da /lp)
-- Quando `contactAtEnd` for `true`, mover a definicao do step `contact` para o final do array `allSteps`, logo apos todos os fluxos (sell, buy, build, rent)
-- Ajustar a logica de partial lead tracking: quando o contato esta no final, o tracking so acontece apos o usuario preencher essa etapa (ja que nome/telefone so estarao disponiveis no fim)
+- Recebe `{ phone }` no body
+- Formata o numero para o padrao brasileiro (55 + DDD + numero sem 9o digito)
+- Faz GET para a Mega API: `https://apinocode01.megaapi.com.br/rest/instance/isOnWhatsApp/megacode-Mj46Nd4U5tP?jid=55DDXXXXXXXX`
+- Header `Authorization: Bearer ${MEGA_API_TOKEN}`
+- Retorna `{ exists: true/false }` baseado na resposta da API
 
-**2. Alterar `LeadFormWizard.tsx` - redirecionamento**
+**2. Simplificar `ContactStep.tsx`**
 
-- Aceitar prop `thankYouPath?: string` (default `/lp-obrigado`)
-- Usar essa prop no `navigate()` apos o envio bem-sucedido
+- Remover imports de `InputOTP`, `InputOTPGroup`, `InputOTPSlot`
+- Remover estados `otpValue`, `isVerifying`
+- Remover funcoes `handleVerifyCode`, `handleResendCode`
+- Simplificar `VerificationStep` para apenas `'input' | 'verified'` (sem `'verify'`)
+- O botao "Validar WhatsApp" agora chama a nova edge function `check-whatsapp`
+- Se `exists: true`, marca `phoneVerified: true` e vai direto para `verified`
+- Se `exists: false`, mostra erro "Este numero nao possui WhatsApp ativo"
+- Remover todo o bloco de UI do OTP (step `verify`)
 
-**3. Criar `src/pages/LeadForm01.tsx`**
-
-- Pagina identica a `LeadForm.tsx` (mesmo layout, logo, pixel do Facebook)
-- Renderiza `<LeadFormWizard contactAtEnd thankYouPath="/lp-obrigado-01" />`
-
-**4. Criar `src/pages/ThankYou01.tsx`**
-
-- Pagina identica a `ThankYou.tsx` (mesmo layout, pixel do Facebook)
-
-**5. Registrar rotas em `App.tsx`**
-
-- `/lp-01` renderiza `LeadForm01`
-- `/lp-obrigado-01` renderiza `ThankYou01`
-
-### Detalhes tecnicos
-
-A mudanca principal no wizard e a construcao condicional do array de steps:
-
-```text
-contactAtEnd = false (atual /lp):
-  intention -> contact -> [fluxo tecnico...]
-
-contactAtEnd = true (nova /lp-01):
-  intention -> [fluxo tecnico...] -> contact
-```
-
-O tracking de partial leads precisa ser ajustado para checar se ja tem dados de contato antes de tentar salvar, independente da posicao do step.
+**3. Nenhuma mudanca no wizard ou rotas** - apenas o comportamento interno do ContactStep muda.
 
 ### Resultado
 
-- `/lp` continua funcionando exatamente como hoje (contato no inicio)
-- `/lp-01` funciona com contato no final
-- Ambas compartilham o mesmo codigo-base, facilitando manutencao futura
+- Fluxo mais rapido: usuario clica um botao, espera ~2s, e ja esta validado
+- Sem necessidade de abrir WhatsApp para copiar codigo
+- Mesma seguranca: a checagem e feita no backend via edge function (token protegido)
+
