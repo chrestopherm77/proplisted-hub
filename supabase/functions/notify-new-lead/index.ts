@@ -815,14 +815,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const normalizedCity = city.toUpperCase().trim();
 
-    // Get admin user IDs to exclude them from notifications
-    const { data: adminRoles } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "MASTER_ADMIN");
-
-    const adminIds = (adminRoles || []).map((r) => r.user_id);
-
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, address_city, address_uf")
@@ -837,9 +829,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const matchingProfiles = (profiles || []).filter(
-      (p) =>
-        p.address_city?.toUpperCase().trim() === normalizedCity &&
-        !adminIds.includes(p.id)
+      (p) => p.address_city?.toUpperCase().trim() === normalizedCity
     );
 
     console.log(`Found ${matchingProfiles.length} profiles in ${city}`);
