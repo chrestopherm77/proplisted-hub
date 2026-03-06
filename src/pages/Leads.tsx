@@ -309,12 +309,10 @@ export default function Leads() {
     
     const citiesForUF = new Set<string>();
     leads.forEach(lead => {
-      const parsed = parseDescription(lead.description);
       const formData = normalizeFormData(lead.form_data);
-      const region = formData?.region || parsed.region;
       
-      const uf = extractUF(region);
-      const city = extractCity(region);
+      const uf = extractUFFromFormData(formData);
+      const city = extractCityFromFormData(formData);
       
       if (uf === tempUF && city) {
         citiesForUF.add(city);
