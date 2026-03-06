@@ -701,7 +701,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
 
         // 6b. Fallback: also mark by phone to catch cross-session completions
-        const completedPhone = formData.contact?.phone;
+        const completedPhone = formData.phone;
         if (completedPhone) {
           supabase.from('lp_partial_leads')
             .update({ completed: true })
