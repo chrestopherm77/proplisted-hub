@@ -348,7 +348,13 @@ export default function Leads() {
   // Reset city when UF changes
   const handleUFChange = (value: string) => {
     setTempUF(value);
-    setTempCity('all'); // Reset city when UF changes
+    setTempCity('all');
+  };
+
+  // Reset value range when objective changes
+  const handleObjectiveChange = (value: string) => {
+    setTempObjective(value);
+    setTempValueRange('all');
   };
 
   // Filter leads based on applied filters
