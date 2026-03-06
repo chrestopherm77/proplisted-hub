@@ -39,7 +39,7 @@ export default function LeadForm() {
         </div>
 
         {/* Form Wizard */}
-        <LeadFormWizard />
+        <LeadFormWizard sourceLp="/lp" />
       </div>
     </div>
   );

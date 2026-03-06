@@ -38,7 +38,7 @@ export default function LeadForm01() {
           </p>
         </div>
 
-        <LeadFormWizard contactAtEnd thankYouPath="/lp-obrigado-01" />
+        <LeadFormWizard contactAtEnd thankYouPath="/lp-obrigado-01" sourceLp="/lp-01" />
       </div>
     </div>
   );
