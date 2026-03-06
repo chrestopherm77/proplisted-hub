@@ -563,7 +563,7 @@ export default function Leads() {
                   <SelectValue placeholder="Todos os valores" />
                 </SelectTrigger>
                 <SelectContent>
-                  {valueRanges.map(range => (
+                  {(tempObjective === 'RENT' ? rentValueRanges : valueRanges).map(range => (
                     <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
                   ))}
                 </SelectContent>
