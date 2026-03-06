@@ -71,42 +71,61 @@ function normalizeFormData(raw: any): any {
   return null;
 }
 
-// Extract UF from region field
+// Extract UF from form_data (direct fields first, then region fallback)
+function extractUFFromFormData(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  if (intentionData?.uf) return intentionData.uf.toUpperCase();
+  const region = formData?.region || '';
+  return extractUF(region);
+}
+
 function extractUF(region: string | undefined): string {
   if (!region) return '';
-  // Formats: "MG", "betim/mg", "Betim - MG", "betim - mg"
   const upper = region.toUpperCase();
-  const match = upper.match(/\b([A-Z]{2})\b/);
+  const match2 = upper.match(/\/([A-Z]{2})\b/);
+  if (match2) return match2[1];
+  const match = upper.match(/\b([A-Z]{2})$/);
   return match ? match[1] : '';
 }
 
-// Extract city from region field
-function extractCity(region: string | undefined): string {
+// Extract city from form_data (direct fields first, then region fallback)
+function extractCityFromFormData(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  if (intentionData?.city) {
+    const city = intentionData.city.trim();
+    return city;
+  }
+  const region = formData?.region || '';
+  return extractCityFromRegion(region);
+}
+
+function extractCityFromRegion(region: string | undefined): string {
   if (!region) return '';
-  // Formats: "betim/mg" → "Betim", "Betim - MG" → "Betim"
-  const parts = region.split(/[\/\-,]/);
-  const city = parts[0].trim();
-  if (!city) return '';
-  return city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+  // Format: "indiferente - Ribeirão Preto/SP"
+  const dashIndex = region.lastIndexOf(' - ');
+  if (dashIndex >= 0) {
+    const afterDash = region.substring(dashIndex + 3);
+    const slashIndex = afterDash.indexOf('/');
+    const city = slashIndex >= 0 ? afterDash.substring(0, slashIndex).trim() : afterDash.trim();
+    if (city) return city;
+  }
+  const slashIdx = region.indexOf('/');
+  if (slashIdx > 0) {
+    return region.substring(0, slashIdx).trim();
+  }
+  return '';
 }
 
 // Extract neighborhood from form_data based on intention
 function extractBairro(formData: any): string {
   if (!formData) return '';
   const intention = formData?.intention;
-  
-  switch(intention) {
-    case 'SELL':
-      return formData?.sell?.neighborhood || '';
-    case 'BUY':
-      return formData?.buy?.neighborhood || '';
-    case 'BUILD':
-      return formData?.build?.neighborhood || '';
-    case 'RENT':
-      return formData?.rent?.neighborhood || '';
-    default:
-      return '';
-  }
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  return intentionData?.neighborhood || '';
 }
 
 // Extract objective from form_data
