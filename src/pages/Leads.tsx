@@ -390,7 +390,8 @@ export default function Leads() {
       
       // Filter by Value Range
       if (filterValueRange !== 'all' && leadValue !== null) {
-        const range = valueRanges.find(r => r.value === filterValueRange);
+        const ranges = leadObjective === 'RENT' ? rentValueRanges : valueRanges;
+        const range = ranges.find(r => r.value === filterValueRange);
         if (range && (leadValue < range.min || leadValue > range.max)) {
           return false;
         }
