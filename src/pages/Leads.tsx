@@ -27,7 +27,7 @@ interface ParsedDescription {
   characteristics: string;
 }
 
-// Value range definitions
+// Value range definitions for buy/sell/build
 const valueRanges = [
   { value: 'all', label: 'Todos os valores', min: 0, max: Infinity },
   { value: 'up_to_100k', label: 'Até R$ 100.000', min: 0, max: 100000 },
@@ -35,6 +35,16 @@ const valueRanges = [
   { value: '250k_to_500k', label: 'R$ 250.000 - R$ 500.000', min: 250000, max: 500000 },
   { value: '500k_to_1m', label: 'R$ 500.000 - R$ 1.000.000', min: 500000, max: 1000000 },
   { value: 'above_1m', label: 'Acima de R$ 1.000.000', min: 1000000, max: Infinity },
+];
+
+// Value range definitions for rent
+const rentValueRanges = [
+  { value: 'all', label: 'Todos os valores', min: 0, max: Infinity },
+  { value: 'up_to_1k', label: 'Até R$ 1.000', min: 0, max: 1000 },
+  { value: '1k_to_3k', label: 'R$ 1.000 - R$ 3.000', min: 1000, max: 3000 },
+  { value: '3k_to_5k', label: 'R$ 3.000 - R$ 5.000', min: 3000, max: 5000 },
+  { value: '5k_to_9k', label: 'R$ 5.000 - R$ 9.000', min: 5000, max: 9000 },
+  { value: 'above_10k', label: 'Acima de R$ 10.000', min: 10000, max: Infinity },
 ];
 
 // Objective labels in Portuguese
@@ -61,42 +71,61 @@ function normalizeFormData(raw: any): any {
   return null;
 }
 
-// Extract UF from region field
+// Extract UF from form_data (direct fields first, then region fallback)
+function extractUFFromFormData(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  if (intentionData?.uf) return intentionData.uf.toUpperCase();
+  const region = formData?.region || '';
+  return extractUF(region);
+}
+
 function extractUF(region: string | undefined): string {
   if (!region) return '';
-  // Formats: "MG", "betim/mg", "Betim - MG", "betim - mg"
   const upper = region.toUpperCase();
-  const match = upper.match(/\b([A-Z]{2})\b/);
+  const match2 = upper.match(/\/([A-Z]{2})\b/);
+  if (match2) return match2[1];
+  const match = upper.match(/\b([A-Z]{2})$/);
   return match ? match[1] : '';
 }
 
-// Extract city from region field
-function extractCity(region: string | undefined): string {
+// Extract city from form_data (direct fields first, then region fallback)
+function extractCityFromFormData(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  if (intentionData?.city) {
+    const city = intentionData.city.trim();
+    return city;
+  }
+  const region = formData?.region || '';
+  return extractCityFromRegion(region);
+}
+
+function extractCityFromRegion(region: string | undefined): string {
   if (!region) return '';
-  // Formats: "betim/mg" → "Betim", "Betim - MG" → "Betim"
-  const parts = region.split(/[\/\-,]/);
-  const city = parts[0].trim();
-  if (!city) return '';
-  return city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+  // Format: "indiferente - Ribeirão Preto/SP"
+  const dashIndex = region.lastIndexOf(' - ');
+  if (dashIndex >= 0) {
+    const afterDash = region.substring(dashIndex + 3);
+    const slashIndex = afterDash.indexOf('/');
+    const city = slashIndex >= 0 ? afterDash.substring(0, slashIndex).trim() : afterDash.trim();
+    if (city) return city;
+  }
+  const slashIdx = region.indexOf('/');
+  if (slashIdx > 0) {
+    return region.substring(0, slashIdx).trim();
+  }
+  return '';
 }
 
 // Extract neighborhood from form_data based on intention
 function extractBairro(formData: any): string {
   if (!formData) return '';
   const intention = formData?.intention;
-  
-  switch(intention) {
-    case 'SELL':
-      return formData?.sell?.neighborhood || '';
-    case 'BUY':
-      return formData?.buy?.neighborhood || '';
-    case 'BUILD':
-      return formData?.build?.neighborhood || '';
-    case 'RENT':
-      return formData?.rent?.neighborhood || '';
-    default:
-      return '';
-  }
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  return intentionData?.neighborhood || '';
 }
 
 // Extract objective from form_data
@@ -251,12 +280,10 @@ export default function Leads() {
     const objectives = new Set<string>();
 
     leads.forEach(lead => {
-      const parsed = parseDescription(lead.description);
       const formData = normalizeFormData(lead.form_data);
-      const region = formData?.region || parsed.region;
       
-      const uf = extractUF(region);
-      const city = extractCity(region);
+      const uf = extractUFFromFormData(formData);
+      const city = extractCityFromFormData(formData);
       const bairro = extractBairro(formData);
       const objective = extractObjective(formData);
       
@@ -282,12 +309,10 @@ export default function Leads() {
     
     const citiesForUF = new Set<string>();
     leads.forEach(lead => {
-      const parsed = parseDescription(lead.description);
       const formData = normalizeFormData(lead.form_data);
-      const region = formData?.region || parsed.region;
       
-      const uf = extractUF(region);
-      const city = extractCity(region);
+      const uf = extractUFFromFormData(formData);
+      const city = extractCityFromFormData(formData);
       
       if (uf === tempUF && city) {
         citiesForUF.add(city);
@@ -323,18 +348,22 @@ export default function Leads() {
   // Reset city when UF changes
   const handleUFChange = (value: string) => {
     setTempUF(value);
-    setTempCity('all'); // Reset city when UF changes
+    setTempCity('all');
+  };
+
+  // Reset value range when objective changes
+  const handleObjectiveChange = (value: string) => {
+    setTempObjective(value);
+    setTempValueRange('all');
   };
 
   // Filter leads based on applied filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
-      const parsed = parseDescription(lead.description);
       const formData = normalizeFormData(lead.form_data);
-      const region = formData?.region || parsed.region;
       
-      const leadUF = extractUF(region);
-      const leadCity = extractCity(region);
+      const leadUF = extractUFFromFormData(formData);
+      const leadCity = extractCityFromFormData(formData);
       const leadBairro = extractBairro(formData);
       const leadObjective = extractObjective(formData);
       const leadValue = extractValue(formData);
@@ -361,7 +390,8 @@ export default function Leads() {
       
       // Filter by Value Range
       if (filterValueRange !== 'all' && leadValue !== null) {
-        const range = valueRanges.find(r => r.value === filterValueRange);
+        const ranges = leadObjective === 'RENT' ? rentValueRanges : valueRanges;
+        const range = ranges.find(r => r.value === filterValueRange);
         if (range && (leadValue < range.min || leadValue > range.max)) {
           return false;
         }
@@ -512,7 +542,7 @@ export default function Leads() {
             {/* Objective Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Objetivo</label>
-              <Select value={tempObjective} onValueChange={setTempObjective}>
+              <Select value={tempObjective} onValueChange={handleObjectiveChange}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Todos os objetivos" />
                 </SelectTrigger>
@@ -533,7 +563,7 @@ export default function Leads() {
                   <SelectValue placeholder="Todos os valores" />
                 </SelectTrigger>
                 <SelectContent>
-                  {valueRanges.map(range => (
+                  {(tempObjective === 'RENT' ? rentValueRanges : valueRanges).map(range => (
                     <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
                   ))}
                 </SelectContent>
