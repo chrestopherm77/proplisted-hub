@@ -9,39 +9,68 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Phone, FileText, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
-import { validatePassword } from '@/lib/validators';
+import { Phone, Loader2, Mail } from 'lucide-react';
+import { ProfilePersonalCard } from '@/components/profile/ProfilePersonalCard';
+import { ProfileLocationCard } from '@/components/profile/ProfileLocationCard';
+import { ProfileProfessionalCard } from '@/components/profile/ProfileProfessionalCard';
+import { ProfilePasswordCard } from '@/components/profile/ProfilePasswordCard';
+
+interface ProfileState {
+  person_type: string;
+  name: string;
+  cpf: string;
+  profession: string;
+  company_name: string;
+  cnpj: string;
+  company_type: string;
+  phone: string;
+  address: string;
+  address_uf: string;
+  address_city: string;
+  address_neighborhood: string;
+  creci: string;
+  creci_uf: string;
+  cau: string;
+  cau_uf: string;
+  crea: string;
+  crea_uf: string;
+  creci_pj: string;
+  creci_pj_uf: string;
+  crea_pj: string;
+  crea_pj_uf: string;
+  rt_name: string;
+  rt_cpf: string;
+  rt_crea: string;
+  rt_crea_uf: string;
+  rt_cau: string;
+  rt_cau_uf: string;
+}
+
+const defaultProfile: ProfileState = {
+  person_type: '', name: '', cpf: '', profession: '',
+  company_name: '', cnpj: '', company_type: '',
+  phone: '', address: '', address_uf: '', address_city: '', address_neighborhood: '',
+  creci: '', creci_uf: '', cau: '', cau_uf: '', crea: '', crea_uf: '',
+  creci_pj: '', creci_pj_uf: '', crea_pj: '', crea_pj_uf: '',
+  rt_name: '', rt_cpf: '', rt_crea: '', rt_crea_uf: '', rt_cau: '', rt_cau_uf: '',
+};
 
 const Profile = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  
+
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
-  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
-    name: '',
-    phone: '',
-    creci_number: ''
-  });
-
-  // Password change state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-  const [passwordErrors, setPasswordErrors] = useState<{ password?: string; confirm?: string }>({});
+  const [profile, setProfile] = useState<ProfileState>(defaultProfile);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
       return;
     }
-    
     if (user) {
       fetchProfile();
       if (searchParams.get('recovery') === 'true') {
@@ -67,89 +96,44 @@ const Profile = () => {
       if (error) throw error;
 
       if (data) {
-        setProfile({
-          name: data.name || '',
-          phone: data.phone || '',
-          creci_number: data.creci_number || ''
-        });
+        const mapped: ProfileState = { ...defaultProfile };
+        for (const key of Object.keys(defaultProfile) as (keyof ProfileState)[]) {
+          if (data[key] != null) mapped[key] = data[key] as string;
+        }
+        setProfile(mapped);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar o perfil.",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Não foi possível carregar o perfil.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  const updateProfile = (updates: Partial<ProfileState>) => {
+    setProfile((prev) => ({ ...prev, ...updates }));
+  };
+
   const handleSave = async () => {
     if (!user) return;
-    
     setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          name: profile.name,
-          phone: profile.phone,
-          creci_number: profile.creci_number,
-          updated_at: new Date().toISOString()
-        });
+        .update({
+          ...profile,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: "Perfil atualizado com sucesso!"
-      });
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" });
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o perfil.",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Não foi possível salvar o perfil.", variant: "destructive" });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    const newErrors: { password?: string; confirm?: string } = {};
-    const validation = validatePassword(newPassword);
-    if (!validation.valid) {
-      newErrors.password = validation.message;
-    }
-    if (newPassword !== confirmPassword) {
-      newErrors.confirm = "As senhas não conferem";
-    }
-    setPasswordErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-
-    setSavingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) {
-        if (error.message.includes("should be different")) {
-          toast({ title: "Erro", description: "A nova senha deve ser diferente da anterior.", variant: "destructive" });
-        } else {
-          toast({ title: "Erro", description: error.message, variant: "destructive" });
-        }
-        return;
-      }
-      toast({ title: "Sucesso", description: "Senha alterada com sucesso!" });
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordErrors({});
-    } catch (error) {
-      console.error('Error changing password:', error);
-      toast({ title: "Erro", description: "Não foi possível alterar a senha.", variant: "destructive" });
-    } finally {
-      setSavingPassword(false);
     }
   };
 
@@ -167,167 +151,77 @@ const Profile = () => {
     <Layout>
       <PasswordRecoveryModal isOpen={isRecoveryModalOpen} onClose={handleCloseRecoveryModal} />
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+        {/* Dados Pessoais / Empresa */}
+        <ProfilePersonalCard profile={profile} onChange={updateProfile} />
+
+        {/* Contato */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Meu Perfil
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input 
-                id="email" 
-                value={user?.email || ''} 
-                disabled 
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                O e-mail não pode ser alterado.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  id="name" 
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  placeholder="Seu nome completo"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  id="phone" 
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  placeholder="(00) 00000-0000"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  id="cpf_cnpj" 
-                  value={profile.creci_number}
-                  onChange={(e) => setProfile({ ...profile, creci_number: e.target.value })}
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleSave} 
-              disabled={saving}
-              className="w-full"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                'Salvar Alterações'
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Alterar Senha
+              <Phone className="h-5 w-5" />
+              Contato
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova Senha</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => {
-                    setNewPassword(e.target.value);
-                    if (passwordErrors.password) setPasswordErrors(prev => ({ ...prev, password: undefined }));
-                  }}
-                  placeholder="Digite a nova senha"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {passwordErrors.password && (
-                <p className="text-sm text-destructive">{passwordErrors.password}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Mínimo 6 caracteres, com letra maiúscula, minúscula e número
-              </p>
+              <Label className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                E-mail
+              </Label>
+              <Input value={user?.email || ''} disabled className="bg-muted" />
+              <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="confirmNewPassword">Confirmar Nova Senha</Label>
-              <div className="relative">
-                <Input
-                  id="confirmNewPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    if (passwordErrors.confirm) setPasswordErrors(prev => ({ ...prev, confirm: undefined }));
-                  }}
-                  placeholder="Confirme a nova senha"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {passwordErrors.confirm && (
-                <p className="text-sm text-destructive">{passwordErrors.confirm}</p>
-              )}
+              <Label>Telefone</Label>
+              <Input
+                value={profile.phone}
+                onChange={(e) => updateProfile({ phone: e.target.value })}
+                placeholder="(00) 00000-0000"
+              />
             </div>
-
-            <Button
-              onClick={handlePasswordChange}
-              disabled={savingPassword || !newPassword || !confirmPassword}
-              className="w-full"
-            >
-              {savingPassword ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : (
-                'Alterar Senha'
-              )}
-            </Button>
           </CardContent>
         </Card>
+
+        {/* Localização */}
+        <ProfileLocationCard
+          address_uf={profile.address_uf}
+          address_city={profile.address_city}
+          address_neighborhood={profile.address_neighborhood}
+          address={profile.address}
+          onChange={updateProfile}
+        />
+
+        {/* Dados Profissionais */}
+        <ProfileProfessionalCard
+          person_type={profile.person_type}
+          profession={profile.profession}
+          company_type={profile.company_type}
+          creci={profile.creci}
+          creci_uf={profile.creci_uf}
+          cau={profile.cau}
+          cau_uf={profile.cau_uf}
+          crea={profile.crea}
+          crea_uf={profile.crea_uf}
+          creci_pj={profile.creci_pj}
+          creci_pj_uf={profile.creci_pj_uf}
+          crea_pj={profile.crea_pj}
+          crea_pj_uf={profile.crea_pj_uf}
+          rt_name={profile.rt_name}
+          rt_cpf={profile.rt_cpf}
+          rt_crea={profile.rt_crea}
+          rt_crea_uf={profile.rt_crea_uf}
+          rt_cau={profile.rt_cau}
+          rt_cau_uf={profile.rt_cau_uf}
+          onChange={updateProfile}
+        />
+
+        {/* Botão Salvar */}
+        <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
+          {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar Alterações'}
+        </Button>
+
+        {/* Alterar Senha */}
+        <ProfilePasswordCard />
       </div>
     </Layout>
   );
