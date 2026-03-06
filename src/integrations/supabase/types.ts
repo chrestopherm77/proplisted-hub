@@ -209,7 +209,9 @@ export type Database = {
           intention: string | null
           name: string | null
           phone: string | null
+          recovery_sent_at: string | null
           session_id: string
+          source_lp: string | null
           step_index: number | null
           total_steps: number | null
           updated_at: string | null
@@ -223,7 +225,9 @@ export type Database = {
           intention?: string | null
           name?: string | null
           phone?: string | null
+          recovery_sent_at?: string | null
           session_id: string
+          source_lp?: string | null
           step_index?: number | null
           total_steps?: number | null
           updated_at?: string | null
@@ -237,7 +241,9 @@ export type Database = {
           intention?: string | null
           name?: string | null
           phone?: string | null
+          recovery_sent_at?: string | null
           session_id?: string
+          source_lp?: string | null
           step_index?: number | null
           total_steps?: number | null
           updated_at?: string | null

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { LeadFormData, initialFormData, StepProps } from "./types";
 import { LeadFormProgress } from "./LeadFormProgress";
 import { LeadFormNavigation } from "./LeadFormNavigation";
@@ -362,12 +362,14 @@ const flowSteps: StepDefinition[] = [
 interface LeadFormWizardProps {
   contactAtEnd?: boolean;
   thankYouPath?: string;
+  sourceLp?: string;
 }
 
-export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrigado' }: LeadFormWizardProps) {
+export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrigado', sourceLp = '/lp' }: LeadFormWizardProps) {
   const [formData, setFormData] = useState<LeadFormData>(initialFormData);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -385,6 +387,64 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
   const partialLeadCreatedRef = useRef(false);
   const [detectedCity, setDetectedCity] = useState<string | null>(null);
   const [detectedUf, setDetectedUf] = useState<string | null>(null);
+
+  const [searchParams] = useSearchParams();
+
+  // Resume from abandoned cart link
+  useEffect(() => {
+    const resumeId = searchParams.get('resume');
+    if (!resumeId) return;
+
+    setIsResuming(true);
+    supabase.functions.invoke('get-partial-lead', {
+      body: { session_id: resumeId },
+    }).then(({ data: responseData, error }) => {
+      if (error || !responseData?.found) {
+        console.log('No resumable lead found');
+        setIsResuming(false);
+        return;
+      }
+
+      // Restore session ID
+      sessionIdRef.current = resumeId;
+      partialLeadCreatedRef.current = true;
+
+      // Restore form data
+      const savedData = responseData.form_data || {};
+      const restoredData: LeadFormData = {
+        ...initialFormData,
+        intention: responseData.intention || savedData.intention || null,
+        name: responseData.name || '',
+        phone: responseData.phone || '',
+        phoneVerified: true, // Was already verified before abandoning
+        sell: savedData.sell || undefined,
+        buy: savedData.buy || undefined,
+        build: savedData.build || undefined,
+        rent: savedData.rent || undefined,
+      };
+
+      setFormData(restoredData);
+
+      // Position at the saved step index
+      if (typeof responseData.step_index === 'number' && responseData.step_index > 0) {
+        // Use setTimeout to ensure visibleSteps have recalculated
+        setTimeout(() => {
+          setCurrentStepIndex(responseData.step_index);
+          setIsResuming(false);
+        }, 100);
+      } else {
+        setIsResuming(false);
+      }
+
+      toast({
+        title: "Bem-vindo de volta! 👋",
+        description: "Restauramos seu cadastro de onde você parou.",
+      });
+    }).catch((err) => {
+      console.error('Error resuming lead:', err);
+      setIsResuming(false);
+    });
+  }, []);
 
   // Track page view on mount
   useEffect(() => {
@@ -414,7 +474,6 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
             const state = data?.address?.state;
             if (city) setDetectedCity(city);
             if (state) {
-              // Map full state name to UF abbreviation
               const stateToUf: Record<string, string> = {
                 'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
                 'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
@@ -509,6 +568,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
       step_index: stepIndex,
       total_steps: visibleSteps.length,
       form_data: JSON.parse(JSON.stringify(formDataJson)),
+      source_lp: sourceLp,
     };
 
     if (!partialLeadCreatedRef.current) {
@@ -525,6 +585,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           name: payload.name,
           phone: payload.phone,
           form_data: payload.form_data,
+          source_lp: payload.source_lp,
         })
         .eq('session_id', sessionIdRef.current)
         .then(({ error }) => { if (error) console.error('Partial lead update error:', error); });
@@ -670,7 +731,16 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
     setCurrentStepIndex(0);
   }, []);
 
-  const canGoNext = currentStep.validate ? currentStep.validate(formData) : true;
+  const canGoNext = currentStep?.validate ? currentStep.validate(formData) : true;
+
+  if (isResuming) {
+    return (
+      <div className="w-full max-w-2xl mx-auto text-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+        <p className="text-muted-foreground">Restaurando seu cadastro...</p>
+      </div>
+    );
+  }
 
   const CurrentStepComponent = currentStep.component;
 
