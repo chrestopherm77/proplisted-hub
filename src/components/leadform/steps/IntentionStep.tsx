@@ -7,7 +7,7 @@ const options = [
   { value: 'SELL', label: 'Vender um imóvel', icon: <Tag className="h-8 w-8" /> },
   { value: 'BUY', label: 'Comprar um imóvel', icon: <ShoppingCart className="h-8 w-8" /> },
   { value: 'BUILD', label: 'Construir um imóvel', icon: <HardHat className="h-8 w-8" /> },
-  { value: 'RENT', label: 'Alugar um imóvel', icon: <Key className="h-8 w-8" /> },
+  { value: 'RENT', label: 'Quero alugar um imóvel para mim', icon: <Key className="h-8 w-8" /> },
 ];
 
 export function IntentionStep({ data, updateData }: StepProps) {
