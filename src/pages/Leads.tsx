@@ -360,12 +360,10 @@ export default function Leads() {
   // Filter leads based on applied filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
-      const parsed = parseDescription(lead.description);
       const formData = normalizeFormData(lead.form_data);
-      const region = formData?.region || parsed.region;
       
-      const leadUF = extractUF(region);
-      const leadCity = extractCity(region);
+      const leadUF = extractUFFromFormData(formData);
+      const leadCity = extractCityFromFormData(formData);
       const leadBairro = extractBairro(formData);
       const leadObjective = extractObjective(formData);
       const leadValue = extractValue(formData);
