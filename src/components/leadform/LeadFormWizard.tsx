@@ -694,11 +694,21 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           });
         }
 
-        // 6. Mark partial lead as completed
+        // 6. Mark partial lead as completed (by session_id)
         supabase.from('lp_partial_leads')
           .update({ completed: true })
           .eq('session_id', sessionIdRef.current)
           .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
+
+        // 6b. Fallback: also mark by phone to catch cross-session completions
+        const completedPhone = formData.contact?.phone;
+        if (completedPhone) {
+          supabase.from('lp_partial_leads')
+            .update({ completed: true })
+            .eq('phone', completedPhone)
+            .eq('completed', false)
+            .then(({ error }) => { if (error) console.error('Mark completed by phone error:', error); });
+        }
 
         navigate(thankYouPath);
       } catch (error) {
