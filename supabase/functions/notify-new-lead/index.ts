@@ -881,8 +881,8 @@ const handler = async (req: Request): Promise<Response> => {
           console.log(`Email sent to ${email}. Resend ID: ${data?.id}`);
         }
 
-        // Delay between sends to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Resend free tier: max 2 requests/second — 600ms delay ensures compliance
+        await new Promise(resolve => setTimeout(resolve, 600));
       } catch (emailError) {
         failCount++;
         console.error(`Exception sending email to ${email}:`, emailError);
