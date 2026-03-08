@@ -866,17 +866,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const email of emails) {
       try {
-        await resend.emails.send({
+        const { data, error: sendError } = await resend.emails.send({
           from: "LeadBay <noreply@leadbay.com.br>",
           to: [email],
           subject: `🏠 Novo lead em ${city}! Confira agora`,
           html: emailHTML,
         });
-        successCount++;
-        console.log(`Email sent to ${email}`);
+
+        if (sendError) {
+          failCount++;
+          console.error(`Resend rejected email to ${email}:`, JSON.stringify(sendError));
+        } else {
+          successCount++;
+          console.log(`Email sent to ${email}. Resend ID: ${data?.id}`);
+        }
+
+        // Resend free tier: max 2 requests/second — 600ms delay ensures compliance
+        await new Promise(resolve => setTimeout(resolve, 600));
       } catch (emailError) {
         failCount++;
-        console.error(`Failed to send email to ${email}:`, emailError);
+        console.error(`Exception sending email to ${email}:`, emailError);
       }
     }
 
