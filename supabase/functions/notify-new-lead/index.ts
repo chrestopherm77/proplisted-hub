@@ -817,8 +817,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, address_city, address_uf")
-      .not("address_city", "is", null);
+      .select("id, address_city, address_uf, email, is_active")
+      .not("address_city", "is", null)
+      .not("email", "is", null)
+      .eq("is_active", true);
 
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -841,19 +843,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const userIds = matchingProfiles.map((p) => p.id);
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-
-    if (authError) {
-      console.error("Error fetching auth users:", authError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch user emails" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const targetUsers = authUsers.users.filter((u) => userIds.includes(u.id));
-    const emails = targetUsers.map((u) => u.email).filter(Boolean) as string[];
+    const emails = matchingProfiles.map((p) => p.email).filter(Boolean) as string[];
 
     console.log(`Sending notifications to ${emails.length} users`);
 
