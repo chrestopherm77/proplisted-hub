@@ -700,14 +700,25 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           .eq('session_id', sessionIdRef.current)
           .then(({ error }) => { if (error) console.error('Mark completed error:', error); });
 
-        // 6b. Fallback: also mark by phone to catch cross-session completions
-        const completedPhone = formData.phone;
+        // 6b. Fallback: also mark by phone (normalized) to catch cross-session completions
+        const completedPhone = formData.phone?.replace(/\D/g, '');
         if (completedPhone) {
+          // Fetch all incomplete partial leads and mark those with matching normalized phone
           supabase.from('lp_partial_leads')
-            .update({ completed: true })
-            .eq('phone', completedPhone)
+            .select('id, phone')
             .eq('completed', false)
-            .then(({ error }) => { if (error) console.error('Mark completed by phone error:', error); });
+            .then(({ data: partials }) => {
+              if (!partials) return;
+              const matchingIds = partials
+                .filter(p => p.phone && p.phone.replace(/\D/g, '') === completedPhone)
+                .map(p => p.id);
+              if (matchingIds.length > 0) {
+                supabase.from('lp_partial_leads')
+                  .update({ completed: true })
+                  .in('id', matchingIds)
+                  .then(({ error }) => { if (error) console.error('Mark completed by phone error:', error); });
+              }
+            });
         }
 
         navigate(thankYouPath);
