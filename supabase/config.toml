@@ -27,3 +27,6 @@ verify_jwt = false
 [functions.list-users]
 verify_jwt = false
 
+[functions.merge-or-create-lead]
+verify_jwt = false
+
