@@ -34,6 +34,8 @@ interface LocationSelectorProps {
   onCityChange: (city: string) => void;
   onNeighborhoodChange: (neighborhood: string) => void;
   showNeighborhood?: boolean;
+  allowedStates?: string[];
+  allowedCities?: string[];
 }
 
 export function LocationSelector({
@@ -44,18 +46,36 @@ export function LocationSelector({
   onCityChange,
   onNeighborhoodChange,
   showNeighborhood = true,
+  allowedStates,
+  allowedCities,
 }: LocationSelectorProps) {
-  const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
+  const { states, cities: ibgeCities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
   const [openCityCombobox, setOpenCityCombobox] = useState(false);
 
-  // Fetch cities when UF changes
+  const filteredStates = allowedStates
+    ? states.filter((s) => allowedStates.includes(s.sigla))
+    : states;
+
+  const citiesToShow = allowedCities
+    ? allowedCities.map((name, i) => ({ id: i, nome: name }))
+    : ibgeCities;
+
+  // Auto-select single allowed state
   useEffect(() => {
+    if (allowedStates && allowedStates.length === 1 && !uf && filteredStates.length > 0) {
+      onUFChange(allowedStates[0]);
+    }
+  }, [allowedStates, uf, filteredStates.length, onUFChange]);
+
+  // Fetch cities when UF changes (only if not using allowedCities)
+  useEffect(() => {
+    if (allowedCities) return;
     if (uf) {
       fetchCities(uf);
     } else {
       clearCities();
     }
-  }, [uf, fetchCities, clearCities]);
+  }, [uf, fetchCities, clearCities, allowedCities]);
 
   const handleUFChange = (newUf: string) => {
     onUFChange(newUf);
@@ -82,7 +102,7 @@ export function LocationSelector({
               <SelectValue placeholder={loadingStates ? "Carregando..." : "Selecione o estado"} />
             </SelectTrigger>
             <SelectContent>
-              {states.map((state) => (
+              {filteredStates.map((state) => (
                 <SelectItem key={state.id} value={state.sigla}>
                   {state.nome} ({state.sigla})
                 </SelectItem>
@@ -104,9 +124,9 @@ export function LocationSelector({
                 role="combobox"
                 aria-expanded={openCityCombobox}
                 className="h-12 w-full justify-between font-normal"
-                disabled={!uf || loadingCities}
+                disabled={!uf || (!allowedCities && loadingCities)}
               >
-                {loadingCities ? (
+                {!allowedCities && loadingCities ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Carregando...
@@ -127,7 +147,7 @@ export function LocationSelector({
                 <CommandList>
                   <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
                   <CommandGroup>
-                    {cities.map((cityItem) => (
+                    {citiesToShow.map((cityItem) => (
                       <CommandItem
                         key={cityItem.id}
                         value={cityItem.nome}
