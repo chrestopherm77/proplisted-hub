@@ -615,7 +615,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
     if (isLastStep) {
       setIsSubmitting(true);
       try {
-        // Generate UUID client-side to avoid needing SELECT permission
+        // Generate UUID client-side for the submission record
         const submissionId = createClientUuid();
 
         // Prepare form_data object
@@ -627,43 +627,27 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           rent: formData.rent,
         };
 
-        // 1. First save to lead_submissions (backup) with pre-generated ID
-        const { error: submissionError } = await supabase
-          .from('lead_submissions')
-          .insert([{
-            id: submissionId,
+        // Generate description for marketplace
+        const description = generateDescription(formData);
+
+        // Call edge function to merge or create lead (handles submission + lead in one call)
+        const { data: mergeResult, error: mergeError } = await supabase.functions.invoke('merge-or-create-lead', {
+          body: {
+            submissionId,
             name: formData.name.trim(),
             phone: formData.phone,
             email: formData.email.trim() || null,
             intention: formData.intention!,
-            form_data: JSON.parse(JSON.stringify(formDataJson)),
-          }]);
+            formDataJson: JSON.parse(JSON.stringify(formDataJson)),
+            description,
+            defaultPrice: DEFAULT_LEAD_PRICE,
+          }
+        });
 
-        if (submissionError) throw submissionError;
+        if (mergeError) throw mergeError;
+        if (mergeResult?.error) throw new Error(mergeResult.error);
 
-        // 2. Generate description for marketplace
-        const description = generateDescription(formData);
-
-        // 3. Generate a UUID for the lead
-        const leadId = createClientUuid();
-
-        // 4. Create lead in marketplace
-        const { error: leadError } = await supabase
-          .from('leads')
-          .insert([{
-            id: leadId,
-            name: formData.name.trim(),
-            phone: formData.phone,
-            description: description,
-            price: DEFAULT_LEAD_PRICE,
-            form_data: JSON.parse(JSON.stringify(formDataJson)),
-            lead_submission_id: submissionId,
-            is_active: true,
-            max_purchases: 5,
-            purchase_count: 0,
-          }]);
-
-        if (leadError) throw leadError;
+        const leadId = mergeResult.leadId;
 
         // 5. Notify users in the same city (fire-and-forget)
         const leadCity = formData.sell?.city || formData.buy?.city || 
