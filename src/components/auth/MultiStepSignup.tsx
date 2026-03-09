@@ -570,7 +570,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
 
             <Button
               onClick={handleNext}
-              disabled={isLoading || isSendingCode}
+              disabled={isLoading || isSendingCode || !isStepComplete()}
             >
               {isLoading ? (
                 <>
