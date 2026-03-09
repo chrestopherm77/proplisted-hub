@@ -124,9 +124,9 @@ export function LocationSelector({
                 role="combobox"
                 aria-expanded={openCityCombobox}
                 className="h-12 w-full justify-between font-normal"
-                disabled={!uf || loadingCities}
+                disabled={!uf || (!allowedCities && loadingCities)}
               >
-                {loadingCities ? (
+                {!allowedCities && loadingCities ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Carregando...
