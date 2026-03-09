@@ -46,18 +46,36 @@ export function LocationSelector({
   onCityChange,
   onNeighborhoodChange,
   showNeighborhood = true,
+  allowedStates,
+  allowedCities,
 }: LocationSelectorProps) {
-  const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
+  const { states, cities: ibgeCities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
   const [openCityCombobox, setOpenCityCombobox] = useState(false);
 
-  // Fetch cities when UF changes
+  const filteredStates = allowedStates
+    ? states.filter((s) => allowedStates.includes(s.sigla))
+    : states;
+
+  const citiesToShow = allowedCities
+    ? allowedCities.map((name, i) => ({ id: i, nome: name }))
+    : ibgeCities;
+
+  // Auto-select single allowed state
   useEffect(() => {
+    if (allowedStates && allowedStates.length === 1 && !uf && filteredStates.length > 0) {
+      onUFChange(allowedStates[0]);
+    }
+  }, [allowedStates, uf, filteredStates.length, onUFChange]);
+
+  // Fetch cities when UF changes (only if not using allowedCities)
+  useEffect(() => {
+    if (allowedCities) return;
     if (uf) {
       fetchCities(uf);
     } else {
       clearCities();
     }
-  }, [uf, fetchCities, clearCities]);
+  }, [uf, fetchCities, clearCities, allowedCities]);
 
   const handleUFChange = (newUf: string) => {
     onUFChange(newUf);
