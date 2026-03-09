@@ -158,7 +158,7 @@ export function LeadTracking() {
 
   async function fetchData() {
     setLoading(true);
-    const [viewsRes, partialsRes] = await Promise.all([
+    const [viewsRes, partialsRes, submissionsRes] = await Promise.all([
       supabase
         .from('lp_page_views')
         .select('*')
@@ -170,6 +170,9 @@ export function LeadTracking() {
         .eq('completed', false)
         .order('updated_at', { ascending: false })
         .limit(100),
+      supabase
+        .from('lead_submissions')
+        .select('phone'),
     ]);
 
     if (viewsRes.data) {
@@ -186,7 +189,14 @@ export function LeadTracking() {
     }
 
     if (partialsRes.data) {
-      setPartialLeads(partialsRes.data as PartialLead[]);
+      // Cross-reference: exclude partial leads whose phone already exists in lead_submissions
+      const effectivePhones = new Set(
+        (submissionsRes.data || []).map(s => s.phone?.replace(/\D/g, '')).filter(Boolean)
+      );
+      const filtered = (partialsRes.data as PartialLead[]).filter(
+        lead => !lead.phone || !effectivePhones.has(lead.phone.replace(/\D/g, ''))
+      );
+      setPartialLeads(filtered);
     }
 
     setLoading(false);
