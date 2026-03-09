@@ -34,6 +34,8 @@ interface LocationSelectorProps {
   onCityChange: (city: string) => void;
   onNeighborhoodChange: (neighborhood: string) => void;
   showNeighborhood?: boolean;
+  allowedStates?: string[];
+  allowedCities?: string[];
 }
 
 export function LocationSelector({
