@@ -147,7 +147,7 @@ export function LocationSelector({
                 <CommandList>
                   <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
                   <CommandGroup>
-                    {cities.map((cityItem) => (
+                    {citiesToShow.map((cityItem) => (
                       <CommandItem
                         key={cityItem.id}
                         value={cityItem.nome}

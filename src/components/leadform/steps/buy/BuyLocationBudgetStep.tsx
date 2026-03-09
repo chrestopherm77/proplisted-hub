@@ -31,6 +31,8 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
           onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '' })}
           onCityChange={(city) => updateLocationAndRegion({ city })}
           onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
+          allowedStates={['SP']}
+          allowedCities={['Ribeirão Preto','Bonfim Paulista','Cravinhos','Sertãozinho','Serrana','Jardinópolis','Brodowski','Batatais','Sales Oliveira','Orlândia','Nuporanga','São Joaquim da Barra','Morro Agudo','Pontal','Pitangueiras','Jaboticabal','Pradópolis','Dumont','Guatapará']}
         />
 
         <div className="grid grid-cols-2 gap-4">
