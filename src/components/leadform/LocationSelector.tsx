@@ -102,7 +102,7 @@ export function LocationSelector({
               <SelectValue placeholder={loadingStates ? "Carregando..." : "Selecione o estado"} />
             </SelectTrigger>
             <SelectContent>
-              {states.map((state) => (
+              {filteredStates.map((state) => (
                 <SelectItem key={state.id} value={state.sigla}>
                   {state.nome} ({state.sigla})
                 </SelectItem>
