@@ -1,82 +1,60 @@
 
 
-## Recuperacao de Carrinho Abandonado via WhatsApp
+## Unificação de Leads por Telefone — Preferência 1, Preferência 2
 
-### O que sera feito
+### Problema
+Quando a mesma pessoa preenche o formulário duas vezes (ex: quer comprar E alugar), o sistema cria dois leads separados. O correto é unificar em um único lead com múltiplas preferências na descrição.
 
-Quando um lead preencher nome e telefone mas nao finalizar o cadastro, o sistema envia automaticamente uma mensagem no WhatsApp 10 minutos depois, com texto personalizado (nome, objetivo) e um link para retomar o formulario de onde parou.
+### Solução
 
-### Alteracoes
+**Arquivo: `src/components/leadform/LeadFormWizard.tsx`** (lógica de submissão, ~linhas 615-665)
 
-**1. Adicionar colunas na tabela `lp_partial_leads`** (migration)
+Antes de inserir um novo lead, verificar se já existe um lead ativo com o mesmo telefone (normalizado):
 
-- `recovery_sent_at` (timestamptz, nullable) — marca quando a mensagem de recuperacao foi enviada (evita duplicatas)
-- `source_lp` (text, nullable) — identifica de qual LP veio (`/lp` ou `/lp-01`)
+1. **Buscar lead existente** pelo telefone na tabela `leads` (`phone` normalizado, `is_active = true`)
+2. **Se existir**: atualizar o lead existente:
+   - Contar quantas preferências já existem na descrição (parsear "Preferência N")
+   - Adicionar nova seção "Preferência N+1" à descrição
+   - Fazer merge do `form_data` (adicionar o novo fluxo ao JSON existente)
+   - Criar novo `lead_submissions` normalmente (manter histórico)
+   - **Não criar novo lead** — apenas `UPDATE` no existente
+3. **Se não existir**: comportamento atual (criar novo lead), mas prefixar descrição com "Preferência 1:"
 
-**2. Criar edge function `recovery-abandoned-lead`**
+**Arquivo: `src/lib/formatFormData.ts`**
 
-Funcao chamada periodicamente via cron (a cada 3 minutos). Ela:
-- Busca leads parciais onde: `completed = false`, `recovery_sent_at IS NULL`, `phone IS NOT NULL`, e `updated_at < NOW() - 10 min`
-- Para cada lead encontrado, traduz a `intention` (SELL→venda, BUY→compra, BUILD→construcao, RENT→aluguel)
-- Monta o link de retomada: `https://leadbay.com{source_lp}?resume={session_id}` (usando a LP de origem)
-- Envia mensagem via Mega API (POST sendMessage) com o texto personalizado
-- Marca `recovery_sent_at = NOW()` no registro
+- Criar função `generatePreferenceDescription(data, preferenceNumber)` que gera a descrição com prefixo "Preferência N:"
+- Criar função `mergeDescriptions(existingDescription, newDescription, newPrefNumber)` que concatena as seções
 
-Texto da mensagem:
-```
-Olá {nome}! Tudo bem? 😊
-
-Vimos que você não finalizou o cadastro na LeadBay em relação a sua busca por *{objetivo}*.
-
-Vou enviar nosso link de cadastro novamente para encontrarmos a melhor solução para você:
-
-👉 {link}
-```
-
-**3. Salvar `source_lp` no LeadFormWizard**
-
-- Adicionar prop `sourceLp` ao `LeadFormWizard` (default `/lp`)
-- Passar `/lp` no `LeadForm.tsx` e `/lp-01` no `LeadForm01.tsx`
-- Incluir `source_lp` no payload de insert/update do `lp_partial_leads`
-
-**4. Retomada do formulario (resume)**
-
-- No `LeadFormWizard`, ao montar, checar query param `?resume=SESSION_ID`
-- Se presente, criar uma edge function `get-partial-lead` que busca o partial lead pelo session_id e retorna o `form_data`, `current_step`, `step_index`
-- Preencher o `formData` com os dados salvos e posicionar no step correto
-- Atualizar o `sessionIdRef` para o session_id recebido (para continuar rastreando no mesmo registro)
-
-**5. Configurar cron job**
-
-- Habilitar extensoes `pg_cron` e `pg_net` (migration)
-- Criar job que chama a edge function `recovery-abandoned-lead` a cada 3 minutos
-
-**6. Registrar no config.toml**
-
-- `recovery-abandoned-lead` com `verify_jwt = false`
-- `get-partial-lead` com `verify_jwt = false`
-
-### Fluxo completo
-
+**Lógica de merge da descrição:**
 ```text
-Lead preenche nome+telefone → partial lead salvo com source_lp
-         ↓ (nao finaliza)
-    10 min se passam
-         ↓
-  Cron dispara edge function
-         ↓
-  Busca leads incompletos > 10min
-         ↓
-  Envia WhatsApp via Mega API
-         ↓
-  Lead clica no link → /lp?resume=abc123
-         ↓
-  Wizard carrega dados salvos e posiciona no step correto
+Preferência 1:
+Interesse: Comprar imóvel
+Região: Ribeirão Preto
+Características: Residencial, Casa, 3 quarto(s)
+
+Preferência 2:
+Interesse: Alugar
+Região: Ribeirão Preto
+Características: Residencial, Apartamento, 2 quarto(s)
 ```
 
-### Detalhes tecnicos
+**Lógica de merge do `form_data`:**
+- O `form_data` existente terá apenas o fluxo da primeira preferência (ex: `buy`)
+- Adicionar o novo fluxo (ex: `rent`) ao mesmo objeto JSON
+- Se for a mesma intenção repetida, armazenar como array ou substituir
 
-- A edge function `get-partial-lead` usa service role key para buscar no banco (partial leads nao tem SELECT publico)
-- O cron roda a cada 3 minutos, mas so processa leads com `updated_at` mais velho que 10 minutos, garantindo que nao envia mensagem cedo demais
-- Limite de seguranca: processar no maximo 50 leads por execucao do cron para evitar timeout
+**RLS**: O `leads` table permite INSERT anônimo mas não UPDATE anônimo. Será necessário adicionar uma policy de UPDATE para permitir a atualização por telefone, ou usar uma edge function com service role para fazer o merge.
+
+### Abordagem recomendada: Edge Function
+
+Para evitar complicações com RLS (anon não pode fazer SELECT/UPDATE em `leads`), criar uma edge function `merge-or-create-lead` que:
+1. Recebe os dados do formulário
+2. Busca lead existente pelo telefone (usando service role)
+3. Faz merge ou cria novo
+4. Retorna o `leadId` para o frontend
+
+### Arquivos alterados
+- **Nova edge function**: `supabase/functions/merge-or-create-lead/index.ts`
+- **`src/components/leadform/LeadFormWizard.tsx`**: substituir insert direto por chamada à edge function
+- **`src/lib/formatFormData.ts`**: adicionar funções de formatação com prefixo de preferência
 
