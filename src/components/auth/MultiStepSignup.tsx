@@ -82,6 +82,70 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
     setFormData(prev => ({ ...prev, profession: value }));
   };
 
+  const isStepComplete = (): boolean => {
+    if (currentStep === 1) {
+      return !!formData.personType;
+    }
+
+    if (currentStep === 2) {
+      if (formData.personType === 'PF') {
+        return !!(
+          formData.name.trim() &&
+          formData.cpf.trim() &&
+          formData.addressUf &&
+          formData.addressCity &&
+          formData.addressNeighborhood.trim() &&
+          formData.address.trim() &&
+          formData.email.trim() &&
+          formData.phone.trim()
+        );
+      } else {
+        return !!(
+          formData.companyName.trim() &&
+          formData.cnpj.trim() &&
+          formData.addressUf &&
+          formData.addressCity &&
+          formData.addressNeighborhood.trim() &&
+          formData.address.trim() &&
+          formData.email.trim() &&
+          formData.phone.trim()
+        );
+      }
+    }
+
+    if (currentStep === 3) {
+      if (formData.personType === 'PF') return !!formData.profession;
+      if (formData.personType === 'PJ') return !!formData.companyType;
+      return false;
+    }
+
+    if (currentStep === 4) {
+      if (formData.personType === 'PF' && formData.profession === 'NONE') {
+        return !!(formData.password && formData.confirmPassword && formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
+      }
+      if (formData.personType === 'PF') {
+        if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
+        if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
+        if (formData.profession === 'ENGENHEIRO') return !!(formData.crea.trim() && formData.creaUf);
+      }
+      if (formData.personType === 'PJ') {
+        if (formData.companyType === 'IMOBILIARIA') {
+          return !!(formData.creciPj.trim() && formData.creciPjUf && formData.rtName.trim() && formData.rtCpf.trim());
+        }
+        if (formData.companyType === 'CONSTRUTORA') {
+          return !!(formData.creaPj.trim() && formData.creaPjUf && formData.rtName.trim() && formData.rtCrea.trim() && formData.rtCreaUf && formData.rtCpf.trim());
+        }
+      }
+      return false;
+    }
+
+    if (currentStep === 5) {
+      return !!(formData.password && formData.confirmPassword && formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
+    }
+
+    return false;
+  };
+
   const validateStep = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -506,7 +570,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
 
             <Button
               onClick={handleNext}
-              disabled={isLoading || isSendingCode}
+              disabled={isLoading || isSendingCode || !isStepComplete()}
             >
               {isLoading ? (
                 <>
