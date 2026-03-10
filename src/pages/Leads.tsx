@@ -258,6 +258,22 @@ export default function Leads() {
     }
   };
 
+  const fetchPurchases = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('purchases')
+        .select('lead_id')
+        .eq('user_id', user.id)
+        .eq('status', 'PAID');
+      if (!error && data) {
+        setPurchasedLeadIds(data.map(p => p.lead_id));
+      }
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
+    }
+  };
+
   const fetchCart = async () => {
     if (!user) return;
     
