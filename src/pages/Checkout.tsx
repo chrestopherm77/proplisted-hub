@@ -398,7 +398,7 @@ export default function Checkout() {
                   <SelectContent>
                     {cartItems.map((item) => (
                       <SelectItem key={item.lead_id} value={item.lead_id}>
-                        {item.leads.name}
+                        Lead #{item.leads.id.slice(0, 8)}
                       </SelectItem>
                     ))}
                   </SelectContent>
