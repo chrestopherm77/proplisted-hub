@@ -304,7 +304,7 @@ export default function Checkout() {
         setCartItems(remaining);
         setVoucherRedeemed(true);
         toast({
-          title: `Lead "${redeemedItem?.leads.name}" resgatado com voucher!`,
+          title: `Lead #${redeemedItem?.leads.id.slice(0, 8)} resgatado com voucher!`,
           description: 'Continue o checkout com os leads restantes.',
         });
       }
@@ -398,7 +398,7 @@ export default function Checkout() {
                   <SelectContent>
                     {cartItems.map((item) => (
                       <SelectItem key={item.lead_id} value={item.lead_id}>
-                        {item.leads.name}
+                        Lead #{item.leads.id.slice(0, 8)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -464,10 +464,7 @@ export default function Checkout() {
               {cartItems.map((item) => (
                 <div key={item.id} className="flex justify-between items-start gap-4">
                   <div className="flex-1">
-                    <p className="font-medium">{item.leads.name}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {item.leads.description}
-                    </p>
+                    <p className="font-medium">Lead #{item.leads.id.slice(0, 8)}</p>
                   </div>
                   <p className="font-semibold whitespace-nowrap">
                     {formatPrice(item.leads.price)}
