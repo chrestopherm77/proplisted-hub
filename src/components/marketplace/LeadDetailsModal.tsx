@@ -79,6 +79,7 @@ export function LeadDetailsModal({
   onOpenChange,
   isInCart,
   isSoldOut,
+  isPurchased = false,
   onAddToCart,
   onRemoveFromCart,
   formatPrice,
