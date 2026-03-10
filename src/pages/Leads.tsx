@@ -669,6 +669,7 @@ export default function Leads() {
           onOpenChange={setDialogOpen}
           isInCart={selectedLead ? isInCart(selectedLead.id) : false}
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
+          isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
           onAddToCart={() => {
             if (selectedLead) {
               addToCart(selectedLead.id);

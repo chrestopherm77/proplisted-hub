@@ -179,7 +179,11 @@ export function LeadDetailsModal({
           </div>
 
           <DialogFooter className="gap-2">
-            {isSoldOut ? (
+            {isPurchased ? (
+              <Button disabled className="w-full bg-green-600 hover:bg-green-600 text-white" size="lg">
+                ✓ Você já comprou este lead
+              </Button>
+            ) : isSoldOut ? (
               <Button disabled className="w-full" variant="secondary" size="lg">
                 Esgotado
               </Button>
