@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (vErr || !voucher) {
       return new Response(
-        JSON.stringify({ error: "Voucher não encontrado" }),
+        JSON.stringify({ error: "Esse voucher não existe" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
