@@ -271,12 +271,9 @@ export default function Checkout() {
       return;
     }
 
-    if (cartItems.length !== 1) {
-      toast({
-        title: 'Voucher válido para 1 lead apenas',
-        description: 'Remova itens do carrinho até restar apenas 1 lead',
-        variant: 'destructive',
-      });
+    const leadId = cartItems.length === 1 ? cartItems[0].lead_id : selectedVoucherLeadId;
+    if (!leadId) {
+      toast({ title: 'Selecione o lead para aplicar o voucher', variant: 'destructive' });
       return;
     }
 
@@ -285,7 +282,7 @@ export default function Checkout() {
       const { data, error } = await supabase.functions.invoke('redeem-voucher', {
         body: {
           voucherCode: voucherCode.trim(),
-          leadId: cartItems[0].lead_id,
+          leadId,
         },
       });
 
@@ -296,7 +293,21 @@ export default function Checkout() {
         return;
       }
 
-      setVoucherSuccess(true);
+      const redeemedItem = cartItems.find(item => item.lead_id === leadId);
+      const remaining = cartItems.filter(item => item.lead_id !== leadId);
+
+      if (remaining.length === 0) {
+        // Last item — show success modal
+        setVoucherSuccess(true);
+      } else {
+        // Remove redeemed lead from cart state, continue checkout
+        setCartItems(remaining);
+        setVoucherRedeemed(true);
+        toast({
+          title: `Lead "${redeemedItem?.leads.name}" resgatado com voucher!`,
+          description: 'Continue o checkout com os leads restantes.',
+        });
+      }
     } catch (error: any) {
       console.error('Voucher error:', error);
       toast({
