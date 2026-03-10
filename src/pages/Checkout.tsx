@@ -12,6 +12,7 @@ import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper } from '
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CartItem {
   id: string;
