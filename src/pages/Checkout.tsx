@@ -376,6 +376,7 @@ export default function Checkout() {
         <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Finalizar Compra</h1>
 
         {/* Voucher Section */}
+        {!voucherRedeemed && (
         <Card className="mb-6 border-dashed border-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -386,12 +387,24 @@ export default function Checkout() {
           <CardContent>
             <p className="text-sm text-muted-foreground mb-3">
               Possui um voucher? Insira o código abaixo para resgatar seu lead gratuitamente.
-              {cartItems.length > 1 && (
-                <span className="block text-destructive mt-1">
-                  * O voucher é válido para apenas 1 lead. Remova itens do carrinho até restar 1.
-                </span>
-              )}
             </p>
+            {cartItems.length > 1 && (
+              <div className="mb-3">
+                <Label className="text-sm mb-1 block">Selecione o lead para aplicar o voucher:</Label>
+                <Select value={selectedVoucherLeadId} onValueChange={setSelectedVoucherLeadId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um lead" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cartItems.map((item) => (
+                      <SelectItem key={item.lead_id} value={item.lead_id}>
+                        {item.leads.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex gap-3">
               <Input
                 value={voucherCode}
@@ -401,7 +414,7 @@ export default function Checkout() {
               />
               <Button
                 onClick={handleVoucherRedeem}
-                disabled={voucherLoading || cartItems.length !== 1}
+                disabled={voucherLoading || (cartItems.length > 1 && !selectedVoucherLeadId)}
                 variant="outline"
               >
                 {voucherLoading ? (
@@ -413,6 +426,7 @@ export default function Checkout() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Voucher Success Dialog */}
         <Dialog open={voucherSuccess} onOpenChange={() => {}}>
