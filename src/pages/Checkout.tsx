@@ -412,7 +412,7 @@ export default function Checkout() {
                 Você resgatou seu lead gratuitamente com o voucher{' '}
                 <strong>{voucherCode}</strong>!
               </p>
-              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-lg px-4 py-2">
                 <CheckCircle2 className="h-4 w-4" />
                 Lead adicionado aos seus leads
               </div>
