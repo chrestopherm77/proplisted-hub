@@ -813,12 +813,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const normalizedCity = city.toUpperCase().trim();
-
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, address_city, address_uf, email, is_active")
-      .not("address_city", "is", null)
+      .select("id, email, is_active")
       .not("email", "is", null)
       .eq("is_active", true);
 
@@ -830,20 +827,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const matchingProfiles = (profiles || []).filter(
-      (p) => p.address_city?.toUpperCase().trim() === normalizedCity
-    );
+    const emails = (profiles || []).map((p) => p.email).filter(Boolean) as string[];
 
-    console.log(`Found ${matchingProfiles.length} profiles in ${city}`);
-
-    if (matchingProfiles.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: "No users in this city", emailsSent: 0 }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const emails = matchingProfiles.map((p) => p.email).filter(Boolean) as string[];
+    console.log(`Found ${emails.length} active profiles to notify`);
 
     console.log(`Sending notifications to ${emails.length} users`);
 
