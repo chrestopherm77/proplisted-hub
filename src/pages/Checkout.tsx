@@ -262,6 +262,50 @@ export default function Checkout() {
     return true;
   };
 
+  const handleVoucherRedeem = async () => {
+    if (!voucherCode.trim()) {
+      toast({ title: 'Informe o código do voucher', variant: 'destructive' });
+      return;
+    }
+
+    if (cartItems.length !== 1) {
+      toast({
+        title: 'Voucher válido para 1 lead apenas',
+        description: 'Remova itens do carrinho até restar apenas 1 lead',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setVoucherLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('redeem-voucher', {
+        body: {
+          voucherCode: voucherCode.trim(),
+          leadId: cartItems[0].lead_id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({ title: data.error, variant: 'destructive' });
+        return;
+      }
+
+      setVoucherSuccess(true);
+    } catch (error: any) {
+      console.error('Voucher error:', error);
+      toast({
+        title: 'Erro ao validar voucher',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) return;
 
