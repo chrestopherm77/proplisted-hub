@@ -22,6 +22,7 @@ interface LeadDetailsModalProps {
   onOpenChange: (open: boolean) => void;
   isInCart: boolean;
   isSoldOut: boolean;
+  isPurchased?: boolean;
   onAddToCart: () => void;
   onRemoveFromCart: () => void;
   formatPrice: (price: number) => string;
