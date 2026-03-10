@@ -774,7 +774,7 @@ const generateEmailHTML = (
         <!-- Footer -->
         <div style="text-align: center;">
           <p style="color: ${colors.muted}; font-size: 12px; line-height: 20px; margin: 0 0 16px 0;">
-            Você recebeu este e-mail porque está cadastrado na mesma cidade deste lead.<br>
+            Você recebeu este e-mail porque está cadastrado no LeadBay.<br>
             Para deixar de receber notificações, atualize suas preferências no LeadBay.
           </p>
           <p style="color: ${colors.muted}; font-size: 12px; margin: 0;">
