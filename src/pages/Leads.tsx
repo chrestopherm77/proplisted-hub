@@ -233,6 +233,7 @@ export default function Leads() {
     }
     fetchLeads();
     fetchCart();
+    fetchPurchases();
   }, [user, authLoading]);
 
   const fetchLeads = async () => {
