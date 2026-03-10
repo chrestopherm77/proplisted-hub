@@ -10,6 +10,7 @@ import { PurchasesOverview } from '@/components/admin/PurchasesOverview';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { UsersManagement } from '@/components/admin/UsersManagement';
 import { LeadTracking } from '@/components/admin/LeadTracking';
+import { VouchersManagement } from '@/components/admin/VouchersManagement';
 
 export default function Admin() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -57,12 +58,13 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6 md:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-6 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
             <TabsTrigger value="purchases">Compras</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="tracking">Rastreamento</TabsTrigger>
+            <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -83,6 +85,10 @@ export default function Admin() {
 
           <TabsContent value="tracking">
             <LeadTracking />
+          </TabsContent>
+
+          <TabsContent value="vouchers">
+            <VouchersManagement />
           </TabsContent>
         </Tabs>
       </div>

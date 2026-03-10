@@ -30,3 +30,6 @@ verify_jwt = false
 [functions.merge-or-create-lead]
 verify_jwt = false
 
+[functions.redeem-voucher]
+verify_jwt = false
+

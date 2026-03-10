@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CreditCard, QrCode, Loader2 } from 'lucide-react';
+import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface CartItem {
   id: string;
@@ -54,6 +55,10 @@ export default function Checkout() {
     city: '',
   });
   
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherSuccess, setVoucherSuccess] = useState(false);
+
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -257,6 +262,50 @@ export default function Checkout() {
     return true;
   };
 
+  const handleVoucherRedeem = async () => {
+    if (!voucherCode.trim()) {
+      toast({ title: 'Informe o código do voucher', variant: 'destructive' });
+      return;
+    }
+
+    if (cartItems.length !== 1) {
+      toast({
+        title: 'Voucher válido para 1 lead apenas',
+        description: 'Remova itens do carrinho até restar apenas 1 lead',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setVoucherLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('redeem-voucher', {
+        body: {
+          voucherCode: voucherCode.trim(),
+          leadId: cartItems[0].lead_id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({ title: data.error, variant: 'destructive' });
+        return;
+      }
+
+      setVoucherSuccess(true);
+    } catch (error: any) {
+      console.error('Voucher error:', error);
+      toast({
+        title: 'Erro ao validar voucher',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) return;
 
@@ -311,6 +360,72 @@ export default function Checkout() {
     <Layout>
       <div className="max-w-4xl mx-auto pb-8 md:pb-12">
         <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Finalizar Compra</h1>
+
+        {/* Voucher Section */}
+        <Card className="mb-6 border-dashed border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-primary" />
+              Voucher de Lead
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Possui um voucher? Insira o código abaixo para resgatar seu lead gratuitamente.
+              {cartItems.length > 1 && (
+                <span className="block text-destructive mt-1">
+                  * O voucher é válido para apenas 1 lead. Remova itens do carrinho até restar 1.
+                </span>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <Input
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                placeholder="EX: LEADGRATIS2026"
+                className="flex-1"
+              />
+              <Button
+                onClick={handleVoucherRedeem}
+                disabled={voucherLoading || cartItems.length !== 1}
+                variant="outline"
+              >
+                {voucherLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Validar'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Voucher Success Dialog */}
+        <Dialog open={voucherSuccess} onOpenChange={() => {}}>
+          <DialogContent className="text-center max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="bg-primary/10 rounded-full p-4">
+                <PartyPopper className="h-12 w-12 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">Parabéns! 🎉</h2>
+              <p className="text-muted-foreground">
+                Você resgatou seu lead gratuitamente com o voucher{' '}
+                <strong>{voucherCode}</strong>!
+              </p>
+              <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-lg px-4 py-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Lead adicionado aos seus leads
+              </div>
+              <Button
+                onClick={() => navigate('/my-leads')}
+                className="w-full mt-2"
+                size="lg"
+              >
+                Ir para Meus Leads
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           <Card>
