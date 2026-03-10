@@ -59,6 +59,8 @@ export default function Checkout() {
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [voucherSuccess, setVoucherSuccess] = useState(false);
+  const [voucherRedeemed, setVoucherRedeemed] = useState(false);
+  const [selectedVoucherLeadId, setSelectedVoucherLeadId] = useState('');
 
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
