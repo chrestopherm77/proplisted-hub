@@ -86,6 +86,10 @@ export default function Admin() {
           <TabsContent value="tracking">
             <LeadTracking />
           </TabsContent>
+
+          <TabsContent value="vouchers">
+            <VouchersManagement />
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>
