@@ -304,7 +304,7 @@ export default function Checkout() {
         setCartItems(remaining);
         setVoucherRedeemed(true);
         toast({
-          title: `Lead "${redeemedItem?.leads.name}" resgatado com voucher!`,
+          title: `Lead #${redeemedItem?.leads.id.slice(0, 8)} resgatado com voucher!`,
           description: 'Continue o checkout com os leads restantes.',
         });
       }
