@@ -22,6 +22,7 @@ interface LeadDetailsModalProps {
   onOpenChange: (open: boolean) => void;
   isInCart: boolean;
   isSoldOut: boolean;
+  isPurchased?: boolean;
   onAddToCart: () => void;
   onRemoveFromCart: () => void;
   formatPrice: (price: number) => string;
@@ -78,6 +79,7 @@ export function LeadDetailsModal({
   onOpenChange,
   isInCart,
   isSoldOut,
+  isPurchased = false,
   onAddToCart,
   onRemoveFromCart,
   formatPrice,
@@ -177,7 +179,11 @@ export function LeadDetailsModal({
           </div>
 
           <DialogFooter className="gap-2">
-            {isSoldOut ? (
+            {isPurchased ? (
+              <Button disabled className="w-full bg-green-600 hover:bg-green-600 text-white" size="lg">
+                ✓ Você já comprou este lead
+              </Button>
+            ) : isSoldOut ? (
               <Button disabled className="w-full" variant="secondary" size="lg">
                 Esgotado
               </Button>

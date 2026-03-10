@@ -188,6 +188,7 @@ export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<string[]>([]);
+  const [purchasedLeadIds, setPurchasedLeadIds] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   
@@ -232,6 +233,7 @@ export default function Leads() {
     }
     fetchLeads();
     fetchCart();
+    fetchPurchases();
   }, [user, authLoading]);
 
   const fetchLeads = async () => {
@@ -253,6 +255,22 @@ export default function Leads() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPurchases = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('purchases')
+        .select('lead_id')
+        .eq('user_id', user.id)
+        .eq('status', 'PAID');
+      if (!error && data) {
+        setPurchasedLeadIds(data.map(p => p.lead_id));
+      }
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
     }
   };
 
@@ -465,6 +483,7 @@ export default function Leads() {
 
   const isInCart = (leadId: string) => cartItems.includes(leadId);
   const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases;
+  const isPurchased = (leadId: string) => purchasedLeadIds.includes(leadId);
 
   if (loading) {
     return (
@@ -599,12 +618,16 @@ export default function Leads() {
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
                     </CardTitle>
-                    {isInCart(lead.id) && (
+                    {isPurchased(lead.id) ? (
+                      <Badge className="text-xs bg-green-600 hover:bg-green-600 text-white border-transparent">
+                        ✓ Já comprado
+                      </Badge>
+                    ) : isInCart(lead.id) ? (
                       <Badge variant="outline" className="text-xs">
                         <ShoppingCart className="h-3 w-3 mr-1" />
                         No carrinho
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow pt-0 space-y-3">
@@ -646,6 +669,7 @@ export default function Leads() {
           onOpenChange={setDialogOpen}
           isInCart={selectedLead ? isInCart(selectedLead.id) : false}
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
+          isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
           onAddToCart={() => {
             if (selectedLead) {
               addToCart(selectedLead.id);
