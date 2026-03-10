@@ -618,12 +618,16 @@ export default function Leads() {
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
                     </CardTitle>
-                    {isInCart(lead.id) && (
+                    {isPurchased(lead.id) ? (
+                      <Badge className="text-xs bg-green-600 hover:bg-green-600 text-white border-transparent">
+                        ✓ Já comprado
+                      </Badge>
+                    ) : isInCart(lead.id) ? (
                       <Badge variant="outline" className="text-xs">
                         <ShoppingCart className="h-3 w-3 mr-1" />
                         No carrinho
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow pt-0 space-y-3">
