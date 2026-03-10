@@ -55,6 +55,10 @@ export default function Checkout() {
     city: '',
   });
   
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherSuccess, setVoucherSuccess] = useState(false);
+
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
