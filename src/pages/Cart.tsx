@@ -150,7 +150,7 @@ export default function Cart() {
               <Card key={item.id}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-lg font-semibold">
-                    {item.leads.name}
+                    Lead #{item.leads.id.slice(0, 8).toUpperCase()}
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -161,9 +161,6 @@ export default function Cart() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {item.leads.description}
-                  </p>
                   <p className="text-xl font-bold text-primary">
                     {formatPrice(item.leads.price)}
                   </p>
