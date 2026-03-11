@@ -83,16 +83,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check if user already used ANY voucher
+    // 3. Check if user already used THIS specific voucher
     const { data: previousRedemption } = await admin
       .from("voucher_redemptions")
       .select("id")
       .eq("user_id", userId)
+      .eq("voucher_id", voucher.id)
       .maybeSingle();
 
     if (previousRedemption) {
       return new Response(
-        JSON.stringify({ error: "Você já utilizou um voucher anteriormente" }),
+        JSON.stringify({ error: "Você já utilizou este voucher" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
