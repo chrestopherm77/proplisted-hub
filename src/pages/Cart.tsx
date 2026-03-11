@@ -161,9 +161,6 @@ export default function Cart() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {item.leads.description}
-                  </p>
                   <p className="text-xl font-bold text-primary">
                     {formatPrice(item.leads.price)}
                   </p>
