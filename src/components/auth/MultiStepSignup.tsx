@@ -275,7 +275,11 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return false;
+    }
+    return true;
   };
 
   const sendEmailVerificationCode = async () => {
@@ -570,7 +574,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
 
             <Button
               onClick={handleNext}
-              disabled={isLoading || isSendingCode || !isStepComplete()}
+              disabled={isLoading || isSendingCode}
             >
               {isLoading ? (
                 <>
