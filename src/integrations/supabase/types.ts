@@ -166,6 +166,24 @@ export type Database = {
           },
         ]
       }
+      login_history: {
+        Row: {
+          id: string
+          logged_in_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          logged_in_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          logged_in_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lp_page_views: {
         Row: {
           created_at: string | null
