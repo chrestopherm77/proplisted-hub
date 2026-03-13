@@ -1,82 +1,44 @@
 
 
-## Recuperacao de Carrinho Abandonado via WhatsApp
+## Histórico de Acessos dos Corretores no Painel Admin
 
-### O que sera feito
+### O que será feito
 
-Quando um lead preencher nome e telefone mas nao finalizar o cadastro, o sistema envia automaticamente uma mensagem no WhatsApp 10 minutos depois, com texto personalizado (nome, objetivo) e um link para retomar o formulario de onde parou.
+Adicionar uma nova aba "Acessos" no painel administrativo que exibe o histórico completo de login de todos os corretores, com data, hora e e-mail.
 
-### Alteracoes
+### 1. Criar tabela `login_history` (migração)
 
-**1. Adicionar colunas na tabela `lp_partial_leads`** (migration)
+```sql
+CREATE TABLE public.login_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  logged_in_at timestamptz NOT NULL DEFAULT now()
+);
 
-- `recovery_sent_at` (timestamptz, nullable) — marca quando a mensagem de recuperacao foi enviada (evita duplicatas)
-- `source_lp` (text, nullable) — identifica de qual LP veio (`/lp` ou `/lp-01`)
+ALTER TABLE public.login_history ENABLE ROW LEVEL SECURITY;
 
-**2. Criar edge function `recovery-abandoned-lead`**
+CREATE POLICY "Admins can view all login history"
+  ON public.login_history FOR SELECT
+  USING (has_role(auth.uid(), 'MASTER_ADMIN'));
 
-Funcao chamada periodicamente via cron (a cada 3 minutos). Ela:
-- Busca leads parciais onde: `completed = false`, `recovery_sent_at IS NULL`, `phone IS NOT NULL`, e `updated_at < NOW() - 10 min`
-- Para cada lead encontrado, traduz a `intention` (SELL→venda, BUY→compra, BUILD→construcao, RENT→aluguel)
-- Monta o link de retomada: `https://leadbay.com{source_lp}?resume={session_id}` (usando a LP de origem)
-- Envia mensagem via Mega API (POST sendMessage) com o texto personalizado
-- Marca `recovery_sent_at = NOW()` no registro
-
-Texto da mensagem:
-```
-Olá {nome}! Tudo bem? 😊
-
-Vimos que você não finalizou o cadastro na LeadBay em relação a sua busca por *{objetivo}*.
-
-Vou enviar nosso link de cadastro novamente para encontrarmos a melhor solução para você:
-
-👉 {link}
+CREATE POLICY "Authenticated users can insert own login"
+  ON public.login_history FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 ```
 
-**3. Salvar `source_lp` no LeadFormWizard**
+### 2. Registrar login em `src/pages/Auth.tsx`
 
-- Adicionar prop `sourceLp` ao `LeadFormWizard` (default `/lp`)
-- Passar `/lp` no `LeadForm.tsx` e `/lp-01` no `LeadForm01.tsx`
-- Incluir `source_lp` no payload de insert/update do `lp_partial_leads`
+Após login bem-sucedido (e verificação de `is_active`), inserir um registro na tabela `login_history` com o `user_id`.
 
-**4. Retomada do formulario (resume)**
+### 3. Criar componente `src/components/admin/AccessHistory.tsx`
 
-- No `LeadFormWizard`, ao montar, checar query param `?resume=SESSION_ID`
-- Se presente, criar uma edge function `get-partial-lead` que busca o partial lead pelo session_id e retorna o `form_data`, `current_step`, `step_index`
-- Preencher o `formData` com os dados salvos e posicionar no step correto
-- Atualizar o `sessionIdRef` para o session_id recebido (para continuar rastreando no mesmo registro)
+- Busca `login_history` com JOIN nos `profiles` (nome) e e-mails via `list-users` edge function (já existente)
+- Tabela com colunas: Nome, E-mail, Data/Hora do acesso
+- Filtro de busca por nome/e-mail
+- Ordenado por data mais recente
 
-**5. Configurar cron job**
+### 4. Adicionar aba "Acessos" em `src/pages/Admin.tsx`
 
-- Habilitar extensoes `pg_cron` e `pg_net` (migration)
-- Criar job que chama a edge function `recovery-abandoned-lead` a cada 3 minutos
-
-**6. Registrar no config.toml**
-
-- `recovery-abandoned-lead` com `verify_jwt = false`
-- `get-partial-lead` com `verify_jwt = false`
-
-### Fluxo completo
-
-```text
-Lead preenche nome+telefone → partial lead salvo com source_lp
-         ↓ (nao finaliza)
-    10 min se passam
-         ↓
-  Cron dispara edge function
-         ↓
-  Busca leads incompletos > 10min
-         ↓
-  Envia WhatsApp via Mega API
-         ↓
-  Lead clica no link → /lp?resume=abc123
-         ↓
-  Wizard carrega dados salvos e posiciona no step correto
-```
-
-### Detalhes tecnicos
-
-- A edge function `get-partial-lead` usa service role key para buscar no banco (partial leads nao tem SELECT publico)
-- O cron roda a cada 3 minutos, mas so processa leads com `updated_at` mais velho que 10 minutos, garantindo que nao envia mensagem cedo demais
-- Limite de seguranca: processar no maximo 50 leads por execucao do cron para evitar timeout
+- Nova tab na grid (7 colunas agora) com valor "access"
+- Renderiza o componente `AccessHistory`
 
