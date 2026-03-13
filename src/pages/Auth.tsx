@@ -50,6 +50,9 @@ export default function Auth() {
         return;
       }
 
+      // Record login history
+      await supabase.from('login_history').insert({ user_id: data.user.id } as any);
+
       toast({
         title: 'Login realizado com sucesso!',
         description: 'Bem-vindo de volta.',
