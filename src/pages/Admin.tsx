@@ -85,6 +85,10 @@ export default function Admin() {
             <UsersManagement />
           </TabsContent>
 
+          <TabsContent value="access">
+            <AccessHistory />
+          </TabsContent>
+
           <TabsContent value="tracking">
             <LeadTracking />
           </TabsContent>
