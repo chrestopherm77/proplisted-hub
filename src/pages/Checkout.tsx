@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper } from 'lucide-react';
+import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
