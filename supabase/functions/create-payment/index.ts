@@ -81,6 +81,10 @@ serve(async (req) => {
       if (cErr || !coupon) throw new Error('Cupom inválido');
       if (!coupon.is_active) throw new Error('Cupom não está mais ativo');
 
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        throw new Error('Cupom expirado');
+      }
+
       const { count: totalUsages } = await supabaseClient
         .from('coupon_usages')
         .select('id', { count: 'exact', head: true })
@@ -88,14 +92,14 @@ serve(async (req) => {
 
       if ((totalUsages ?? 0) >= coupon.max_uses) throw new Error('Cupom atingiu o limite de usos');
 
-      const { data: prevUsage } = await supabaseClient
+      const { count: userUsages } = await supabaseClient
         .from('coupon_usages')
-        .select('id')
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('coupon_id', coupon.id)
-        .maybeSingle();
+        .eq('coupon_id', coupon.id);
 
-      if (prevUsage) throw new Error('Você já utilizou este cupom');
+      const maxPerUser = coupon.max_uses_per_user ?? 1;
+      if ((userUsages ?? 0) >= maxPerUser) throw new Error('Você já atingiu o limite de usos deste cupom');
 
       discountPercent = coupon.discount_percent;
       couponId = coupon.id;
