@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper } from 'lucide-react';
+import { CreditCard, QrCode, Loader2, Ticket, CheckCircle2, PartyPopper, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -61,6 +61,10 @@ export default function Checkout() {
   const [voucherSuccess, setVoucherSuccess] = useState(false);
   const [voucherRedeemed, setVoucherRedeemed] = useState(false);
   const [selectedVoucherLeadId, setSelectedVoucherLeadId] = useState('');
+  
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_percent: number } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -320,6 +324,36 @@ export default function Checkout() {
     }
   };
 
+  const handleCouponValidate = async () => {
+    if (!couponCode.trim()) {
+      toast({ title: 'Informe o código do cupom', variant: 'destructive' });
+      return;
+    }
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-coupon', {
+        body: { couponCode: couponCode.trim() },
+      });
+      if (error) throw error;
+      if (data.error) {
+        toast({ title: data.error, variant: 'destructive' });
+        return;
+      }
+      setAppliedCoupon({ code: couponCode.trim().toUpperCase(), discount_percent: data.discount_percent });
+      toast({ title: `Cupom aplicado! ${data.discount_percent}% de desconto` });
+    } catch (error: any) {
+      toast({ title: 'Erro ao validar cupom', description: error.message, variant: 'destructive' });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const calculateDiscountedTotal = () => {
+    const total = calculateTotal();
+    if (!appliedCoupon) return total;
+    return Math.round((total * (1 - appliedCoupon.discount_percent / 100)) * 100) / 100;
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) return;
 
@@ -328,6 +362,7 @@ export default function Checkout() {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           paymentMethod,
+          couponCode: appliedCoupon?.code || undefined,
           cartItems: cartItems.map(item => ({
             lead_id: item.lead_id,
             price: item.leads.price,
@@ -428,6 +463,44 @@ export default function Checkout() {
         </Card>
         )}
 
+        {/* Coupon Section */}
+        <Card className="mb-6 border-dashed border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Percent className="h-5 w-5 text-primary" />
+              Cupom de Desconto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {appliedCoupon ? (
+              <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Cupom <strong>{appliedCoupon.code}</strong> aplicado — {appliedCoupon.discount_percent}% de desconto!</span>
+                <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}>
+                  Remover
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Possui um cupom de desconto? Insira o código abaixo.
+                </p>
+                <div className="flex gap-3">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="EX: DESCONTO20"
+                    className="flex-1"
+                  />
+                  <Button onClick={handleCouponValidate} disabled={couponLoading} variant="outline">
+                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Aplicar'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Voucher Success Dialog */}
         <Dialog open={voucherSuccess} onOpenChange={() => {}}>
           <DialogContent className="text-center max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
@@ -471,11 +544,23 @@ export default function Checkout() {
                   </p>
                 </div>
               ))}
-              <div className="pt-3 border-t">
+              <div className="pt-3 border-t space-y-1">
+                {appliedCoupon && (
+                  <>
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                      <span>Subtotal:</span>
+                      <span className="line-through">{formatPrice(calculateTotal())}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-primary">
+                      <span>Desconto ({appliedCoupon.discount_percent}%):</span>
+                      <span>-{formatPrice(calculateTotal() * appliedCoupon.discount_percent / 100)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">Total:</span>
                   <span className="text-2xl font-bold text-primary">
-                    {formatPrice(calculateTotal())}
+                    {formatPrice(calculateDiscountedTotal())}
                   </span>
                 </div>
               </div>
