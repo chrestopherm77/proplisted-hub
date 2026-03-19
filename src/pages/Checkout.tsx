@@ -544,11 +544,23 @@ export default function Checkout() {
                   </p>
                 </div>
               ))}
-              <div className="pt-3 border-t">
+              <div className="pt-3 border-t space-y-1">
+                {appliedCoupon && (
+                  <>
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                      <span>Subtotal:</span>
+                      <span className="line-through">{formatPrice(calculateTotal())}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-primary">
+                      <span>Desconto ({appliedCoupon.discount_percent}%):</span>
+                      <span>-{formatPrice(calculateTotal() * appliedCoupon.discount_percent / 100)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">Total:</span>
                   <span className="text-2xl font-bold text-primary">
-                    {formatPrice(calculateTotal())}
+                    {formatPrice(calculateDiscountedTotal())}
                   </span>
                 </div>
               </div>
