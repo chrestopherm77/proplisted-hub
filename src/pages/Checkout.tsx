@@ -324,6 +324,36 @@ export default function Checkout() {
     }
   };
 
+  const handleCouponValidate = async () => {
+    if (!couponCode.trim()) {
+      toast({ title: 'Informe o código do cupom', variant: 'destructive' });
+      return;
+    }
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-coupon', {
+        body: { couponCode: couponCode.trim() },
+      });
+      if (error) throw error;
+      if (data.error) {
+        toast({ title: data.error, variant: 'destructive' });
+        return;
+      }
+      setAppliedCoupon({ code: couponCode.trim().toUpperCase(), discount_percent: data.discount_percent });
+      toast({ title: `Cupom aplicado! ${data.discount_percent}% de desconto` });
+    } catch (error: any) {
+      toast({ title: 'Erro ao validar cupom', description: error.message, variant: 'destructive' });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const calculateDiscountedTotal = () => {
+    const total = calculateTotal();
+    if (!appliedCoupon) return total;
+    return Math.round((total * (1 - appliedCoupon.discount_percent / 100)) * 100) / 100;
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) return;
 
@@ -332,6 +362,7 @@ export default function Checkout() {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           paymentMethod,
+          couponCode: appliedCoupon?.code || undefined,
           cartItems: cartItems.map(item => ({
             lead_id: item.lead_id,
             price: item.leads.price,
