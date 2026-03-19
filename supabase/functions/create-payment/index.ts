@@ -7,19 +7,16 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Initialize Supabase client with service role key
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Authenticate user from JWT token
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
@@ -28,157 +25,144 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { cartItems, customerData, paymentMethod } = await req.json();
+    const { cartItems, customerData, paymentMethod, couponCode } = await req.json();
     console.log('=== Creating Asaas Checkout ===');
     console.log('User ID:', user.id);
-    console.log('Payment Method:', paymentMethod);
-    console.log('Cart items count:', cartItems?.length || 0);
+    console.log('Coupon Code:', couponCode || 'none');
 
-    // Validate cartItems exists and is an array
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       throw new Error('Carrinho vazio ou inválido');
     }
 
-    // Extract lead_ids from cart items
     const leadIds = cartItems.map((item: any) => item.lead_id).filter(Boolean);
-    
     if (leadIds.length === 0) {
       throw new Error('Nenhum lead válido no carrinho');
     }
 
-    // CRITICAL SECURITY FIX: Fetch actual lead prices from database
-    console.log('Fetching leads from database for price validation...');
+    // Fetch and validate leads from database
     const { data: dbLeads, error: leadsError } = await supabaseClient
       .from('leads')
       .select('id, price, is_active, name, description, purchase_count, max_purchases')
       .in('id', leadIds);
 
-    if (leadsError) {
-      console.error('Error fetching leads:', leadsError);
+    if (leadsError || !dbLeads || dbLeads.length === 0) {
       throw new Error('Erro ao validar leads');
     }
 
-    if (!dbLeads || dbLeads.length === 0) {
-      throw new Error('Nenhum lead encontrado no banco de dados');
-    }
-
-    // Create a map of lead_id -> lead data from database
     const leadMap = new Map(dbLeads.map((lead: any) => [lead.id, lead]));
-
-    // Validate each cart item against database
     const validatedItems = [];
+
     for (const cartItem of cartItems) {
       const dbLead = leadMap.get(cartItem.lead_id);
-      
-      if (!dbLead) {
-        console.error(`Lead ${cartItem.lead_id} not found in database`);
-        throw new Error(`Lead ${cartItem.lead_id} não encontrado`);
-      }
+      if (!dbLead) throw new Error(`Lead ${cartItem.lead_id} não encontrado`);
+      if (!dbLead.is_active) throw new Error('Lead não está mais disponível para compra');
+      if (dbLead.purchase_count >= dbLead.max_purchases) throw new Error('Lead já atingiu o limite máximo de vendas');
 
-      // Check if lead is active
-      if (!dbLead.is_active) {
-        console.error(`Lead ${cartItem.lead_id} is not active`);
-        throw new Error(`Lead não está mais disponível para compra`);
-      }
-
-      // Check if lead has reached max purchases
-      if (dbLead.purchase_count >= dbLead.max_purchases) {
-        console.error(`Lead ${cartItem.lead_id} has reached max purchases`);
-        throw new Error(`Lead já atingiu o limite máximo de vendas`);
-      }
-
-      // Use the ACTUAL price from database, not from client
       validatedItems.push({
         lead_id: dbLead.id,
-        price: Number(dbLead.price), // Always use database price
+        price: Number(dbLead.price),
         name: dbLead.name,
         description: dbLead.description,
       });
     }
 
-    console.log('Validated items count:', validatedItems.length);
+    let totalAmount = validatedItems.reduce((sum: number, item: any) => sum + item.price, 0);
+    let discountPercent = 0;
+    let couponId: string | null = null;
 
-    // Calculate total from DATABASE prices (not client-provided)
-    const totalAmount = validatedItems.reduce((sum: number, item: any) => sum + item.price, 0);
-    console.log('Total amount (from database):', totalAmount);
+    // Validate and apply coupon if provided
+    if (couponCode) {
+      const { data: coupon, error: cErr } = await supabaseClient
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .single();
+
+      if (cErr || !coupon) throw new Error('Cupom inválido');
+      if (!coupon.is_active) throw new Error('Cupom não está mais ativo');
+
+      const { count: totalUsages } = await supabaseClient
+        .from('coupon_usages')
+        .select('id', { count: 'exact', head: true })
+        .eq('coupon_id', coupon.id);
+
+      if ((totalUsages ?? 0) >= coupon.max_uses) throw new Error('Cupom atingiu o limite de usos');
+
+      const { data: prevUsage } = await supabaseClient
+        .from('coupon_usages')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('coupon_id', coupon.id)
+        .maybeSingle();
+
+      if (prevUsage) throw new Error('Você já utilizou este cupom');
+
+      discountPercent = coupon.discount_percent;
+      couponId = coupon.id;
+      const discountAmount = totalAmount * (discountPercent / 100);
+      totalAmount = Math.round((totalAmount - discountAmount) * 100) / 100;
+      console.log(`Coupon applied: ${discountPercent}% off. New total: ${totalAmount}`);
+    }
+
+    console.log('Total amount:', totalAmount);
 
     const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
     const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
-    
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    // Frontend URL onde o usuário deve ser redirecionado após o pagamento
     const FRONTEND_URL = 'https://leadbay.com.br';
 
-    if (!ASAAS_API_KEY) {
-      throw new Error('ASAAS_API_KEY não configurada');
-    }
-
-    // Validate customer data
+    if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
     if (!customerData || !customerData.name || !customerData.cpfCnpj || !customerData.email) {
       throw new Error('Dados do cliente incompletos');
     }
 
-    // Generate unique order ID to track this purchase
     const orderId = crypto.randomUUID();
-    console.log('Order ID:', orderId);
 
-    // Prepare checkout items using validated database data
-    const checkoutItems = validatedItems.map((item: any) => ({
-      name: item.name || `Lead - ${item.lead_id}`,
-      value: item.price,
-      description: item.description || `Compra de lead ID: ${item.lead_id}`,
-      quantity: 1
-    }));
+    // Distribute discount proportionally across items
+    const originalTotal = validatedItems.reduce((s: number, i: any) => s + i.price, 0);
+    const checkoutItems = validatedItems.map((item: any) => {
+      const itemPrice = discountPercent > 0
+        ? Math.round((item.price * (1 - discountPercent / 100)) * 100) / 100
+        : item.price;
+      return {
+        name: item.name || `Lead - ${item.lead_id}`,
+        value: itemPrice,
+        description: item.description || `Compra de lead ID: ${item.lead_id}`,
+        quantity: 1,
+      };
+    });
 
-    // Prepare billing types based on payment method
     const billingTypes = paymentMethod === 'PIX' ? ['PIX'] : ['CREDIT_CARD'];
-
-    // Create Asaas Checkout with webhook URL
-    console.log('Creating Asaas checkout...');
     const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
-    
-    const checkoutPayload = {
-      billingTypes: billingTypes,
+
+    const cleanedCustomerData = {
+      name: customerData.name.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''),
+      email: customerData.email,
+      cpfCnpj: customerData.cpfCnpj.replace(/\D/g, ''),
+      phone: customerData.phone.replace(/\D/g, ''),
+      address: customerData.address,
+      addressNumber: customerData.addressNumber,
+      complement: customerData.complement || '',
+      postalCode: customerData.postalCode.replace(/\D/g, ''),
+      province: customerData.province,
+      city: customerData.city,
+    };
+
+    const finalPayload = {
+      billingTypes,
       chargeTypes: ['DETACHED'],
       minutesToExpire: 60,
-      externalReference: orderId, // Link order ID to Asaas
+      externalReference: orderId,
       items: checkoutItems,
       callback: {
         successUrl: `${FRONTEND_URL}/checkout-success`,
         errorUrl: `${FRONTEND_URL}/checkout-error`,
         expiredUrl: `${FRONTEND_URL}/checkout-expired`,
-        cancelUrl: `${FRONTEND_URL}/checkout-error`
+        cancelUrl: `${FRONTEND_URL}/checkout-error`,
       },
-      webhookUrl: webhookUrl,
-      customerData: {
-        name: customerData.name,
-        cpfCnpj: customerData.cpfCnpj,
-        email: customerData.email,
-        phone: customerData.phone,
-        address: customerData.address,
-        addressNumber: customerData.addressNumber,
-        complement: customerData.complement || '',
-        postalCode: customerData.postalCode,
-        province: customerData.province,
-        city: customerData.city
-      }
-    };
-
-    // Clean customer data before sending to Asaas
-    const cleanedCustomerData = {
-      ...checkoutPayload.customerData,
-      name: checkoutPayload.customerData.name.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''),
-      phone: checkoutPayload.customerData.phone.replace(/\D/g, ''),
-      cpfCnpj: checkoutPayload.customerData.cpfCnpj.replace(/\D/g, ''),
-      postalCode: checkoutPayload.customerData.postalCode.replace(/\D/g, ''),
-    };
-
-    const finalPayload = {
-      ...checkoutPayload,
+      webhookUrl,
       customerData: cleanedCustomerData,
     };
-
-    console.log('Sending checkout request to Asaas...');
 
     const checkoutResponse = await fetch(`${ASAAS_BASE_URL}/checkouts`, {
       method: 'POST',
@@ -191,65 +175,52 @@ serve(async (req) => {
     });
 
     if (!checkoutResponse.ok) {
-      // Log error details server-side only (don't expose to client)
       const errorData = await checkoutResponse.text();
-      console.error('Asaas checkout creation failed - Status:', checkoutResponse.status);
-      console.error('Asaas error (server-side only):', errorData);
-      // Sanitized error message to avoid exposing customer PII
+      console.error('Asaas checkout failed:', checkoutResponse.status, errorData);
       throw new Error('Falha ao criar checkout. Por favor, verifique seus dados e tente novamente.');
     }
 
     const checkoutData = await checkoutResponse.json();
-    console.log('Checkout created successfully!');
-    console.log('Checkout ID:', checkoutData.id);
+    console.log('Checkout created:', checkoutData.id);
 
-    // Save purchase records in database with PENDING status, order ID and checkout ID
-    // Use validated items with DATABASE prices
-    console.log('Saving purchase records with order ID:', orderId);
+    // Save purchase records
     for (const item of validatedItems) {
-      const { error: purchaseError } = await supabaseClient
-        .from('purchases')
-        .insert({
-          user_id: user.id,
-          lead_id: item.lead_id,
-          amount: item.price, // Use database-validated price
-          asaas_payment_id: orderId, // Use order ID for webhook matching
-          asaas_checkout_id: checkoutData.id, // Save checkout ID for payment matching
-          status: 'PENDING',
-        });
+      const itemAmount = discountPercent > 0
+        ? Math.round((item.price * (1 - discountPercent / 100)) * 100) / 100
+        : item.price;
 
-      if (purchaseError) {
-        console.error('Error creating purchase record:', purchaseError);
-      }
+      await supabaseClient.from('purchases').insert({
+        user_id: user.id,
+        lead_id: item.lead_id,
+        amount: itemAmount,
+        asaas_payment_id: orderId,
+        asaas_checkout_id: checkoutData.id,
+        status: 'PENDING',
+      });
     }
 
-    console.log('=== Checkout creation completed ===');
+    // Register coupon usage
+    if (couponId) {
+      await supabaseClient.from('coupon_usages').insert({
+        coupon_id: couponId,
+        user_id: user.id,
+      });
+      console.log('Coupon usage registered');
+    }
 
-    // Return checkout link for redirect (Asaas uses 'link' not 'url')
     return new Response(
       JSON.stringify({
         success: true,
         checkoutUrl: checkoutData.link || checkoutData.url,
         checkoutId: checkoutData.id,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error: any) {
-    console.error('=== Error in create-payment function ===');
-    console.error('Error:', error.message);
-    
+    console.error('Error in create-payment:', error.message);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: 'Verifique os logs para mais informações'
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: error.message, details: 'Verifique os logs para mais informações' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
