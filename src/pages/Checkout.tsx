@@ -463,6 +463,44 @@ export default function Checkout() {
         </Card>
         )}
 
+        {/* Coupon Section */}
+        <Card className="mb-6 border-dashed border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Percent className="h-5 w-5 text-primary" />
+              Cupom de Desconto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {appliedCoupon ? (
+              <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Cupom <strong>{appliedCoupon.code}</strong> aplicado — {appliedCoupon.discount_percent}% de desconto!</span>
+                <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}>
+                  Remover
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Possui um cupom de desconto? Insira o código abaixo.
+                </p>
+                <div className="flex gap-3">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="EX: DESCONTO20"
+                    className="flex-1"
+                  />
+                  <Button onClick={handleCouponValidate} disabled={couponLoading} variant="outline">
+                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Aplicar'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Voucher Success Dialog */}
         <Dialog open={voucherSuccess} onOpenChange={() => {}}>
           <DialogContent className="text-center max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
