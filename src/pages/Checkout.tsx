@@ -61,6 +61,10 @@ export default function Checkout() {
   const [voucherSuccess, setVoucherSuccess] = useState(false);
   const [voucherRedeemed, setVoucherRedeemed] = useState(false);
   const [selectedVoucherLeadId, setSelectedVoucherLeadId] = useState('');
+  
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_percent: number } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
