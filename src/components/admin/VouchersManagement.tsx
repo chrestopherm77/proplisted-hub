@@ -7,14 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Ticket, ChevronDown, ChevronUp, Loader2, Percent } from 'lucide-react';
+import { Plus, Ticket, ChevronDown, ChevronUp, Loader2, Percent, Clock } from 'lucide-react';
 
 interface Voucher {
   id: string;
   code: string;
   is_active: boolean;
   max_uses: number;
+  max_uses_per_user: number;
+  expires_at: string | null;
   created_at: string;
   redemption_count?: number;
 }
@@ -25,6 +28,8 @@ interface Coupon {
   discount_percent: number;
   is_active: boolean;
   max_uses: number;
+  max_uses_per_user: number;
+  expires_at: string | null;
   created_at: string;
   usage_count?: number;
 }
@@ -45,12 +50,52 @@ interface CouponUsage {
   user_name?: string;
 }
 
+const EXPIRATION_OPTIONS = [
+  { value: 'none', label: 'Sem expiração' },
+  { value: '1h', label: '1 hora' },
+  { value: '6h', label: '6 horas' },
+  { value: '12h', label: '12 horas' },
+  { value: '1d', label: '1 dia' },
+  { value: '3d', label: '3 dias' },
+  { value: '7d', label: '7 dias' },
+  { value: '15d', label: '15 dias' },
+  { value: '30d', label: '30 dias' },
+  { value: '60d', label: '60 dias' },
+  { value: '90d', label: '90 dias' },
+];
+
+function getExpiresAt(option: string): string | null {
+  if (option === 'none') return null;
+  const now = new Date();
+  const match = option.match(/^(\d+)(h|d)$/);
+  if (!match) return null;
+  const amount = parseInt(match[1]);
+  const unit = match[2];
+  if (unit === 'h') now.setHours(now.getHours() + amount);
+  else now.setDate(now.getDate() + amount);
+  return now.toISOString();
+}
+
+function formatExpiration(expiresAt: string | null): string {
+  if (!expiresAt) return 'Sem expiração';
+  const date = new Date(expiresAt);
+  if (date < new Date()) return 'Expirado';
+  return `Expira em ${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function isExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
 export function VouchersManagement() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCode, setNewCode] = useState('');
   const [newMaxUses, setNewMaxUses] = useState(1);
+  const [newMaxUsesPerUser, setNewMaxUsesPerUser] = useState(1);
+  const [newExpiration, setNewExpiration] = useState('none');
   const [newType, setNewType] = useState<'voucher' | 'coupon'>('voucher');
   const [newDiscountPercent, setNewDiscountPercent] = useState(10);
   const [creating, setCreating] = useState(false);
@@ -130,10 +175,14 @@ export function VouchersManagement() {
 
     setCreating(true);
     try {
+      const expiresAt = getExpiresAt(newExpiration);
+
       if (newType === 'voucher') {
         const { error } = await supabase.from('vouchers').insert({
           code: newCode.trim().toUpperCase(),
           max_uses: newMaxUses,
+          max_uses_per_user: newMaxUsesPerUser,
+          expires_at: expiresAt,
         });
         if (error) {
           if (error.code === '23505') {
@@ -150,6 +199,8 @@ export function VouchersManagement() {
           code: newCode.trim().toUpperCase(),
           discount_percent: newDiscountPercent,
           max_uses: newMaxUses,
+          max_uses_per_user: newMaxUsesPerUser,
+          expires_at: expiresAt,
         });
         if (error) {
           if (error.code === '23505') {
@@ -162,7 +213,9 @@ export function VouchersManagement() {
       toast({ title: `${newType === 'voucher' ? 'Voucher' : 'Cupom'} criado com sucesso!` });
       setNewCode('');
       setNewMaxUses(1);
+      setNewMaxUsesPerUser(1);
       setNewDiscountPercent(10);
+      setNewExpiration('none');
       fetchAll();
     } catch (error) {
       console.error('Error creating:', error);
@@ -288,8 +341,8 @@ export function VouchersManagement() {
             </RadioGroup>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
               <Label htmlFor="code">Código</Label>
               <Input
                 id="code"
@@ -300,7 +353,7 @@ export function VouchersManagement() {
               />
             </div>
             {newType === 'coupon' && (
-              <div className="w-36">
+              <div>
                 <Label htmlFor="discountPercent">Desconto (%)</Label>
                 <Input
                   id="discountPercent"
@@ -313,8 +366,8 @@ export function VouchersManagement() {
                 />
               </div>
             )}
-            <div className="w-32">
-              <Label htmlFor="maxUses">Máx. Usos</Label>
+            <div>
+              <Label htmlFor="maxUses">Máx. Usos (Total)</Label>
               <Input
                 id="maxUses"
                 type="number"
@@ -324,11 +377,36 @@ export function VouchersManagement() {
                 className="mt-1"
               />
             </div>
-            <Button onClick={createItem} disabled={creating}>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Criar
-            </Button>
+            <div>
+              <Label htmlFor="maxUsesPerUser">Máx. Usos por Usuário</Label>
+              <Input
+                id="maxUsesPerUser"
+                type="number"
+                min={1}
+                value={newMaxUsesPerUser}
+                onChange={(e) => setNewMaxUsesPerUser(parseInt(e.target.value) || 1)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Expiração</Label>
+              <Select value={newExpiration} onValueChange={setNewExpiration}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPIRATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <Button onClick={createItem} disabled={creating}>
+            {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Criar {newType === 'voucher' ? 'Voucher' : 'Cupom'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -351,11 +429,14 @@ export function VouchersManagement() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <code className="text-lg font-bold bg-muted px-3 py-1 rounded">{voucher.code}</code>
                       <Badge variant="outline">Voucher</Badge>
-                      <Badge variant={voucher.is_active ? 'default' : 'secondary'}>
-                        {voucher.is_active ? 'Ativo' : 'Inativo'}
+                      <Badge variant={voucher.is_active && !isExpired(voucher.expires_at) ? 'default' : 'secondary'}>
+                        {isExpired(voucher.expires_at) ? 'Expirado' : voucher.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
                         {voucher.redemption_count}/{voucher.max_uses} usos
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        (máx {voucher.max_uses_per_user}/usuário)
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -365,9 +446,15 @@ export function VouchersManagement() {
                       </Button>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Criado em {new Date(voucher.created_at).toLocaleDateString('pt-BR')}
-                  </p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Criado em {new Date(voucher.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatExpiration(voucher.expires_at)}
+                    </p>
+                  </div>
                   {expandedVoucher === voucher.id && (
                     <div className="mt-4 border-t pt-3">
                       {loadingRedemptions === voucher.id ? (
@@ -419,11 +506,14 @@ export function VouchersManagement() {
                       <Badge variant="outline" className="text-primary border-primary">
                         Cupom {coupon.discount_percent}%
                       </Badge>
-                      <Badge variant={coupon.is_active ? 'default' : 'secondary'}>
-                        {coupon.is_active ? 'Ativo' : 'Inativo'}
+                      <Badge variant={coupon.is_active && !isExpired(coupon.expires_at) ? 'default' : 'secondary'}>
+                        {isExpired(coupon.expires_at) ? 'Expirado' : coupon.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
                         {coupon.usage_count}/{coupon.max_uses} usos
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        (máx {coupon.max_uses_per_user}/usuário)
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -433,9 +523,15 @@ export function VouchersManagement() {
                       </Button>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Criado em {new Date(coupon.created_at).toLocaleDateString('pt-BR')}
-                  </p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Criado em {new Date(coupon.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatExpiration(coupon.expires_at)}
+                    </p>
+                  </div>
                   {expandedCoupon === coupon.id && (
                     <div className="mt-4 border-t pt-3">
                       {loadingCouponUsages === coupon.id ? (

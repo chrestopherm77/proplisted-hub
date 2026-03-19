@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify user
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -70,6 +69,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check expiration
+    if (voucher.expires_at && new Date(voucher.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: "Este voucher já expirou" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 2. Check total redemptions < max_uses
     const { count: totalRedemptions } = await admin
       .from("voucher_redemptions")
@@ -83,17 +90,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check if user already used THIS specific voucher
-    const { data: previousRedemption } = await admin
+    // 3. Check per-user usage limit
+    const { count: userRedemptions } = await admin
       .from("voucher_redemptions")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("voucher_id", voucher.id)
-      .maybeSingle();
+      .eq("voucher_id", voucher.id);
 
-    if (previousRedemption) {
+    const maxPerUser = voucher.max_uses_per_user ?? 1;
+    if ((userRedemptions ?? 0) >= maxPerUser) {
       return new Response(
-        JSON.stringify({ error: "Você já utilizou este voucher" }),
+        JSON.stringify({ error: "Você já atingiu o limite de usos deste voucher" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

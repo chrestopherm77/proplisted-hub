@@ -69,6 +69,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check expiration
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: "Este cupom já expirou" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check total usages < max_uses
     const { count: totalUsages } = await admin
       .from("coupon_usages")
@@ -82,17 +90,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user already used this coupon
-    const { data: previousUsage } = await admin
+    // Check per-user usage limit
+    const { count: userUsages } = await admin
       .from("coupon_usages")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("coupon_id", coupon.id)
-      .maybeSingle();
+      .eq("coupon_id", coupon.id);
 
-    if (previousUsage) {
+    const maxPerUser = coupon.max_uses_per_user ?? 1;
+    if ((userUsages ?? 0) >= maxPerUser) {
       return new Response(
-        JSON.stringify({ error: "Você já utilizou este cupom" }),
+        JSON.stringify({ error: "Você já atingiu o limite de usos deste cupom" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
