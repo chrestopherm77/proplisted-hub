@@ -1,82 +1,90 @@
 
 
-## Recuperacao de Carrinho Abandonado via WhatsApp
+## Sistema de Cupom de Desconto
 
-### O que sera feito
+### Visão geral
 
-Quando um lead preencher nome e telefone mas nao finalizar o cadastro, o sistema envia automaticamente uma mensagem no WhatsApp 10 minutos depois, com texto personalizado (nome, objetivo) e um link para retomar o formulario de onde parou.
+Criar cupons de desconto percentual que funcionam junto aos vouchers existentes. No admin, ao criar um novo código, o admin escolhe se é "Voucher" (lead grátis) ou "Cupom" (desconto %). No checkout, o usuário pode aplicar um cupom para reduzir o valor total antes de pagar.
 
-### Alteracoes
+### 1. Criar tabela `coupons` (migração)
 
-**1. Adicionar colunas na tabela `lp_partial_leads`** (migration)
+```sql
+CREATE TABLE public.coupons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
+  discount_percent integer NOT NULL CHECK (discount_percent > 0 AND discount_percent <= 100),
+  is_active boolean DEFAULT true,
+  max_uses integer DEFAULT 1,
+  created_at timestamptz DEFAULT now()
+);
 
-- `recovery_sent_at` (timestamptz, nullable) — marca quando a mensagem de recuperacao foi enviada (evita duplicatas)
-- `source_lp` (text, nullable) — identifica de qual LP veio (`/lp` ou `/lp-01`)
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
-**2. Criar edge function `recovery-abandoned-lead`**
+-- Admins gerenciam
+CREATE POLICY "Admins can manage coupons"
+  ON public.coupons FOR ALL
+  USING (has_role(auth.uid(), 'MASTER_ADMIN'));
 
-Funcao chamada periodicamente via cron (a cada 3 minutos). Ela:
-- Busca leads parciais onde: `completed = false`, `recovery_sent_at IS NULL`, `phone IS NOT NULL`, e `updated_at < NOW() - 10 min`
-- Para cada lead encontrado, traduz a `intention` (SELL→venda, BUY→compra, BUILD→construcao, RENT→aluguel)
-- Monta o link de retomada: `https://leadbay.com{source_lp}?resume={session_id}` (usando a LP de origem)
-- Envia mensagem via Mega API (POST sendMessage) com o texto personalizado
-- Marca `recovery_sent_at = NOW()` no registro
+-- Usuários autenticados podem ler cupons ativos
+CREATE POLICY "Authenticated can read active coupons"
+  ON public.coupons FOR SELECT TO authenticated
+  USING (is_active = true);
 
-Texto da mensagem:
-```
-Olá {nome}! Tudo bem? 😊
+-- Tabela de uso de cupons
+CREATE TABLE public.coupon_usages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  coupon_id uuid NOT NULL REFERENCES coupons(id),
+  user_id uuid NOT NULL,
+  used_at timestamptz DEFAULT now(),
+  UNIQUE(coupon_id, user_id)
+);
 
-Vimos que você não finalizou o cadastro na LeadBay em relação a sua busca por *{objetivo}*.
+ALTER TABLE public.coupon_usages ENABLE ROW LEVEL SECURITY;
 
-Vou enviar nosso link de cadastro novamente para encontrarmos a melhor solução para você:
+CREATE POLICY "Admins can manage coupon usages"
+  ON public.coupon_usages FOR ALL
+  USING (has_role(auth.uid(), 'MASTER_ADMIN'));
 
-👉 {link}
-```
+CREATE POLICY "Users can view own usages"
+  ON public.coupon_usages FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
 
-**3. Salvar `source_lp` no LeadFormWizard**
-
-- Adicionar prop `sourceLp` ao `LeadFormWizard` (default `/lp`)
-- Passar `/lp` no `LeadForm.tsx` e `/lp-01` no `LeadForm01.tsx`
-- Incluir `source_lp` no payload de insert/update do `lp_partial_leads`
-
-**4. Retomada do formulario (resume)**
-
-- No `LeadFormWizard`, ao montar, checar query param `?resume=SESSION_ID`
-- Se presente, criar uma edge function `get-partial-lead` que busca o partial lead pelo session_id e retorna o `form_data`, `current_step`, `step_index`
-- Preencher o `formData` com os dados salvos e posicionar no step correto
-- Atualizar o `sessionIdRef` para o session_id recebido (para continuar rastreando no mesmo registro)
-
-**5. Configurar cron job**
-
-- Habilitar extensoes `pg_cron` e `pg_net` (migration)
-- Criar job que chama a edge function `recovery-abandoned-lead` a cada 3 minutos
-
-**6. Registrar no config.toml**
-
-- `recovery-abandoned-lead` com `verify_jwt = false`
-- `get-partial-lead` com `verify_jwt = false`
-
-### Fluxo completo
-
-```text
-Lead preenche nome+telefone → partial lead salvo com source_lp
-         ↓ (nao finaliza)
-    10 min se passam
-         ↓
-  Cron dispara edge function
-         ↓
-  Busca leads incompletos > 10min
-         ↓
-  Envia WhatsApp via Mega API
-         ↓
-  Lead clica no link → /lp?resume=abc123
-         ↓
-  Wizard carrega dados salvos e posiciona no step correto
+CREATE POLICY "Users can insert own usages"
+  ON public.coupon_usages FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
 ```
 
-### Detalhes tecnicos
+### 2. Atualizar `VouchersManagement.tsx`
 
-- A edge function `get-partial-lead` usa service role key para buscar no banco (partial leads nao tem SELECT publico)
-- O cron roda a cada 3 minutos, mas so processa leads com `updated_at` mais velho que 10 minutos, garantindo que nao envia mensagem cedo demais
-- Limite de seguranca: processar no maximo 50 leads por execucao do cron para evitar timeout
+- Adicionar seletor "Tipo: Voucher / Cupom" no formulário de criação
+- Se "Cupom", mostrar campo de porcentagem de desconto (1-100%)
+- Listar cupons junto com vouchers, diferenciando por badge ("Voucher" vs "Cupom 20%")
+- Cupons mostram contagem de usos similar aos vouchers
+
+### 3. Criar edge function `validate-coupon`
+
+- Recebe `couponCode` no body
+- Valida: código existe, está ativo, não atingiu max_uses, usuário não usou ainda
+- Retorna `{ success: true, discount_percent: 20 }` sem consumir o uso (uso é registrado no pagamento)
+
+### 4. Atualizar `Checkout.tsx`
+
+- Adicionar seção "Cupom de Desconto" abaixo do voucher (campo + botão "Aplicar")
+- Ao validar, mostrar desconto aplicado no resumo (valor original riscado + valor com desconto)
+- Guardar `couponCode` e `discountPercent` no state
+- Enviar `couponCode` para `create-payment` ao finalizar
+
+### 5. Atualizar `create-payment` edge function
+
+- Receber `couponCode` opcional
+- Se presente: validar cupom no banco (existe, ativo, max_uses, não usado pelo usuário)
+- Aplicar desconto percentual ao total calculado do banco
+- Registrar uso na tabela `coupon_usages`
+- Enviar valor com desconto ao Asaas
+
+### Resultado
+
+- Admin cria vouchers (lead grátis) ou cupons (desconto %) na mesma tela
+- Usuário aplica cupom no checkout e vê o desconto refletido no total
+- Validação de segurança no servidor (preço sempre calculado no backend)
 
