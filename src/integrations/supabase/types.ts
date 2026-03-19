@@ -84,25 +84,31 @@ export type Database = {
           code: string
           created_at: string | null
           discount_percent: number
+          expires_at: string | null
           id: string
           is_active: boolean | null
           max_uses: number | null
+          max_uses_per_user: number | null
         }
         Insert: {
           code: string
           created_at?: string | null
           discount_percent: number
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          max_uses_per_user?: number | null
         }
         Update: {
           code?: string
           created_at?: string | null
           discount_percent?: number
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          max_uses_per_user?: number | null
         }
         Relationships: []
       }
@@ -602,23 +608,29 @@ export type Database = {
         Row: {
           code: string
           created_at: string | null
+          expires_at: string | null
           id: string
           is_active: boolean | null
           max_uses: number | null
+          max_uses_per_user: number | null
         }
         Insert: {
           code: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          max_uses_per_user?: number | null
         }
         Update: {
           code?: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          max_uses_per_user?: number | null
         }
         Relationships: []
       }
