@@ -96,9 +96,9 @@ export function LeadDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden p-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6">
-          <div className="flex items-center justify-between mb-2">
+      <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-5 pb-3">
+          <div className="flex items-center justify-between mb-1">
             <DialogTitle className="text-2xl">
               Lead #{lead.id.slice(0, 8).toUpperCase()}
             </DialogTitle>
@@ -110,7 +110,7 @@ export function LeadDetailsModal({
           </div>
           
           {/* Summary from description */}
-          <div className="pt-2 text-muted-foreground text-sm space-y-1">
+          <div className="pt-1 text-muted-foreground text-base space-y-1">
             {parseDescriptionToDisplay(lead.description)}
           </div>
         </DialogHeader>
@@ -119,8 +119,7 @@ export function LeadDetailsModal({
           <ScrollArea className="h-full">
             <div className="px-6">
               {hasFormData ? (
-                <div className="py-4 space-y-6">
-                  {/* Organized Sections (when available) */}
+                <div className="py-3 space-y-5">
                   {sections.length > 0 && (
                     <>
                       <div className="flex items-center gap-2 pb-2 border-b">
@@ -128,14 +127,14 @@ export function LeadDetailsModal({
                       </div>
                       
                       {sections.map((section, idx) => (
-                        <div key={idx} className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <div key={idx} className="space-y-2">
+                          <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
                             <span>{section.icon}</span>
                             {section.title}
                           </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
                             {section.fields.map((field, fieldIdx) => (
-                              <div key={fieldIdx} className="text-sm">
+                              <div key={fieldIdx} className="text-base">
                                 <span className="text-muted-foreground">{field.label}:</span>{' '}
                                 <span className="font-medium text-foreground">{field.value}</span>
                               </div>
@@ -146,18 +145,17 @@ export function LeadDetailsModal({
                     </>
                   )}
                   
-                  {/* Message when no form data could be extracted */}
                   {sections.length === 0 && (
-                    <div className="py-4">
-                      <p className="text-sm text-muted-foreground">
+                    <div className="py-3">
+                      <p className="text-base text-muted-foreground">
                         Nenhuma informação do formulário foi fornecida.
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="py-4">
-                  <p className="text-sm text-muted-foreground">
+                <div className="py-3">
+                  <p className="text-base text-muted-foreground">
                     Este lead foi criado sem formulário completo. Apenas o resumo está disponível.
                   </p>
                 </div>
@@ -166,44 +164,36 @@ export function LeadDetailsModal({
           </ScrollArea>
         </div>
 
-        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t space-y-4">
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Valor do Lead</p>
-              <p className="text-3xl font-bold text-primary">{formatPrice(lead.price)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground mb-1">Status</p>
-              <p className="text-sm font-medium">{lead.purchase_count} vendidos</p>
-            </div>
+        <div className="flex-shrink-0 px-6 py-3 border-t flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <p className="text-2xl font-bold text-primary">{formatPrice(lead.price)}</p>
+            <span className="text-sm text-muted-foreground">· {lead.purchase_count} vendidos</span>
           </div>
 
-          <DialogFooter className="gap-2">
-            {isPurchased ? (
-              <Button disabled className="w-full bg-green-600 hover:bg-green-600 text-white" size="lg">
-                ✓ Você já comprou este lead
-              </Button>
-            ) : isSoldOut ? (
-              <Button disabled className="w-full" variant="secondary" size="lg">
-                Esgotado
-              </Button>
-            ) : isInCart ? (
-              <Button
-                onClick={onRemoveFromCart}
-                variant="outline"
-                className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                size="lg"
-              >
-                <X className="mr-2 h-5 w-5" />
-                Remover do Carrinho
-              </Button>
-            ) : (
-              <Button onClick={onAddToCart} className="w-full" size="lg">
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                Adicionar ao Carrinho
-              </Button>
-            )}
-          </DialogFooter>
+          {isPurchased ? (
+            <Button disabled className="bg-green-600 hover:bg-green-600 text-white" size="lg">
+              ✓ Já comprado
+            </Button>
+          ) : isSoldOut ? (
+            <Button disabled variant="secondary" size="lg">
+              Esgotado
+            </Button>
+          ) : isInCart ? (
+            <Button
+              onClick={onRemoveFromCart}
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              size="lg"
+            >
+              <X className="mr-2 h-5 w-5" />
+              Remover
+            </Button>
+          ) : (
+            <Button onClick={onAddToCart} size="lg">
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Adicionar ao Carrinho
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
