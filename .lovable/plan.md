@@ -1,32 +1,38 @@
 
 
-## Correção: Tela branca quando navegador traduz automaticamente
+## Adicionar info de pagamento/cupom/voucher no Histórico de Compras
 
-### Problema
+### O que muda
 
-Quando o Google Chrome (ou outro navegador) tenta traduzir a página automaticamente, ele modifica nós de texto diretamente no DOM. O React espera controlar o DOM inteiro e, ao detectar que os nós foram alterados externamente, lança um erro e a tela fica branca (crash do React).
+Adicionar colunas `payment_method` e `coupon_code` na tabela `purchases` para registrar como cada compra foi feita. No painel admin, mostrar uma nova coluna "Forma" indicando: PIX, Cartão, Voucher ou Cupom (com código).
 
-### Solução
+### 1. Migração — adicionar colunas à tabela `purchases`
 
-Duas mudanças simples que resolvem o problema:
-
-**1. `index.html` — Desabilitar tradução automática**
-
-Adicionar `class="notranslate"` e `translate="no"` no `<html>`, além da meta tag do Google:
-```html
-<html lang="pt-BR" class="notranslate" translate="no">
-  <head>
-    <meta name="google" content="notranslate" />
+```sql
+ALTER TABLE public.purchases ADD COLUMN payment_method text;
+ALTER TABLE public.purchases ADD COLUMN coupon_code text;
 ```
-Isso instrui navegadores a não traduzir a página automaticamente (já que o conteúdo já está em português).
 
-Também corrigir o `lang="en"` para `lang="pt-BR"` — isso já reduz a chance do navegador oferecer tradução.
+### 2. Atualizar `create-payment` edge function
 
-**2. `src/main.tsx` — Error Boundary para evitar tela branca**
+- Ao inserir purchase, salvar `payment_method` (PIX/CREDIT_CARD) e `coupon_code` (se aplicado)
 
-Adicionar um Error Boundary no nível raiz que captura o crash do React e mostra uma mensagem amigável em vez de tela branca, com botão para recarregar a página.
+### 3. Atualizar `redeem-voucher` edge function
 
-### Resultado
-- Navegadores não tentarão traduzir automaticamente (conteúdo já é PT-BR)
-- Se por algum motivo o React crashar, o Error Boundary exibe mensagem em vez de tela branca
+- Ao inserir purchase de voucher, salvar `payment_method = 'VOUCHER'` e `coupon_code = voucherCode`
+
+### 4. Atualizar `PurchasesOverview.tsx`
+
+- Buscar `payment_method` e `coupon_code` na query
+- Adicionar coluna "Forma" na tabela com badges:
+  - `VOUCHER` → Badge "Voucher" (roxo) + código
+  - `PIX` → Badge "PIX" (verde)
+  - `CREDIT_CARD` → Badge "Cartão" (azul)
+  - Se `coupon_code` e não voucher → mostrar "Cupom: CÓDIGO"
+  - `null` (compras antigas) → "—"
+
+### 5. Cross-reference compras antigas (opcional)
+
+- Compras com `amount = 0` e existentes em `voucher_redemptions` → foram voucher
+- Demais compras antigas ficam sem info (exibem "—")
 
