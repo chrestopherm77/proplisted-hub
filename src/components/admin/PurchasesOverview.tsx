@@ -186,6 +186,7 @@ export function PurchasesOverview() {
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold whitespace-nowrap text-sm">{formatPrice(purchase.amount)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getPaymentBadge(purchase.payment_method, purchase.coupon_code)}</TableCell>
                   <TableCell className="whitespace-nowrap">{getStatusBadge(purchase.status)}</TableCell>
                 </TableRow>
               ))}
