@@ -42,6 +42,8 @@ export function PurchasesOverview() {
           status,
           purchased_at,
           user_id,
+          payment_method,
+          coupon_code,
           leads (
             name,
             description
