@@ -122,30 +122,33 @@ export function PurchasesOverview() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getPaymentBadge = (method: string | null, couponCode: string | null) => {
-    if (method === 'VOUCHER') {
-      return (
-        <div className="flex flex-col gap-0.5">
+  const getPaymentBadge = (purchase: Purchase) => {
+    const method = purchase.payment_method;
+    const couponCode = purchase.coupon_code;
+    const inferredMethod = method || (purchase.amount === 0 ? 'VOUCHER' : null);
+
+    if (!inferredMethod && !couponCode) {
+      return <span className="text-muted-foreground">—</span>;
+    }
+
+    return (
+      <div className="flex flex-col gap-0.5">
+        {inferredMethod === 'VOUCHER' && (
           <Badge className="bg-purple-600 text-white hover:bg-purple-700">Voucher</Badge>
-          {couponCode && <span className="text-xs text-muted-foreground">{couponCode}</span>}
-        </div>
-      );
-    }
-    if (method === 'PIX') {
-      return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">PIX</Badge>;
-    }
-    if (method === 'CREDIT_CARD') {
-      return <Badge className="bg-blue-600 text-white hover:bg-blue-700">Cartão</Badge>;
-    }
-    if (couponCode) {
-      return (
-        <div className="flex flex-col gap-0.5">
-          <Badge variant="secondary">Cupom</Badge>
-          <span className="text-xs text-muted-foreground">{couponCode}</span>
-        </div>
-      );
-    }
-    return <span className="text-muted-foreground">—</span>;
+        )}
+        {inferredMethod === 'PIX' && (
+          <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">PIX</Badge>
+        )}
+        {inferredMethod === 'CREDIT_CARD' && (
+          <Badge className="bg-blue-600 text-white hover:bg-blue-700">Cartão</Badge>
+        )}
+        {couponCode && (
+          <span className="text-xs text-muted-foreground">
+            {inferredMethod === 'VOUCHER' ? '' : 'Cupom: '}{couponCode}
+          </span>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
