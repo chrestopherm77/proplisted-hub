@@ -10,6 +10,8 @@ interface Purchase {
   amount: number;
   status: string;
   purchased_at: string;
+  payment_method: string | null;
+  coupon_code: string | null;
   lead: {
     name: string;
     description: string;

@@ -200,6 +200,8 @@ serve(async (req) => {
         asaas_payment_id: orderId,
         asaas_checkout_id: checkoutData.id,
         status: 'PENDING',
+        payment_method: paymentMethod === 'PIX' ? 'PIX' : 'CREDIT_CARD',
+        coupon_code: couponCode || null,
       });
     }
 
