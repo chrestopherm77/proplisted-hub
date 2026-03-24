@@ -166,6 +166,7 @@ export function PurchasesOverview() {
                 <TableHead className="whitespace-nowrap">Cliente</TableHead>
                 <TableHead className="whitespace-nowrap">Lead</TableHead>
                 <TableHead className="whitespace-nowrap">Valor</TableHead>
+                <TableHead className="whitespace-nowrap">Forma</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
               </TableRow>
             </TableHeader>
