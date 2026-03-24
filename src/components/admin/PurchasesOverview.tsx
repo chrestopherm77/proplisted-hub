@@ -71,6 +71,8 @@ export function PurchasesOverview() {
         amount: purchase.amount,
         status: purchase.status,
         purchased_at: purchase.purchased_at,
+        payment_method: purchase.payment_method,
+        coupon_code: purchase.coupon_code,
         lead: purchase.leads,
         user: {
           name: profilesMap.get(purchase.user_id)?.name || 'Usuário desconhecido',
