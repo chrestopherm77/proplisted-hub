@@ -156,6 +156,8 @@ Deno.serve(async (req) => {
       amount: 0,
       status: "PAID",
       payment_confirmed_at: new Date().toISOString(),
+      payment_method: "VOUCHER",
+      coupon_code: voucherCode.trim().toUpperCase(),
     });
 
     if (purchaseErr) {

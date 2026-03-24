@@ -477,9 +477,11 @@ export type Database = {
           asaas_checkout_id: string | null
           asaas_customer_id: string | null
           asaas_payment_id: string | null
+          coupon_code: string | null
           id: string
           lead_id: string
           payment_confirmed_at: string | null
+          payment_method: string | null
           purchased_at: string | null
           status: string | null
           user_id: string
@@ -489,9 +491,11 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
+          coupon_code?: string | null
           id?: string
           lead_id: string
           payment_confirmed_at?: string | null
+          payment_method?: string | null
           purchased_at?: string | null
           status?: string | null
           user_id: string
@@ -501,9 +505,11 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
+          coupon_code?: string | null
           id?: string
           lead_id?: string
           payment_confirmed_at?: string | null
+          payment_method?: string | null
           purchased_at?: string | null
           status?: string | null
           user_id?: string

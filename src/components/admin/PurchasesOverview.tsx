@@ -10,6 +10,8 @@ interface Purchase {
   amount: number;
   status: string;
   purchased_at: string;
+  payment_method: string | null;
+  coupon_code: string | null;
   lead: {
     name: string;
     description: string;
@@ -40,6 +42,8 @@ export function PurchasesOverview() {
           status,
           purchased_at,
           user_id,
+          payment_method,
+          coupon_code,
           leads (
             name,
             description
@@ -67,6 +71,8 @@ export function PurchasesOverview() {
         amount: purchase.amount,
         status: purchase.status,
         purchased_at: purchase.purchased_at,
+        payment_method: purchase.payment_method,
+        coupon_code: purchase.coupon_code,
         lead: purchase.leads,
         user: {
           name: profilesMap.get(purchase.user_id)?.name || 'Usuário desconhecido',
@@ -116,6 +122,32 @@ export function PurchasesOverview() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const getPaymentBadge = (method: string | null, couponCode: string | null) => {
+    if (method === 'VOUCHER') {
+      return (
+        <div className="flex flex-col gap-0.5">
+          <Badge className="bg-purple-600 text-white hover:bg-purple-700">Voucher</Badge>
+          {couponCode && <span className="text-xs text-muted-foreground">{couponCode}</span>}
+        </div>
+      );
+    }
+    if (method === 'PIX') {
+      return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">PIX</Badge>;
+    }
+    if (method === 'CREDIT_CARD') {
+      return <Badge className="bg-blue-600 text-white hover:bg-blue-700">Cartão</Badge>;
+    }
+    if (couponCode) {
+      return (
+        <div className="flex flex-col gap-0.5">
+          <Badge variant="secondary">Cupom</Badge>
+          <span className="text-xs text-muted-foreground">{couponCode}</span>
+        </div>
+      );
+    }
+    return <span className="text-muted-foreground">—</span>;
+  };
+
   if (loading) {
     return <div className="text-center py-12">Carregando compras...</div>;
   }
@@ -134,6 +166,7 @@ export function PurchasesOverview() {
                 <TableHead className="whitespace-nowrap">Cliente</TableHead>
                 <TableHead className="whitespace-nowrap">Lead</TableHead>
                 <TableHead className="whitespace-nowrap">Valor</TableHead>
+                <TableHead className="whitespace-nowrap">Forma</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -153,6 +186,7 @@ export function PurchasesOverview() {
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold whitespace-nowrap text-sm">{formatPrice(purchase.amount)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getPaymentBadge(purchase.payment_method, purchase.coupon_code)}</TableCell>
                   <TableCell className="whitespace-nowrap">{getStatusBadge(purchase.status)}</TableCell>
                 </TableRow>
               ))}
