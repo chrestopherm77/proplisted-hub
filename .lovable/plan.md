@@ -1,20 +1,32 @@
 
 
-## Melhorar Layout do Modal de Detalhes do Lead
+## Correção: Tela branca quando navegador traduz automaticamente
 
 ### Problema
-O modal atual usa `h-[85vh]` com muitos elementos fixos (header, footer com preço e botão), deixando pouco espaço para o conteúdo principal. O texto fica pequeno e precisa de muita rolagem.
+
+Quando o Google Chrome (ou outro navegador) tenta traduzir a página automaticamente, ele modifica nós de texto diretamente no DOM. O React espera controlar o DOM inteiro e, ao detectar que os nós foram alterados externamente, lança um erro e a tela fica branca (crash do React).
 
 ### Solução
 
-Alterar `src/components/marketplace/LeadDetailsModal.tsx`:
+Duas mudanças simples que resolvem o problema:
 
-1. **Aumentar o modal**: Usar `max-w-3xl` e `h-[90vh]` para dar mais espaço total
-2. **Aumentar tamanho dos textos**: Subir de `text-sm` para `text-base` nos campos de dados e descrição
-3. **Reduzir padding/espaçamento do footer**: Compactar a seção de preço e botão para liberar mais espaço ao conteúdo
-4. **Combinar preço e botão em linha**: Colocar valor e botão na mesma linha horizontal, removendo a caixa `bg-muted` grande
-5. **Aumentar espaçamento dos campos**: Usar `gap-3` em vez de `gap-2` nos campos para melhor legibilidade
-6. **Seções com fonte maior**: Títulos de seção `text-base` em vez de `text-sm`
+**1. `index.html` — Desabilitar tradução automática**
 
-Resultado: conteúdo mais visível, menos rolagem necessária, informações praticamente todas visíveis ao abrir.
+Adicionar `class="notranslate"` e `translate="no"` no `<html>`, além da meta tag do Google:
+```html
+<html lang="pt-BR" class="notranslate" translate="no">
+  <head>
+    <meta name="google" content="notranslate" />
+```
+Isso instrui navegadores a não traduzir a página automaticamente (já que o conteúdo já está em português).
+
+Também corrigir o `lang="en"` para `lang="pt-BR"` — isso já reduz a chance do navegador oferecer tradução.
+
+**2. `src/main.tsx` — Error Boundary para evitar tela branca**
+
+Adicionar um Error Boundary no nível raiz que captura o crash do React e mostra uma mensagem amigável em vez de tela branca, com botão para recarregar a página.
+
+### Resultado
+- Navegadores não tentarão traduzir automaticamente (conteúdo já é PT-BR)
+- Se por algum motivo o React crashar, o Error Boundary exibe mensagem em vez de tela branca
 
