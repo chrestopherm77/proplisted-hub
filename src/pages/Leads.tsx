@@ -19,6 +19,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   form_data?: any;
+  created_at?: string;
 }
 
 interface ParsedDescription {
