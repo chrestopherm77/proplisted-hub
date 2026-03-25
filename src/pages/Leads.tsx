@@ -644,7 +644,7 @@ export default function Leads() {
                     )}
                   </div>
                   
-                  {isAdmin && lead.created_at && (
+                  {isAdmin === true && lead.created_at && (
                     <p className="text-xs text-muted-foreground">
                       Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
                     </p>

@@ -106,7 +106,7 @@ export function LeadDetailsModal({
               <DialogTitle className="text-2xl">
                 Lead #{lead.id.slice(0, 8).toUpperCase()}
               </DialogTitle>
-              {isAdmin && lead.created_at && (
+              {isAdmin === true && lead.created_at && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
                 </p>
