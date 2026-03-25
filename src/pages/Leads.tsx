@@ -676,6 +676,7 @@ export default function Leads() {
           isInCart={selectedLead ? isInCart(selectedLead.id) : false}
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
           isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
+          isAdmin={isAdmin === true}
           onAddToCart={() => {
             if (selectedLead) {
               addToCart(selectedLead.id);
