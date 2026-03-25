@@ -129,6 +129,7 @@ export function UsersManagement() {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[150px]">Nome</TableHead>
+              <TableHead className="min-w-[100px]">Cadastro</TableHead>
               <TableHead className="min-w-[180px]">E-mail</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="min-w-[130px]">Telefone</TableHead>
@@ -138,13 +139,15 @@ export function UsersManagement() {
               <TableHead>UF/Cidade</TableHead>
               <TableHead>Bairro</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="min-w-[100px]">Cadastro</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.company_name || p.name}</TableCell>
+                <TableCell>
+                  {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
+                </TableCell>
                 <TableCell className="text-xs">{emailMap[p.id] || '-'}</TableCell>
                 <TableCell>{p.person_type === 'PJ' ? 'PJ' : 'PF'}</TableCell>
                 <TableCell>{p.phone}</TableCell>
@@ -164,9 +167,6 @@ export function UsersManagement() {
                       {p.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
                 </TableCell>
               </TableRow>
             ))}
