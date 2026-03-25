@@ -19,6 +19,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   form_data?: any;
+  created_at?: string;
 }
 
 interface ParsedDescription {
@@ -206,7 +207,7 @@ export default function Leads() {
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -240,7 +241,7 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active, form_data')
+        .select('id, description, price, purchase_count, max_purchases, is_active, form_data, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -643,6 +644,11 @@ export default function Leads() {
                     )}
                   </div>
                   
+                  {isAdmin && lead.created_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
@@ -670,6 +676,7 @@ export default function Leads() {
           isInCart={selectedLead ? isInCart(selectedLead.id) : false}
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
           isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
+          isAdmin={isAdmin === true}
           onAddToCart={() => {
             if (selectedLead) {
               addToCart(selectedLead.id);

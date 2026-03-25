@@ -14,6 +14,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   form_data?: any;
+  created_at?: string;
 }
 
 interface LeadDetailsModalProps {
@@ -23,6 +24,7 @@ interface LeadDetailsModalProps {
   isInCart: boolean;
   isSoldOut: boolean;
   isPurchased?: boolean;
+  isAdmin?: boolean;
   onAddToCart: () => void;
   onRemoveFromCart: () => void;
   formatPrice: (price: number) => string;
@@ -80,6 +82,7 @@ export function LeadDetailsModal({
   isInCart,
   isSoldOut,
   isPurchased = false,
+  isAdmin = false,
   onAddToCart,
   onRemoveFromCart,
   formatPrice,
@@ -99,9 +102,16 @@ export function LeadDetailsModal({
       <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="flex-shrink-0 px-6 pt-5 pb-3">
           <div className="flex items-center justify-between mb-1">
-            <DialogTitle className="text-2xl">
-              Lead #{lead.id.slice(0, 8).toUpperCase()}
-            </DialogTitle>
+            <div>
+              <DialogTitle className="text-2xl">
+                Lead #{lead.id.slice(0, 8).toUpperCase()}
+              </DialogTitle>
+              {isAdmin && lead.created_at && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+            </div>
             <Badge variant={isSoldOut ? 'destructive' : 'default'}>
               {isSoldOut
                 ? 'Esgotado'
