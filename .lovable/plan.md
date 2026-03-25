@@ -1,20 +1,24 @@
 
 
-## Mostrar forma de pagamento completa (método + cupom juntos)
+## Exibir data de cadastro do lead apenas para admins
 
-### Problema
-Atualmente o `getPaymentBadge` mostra OU o método OU o cupom, mas não os dois juntos. Se a pessoa pagou com PIX e usou cupom, só mostra "PIX" sem o código do cupom.
+### Situação atual
+- **Usuários (admin)**: A coluna "Cadastro" com `created_at` já existe em `UsersManagement.tsx` — está funcionando.
+- **Leads (marketplace)**: O `created_at` não é exibido em nenhum lugar. O select nem busca esse campo.
 
-### Alteração em `src/components/admin/PurchasesOverview.tsx`
+### Alterações
 
-Reescrever `getPaymentBadge` para mostrar **ambas** as informações quando existirem:
+**1. `src/pages/Leads.tsx`**
+- Adicionar `created_at` ao `select` da query de leads
+- Adicionar `created_at` à interface `Lead`
+- Usar o `isAdmin` do `useAuth()` (já disponível no hook)
+- No card do lead, se `isAdmin === true`, exibir a data de cadastro em texto pequeno discreto (ex: "Cadastrado em 15/03/2025")
 
-- **Método de pagamento** (PIX, Cartão, Voucher) → sempre exibido como badge colorido
-- **Cupom usado** → exibido abaixo do método como texto pequeno com o código
-- **Compras antigas sem info** → inferir: se `amount = 0` → "Voucher", senão → "—"
+**2. `src/components/marketplace/LeadDetailsModal.tsx`**
+- Adicionar `created_at` à interface `Lead`
+- Receber prop `isAdmin` para exibir a data no modal de detalhes também, apenas para admins
 
-Exemplo visual:
-- PIX + cupom DESCONTO20 → Badge "PIX" + texto "Cupom: DESCONTO20"
-- Voucher com código → Badge "Voucher" + texto com código
-- Cartão sem cupom → Badge "Cartão"
+### Resultado
+- Usuários comuns veem os cards normalmente, sem data
+- Admins veem uma linha extra com a data de cadastro do lead
 
