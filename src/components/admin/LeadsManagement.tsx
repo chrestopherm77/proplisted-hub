@@ -282,7 +282,14 @@ export function LeadsManagement() {
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                 <div className="flex-1">
                   <CardTitle className="text-base md:text-lg">{lead.name}</CardTitle>
-                  <CardDescription className="text-sm">{lead.phone}</CardDescription>
+                  <CardDescription className="text-sm">
+                    {lead.phone}
+                    {lead.created_at && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        • Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Badge variant={lead.is_active ? 'default' : 'secondary'} className="text-xs">
