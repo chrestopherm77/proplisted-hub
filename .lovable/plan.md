@@ -1,24 +1,21 @@
 
 
-## Exibir data de cadastro do lead apenas para admins
+## Tornar a data de cadastro mais visível
 
-### Situação atual
-- **Usuários (admin)**: A coluna "Cadastro" com `created_at` já existe em `UsersManagement.tsx` — está funcionando.
-- **Leads (marketplace)**: O `created_at` não é exibido em nenhum lugar. O select nem busca esse campo.
+### Problema
+A coluna "Cadastro" existe no código de `UsersManagement.tsx`, mas é a última de 11 colunas — fica escondida fora da tela, exigindo scroll horizontal. O usuário não consegue vê-la.
 
-### Alterações
+### Solução
 
-**1. `src/pages/Leads.tsx`**
-- Adicionar `created_at` ao `select` da query de leads
-- Adicionar `created_at` à interface `Lead`
-- Usar o `isAdmin` do `useAuth()` (já disponível no hook)
-- No card do lead, se `isAdmin === true`, exibir a data de cadastro em texto pequeno discreto (ex: "Cadastrado em 15/03/2025")
+**1. `src/components/admin/UsersManagement.tsx`**
+- Mover a coluna "Cadastro" para uma posição mais visível — logo após "Nome" (segunda coluna), antes de "E-mail"
+- Isso garante que a data de cadastro apareça sem precisar rolar
 
-**2. `src/components/marketplace/LeadDetailsModal.tsx`**
-- Adicionar `created_at` à interface `Lead`
-- Receber prop `isAdmin` para exibir a data no modal de detalhes também, apenas para admins
+**2. Verificação dos leads (marketplace)**
+- O código em `Leads.tsx` já exibe "Cadastrado em..." para admins nos cards e no modal
+- Confirmar que o `isAdmin` está retornando `true` corretamente — se não estiver logado como admin, a data não aparece (comportamento esperado)
 
 ### Resultado
-- Usuários comuns veem os cards normalmente, sem data
-- Admins veem uma linha extra com a data de cadastro do lead
+- Na aba Usuários do admin, a data de cadastro aparece logo na segunda coluna, sempre visível
+- Nos leads do marketplace, a data continua aparecendo apenas para admins
 
