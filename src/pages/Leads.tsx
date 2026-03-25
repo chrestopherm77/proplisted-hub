@@ -207,7 +207,7 @@ export default function Leads() {
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
