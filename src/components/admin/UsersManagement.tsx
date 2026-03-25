@@ -129,6 +129,7 @@ export function UsersManagement() {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[150px]">Nome</TableHead>
+              <TableHead className="min-w-[100px]">Cadastro</TableHead>
               <TableHead className="min-w-[180px]">E-mail</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="min-w-[130px]">Telefone</TableHead>
@@ -138,7 +139,6 @@ export function UsersManagement() {
               <TableHead>UF/Cidade</TableHead>
               <TableHead>Bairro</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="min-w-[100px]">Cadastro</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
