@@ -40,18 +40,12 @@ export const useAuth = () => {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'MASTER_ADMIN')
-        .maybeSingle();
-      
-      if (!error && data) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: userId,
+        _role: 'MASTER_ADMIN',
+      });
+
+      setIsAdmin(!error && data === true);
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
