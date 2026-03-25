@@ -644,6 +644,11 @@ export default function Leads() {
                     )}
                   </div>
                   
+                  {isAdmin && lead.created_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
