@@ -197,8 +197,8 @@ export function ContactStep({ data, updateData }: StepProps) {
   return (
     <>
       <StepContainer
-        title="Seus dados de contato"
-        subtitle="Preencha suas informações para que possamos entrar em contato"
+        title="Confirme que você é real"
+        subtitle="Verificação de número real para receber ofertas de imóveis da sua preferência por um de nossos corretores"
       >
         <div className="space-y-6 max-w-md mx-auto">
           {/* Name Input */}
