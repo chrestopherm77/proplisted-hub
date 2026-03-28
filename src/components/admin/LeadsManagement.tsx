@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 
@@ -20,6 +20,7 @@ interface Lead {
   purchase_count: number;
   max_purchases: number;
   is_active: boolean;
+  is_promotion: boolean;
   created_at: string | null;
 }
 
@@ -132,6 +133,29 @@ export function LeadsManagement() {
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar o status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const togglePromotion = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ is_promotion: !lead.is_promotion })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      toast({
+        title: !lead.is_promotion ? '🔥 Promoção ativada!' : 'Promoção removida',
+        description: `Lead ${!lead.is_promotion ? 'marcado como promoção' : 'removido da promoção'}`,
+      });
+      fetchLeads();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar a promoção',
         variant: 'destructive',
       });
     }
@@ -292,6 +316,11 @@ export function LeadsManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {lead.is_promotion && (
+                    <Badge className="text-xs animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent">
+                      🔥 Promoção
+                    </Badge>
+                  )}
                   <Badge variant={lead.is_active ? 'default' : 'secondary'} className="text-xs">
                     {lead.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
@@ -306,6 +335,15 @@ export function LeadsManagement() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <span className="text-base md:text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
                 <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    variant={lead.is_promotion ? "default" : "outline"}
+                    onClick={() => togglePromotion(lead)}
+                    className={`flex-1 sm:flex-none h-8 ${lead.is_promotion ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
+                    title={lead.is_promotion ? 'Remover promoção' : 'Marcar como promoção'}
+                  >
+                    <Flame className="h-3 w-3 md:h-4 md:w-4" />
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
