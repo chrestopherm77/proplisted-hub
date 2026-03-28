@@ -1,35 +1,35 @@
 
 
-## Plano: Badge "Promoção" com controle manual pelo admin + ordenação
+## Plano: Disparo de e-mail promocional para todos os corretores
 
 ### O que será feito
 
-1. **Adicionar coluna `is_promotion` na tabela `leads`** (boolean, default false) via migration
+Criar uma edge function temporária `send-promo-blast` que:
+1. Consulta todos os perfis ativos (`profiles` com `is_active = true` e `email` preenchido)
+2. Envia o e-mail promocional via Resend (já configurado no projeto)
+3. Respeita o rate limit do Resend (delay de 600ms entre envios)
+4. Retorna relatório de quantos e-mails foram enviados com sucesso/falha
 
-2. **Ordenar leads no marketplace**: leads com `is_promotion = true` aparecem primeiro, depois os demais por data
+### Conteúdo do e-mail
 
-3. **Badge visual "PROMOÇÃO"** nos cards do marketplace — badge piscando (animação pulse) em destaque
+HTML estilizado com a identidade visual do LeadBay contendo:
+- Saudação "Olá Corretor!"
+- Texto sobre liquidação de estoque
+- Destaque: "Leads a partir de R$5,00"
+- Validade: até 31/03/26
+- CTA com link para leadbay.com.br
+- Assinatura: Equipe comercial LeadBay
 
-4. **Toggle no painel admin** (aba Leads) para marcar/desmarcar leads como promoção
+### Como disparar
+
+Após o deploy, você invoca a function uma única vez via painel ou chamada direta. Ela processará todos os corretores automaticamente.
 
 ### Detalhes técnicos
 
-**Migration:**
-```sql
-ALTER TABLE public.leads ADD COLUMN is_promotion boolean DEFAULT false;
-```
-
-**Ordenação no marketplace (`src/pages/Leads.tsx`):**
-- Após filtrar, ordenar: `is_promotion DESC, created_at ASC` (promoções primeiro, mais antigos antes)
-
-**Badge piscante no card:**
-- Badge amarelo/laranja com texto "🔥 PROMOÇÃO" e classe `animate-pulse` do Tailwind
-
-**Admin (`src/components/admin/LeadsManagement.tsx`):**
-- Adicionar botão/toggle de promoção em cada card de lead
-
-### Arquivos modificados
-- `src/pages/Leads.tsx` — ordenação + badge no card
-- `src/components/admin/LeadsManagement.tsx` — toggle promoção
-- `src/components/marketplace/LeadDetailsModal.tsx` — badge no modal
+- **Nova edge function**: `supabase/functions/send-promo-blast/index.ts`
+- **Config**: `verify_jwt = false` (disparo manual único)
+- **Usa**: Resend SDK com `RESEND_API_KEY` já configurada
+- **Query**: `SELECT id, name, email FROM profiles WHERE is_active = true AND email IS NOT NULL`
+- **Rate limit**: 600ms delay entre cada envio
+- **From**: `LeadBay <noreply@leadbay.com.br>`
 
