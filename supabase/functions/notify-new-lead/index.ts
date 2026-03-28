@@ -205,9 +205,12 @@ const moveInDeadlineLabels: Record<string, string> = {
   "1_TO_3_MONTHS": "1 a 3 meses",
   FLEXIBLE: "Flexível",
   immediate: "Imediato",
+  immediately: "Imediatamente",
   up_to_1_month: "Até 1 mês",
+  up_to_30_days: "Até 30 dias",
   up_to_3_months: "Até 3 meses",
   "1_to_3_months": "1 a 3 meses",
+  more_than_3_months: "Mais de 3 meses",
   flexible: "Flexível",
 };
 
