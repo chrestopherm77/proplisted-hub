@@ -1,13 +1,22 @@
 
 
-## Alterar copy do ContactStep
+## Corrigir tradução de valores no e-mail de notificação de leads
 
-### Alteração única em `src/components/leadform/steps/ContactStep.tsx`
+### Problema
+Os e-mails enviados aos corretores mostram valores brutos em inglês (ex: `unknown`, `up_to_30_days`, `immediately`) em vez de traduções em português. Isso acontece porque os mapeamentos de tradução no edge function `notify-new-lead` não cobrem todos os valores que o formulário envia.
 
-O componente `ContactStep` é compartilhado por ambos os fluxos (`/lp` e `/lp-01`), então basta uma única mudança:
+### Valores faltando no edge function
 
-- **Título**: de `"Seus dados de contato"` → `"Confirme que você é real"`
-- **Subtítulo**: de `"Preencha suas informações para que possamos entrar em contato"` → `"Verificação de número real para receber ofertas de imóveis da sua preferência por um de nossos corretores"`
+| Mapa | Valores faltando |
+|------|-----------------|
+| `guaranteeLabels` | `capitalization` → "Título de capitalização", `unknown` → "Ainda não sei" |
+| `moveInDeadlineLabels` | `immediately` → "Imediatamente", `up_to_30_days` → "Até 30 dias", `more_than_3_months` → "Mais de 3 meses" |
+| `btsRentRangeLabels` | `up_to_30` → "Até R$ 30/m²", `undefined` → "Ainda não defini" |
+| `btsContractTermLabels` | `7_to_10_years` → "7 a 10 anos", `10_to_15_years` → "10 a 15 anos", `above_15_years` → "Acima de 15 anos", `undefined` → "Ainda não defini" |
 
-Localização no código: dentro do `<StepContainer>` (linha ~199).
+### Alteração
+
+**Arquivo:** `supabase/functions/notify-new-lead/index.ts`
+
+Adicionar as entradas faltantes em cada mapa de labels para que todos os valores do formulário sejam traduzidos corretamente. Após a edição, fazer deploy do edge function.
 
