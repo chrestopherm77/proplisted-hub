@@ -152,7 +152,9 @@ const guaranteeLabels: Record<string, string> = {
   deposit: "Caução",
   insurance: "Seguro fiança",
   title_capitalization: "Título de capitalização",
+  capitalization: "Título de capitalização",
   none: "Nenhuma",
+  unknown: "Ainda não sei",
 };
 
 const propertyReadyStatusLabels: Record<string, string> = {
@@ -173,10 +175,12 @@ const tradeOfferTypeLabels: Record<string, string> = {
 const btsRentRangeLabels: Record<string, string> = {
   up_to_300: "Até R$ 300/m²",
   UP_TO_300: "Até R$ 300/m²",
+  up_to_30: "Até R$ 30/m²",
   "50_to_80": "R$ 50 a 80/m²",
   "50_80": "R$ 50 a 80/m²",
   above_80: "Acima de R$ 80/m²",
   ABOVE_80: "Acima de R$ 80/m²",
+  undefined: "Ainda não defini",
 };
 
 const btsContractTermLabels: Record<string, string> = {
@@ -184,10 +188,14 @@ const btsContractTermLabels: Record<string, string> = {
   "5": "5 anos",
   "7_10_years": "7 a 10 anos",
   "7_10": "7 a 10 anos",
+  "7_to_10_years": "7 a 10 anos",
   "10_15_years": "10 a 15 anos",
   "10_15": "10 a 15 anos",
+  "10_to_15_years": "10 a 15 anos",
   "15_plus": "Mais de 15 anos",
   "+15": "Mais de 15 anos",
+  above_15_years: "Acima de 15 anos",
+  undefined: "Ainda não defini",
 };
 
 const moveInDeadlineLabels: Record<string, string> = {
@@ -197,9 +205,12 @@ const moveInDeadlineLabels: Record<string, string> = {
   "1_TO_3_MONTHS": "1 a 3 meses",
   FLEXIBLE: "Flexível",
   immediate: "Imediato",
+  immediately: "Imediatamente",
   up_to_1_month: "Até 1 mês",
+  up_to_30_days: "Até 30 dias",
   up_to_3_months: "Até 3 meses",
   "1_to_3_months": "1 a 3 meses",
+  more_than_3_months: "Mais de 3 meses",
   flexible: "Flexível",
 };
 
