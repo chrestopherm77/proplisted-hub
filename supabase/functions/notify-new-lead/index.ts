@@ -152,7 +152,9 @@ const guaranteeLabels: Record<string, string> = {
   deposit: "Caução",
   insurance: "Seguro fiança",
   title_capitalization: "Título de capitalização",
+  capitalization: "Título de capitalização",
   none: "Nenhuma",
+  unknown: "Ainda não sei",
 };
 
 const propertyReadyStatusLabels: Record<string, string> = {
