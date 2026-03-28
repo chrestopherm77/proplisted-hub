@@ -293,6 +293,11 @@ export function LeadsManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {lead.is_promotion && (
+                    <Badge className="text-xs animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent">
+                      🔥 Promoção
+                    </Badge>
+                  )}
                   <Badge variant={lead.is_active ? 'default' : 'secondary'} className="text-xs">
                     {lead.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
