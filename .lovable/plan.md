@@ -1,22 +1,35 @@
 
 
-## Corrigir tradução de valores no e-mail de notificação de leads
+## Plano: Badge "Promoção" com controle manual pelo admin + ordenação
 
-### Problema
-Os e-mails enviados aos corretores mostram valores brutos em inglês (ex: `unknown`, `up_to_30_days`, `immediately`) em vez de traduções em português. Isso acontece porque os mapeamentos de tradução no edge function `notify-new-lead` não cobrem todos os valores que o formulário envia.
+### O que será feito
 
-### Valores faltando no edge function
+1. **Adicionar coluna `is_promotion` na tabela `leads`** (boolean, default false) via migration
 
-| Mapa | Valores faltando |
-|------|-----------------|
-| `guaranteeLabels` | `capitalization` → "Título de capitalização", `unknown` → "Ainda não sei" |
-| `moveInDeadlineLabels` | `immediately` → "Imediatamente", `up_to_30_days` → "Até 30 dias", `more_than_3_months` → "Mais de 3 meses" |
-| `btsRentRangeLabels` | `up_to_30` → "Até R$ 30/m²", `undefined` → "Ainda não defini" |
-| `btsContractTermLabels` | `7_to_10_years` → "7 a 10 anos", `10_to_15_years` → "10 a 15 anos", `above_15_years` → "Acima de 15 anos", `undefined` → "Ainda não defini" |
+2. **Ordenar leads no marketplace**: leads com `is_promotion = true` aparecem primeiro, depois os demais por data
 
-### Alteração
+3. **Badge visual "PROMOÇÃO"** nos cards do marketplace — badge piscando (animação pulse) em destaque
 
-**Arquivo:** `supabase/functions/notify-new-lead/index.ts`
+4. **Toggle no painel admin** (aba Leads) para marcar/desmarcar leads como promoção
 
-Adicionar as entradas faltantes em cada mapa de labels para que todos os valores do formulário sejam traduzidos corretamente. Após a edição, fazer deploy do edge function.
+### Detalhes técnicos
+
+**Migration:**
+```sql
+ALTER TABLE public.leads ADD COLUMN is_promotion boolean DEFAULT false;
+```
+
+**Ordenação no marketplace (`src/pages/Leads.tsx`):**
+- Após filtrar, ordenar: `is_promotion DESC, created_at ASC` (promoções primeiro, mais antigos antes)
+
+**Badge piscante no card:**
+- Badge amarelo/laranja com texto "🔥 PROMOÇÃO" e classe `animate-pulse` do Tailwind
+
+**Admin (`src/components/admin/LeadsManagement.tsx`):**
+- Adicionar botão/toggle de promoção em cada card de lead
+
+### Arquivos modificados
+- `src/pages/Leads.tsx` — ordenação + badge no card
+- `src/components/admin/LeadsManagement.tsx` — toggle promoção
+- `src/components/marketplace/LeadDetailsModal.tsx` — badge no modal
 
