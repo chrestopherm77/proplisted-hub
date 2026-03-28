@@ -314,6 +314,15 @@ export function LeadsManagement() {
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     size="sm"
+                    variant={lead.is_promotion ? "default" : "outline"}
+                    onClick={() => togglePromotion(lead)}
+                    className={`flex-1 sm:flex-none h-8 ${lead.is_promotion ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
+                    title={lead.is_promotion ? 'Remover promoção' : 'Marcar como promoção'}
+                  >
+                    <Flame className="h-3 w-3 md:h-4 md:w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => toggleLeadStatus(lead)}
                     className="flex-1 sm:flex-none h-8"

@@ -613,10 +613,15 @@ export default function Leads() {
             return (
               <Card 
                 key={lead.id} 
-                className="flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40"
+                className={`flex flex-col hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/40 ${lead.is_promotion ? 'ring-2 ring-orange-400/60' : ''}`}
                 onClick={() => openLeadDetails(lead)}
               >
                 <CardHeader className="pb-2">
+                  {lead.is_promotion && (
+                    <Badge className="w-fit mb-1 animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-xs">
+                      🔥 PROMOÇÃO
+                    </Badge>
+                  )}
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
