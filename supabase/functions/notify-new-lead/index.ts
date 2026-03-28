@@ -188,10 +188,14 @@ const btsContractTermLabels: Record<string, string> = {
   "5": "5 anos",
   "7_10_years": "7 a 10 anos",
   "7_10": "7 a 10 anos",
+  "7_to_10_years": "7 a 10 anos",
   "10_15_years": "10 a 15 anos",
   "10_15": "10 a 15 anos",
+  "10_to_15_years": "10 a 15 anos",
   "15_plus": "Mais de 15 anos",
   "+15": "Mais de 15 anos",
+  above_15_years: "Acima de 15 anos",
+  undefined: "Ainda não defini",
 };
 
 const moveInDeadlineLabels: Record<string, string> = {
