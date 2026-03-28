@@ -175,10 +175,12 @@ const tradeOfferTypeLabels: Record<string, string> = {
 const btsRentRangeLabels: Record<string, string> = {
   up_to_300: "Até R$ 300/m²",
   UP_TO_300: "Até R$ 300/m²",
+  up_to_30: "Até R$ 30/m²",
   "50_to_80": "R$ 50 a 80/m²",
   "50_80": "R$ 50 a 80/m²",
   above_80: "Acima de R$ 80/m²",
   ABOVE_80: "Acima de R$ 80/m²",
+  undefined: "Ainda não defini",
 };
 
 const btsContractTermLabels: Record<string, string> = {
