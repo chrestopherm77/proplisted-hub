@@ -103,15 +103,22 @@ export function LeadDetailsModal({
       <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="flex-shrink-0 px-6 pt-5 pb-3">
           <div className="flex items-center justify-between mb-1">
-            <div>
-              <DialogTitle className="text-2xl">
-                Lead #{lead.id.slice(0, 8).toUpperCase()}
-              </DialogTitle>
-              {isAdmin === true && lead.created_at && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
-                </p>
+            <div className="flex items-center gap-2">
+              {lead.is_promotion && (
+                <Badge className="animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-sm">
+                  🔥 PROMOÇÃO
+                </Badge>
               )}
+              <div>
+                <DialogTitle className="text-2xl">
+                  Lead #{lead.id.slice(0, 8).toUpperCase()}
+                </DialogTitle>
+                {isAdmin === true && lead.created_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
+              </div>
             </div>
             <Badge variant={isSoldOut ? 'destructive' : 'default'}>
               {isSoldOut

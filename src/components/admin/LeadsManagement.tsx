@@ -138,6 +138,29 @@ export function LeadsManagement() {
     }
   };
 
+  const togglePromotion = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ is_promotion: !lead.is_promotion })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      toast({
+        title: !lead.is_promotion ? '🔥 Promoção ativada!' : 'Promoção removida',
+        description: `Lead ${!lead.is_promotion ? 'marcado como promoção' : 'removido da promoção'}`,
+      });
+      fetchLeads();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar a promoção',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const deleteLead = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este lead?')) return;
 
