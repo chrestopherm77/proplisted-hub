@@ -242,9 +242,10 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active, form_data, created_at')
+        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, form_data, created_at')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('is_promotion', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setLeads(data || []);
