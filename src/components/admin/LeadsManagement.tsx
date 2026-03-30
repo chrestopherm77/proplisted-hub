@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Flame } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 
@@ -29,6 +30,7 @@ export function LeadsManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [periodFilter, setPeriodFilter] = useState('all');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -205,6 +207,38 @@ export function LeadsManagement() {
     }).format(price);
   };
 
+  const filteredLeads = useMemo(() => {
+    if (periodFilter === 'all') return leads;
+    const days = parseInt(periodFilter);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return leads.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
+  }, [leads, periodFilter]);
+
+  const exportLeadsCsv = () => {
+    const headers = ['Nome', 'Telefone', 'Descrição', 'Preço', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
+    const rows = filteredLeads.map((l) => [
+      l.name,
+      l.phone,
+      l.description,
+      l.price.toFixed(2).replace('.', ','),
+      l.purchase_count,
+      l.max_purchases,
+      l.is_promotion ? 'Sim' : 'Não',
+      l.is_active ? 'Ativo' : 'Inativo',
+      l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '',
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `${filteredLeads.length} leads exportados` });
+  };
+
   if (loading) {
     return <div className="text-center py-12">Carregando leads...</div>;
   }
@@ -215,6 +249,23 @@ export function LeadsManagement() {
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h2 className="text-xl md:text-2xl font-bold">Gerenciar Leads</h2>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="15">Últimos 15 dias</SelectItem>
+              <SelectItem value="20">Últimos 20 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={exportLeadsCsv} disabled={filteredLeads.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
@@ -297,10 +348,11 @@ export function LeadsManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-3 md:gap-4">
-        {leads.map((lead) => (
+        {filteredLeads.map((lead) => (
           <Card key={lead.id}>
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
@@ -375,7 +427,7 @@ export function LeadsManagement() {
         ))}
       </div>
 
-      {leads.length === 0 && (
+      {filteredLeads.length === 0 && (
         <div className="text-center py-8 md:py-12">
           <p className="text-sm md:text-base text-muted-foreground">Nenhum lead cadastrado</p>
         </div>

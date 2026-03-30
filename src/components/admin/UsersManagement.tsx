@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
@@ -108,20 +109,53 @@ export function UsersManagement() {
     );
   });
 
+  const exportCsv = () => {
+    const headers = ['Nome', 'E-mail', 'Telefone', 'Tipo', 'CPF/CNPJ', 'Profissão', 'Registro', 'UF', 'Cidade', 'Bairro', 'Status', 'Data Cadastro'];
+    const rows = filtered.map((p) => [
+      p.company_name || p.name,
+      emailMap[p.id] || '',
+      p.phone,
+      p.person_type === 'PJ' ? 'PJ' : 'PF',
+      p.person_type === 'PJ' ? (p.cnpj || '') : (p.cpf || ''),
+      professionLabels[p.profession || ''] || p.profession || '',
+      getRegistration(p),
+      p.address_uf || '',
+      p.address_city || '',
+      p.address_neighborhood || '',
+      p.is_active ? 'Ativo' : 'Inativo',
+      p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `corretores_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `${filtered.length} corretores exportados` });
+  };
+
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">Carregando usuários...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome, e-mail ou telefone..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, e-mail ou telefone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
+          <Download className="mr-2 h-4 w-4" />
+          Exportar CSV
+        </Button>
       </div>
 
       <div className="overflow-auto">
