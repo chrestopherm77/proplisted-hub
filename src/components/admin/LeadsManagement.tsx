@@ -249,6 +249,23 @@ export function LeadsManagement() {
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h2 className="text-xl md:text-2xl font-bold">Gerenciar Leads</h2>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="15">Últimos 15 dias</SelectItem>
+              <SelectItem value="20">Últimos 20 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={exportLeadsCsv} disabled={filteredLeads.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
