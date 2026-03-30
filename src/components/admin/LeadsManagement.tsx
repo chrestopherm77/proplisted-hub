@@ -352,7 +352,7 @@ export function LeadsManagement() {
       </div>
 
       <div className="grid gap-3 md:gap-4">
-        {leads.map((lead) => (
+        {filteredLeads.map((lead) => (
           <Card key={lead.id}>
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
