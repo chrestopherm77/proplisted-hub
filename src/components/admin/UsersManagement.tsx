@@ -109,6 +109,33 @@ export function UsersManagement() {
     );
   });
 
+  const exportCsv = () => {
+    const headers = ['Nome', 'E-mail', 'Telefone', 'Tipo', 'CPF/CNPJ', 'Profissão', 'Registro', 'UF', 'Cidade', 'Bairro', 'Status', 'Data Cadastro'];
+    const rows = filtered.map((p) => [
+      p.company_name || p.name,
+      emailMap[p.id] || '',
+      p.phone,
+      p.person_type === 'PJ' ? 'PJ' : 'PF',
+      p.person_type === 'PJ' ? (p.cnpj || '') : (p.cpf || ''),
+      professionLabels[p.profession || ''] || p.profession || '',
+      getRegistration(p),
+      p.address_uf || '',
+      p.address_city || '',
+      p.address_neighborhood || '',
+      p.is_active ? 'Ativo' : 'Inativo',
+      p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `corretores_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `${filtered.length} corretores exportados` });
+  };
+
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">Carregando usuários...</div>;
   }
