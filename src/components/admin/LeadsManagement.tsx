@@ -207,6 +207,38 @@ export function LeadsManagement() {
     }).format(price);
   };
 
+  const filteredLeads = useMemo(() => {
+    if (periodFilter === 'all') return leads;
+    const days = parseInt(periodFilter);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return leads.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
+  }, [leads, periodFilter]);
+
+  const exportLeadsCsv = () => {
+    const headers = ['Nome', 'Telefone', 'Descrição', 'Preço', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
+    const rows = filteredLeads.map((l) => [
+      l.name,
+      l.phone,
+      l.description,
+      l.price.toFixed(2).replace('.', ','),
+      l.purchase_count,
+      l.max_purchases,
+      l.is_promotion ? 'Sim' : 'Não',
+      l.is_active ? 'Ativo' : 'Inativo',
+      l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '',
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `${filteredLeads.length} leads exportados` });
+  };
+
   if (loading) {
     return <div className="text-center py-12">Carregando leads...</div>;
   }
