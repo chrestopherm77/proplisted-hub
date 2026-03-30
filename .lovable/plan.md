@@ -1,35 +1,28 @@
 
 
-## Plano: Disparo de e-mail promocional para todos os corretores
+## Plano: Download CSV de Corretores e Leads com filtro de data
 
-### O que será feito
+### 1. Botão "Exportar CSV" na aba Usuários (`UsersManagement.tsx`)
 
-Criar uma edge function temporária `send-promo-blast` que:
-1. Consulta todos os perfis ativos (`profiles` com `is_active = true` e `email` preenchido)
-2. Envia o e-mail promocional via Resend (já configurado no projeto)
-3. Respeita o rate limit do Resend (delay de 600ms entre envios)
-4. Retorna relatório de quantos e-mails foram enviados com sucesso/falha
+- Adicionar botão "Exportar CSV" ao lado do campo de busca
+- Gera CSV com colunas: Nome, E-mail, Telefone, Tipo (PF/PJ), CPF/CNPJ, Profissão, Registro, UF, Cidade, Bairro, Status, Data Cadastro
+- Exporta os dados filtrados (respeitando a busca atual)
+- Download automático no navegador via `Blob` + `URL.createObjectURL`
 
-### Conteúdo do e-mail
+### 2. Filtro de período + Botão "Exportar CSV" na aba Leads (`LeadsManagement.tsx`)
 
-HTML estilizado com a identidade visual do LeadBay contendo:
-- Saudação "Olá Corretor!"
-- Texto sobre liquidação de estoque
-- Destaque: "Leads a partir de R$5,00"
-- Validade: até 31/03/26
-- CTA com link para leadbay.com.br
-- Assinatura: Equipe comercial LeadBay
-
-### Como disparar
-
-Após o deploy, você invoca a function uma única vez via painel ou chamada direta. Ela processará todos os corretores automaticamente.
+- Adicionar um `Select` com opções de período: "Todos", "Últimos 7 dias", "Últimos 15 dias", "Últimos 20 dias", "Últimos 30 dias"
+- Filtrar os leads exibidos pelo período selecionado (baseado em `created_at`)
+- Adicionar botão "Exportar CSV" que exporta os leads filtrados
+- Colunas do CSV: Nome, Telefone, Descrição, Preço, Vendas, Max Vendas, Promoção, Status, Data Cadastro
 
 ### Detalhes técnicos
 
-- **Nova edge function**: `supabase/functions/send-promo-blast/index.ts`
-- **Config**: `verify_jwt = false` (disparo manual único)
-- **Usa**: Resend SDK com `RESEND_API_KEY` já configurada
-- **Query**: `SELECT id, name, email FROM profiles WHERE is_active = true AND email IS NOT NULL`
-- **Rate limit**: 600ms delay entre cada envio
-- **From**: `LeadBay <noreply@leadbay.com.br>`
+- Lógica de geração CSV pura no frontend (sem edge function), usando os dados já carregados
+- Função utilitária para converter array de objetos em string CSV com encoding UTF-8 BOM (compatível com Excel pt-BR)
+- Ambos os componentes usam `document.createElement('a')` para trigger do download
+
+### Arquivos modificados
+- `src/components/admin/UsersManagement.tsx` — botão exportar CSV
+- `src/components/admin/LeadsManagement.tsx` — filtro de período + botão exportar CSV
 
