@@ -427,7 +427,7 @@ export function LeadsManagement() {
         ))}
       </div>
 
-      {leads.length === 0 && (
+      {filteredLeads.length === 0 && (
         <div className="text-center py-8 md:py-12">
           <p className="text-sm md:text-base text-muted-foreground">Nenhum lead cadastrado</p>
         </div>
