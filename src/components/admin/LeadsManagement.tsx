@@ -30,6 +30,7 @@ export function LeadsManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [periodFilter, setPeriodFilter] = useState('all');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
