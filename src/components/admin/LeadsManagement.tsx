@@ -348,6 +348,7 @@ export function LeadsManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-3 md:gap-4">
