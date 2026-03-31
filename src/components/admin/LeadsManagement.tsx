@@ -427,6 +427,14 @@ export function LeadsManagement() {
                   </Button>
                   <Button
                     size="sm"
+                    variant={lead.is_exhausted ? "default" : "outline"}
+                    onClick={() => toggleExhausted(lead)}
+                    className={`flex-1 sm:flex-none h-8 ${lead.is_exhausted ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
+                    title={lead.is_exhausted ? 'Reativar lead' : 'Esgotar lead'}
+                  >
+                    {lead.is_exhausted ? <RotateCcw className="h-3 w-3 md:h-4 md:w-4" /> : <Ban className="h-3 w-3 md:h-4 md:w-4" />}
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => toggleLeadStatus(lead)}
                     className="flex-1 sm:flex-none h-8"
