@@ -365,6 +365,7 @@ export default function Checkout() {
         body: {
           paymentMethod,
           couponCode: appliedCoupon?.code || undefined,
+          partnerId: partner?.id || undefined,
           cartItems: cartItems.map(item => ({
             lead_id: item.lead_id,
             price: item.leads.price,

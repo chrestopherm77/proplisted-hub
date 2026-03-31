@@ -202,6 +202,7 @@ serve(async (req) => {
         status: 'PENDING',
         payment_method: paymentMethod === 'PIX' ? 'PIX' : 'CREDIT_CARD',
         coupon_code: couponCode || null,
+        partner_id: partnerId || null,
       });
     }
 
