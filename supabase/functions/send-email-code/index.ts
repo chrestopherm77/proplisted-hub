@@ -4,30 +4,35 @@ import { Resend } from "resend";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
 
-// Rate limit: max 3 attempts per email per minute
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const RATE_LIMIT_MAX_ATTEMPTS = 3;
-
-interface SendCodeRequest {
-  email: string;
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 }
 
+const RATE_LIMIT_WINDOW_MS = 60000;
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email }: SendCodeRequest = await req.json();
+    const { email } = await req.json();
 
-    // Validate email
-    if (!email || !email.includes("@")) {
+    if (!email || !email.includes("@") || email.length > 255) {
       return new Response(
         JSON.stringify({ error: "Email inválido" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -36,14 +41,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const normalizedEmail = email.toLowerCase();
 
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Rate limiting: Check recent attempts for this email
     const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-    
+
     const { count: recentAttempts, error: countError } = await supabase
       .from("email_verification_codes")
       .select("*", { count: "exact", head: true })
@@ -55,26 +58,22 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (recentAttempts !== null && recentAttempts >= RATE_LIMIT_MAX_ATTEMPTS) {
-      console.log(`Rate limit exceeded for email: ${normalizedEmail} (${recentAttempts} attempts)`);
       return new Response(
         JSON.stringify({ error: "Muitas tentativas. Aguarde 1 minuto antes de solicitar um novo código." }),
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Delete any existing codes for this email (cleanup)
     await supabase
       .from("email_verification_codes")
       .delete()
       .eq("email", normalizedEmail)
       .lt("created_at", rateLimitCutoff);
 
-    // Save code to database with 5-minute expiration
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-    
+
     const { error: insertError } = await supabase
       .from("email_verification_codes")
       .insert({
@@ -92,7 +91,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send email via Resend
     const emailResponse = await resend.emails.send({
       from: "LeadBay <noreply@leadbay.com.br>",
       to: [email],
@@ -149,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Email sent successfully to:", email);
+    console.log("Email verification code sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, message: "Código enviado com sucesso" }),

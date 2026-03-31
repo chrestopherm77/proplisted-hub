@@ -4,10 +4,20 @@ import { Resend } from "resend";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -64,16 +74,57 @@ const buildHtml = (name: string) => `
 `;
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require admin authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const userClient = createClient(supabaseUrl, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Check admin role
+    const { data: roleData } = await userClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "MASTER_ADMIN")
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch all active profiles with email
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("id, name, email")
@@ -105,20 +156,16 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (emailResponse.error) {
-          console.error(`Failed to send to ${profile.email}:`, emailResponse.error);
           failed++;
           errors.push(`${profile.email}: ${emailResponse.error.message}`);
         } else {
           sent++;
-          console.log(`Sent to: ${profile.email}`);
         }
       } catch (e: any) {
         failed++;
         errors.push(`${profile.email}: ${e.message}`);
-        console.error(`Exception sending to ${profile.email}:`, e.message);
       }
 
-      // Rate limit: 600ms between sends
       await delay(600);
     }
 

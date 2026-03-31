@@ -1,12 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -56,21 +68,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Find user by email
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
-    if (listError) {
-      console.error("Error listing users:", listError);
-      return new Response(
-        JSON.stringify({ error: "Erro interno" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    // Find user by email using getUserByEmail instead of listUsers
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.toLowerCase());
 
-    const targetUser = users?.users?.find(
-      (u: any) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (!targetUser) {
+    if (userError || !userData?.user) {
+      console.error("Error finding user:", userError);
       return new Response(
         JSON.stringify({ error: "Usuário não encontrado" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -79,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Update password
     const { error: updateError } = await supabase.auth.admin.updateUserById(
-      targetUser.id,
+      userData.user.id,
       { password: newPassword }
     );
 
@@ -103,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ used: true })
       .eq("id", tokenData.id);
 
-    console.log("Password reset successful for:", email);
+    console.log("Password reset successful for user");
 
     return new Response(
       JSON.stringify({ success: true, message: "Senha alterada com sucesso!" }),

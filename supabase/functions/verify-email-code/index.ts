@@ -1,26 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
 
-interface VerifyCodeRequest {
-  email: string;
-  code: string;
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, code }: VerifyCodeRequest = await req.json();
+    const { email, code } = await req.json();
 
-    // Validate inputs
     if (!email || !code) {
       return new Response(
         JSON.stringify({ error: "Email e código são obrigatórios" }),
@@ -28,12 +33,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find the verification code
     const { data: verificationRecord, error: selectError } = await supabase
       .from("email_verification_codes")
       .select("*")
@@ -57,7 +60,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if code has expired
     const expiresAt = new Date(verificationRecord.expires_at);
     if (expiresAt < new Date()) {
       return new Response(
@@ -66,7 +68,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Mark code as verified
     const { error: updateError } = await supabase
       .from("email_verification_codes")
       .update({ verified: true })
@@ -80,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Email verified successfully:", email);
+    console.log("Email verified successfully");
 
     return new Response(
       JSON.stringify({ valid: true, message: "E-mail verificado com sucesso" }),

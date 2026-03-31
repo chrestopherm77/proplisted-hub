@@ -325,27 +325,14 @@ async function processPaymentConfirmation(
       continue;
     }
 
-    // Get lead information
-    const { data: lead } = await supabaseClient
-      .from('leads')
-      .select('purchase_count, max_purchases')
-      .eq('id', purchase.lead_id)
-      .single();
+    // Atomically increment purchase count (prevents race conditions)
+    const { data: incrementResult, error: incrementError } = await supabaseClient
+      .rpc('increment_purchase_count', { p_lead_id: purchase.lead_id });
 
-    if (lead) {
-      const newCount = (lead.purchase_count || 0) + 1;
-      const isActive = newCount < (lead.max_purchases || 3);
-
-      console.log(`Updating lead ${purchase.lead_id}: count ${newCount}, active: ${isActive}`);
-
-      // Update lead purchase count and active status
-      await supabaseClient
-        .from('leads')
-        .update({
-          purchase_count: newCount,
-          is_active: isActive,
-        })
-        .eq('id', purchase.lead_id);
+    if (incrementError) {
+      console.error(`Error incrementing purchase count for lead ${purchase.lead_id}:`, incrementError);
+    } else if (incrementResult && incrementResult.length > 0) {
+      console.log(`Lead ${purchase.lead_id}: count ${incrementResult[0].new_count}, active: ${incrementResult[0].is_now_active}`);
     }
 
     // Clear shopping cart item

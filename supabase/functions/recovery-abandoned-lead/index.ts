@@ -30,12 +30,27 @@ serve(async (req) => {
   }
 
   try {
+    // Validate CRON_SECRET to ensure only pg_cron can call this
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    const authHeader = req.headers.get('Authorization');
+    const incomingSecret = req.headers.get('x-cron-secret');
+    
+    // Accept either x-cron-secret header or Bearer token matching CRON_SECRET
+    const token = incomingSecret || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null);
+    
+    if (!cronSecret || token !== cronSecret) {
+      console.error('Unauthorized recovery-abandoned-lead call');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Fetch incomplete leads older than 10 minutes, not yet recovered, with phone
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
     const { data: leads, error: fetchError } = await supabase
@@ -76,7 +91,7 @@ serve(async (req) => {
 
     for (const lead of leads) {
       try {
-        const nome = (lead.name || '').split(' ')[0]; // First name only
+        const nome = (lead.name || '').split(' ')[0];
         const objetivo = INTENTION_MAP[lead.intention || ''] || 'imóveis';
         const sourceLp = lead.source_lp || '/lp';
         const link = `https://leadbay.com.br${sourceLp}?resume=${lead.session_id}`;
@@ -109,7 +124,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Mark as recovered
         const { error: updateError } = await supabase
           .from('lp_partial_leads')
           .update({ recovery_sent_at: new Date().toISOString() })

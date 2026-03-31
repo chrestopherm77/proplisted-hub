@@ -4,12 +4,24 @@ import { Resend } from "resend";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,13 +40,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if user exists (silently - don't reveal to client)
-    const { data: users } = await supabase.auth.admin.listUsers();
-    const userExists = users?.users?.some(
-      (u: any) => u.email?.toLowerCase() === email.toLowerCase()
-    );
+    // Use getUserByEmail instead of listUsers to avoid loading all users
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.toLowerCase());
 
-    if (!userExists) {
+    if (userError || !userData?.user) {
       // For security, always return success
       return new Response(
         JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),
@@ -44,9 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate custom token
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-    // Save token to database
     const { error: insertError } = await supabase
       .from("password_reset_tokens")
       .insert({
@@ -65,7 +73,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resetLink = `https://www.leadbay.com.br/reset-password?token=${token}`;
 
-    // Send email via Resend
     const emailResponse = await resend.emails.send({
       from: "LeadBay <noreply@leadbay.com.br>",
       to: [email],
@@ -126,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailResponse.error) {
       console.error("Resend error:", emailResponse.error);
     } else {
-      console.log("Password reset email sent successfully to:", email);
+      console.log("Password reset email sent successfully");
     }
 
     return new Response(
