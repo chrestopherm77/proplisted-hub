@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { cartItems, customerData, paymentMethod, couponCode } = await req.json();
+    const { cartItems, customerData, paymentMethod, couponCode, partnerId } = await req.json();
     console.log('=== Creating Asaas Checkout ===');
     console.log('User ID:', user.id);
     console.log('Coupon Code:', couponCode || 'none');
@@ -202,6 +202,7 @@ serve(async (req) => {
         status: 'PENDING',
         payment_method: paymentMethod === 'PIX' ? 'PIX' : 'CREDIT_CARD',
         coupon_code: couponCode || null,
+        partner_id: partnerId || null,
       });
     }
 

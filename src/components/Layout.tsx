@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
@@ -22,6 +23,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { user, isAdmin, signOut } = useAuth();
+  const { partner, isPartnerSite } = usePartner();
   const location = useLocation();
   const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
@@ -89,7 +91,11 @@ export const Layout = ({ children }: LayoutProps) => {
             {user && <MobileMenu isAdmin={isAdmin} onSignOut={handleSignOut} />}
             
             <Link to="/" className="flex items-center">
-              <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
+              {isPartnerSite && partner?.logo_url ? (
+                <img src={partner.logo_url} alt={partner.name} className="h-8 md:h-10 max-w-[160px] object-contain" />
+              ) : (
+                <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
+              )}
             </Link>
 
             {user && (
@@ -110,7 +116,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 >
                   Marketplace
                 </Link>
-                {isAdmin && (
+                {isAdmin && !isPartnerSite && (
                   <Link
                     to="/admin"
                     className={`text-sm font-medium transition-colors hover:text-primary ${
@@ -166,7 +172,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       <footer className="bg-white border-t border-border mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2025 LeadBay. Todos os direitos reservados.
+          © 2025 {isPartnerSite && partner ? partner.name : 'LeadBay'}. Todos os direitos reservados.
         </div>
       </footer>
 

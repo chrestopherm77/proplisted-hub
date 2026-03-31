@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/contexts/PartnerContext';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +68,7 @@ export default function Checkout() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_percent: number } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
+  const { partner } = usePartner();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -363,6 +365,7 @@ export default function Checkout() {
         body: {
           paymentMethod,
           couponCode: appliedCoupon?.code || undefined,
+          partnerId: partner?.id || undefined,
           cartItems: cartItems.map(item => ({
             lead_id: item.lead_id,
             price: item.leads.price,

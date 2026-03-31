@@ -333,6 +333,42 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          created_at: string | null
+          custom_domain: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          primary_color: string | null
+          secondary_color: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
@@ -483,6 +519,7 @@ export type Database = {
           coupon_code: string | null
           id: string
           lead_id: string
+          partner_id: string | null
           payment_confirmed_at: string | null
           payment_method: string | null
           purchased_at: string | null
@@ -497,6 +534,7 @@ export type Database = {
           coupon_code?: string | null
           id?: string
           lead_id: string
+          partner_id?: string | null
           payment_confirmed_at?: string | null
           payment_method?: string | null
           purchased_at?: string | null
@@ -511,6 +549,7 @@ export type Database = {
           coupon_code?: string | null
           id?: string
           lead_id?: string
+          partner_id?: string | null
           payment_confirmed_at?: string | null
           payment_method?: string | null
           purchased_at?: string | null
@@ -523,6 +562,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
         ]
