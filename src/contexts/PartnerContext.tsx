@@ -68,14 +68,28 @@ export const PartnerProvider = ({ children }: { children: ReactNode }) => {
     detectPartner();
   }, []);
 
-  // Apply partner CSS variables
+  // Apply partner CSS variables (convert hex to HSL and override design system)
   useEffect(() => {
+    const root = document.documentElement;
     if (partner) {
-      document.documentElement.style.setProperty('--partner-primary', partner.primary_color);
-      document.documentElement.style.setProperty('--partner-secondary', partner.secondary_color);
+      const primary = hexToHsl(partner.primary_color);
+      const secondary = hexToHsl(partner.secondary_color);
+
+      if (primary) {
+        const p = `${primary.h} ${primary.s}% ${primary.l}%`;
+        root.style.setProperty('--primary', p);
+        root.style.setProperty('--primary-dark', `${primary.h} ${primary.s}% ${Math.max(primary.l - 10, 0)}%`);
+        root.style.setProperty('--primary-light', `${primary.h} ${primary.s}% 92%`);
+        root.style.setProperty('--ring', p);
+        root.style.setProperty('--info', p);
+      }
+      if (secondary) {
+        root.style.setProperty('--secondary', `${secondary.h} ${secondary.s}% ${secondary.l}%`);
+        root.style.setProperty('--secondary-dark', `${secondary.h} ${secondary.s}% ${Math.max(secondary.l - 10, 0)}%`);
+      }
     } else {
-      document.documentElement.style.removeProperty('--partner-primary');
-      document.documentElement.style.removeProperty('--partner-secondary');
+      ['--primary', '--primary-dark', '--primary-light', '--ring', '--info',
+       '--secondary', '--secondary-dark'].forEach(v => root.style.removeProperty(v));
     }
   }, [partner]);
 
