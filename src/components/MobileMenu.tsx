@@ -19,6 +19,7 @@ interface MobileMenuProps {
 
 export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
   const location = useLocation();
+  const { partner, isPartnerSite } = usePartner();
   const isActive = (path: string) => location.pathname === path;
 
   return (
