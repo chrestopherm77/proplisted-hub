@@ -20,7 +20,7 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  if (loading || partnerLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div>Carregando...</div>
