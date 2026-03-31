@@ -729,6 +729,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_purchase_count: {
+        Args: { p_lead_id: string }
+        Returns: {
+          is_now_active: boolean
+          max_purchases: number
+          new_count: number
+        }[]
+      }
+      redeem_voucher_atomic: {
+        Args: {
+          p_lead_id: string
+          p_user_id: string
+          p_voucher_code: string
+          p_voucher_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "MASTER_ADMIN" | "USER"
