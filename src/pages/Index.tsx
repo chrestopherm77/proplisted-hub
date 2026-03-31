@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
@@ -8,7 +9,10 @@ import FakeNotification from '@/components/FakeNotification';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { partner, isPartnerSite } = usePartner();
   const navigate = useNavigate();
+  const brandName = isPartnerSite && partner ? partner.name : 'LeadBay';
+  const brandLogo = isPartnerSite && partner?.logo_url ? partner.logo_url : leadbayLogo;
 
   useEffect(() => {
     if (!loading && user) {
@@ -28,7 +32,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <img src={leadbayLogo} alt="LeadBay" className="h-10" />
+          <img src={brandLogo} alt={brandName} className="h-10" />
           <Button onClick={() => navigate('/auth')} size="lg">
             Entrar
           </Button>
@@ -59,7 +63,7 @@ const Index = () => {
 
         {/* Features Section */}
         <section className="container mx-auto px-4 py-12 md:py-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadBay?</h2>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o {brandName}?</h2>
           <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
             A plataforma que corretores, imobiliárias e construtoras confiam para encontrar clientes com intenção real de compra
           </p>
@@ -209,7 +213,7 @@ const Index = () => {
               Pronto para Aumentar suas Vendas?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Junte-se a centenas de corretores que já estão fechando mais negócios com o LeadBay
+              Junte-se a centenas de corretores que já estão fechando mais negócios com o {brandName}
             </p>
             <Button 
               size="lg" 
@@ -226,9 +230,9 @@ const Index = () => {
       <footer className="bg-card border-t border-border">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <img src={leadbayLogo} alt="LeadBay" className="h-7" />
+            <img src={brandLogo} alt={brandName} className="h-7" />
             <div className="text-sm text-muted-foreground text-center">
-              © 2025 LeadBay. Todos os direitos reservados.
+              © 2025 {brandName}. Todos os direitos reservados.
             </div>
           </div>
         </div>
