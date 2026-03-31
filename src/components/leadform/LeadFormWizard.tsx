@@ -665,7 +665,6 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           };
 
           supabase.functions.invoke('notify-new-lead', {
-            headers: { 'x-lp-secret': lpFormSecret },
             body: {
               leadId,
               city: leadCity,
