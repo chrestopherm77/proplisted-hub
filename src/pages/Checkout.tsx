@@ -68,6 +68,7 @@ export default function Checkout() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_percent: number } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
+  const { partner } = usePartner();
   const navigate = useNavigate();
   const { toast } = useToast();
 
