@@ -116,7 +116,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 >
                   Marketplace
                 </Link>
-                {isAdmin && (
+                {isAdmin && !isPartnerSite && (
                   <Link
                     to="/admin"
                     className={`text-sm font-medium transition-colors hover:text-primary ${
