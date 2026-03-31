@@ -486,7 +486,7 @@ export default function Leads() {
   };
 
   const isInCart = (leadId: string) => cartItems.includes(leadId);
-  const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases;
+  const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases || lead.is_exhausted === true;
   const isPurchased = (leadId: string) => purchasedLeadIds.includes(leadId);
 
   if (loading) {

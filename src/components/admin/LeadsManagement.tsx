@@ -22,6 +22,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   is_promotion: boolean;
+  is_exhausted: boolean;
   created_at: string | null;
 }
 
