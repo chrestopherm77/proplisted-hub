@@ -172,7 +172,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       <footer className="bg-white border-t border-border mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2025 LeadBay. Todos os direitos reservados.
+          © 2025 {isPartnerSite && partner ? partner.name : 'LeadBay'}. Todos os direitos reservados.
         </div>
       </footer>
 

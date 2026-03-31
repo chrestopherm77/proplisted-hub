@@ -98,6 +98,10 @@ export default function Admin() {
           <TabsContent value="vouchers">
             <VouchersManagement />
           </TabsContent>
+
+          <TabsContent value="partners">
+            <PartnersManagement />
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>
