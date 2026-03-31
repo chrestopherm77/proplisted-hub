@@ -91,7 +91,11 @@ export const Layout = ({ children }: LayoutProps) => {
             {user && <MobileMenu isAdmin={isAdmin} onSignOut={handleSignOut} />}
             
             <Link to="/" className="flex items-center">
-              <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
+              {isPartnerSite && partner?.logo_url ? (
+                <img src={partner.logo_url} alt={partner.name} className="h-8 md:h-10 max-w-[160px] object-contain" />
+              ) : (
+                <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
+              )}
             </Link>
 
             {user && (
