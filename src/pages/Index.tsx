@@ -63,7 +63,7 @@ const Index = () => {
 
         {/* Features Section */}
         <section className="container mx-auto px-4 py-12 md:py-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o LeadBay?</h2>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3 md:mb-4">Por que escolher o {brandName}?</h2>
           <p className="text-center text-sm md:text-base text-muted-foreground mb-8 md:mb-12 max-w-2xl mx-auto px-4">
             A plataforma que corretores, imobiliárias e construtoras confiam para encontrar clientes com intenção real de compra
           </p>
