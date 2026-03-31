@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Shield, Zap, CheckCircle, ArrowRight, Users, Target, Clock } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
