@@ -230,9 +230,9 @@ const Index = () => {
       <footer className="bg-card border-t border-border">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <img src={leadbayLogo} alt="LeadBay" className="h-7" />
+            <img src={brandLogo} alt={brandName} className="h-7" />
             <div className="text-sm text-muted-foreground text-center">
-              © 2025 LeadBay. Todos os direitos reservados.
+              © 2025 {brandName}. Todos os direitos reservados.
             </div>
           </div>
         </div>
