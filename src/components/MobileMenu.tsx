@@ -62,7 +62,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
             <Package className="h-5 w-5" />
             <span className="font-medium">Marketplace</span>
           </Link>
-          {isAdmin && (
+          {isAdmin && !isPartnerSite && (
             <Link
               to="/admin"
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
