@@ -213,7 +213,7 @@ const Index = () => {
               Pronto para Aumentar suas Vendas?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Junte-se a centenas de corretores que já estão fechando mais negócios com o LeadBay
+              Junte-se a centenas de corretores que já estão fechando mais negócios com o {brandName}
             </p>
             <Button 
               size="lg" 
