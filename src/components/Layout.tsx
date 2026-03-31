@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
