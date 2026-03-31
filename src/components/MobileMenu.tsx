@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingBag, User, LogOut } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
+import { usePartner } from '@/contexts/PartnerContext';
 import {
   Sheet,
   SheetContent,
