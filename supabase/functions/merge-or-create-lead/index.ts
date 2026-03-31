@@ -1,17 +1,38 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-lp-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Validate shared secret
+    const lpSecret = req.headers.get('x-lp-secret');
+    const expectedSecret = Deno.env.get('LP_FORM_SECRET');
+    if (!expectedSecret || lpSecret !== expectedSecret) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const {
       submissionId,
       name,
@@ -23,9 +44,39 @@ Deno.serve(async (req) => {
       defaultPrice,
     } = await req.json();
 
+    // Input validation
     if (!name || !phone || !intention || !submissionId) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof name !== 'string' || name.trim().length === 0 || name.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Invalid name" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof phone !== 'string' || phone.replace(/\D/g, '').length < 10 || phone.length > 20) {
+      return new Response(
+        JSON.stringify({ error: "Invalid phone" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const validIntentions = ['SELL', 'BUY', 'BUILD', 'RENT'];
+    if (!validIntentions.includes(intention)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid intention" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof description !== 'string' || description.length > 10000) {
+      return new Response(
+        JSON.stringify({ error: "Invalid description" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -87,24 +138,21 @@ Deno.serve(async (req) => {
 
       let updatedDescription: string;
       if (currentPrefCount === 0) {
-        // Existing lead has no preference prefix — wrap it as Preferência 1
         updatedDescription = `Preferência 1:\n${existingDesc}\n\nPreferência 2:\n${description}`;
       } else {
         const newPrefNumber = currentPrefCount + 1;
         updatedDescription = `${existingDesc}\n\nPreferência ${newPrefNumber}:\n${description}`;
       }
 
-      // Merge form_data: add the new flow key to existing object
+      // Merge form_data
       const existingFormData =
         typeof existingLead.form_data === "object" && existingLead.form_data
           ? existingLead.form_data
           : {};
       const mergedFormData = { ...existingFormData as Record<string, unknown> };
 
-      // Add new flow data (buy, sell, build, rent)
       const flowKey = intention.toLowerCase();
       if (formDataJson[flowKey]) {
-        // If same flow already exists, convert to array or append
         if (mergedFormData[flowKey]) {
           const existing = mergedFormData[flowKey];
           if (Array.isArray(existing)) {
@@ -116,7 +164,6 @@ Deno.serve(async (req) => {
           mergedFormData[flowKey] = formDataJson[flowKey];
         }
       }
-      // Keep intention as array of all intentions
       if (mergedFormData.intention) {
         const existingIntention = mergedFormData.intention;
         if (Array.isArray(existingIntention)) {
@@ -151,7 +198,7 @@ Deno.serve(async (req) => {
       leadId = existingLead.id;
       console.log(`Merged lead ${leadId} — added new preference`);
     } else {
-      // 4b. CREATE new lead with "Preferência 1:" prefix
+      // 4b. CREATE new lead
       leadId = crypto.randomUUID();
       const prefixedDescription = `Preferência 1:\n${description}`;
 
@@ -193,4 +240,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-

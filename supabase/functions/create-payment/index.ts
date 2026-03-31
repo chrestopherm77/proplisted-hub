@@ -1,12 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,8 +39,6 @@ serve(async (req) => {
 
     const { cartItems, customerData, paymentMethod, couponCode, partnerId } = await req.json();
     console.log('=== Creating Asaas Checkout ===');
-    console.log('User ID:', user.id);
-    console.log('Coupon Code:', couponCode || 'none');
 
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       throw new Error('Carrinho vazio ou inválido');
@@ -39,7 +49,6 @@ serve(async (req) => {
       throw new Error('Nenhum lead válido no carrinho');
     }
 
-    // Fetch and validate leads from database
     const { data: dbLeads, error: leadsError } = await supabaseClient
       .from('leads')
       .select('id, price, is_active, name, description, purchase_count, max_purchases')
@@ -70,7 +79,6 @@ serve(async (req) => {
     let discountPercent = 0;
     let couponId: string | null = null;
 
-    // Validate and apply coupon if provided
     if (couponCode) {
       const { data: coupon, error: cErr } = await supabaseClient
         .from('coupons')
@@ -105,10 +113,7 @@ serve(async (req) => {
       couponId = coupon.id;
       const discountAmount = totalAmount * (discountPercent / 100);
       totalAmount = Math.round((totalAmount - discountAmount) * 100) / 100;
-      console.log(`Coupon applied: ${discountPercent}% off. New total: ${totalAmount}`);
     }
-
-    console.log('Total amount:', totalAmount);
 
     const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
     const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
@@ -122,8 +127,6 @@ serve(async (req) => {
 
     const orderId = crypto.randomUUID();
 
-    // Distribute discount proportionally across items
-    const originalTotal = validatedItems.reduce((s: number, i: any) => s + i.price, 0);
     const checkoutItems = validatedItems.map((item: any) => {
       const itemPrice = discountPercent > 0
         ? Math.round((item.price * (1 - discountPercent / 100)) * 100) / 100
@@ -187,7 +190,6 @@ serve(async (req) => {
     const checkoutData = await checkoutResponse.json();
     console.log('Checkout created:', checkoutData.id);
 
-    // Save purchase records
     for (const item of validatedItems) {
       const itemAmount = discountPercent > 0
         ? Math.round((item.price * (1 - discountPercent / 100)) * 100) / 100
@@ -206,13 +208,11 @@ serve(async (req) => {
       });
     }
 
-    // Register coupon usage
     if (couponId) {
       await supabaseClient.from('coupon_usages').insert({
         coupon_id: couponId,
         user_id: user.id,
       });
-      console.log('Coupon usage registered');
     }
 
     return new Response(
@@ -227,7 +227,7 @@ serve(async (req) => {
     console.error('Error in create-payment:', error.message);
     return new Response(
       JSON.stringify({ error: error.message, details: 'Verifique os logs para mais informações' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

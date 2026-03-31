@@ -4,10 +4,20 @@ import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-lp-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 interface NotifyNewLeadRequest {
   leadId: string;
@@ -336,137 +346,75 @@ function extractAllCharacteristics(
   if (intention === "SELL" && formData.sell) {
     const sell = formData.sell;
 
-    // Sobre o vendedor
     const sellerFields: { label: string; value: string }[] = [];
     if (sell.relation)
-      sellerFields.push({
-        label: "Relação com o imóvel",
-        value: relationLabels[sell.relation] || sell.relation,
-      });
+      sellerFields.push({ label: "Relação com o imóvel", value: relationLabels[sell.relation] || sell.relation });
     if (sell.acceptsExclusivity)
-      sellerFields.push({
-        label: "Aceita exclusividade",
-        value: exclusivityLabels[sell.acceptsExclusivity] || sell.acceptsExclusivity,
-      });
+      sellerFields.push({ label: "Aceita exclusividade", value: exclusivityLabels[sell.acceptsExclusivity] || sell.acceptsExclusivity });
     if (sellerFields.length > 0) {
       sections.push({ title: "Sobre o Vendedor", icon: "👤", fields: sellerFields });
     }
 
-    // Tipo de imóvel
     const propertyFields: { label: string; value: string }[] = [];
-    if (sell.propertyType)
-      propertyFields.push({
-        label: "Tipo de imóvel",
-        value: propertyTypeLabels[sell.propertyType] || sell.propertyType,
-      });
-    if (sell.commercialType)
-      propertyFields.push({
-        label: "Tipo comercial",
-        value: commercialTypeLabels[sell.commercialType] || sell.commercialType,
-      });
-    if (sell.residentialType)
-      propertyFields.push({
-        label: "Tipo residencial",
-        value: residentialTypeLabels[sell.residentialType] || sell.residentialType,
-      });
-    if (sell.mixedType)
-      propertyFields.push({
-        label: "Tipo misto",
-        value: mixedTypeLabels[sell.mixedType] || sell.mixedType,
-      });
-    if (sell.ruralType)
-      propertyFields.push({
-        label: "Tipo rural",
-        value: ruralTypeLabels[sell.ruralType] || sell.ruralType,
-      });
+    if (sell.propertyType) propertyFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[sell.propertyType] || sell.propertyType });
+    if (sell.commercialType) propertyFields.push({ label: "Tipo comercial", value: commercialTypeLabels[sell.commercialType] || sell.commercialType });
+    if (sell.residentialType) propertyFields.push({ label: "Tipo residencial", value: residentialTypeLabels[sell.residentialType] || sell.residentialType });
+    if (sell.mixedType) propertyFields.push({ label: "Tipo misto", value: mixedTypeLabels[sell.mixedType] || sell.mixedType });
+    if (sell.ruralType) propertyFields.push({ label: "Tipo rural", value: ruralTypeLabels[sell.ruralType] || sell.ruralType });
     if (propertyFields.length > 0) {
       sections.push({ title: "Tipo de Imóvel", icon: "🏠", fields: propertyFields });
     }
 
-    // Características
     const charFields: { label: string; value: string }[] = [];
-    if (sell.commercialBedrooms || sell.bedrooms)
-      charFields.push({ label: "Dormitórios", value: String(sell.commercialBedrooms || sell.bedrooms) });
-    if (sell.commercialBathrooms || sell.bathrooms)
-      charFields.push({ label: "Banheiros", value: String(sell.commercialBathrooms || sell.bathrooms) });
-    if (sell.commercialParkingSpots || sell.parkingSpots)
-      charFields.push({ label: "Vagas", value: String(sell.commercialParkingSpots || sell.parkingSpots) });
+    if (sell.commercialBedrooms || sell.bedrooms) charFields.push({ label: "Dormitórios", value: String(sell.commercialBedrooms || sell.bedrooms) });
+    if (sell.commercialBathrooms || sell.bathrooms) charFields.push({ label: "Banheiros", value: String(sell.commercialBathrooms || sell.bathrooms) });
+    if (sell.commercialParkingSpots || sell.parkingSpots) charFields.push({ label: "Vagas", value: String(sell.commercialParkingSpots || sell.parkingSpots) });
     if (sell.size) charFields.push({ label: "Tamanho", value: sell.size });
-    if (sell.terrainPosition)
-      charFields.push({
-        label: "Posição do terreno",
-        value: terrainPositionLabels[sell.terrainPosition] || sell.terrainPosition,
-      });
-    if (sell.residentialTopography)
-      charFields.push({
-        label: "Topografia",
-        value: topographyLabels[sell.residentialTopography] || sell.residentialTopography,
-      });
+    if (sell.terrainPosition) charFields.push({ label: "Posição do terreno", value: terrainPositionLabels[sell.terrainPosition] || sell.terrainPosition });
+    if (sell.residentialTopography) charFields.push({ label: "Topografia", value: topographyLabels[sell.residentialTopography] || sell.residentialTopography });
     if (charFields.length > 0) {
       sections.push({ title: "Características", icon: "📐", fields: charFields });
     }
 
-    // Rural
     if (sell.propertyType === "RURAL") {
       const ruralFields: { label: string; value: string }[] = [];
-      if (sell.ruralArea)
-        ruralFields.push({ label: "Área", value: areaLabels[sell.ruralArea] || sell.ruralArea });
-      if (sell.ruralPurpose)
-        ruralFields.push({ label: "Finalidade", value: ruralPurposeLabels[sell.ruralPurpose] || sell.ruralPurpose });
-      if (sell.improvements)
-        ruralFields.push({ label: "Benfeitorias", value: formatArrayOrString(sell.improvements, improvementLabels) });
-      if (sell.access)
-        ruralFields.push({ label: "Acesso", value: formatArrayOrString(sell.access, accessLabels) });
-      if (sell.waterResources)
-        ruralFields.push({ label: "Recursos hídricos", value: formatArrayOrString(sell.waterResources, waterResourceLabels) });
+      if (sell.ruralArea) ruralFields.push({ label: "Área", value: areaLabels[sell.ruralArea] || sell.ruralArea });
+      if (sell.ruralPurpose) ruralFields.push({ label: "Finalidade", value: ruralPurposeLabels[sell.ruralPurpose] || sell.ruralPurpose });
+      if (sell.improvements) ruralFields.push({ label: "Benfeitorias", value: formatArrayOrString(sell.improvements, improvementLabels) });
+      if (sell.access) ruralFields.push({ label: "Acesso", value: formatArrayOrString(sell.access, accessLabels) });
+      if (sell.waterResources) ruralFields.push({ label: "Recursos hídricos", value: formatArrayOrString(sell.waterResources, waterResourceLabels) });
       if (ruralFields.length > 0) {
         sections.push({ title: "Detalhes Rurais", icon: "🌾", fields: ruralFields });
       }
     }
 
-    // Localização
     if (sell.region) {
       sections.push({ title: "Localização", icon: "📍", fields: [{ label: "Região", value: sell.region }] });
     }
 
-    // Valor e pagamento
     const valueFields: { label: string; value: string }[] = [];
-    if (sell.expectedValue)
-      valueFields.push({ label: "Valor esperado", value: sell.expectedValue });
+    if (sell.expectedValue) valueFields.push({ label: "Valor esperado", value: sell.expectedValue });
     if (sell.paymentMethods && sell.paymentMethods.length > 0) {
-      valueFields.push({
-        label: "Formas de pagamento",
-        value: sell.paymentMethods.map((m: string) => paymentMethodLabels[m] || m).join(", "),
-      });
+      valueFields.push({ label: "Formas de pagamento", value: sell.paymentMethods.map((m: string) => paymentMethodLabels[m] || m).join(", ") });
     }
     if (valueFields.length > 0) {
       sections.push({ title: "Valor e Pagamento", icon: "💰", fields: valueFields });
     }
 
-    // Status
     const statusFields: { label: string; value: string }[] = [];
-    if (sell.wasAppraised !== undefined)
-      statusFields.push({ label: "Foi avaliado", value: booleanLabels(sell.wasAppraised) });
-    if (sell.isOccupied !== undefined)
-      statusFields.push({ label: "Está ocupado", value: booleanLabels(sell.isOccupied) });
+    if (sell.wasAppraised !== undefined) statusFields.push({ label: "Foi avaliado", value: booleanLabels(sell.wasAppraised) });
+    if (sell.isOccupied !== undefined) statusFields.push({ label: "Está ocupado", value: booleanLabels(sell.isOccupied) });
     if (sell.isOccupied && sell.occupantHasPreference) {
-      statusFields.push({
-        label: "Ocupante tem preferência",
-        value: occupantPreferenceLabels[sell.occupantHasPreference] || sell.occupantHasPreference,
-      });
+      statusFields.push({ label: "Ocupante tem preferência", value: occupantPreferenceLabels[sell.occupantHasPreference] || sell.occupantHasPreference });
     }
-    if (sell.documentation)
-      statusFields.push({ label: "Documentação", value: documentationLabels[sell.documentation] || sell.documentation });
+    if (sell.documentation) statusFields.push({ label: "Documentação", value: documentationLabels[sell.documentation] || sell.documentation });
     if (statusFields.length > 0) {
       sections.push({ title: "Status do Imóvel", icon: "📋", fields: statusFields });
     }
 
-    // Prazo
     const deadlineFields: { label: string; value: string }[] = [];
-    if (sell.deadline)
-      deadlineFields.push({ label: "Prazo para venda", value: deadlineLabels[sell.deadline] || sell.deadline });
-    if (sell.motivation)
-      deadlineFields.push({ label: "Motivação", value: motivationLabels[sell.motivation] || sell.motivation });
+    if (sell.deadline) deadlineFields.push({ label: "Prazo para venda", value: deadlineLabels[sell.deadline] || sell.deadline });
+    if (sell.motivation) deadlineFields.push({ label: "Motivação", value: motivationLabels[sell.motivation] || sell.motivation });
     if (deadlineFields.length > 0) {
       sections.push({ title: "Prazo e Motivação", icon: "⏰", fields: deadlineFields });
     }
@@ -476,42 +424,27 @@ function extractAllCharacteristics(
   if (intention === "BUY" && formData.buy) {
     const buy = formData.buy;
 
-    // Intenção
     const intentFields: { label: string; value: string }[] = [];
-    if (buy.purpose)
-      intentFields.push({ label: "Finalidade", value: purposeLabels[buy.purpose] || buy.purpose });
-    if (buy.propertyType)
-      intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[buy.propertyType] || buy.propertyType });
+    if (buy.purpose) intentFields.push({ label: "Finalidade", value: purposeLabels[buy.purpose] || buy.purpose });
+    if (buy.propertyType) intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[buy.propertyType] || buy.propertyType });
     if (intentFields.length > 0) {
       sections.push({ title: "Intenção", icon: "🎯", fields: intentFields });
     }
 
-    // Preferências
     const prefFields: { label: string; value: string }[] = [];
-    if (buy.prefersGatedCommunity !== undefined)
-      prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(buy.prefersGatedCommunity) });
-    if (buy.landPrefersGated !== undefined)
-      prefFields.push({ label: "Prefere condomínio (terreno)", value: booleanLabels(buy.landPrefersGated) });
+    if (buy.prefersGatedCommunity !== undefined) prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(buy.prefersGatedCommunity) });
+    if (buy.landPrefersGated !== undefined) prefFields.push({ label: "Prefere condomínio (terreno)", value: booleanLabels(buy.landPrefersGated) });
     if (buy.bedrooms) prefFields.push({ label: "Dormitórios", value: String(buy.bedrooms) });
     if (buy.bathrooms) prefFields.push({ label: "Banheiros", value: String(buy.bathrooms) });
     if (buy.parkingSpots) prefFields.push({ label: "Vagas", value: String(buy.parkingSpots) });
-    if (buy.propertyReadyStatus)
-      prefFields.push({
-        label: "Status",
-        value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus,
-      });
-    if (buy.commercialType)
-      prefFields.push({
-        label: "Tipo comercial",
-        value: commercialTypeLabels[buy.commercialType] || buy.commercialType,
-      });
+    if (buy.propertyReadyStatus) prefFields.push({ label: "Status", value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus });
+    if (buy.commercialType) prefFields.push({ label: "Tipo comercial", value: commercialTypeLabels[buy.commercialType] || buy.commercialType });
     if (buy.minSize) prefFields.push({ label: "Tamanho mínimo", value: `${buy.minSize} m²` });
     if (buy.landMinSize) prefFields.push({ label: "Tamanho mínimo terreno", value: `${buy.landMinSize} m²` });
     if (prefFields.length > 0) {
       sections.push({ title: "Preferências", icon: "🏠", fields: prefFields });
     }
 
-    // Localização e orçamento
     const budgetFields: { label: string; value: string }[] = [];
     if (buy.region) budgetFields.push({ label: "Região", value: buy.region });
     if (buy.budgetMin) budgetFields.push({ label: "Orçamento mínimo", value: buy.budgetMin });
@@ -520,30 +453,19 @@ function extractAllCharacteristics(
       sections.push({ title: "Localização e Orçamento", icon: "📍", fields: budgetFields });
     }
 
-    // Pagamento
     const payFields: { label: string; value: string }[] = [];
-    if (buy.paymentMethod)
-      payFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[buy.paymentMethod] || buy.paymentMethod });
-    if (buy.isFinancingApproved !== undefined)
-      payFields.push({ label: "Financiamento aprovado", value: booleanLabels(buy.isFinancingApproved) });
-    if (buy.isConsortiumContemplated !== undefined)
-      payFields.push({ label: "Consórcio contemplado", value: booleanLabels(buy.isConsortiumContemplated) });
-    if (buy.tradeOfferType)
-      payFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[buy.tradeOfferType] || buy.tradeOfferType });
+    if (buy.paymentMethod) payFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[buy.paymentMethod] || buy.paymentMethod });
+    if (buy.isFinancingApproved !== undefined) payFields.push({ label: "Financiamento aprovado", value: booleanLabels(buy.isFinancingApproved) });
+    if (buy.isConsortiumContemplated !== undefined) payFields.push({ label: "Consórcio contemplado", value: booleanLabels(buy.isConsortiumContemplated) });
+    if (buy.tradeOfferType) payFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[buy.tradeOfferType] || buy.tradeOfferType });
     if (buy.tradeOfferValue) payFields.push({ label: "Valor da permuta", value: buy.tradeOfferValue });
-    if (buy.tradeOfferPaidOff !== undefined)
-      payFields.push({ label: "Permuta quitada", value: booleanLabels(buy.tradeOfferPaidOff) });
+    if (buy.tradeOfferPaidOff !== undefined) payFields.push({ label: "Permuta quitada", value: booleanLabels(buy.tradeOfferPaidOff) });
     if (payFields.length > 0) {
       sections.push({ title: "Pagamento", icon: "💳", fields: payFields });
     }
 
-    // Prazo
     if (buy.deadline) {
-      sections.push({
-        title: "Prazo",
-        icon: "⏰",
-        fields: [{ label: "Prazo", value: deadlineLabels[buy.deadline] || buy.deadline }],
-      });
+      sections.push({ title: "Prazo", icon: "⏰", fields: [{ label: "Prazo", value: deadlineLabels[buy.deadline] || buy.deadline }] });
     }
   }
 
@@ -551,21 +473,13 @@ function extractAllCharacteristics(
   if (intention === "BUILD" && formData.build) {
     const build = formData.build;
 
-    // Intenção
     if (build.purpose) {
-      sections.push({
-        title: "Intenção",
-        icon: "🎯",
-        fields: [{ label: "Finalidade", value: purposeLabels[build.purpose] || build.purpose }],
-      });
+      sections.push({ title: "Intenção", icon: "🎯", fields: [{ label: "Finalidade", value: purposeLabels[build.purpose] || build.purpose }] });
     }
 
-    // Terreno
     const landFields: { label: string; value: string }[] = [];
-    if (build.hasLand)
-      landFields.push({ label: "Possui terreno", value: landLabels[build.hasLand] || build.hasLand });
-    if (build.topography)
-      landFields.push({ label: "Topografia", value: topographyLabels[build.topography] || build.topography });
+    if (build.hasLand) landFields.push({ label: "Possui terreno", value: landLabels[build.hasLand] || build.hasLand });
+    if (build.topography) landFields.push({ label: "Topografia", value: topographyLabels[build.topography] || build.topography });
     if (build.location || build.uf || build.city) {
       const loc = build.location || `${build.city || ""}${build.uf ? "/" + build.uf : ""}`;
       if (loc) landFields.push({ label: "Localização", value: loc });
@@ -574,59 +488,36 @@ function extractAllCharacteristics(
       sections.push({ title: "Terreno", icon: "🏞️", fields: landFields });
     }
 
-    // Projeto
     const projectFields: { label: string; value: string }[] = [];
-    if (build.hasProject)
-      projectFields.push({ label: "Status do projeto", value: projectLabels[build.hasProject] || build.hasProject });
+    if (build.hasProject) projectFields.push({ label: "Status do projeto", value: projectLabels[build.hasProject] || build.hasProject });
     if (build.floors) projectFields.push({ label: "Pavimentos", value: String(build.floors) });
     if (build.area) projectFields.push({ label: "Área", value: `${build.area} m²` });
-    if (build.hasKnowledge !== undefined)
-      projectFields.push({ label: "Conhecimento em construção", value: booleanLabels(build.hasKnowledge) });
+    if (build.hasKnowledge !== undefined) projectFields.push({ label: "Conhecimento em construção", value: booleanLabels(build.hasKnowledge) });
     if (projectFields.length > 0) {
       sections.push({ title: "Projeto", icon: "📝", fields: projectFields });
     }
 
-    // BTS
     if (build.isBTSConfirmed) {
       const btsFields: { label: string; value: string }[] = [{ label: "Built To Suit", value: "Sim" }];
-      if (build.btsRentRange)
-        btsFields.push({
-          label: "Faixa de aluguel",
-          value: btsRentRangeLabels[build.btsRentRange] || build.btsRentRange,
-        });
-      if (build.btsMinContractTerm)
-        btsFields.push({
-          label: "Prazo mínimo de contrato",
-          value: btsContractTermLabels[build.btsMinContractTerm] || build.btsMinContractTerm,
-        });
+      if (build.btsRentRange) btsFields.push({ label: "Faixa de aluguel", value: btsRentRangeLabels[build.btsRentRange] || build.btsRentRange });
+      if (build.btsMinContractTerm) btsFields.push({ label: "Prazo mínimo de contrato", value: btsContractTermLabels[build.btsMinContractTerm] || build.btsMinContractTerm });
       sections.push({ title: "Built To Suit", icon: "🏗️", fields: btsFields });
     }
 
-    // Orçamento
     const budgetFields: { label: string; value: string }[] = [];
     if (build.budget) budgetFields.push({ label: "Orçamento", value: build.budget });
-    if (build.paymentMethod)
-      budgetFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[build.paymentMethod] || build.paymentMethod });
-    if (build.isFinancingApproved !== undefined)
-      budgetFields.push({ label: "Financiamento aprovado", value: booleanLabels(build.isFinancingApproved) });
-    if (build.isConsortiumContemplated !== undefined)
-      budgetFields.push({ label: "Consórcio contemplado", value: booleanLabels(build.isConsortiumContemplated) });
-    if (build.tradeOfferType)
-      budgetFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[build.tradeOfferType] || build.tradeOfferType });
+    if (build.paymentMethod) budgetFields.push({ label: "Forma de pagamento", value: paymentMethodLabels[build.paymentMethod] || build.paymentMethod });
+    if (build.isFinancingApproved !== undefined) budgetFields.push({ label: "Financiamento aprovado", value: booleanLabels(build.isFinancingApproved) });
+    if (build.isConsortiumContemplated !== undefined) budgetFields.push({ label: "Consórcio contemplado", value: booleanLabels(build.isConsortiumContemplated) });
+    if (build.tradeOfferType) budgetFields.push({ label: "Tipo de permuta", value: tradeOfferTypeLabels[build.tradeOfferType] || build.tradeOfferType });
     if (build.tradeOfferValue) budgetFields.push({ label: "Valor da permuta", value: build.tradeOfferValue });
-    if (build.tradeOfferPaidOff !== undefined)
-      budgetFields.push({ label: "Permuta quitada", value: booleanLabels(build.tradeOfferPaidOff) });
+    if (build.tradeOfferPaidOff !== undefined) budgetFields.push({ label: "Permuta quitada", value: booleanLabels(build.tradeOfferPaidOff) });
     if (budgetFields.length > 0) {
       sections.push({ title: "Orçamento", icon: "💰", fields: budgetFields });
     }
 
-    // Prazo
     if (build.deadline) {
-      sections.push({
-        title: "Prazo",
-        icon: "⏰",
-        fields: [{ label: "Prazo", value: deadlineLabels[build.deadline] || build.deadline }],
-      });
+      sections.push({ title: "Prazo", icon: "⏰", fields: [{ label: "Prazo", value: deadlineLabels[build.deadline] || build.deadline }] });
     }
   }
 
@@ -634,20 +525,15 @@ function extractAllCharacteristics(
   if (intention === "RENT" && formData.rent) {
     const rent = formData.rent;
 
-    // Intenção
     const intentFields: { label: string; value: string }[] = [];
-    if (rent.purpose)
-      intentFields.push({ label: "Finalidade", value: purposeLabels[rent.purpose] || rent.purpose });
-    if (rent.propertyType)
-      intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[rent.propertyType] || rent.propertyType });
+    if (rent.purpose) intentFields.push({ label: "Finalidade", value: purposeLabels[rent.purpose] || rent.purpose });
+    if (rent.propertyType) intentFields.push({ label: "Tipo de imóvel", value: propertyTypeLabels[rent.propertyType] || rent.propertyType });
     if (intentFields.length > 0) {
       sections.push({ title: "Intenção", icon: "🎯", fields: intentFields });
     }
 
-    // Preferências
     const prefFields: { label: string; value: string }[] = [];
-    if (rent.prefersGatedCommunity !== undefined)
-      prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(rent.prefersGatedCommunity) });
+    if (rent.prefersGatedCommunity !== undefined) prefFields.push({ label: "Prefere condomínio fechado", value: booleanLabels(rent.prefersGatedCommunity) });
     if (rent.bedrooms) prefFields.push({ label: "Dormitórios", value: String(rent.bedrooms) });
     if (rent.bathrooms) prefFields.push({ label: "Banheiros", value: String(rent.bathrooms) });
     if (rent.parkingSpots) prefFields.push({ label: "Vagas", value: String(rent.parkingSpots) });
@@ -656,25 +542,17 @@ function extractAllCharacteristics(
       sections.push({ title: "Preferências", icon: "🏠", fields: prefFields });
     }
 
-    // Localização e valor
     const budgetFields: { label: string; value: string }[] = [];
     if (rent.region) budgetFields.push({ label: "Região", value: rent.region });
     if (rent.maxRent) budgetFields.push({ label: "Valor máximo", value: rent.maxRent });
-    if (rent.includesCondoAndTax !== undefined)
-      budgetFields.push({ label: "Inclui condomínio e IPTU", value: booleanLabels(rent.includesCondoAndTax) });
+    if (rent.includesCondoAndTax !== undefined) budgetFields.push({ label: "Inclui condomínio e IPTU", value: booleanLabels(rent.includesCondoAndTax) });
     if (budgetFields.length > 0) {
       sections.push({ title: "Localização e Valor", icon: "📍", fields: budgetFields });
     }
 
-    // Garantia e prazo
     const guaranteeFields: { label: string; value: string }[] = [];
-    if (rent.guarantee)
-      guaranteeFields.push({ label: "Garantia", value: guaranteeLabels[rent.guarantee] || rent.guarantee });
-    if (rent.moveInDeadline)
-      guaranteeFields.push({
-        label: "Prazo para mudança",
-        value: moveInDeadlineLabels[rent.moveInDeadline] || rent.moveInDeadline,
-      });
+    if (rent.guarantee) guaranteeFields.push({ label: "Garantia", value: guaranteeLabels[rent.guarantee] || rent.guarantee });
+    if (rent.moveInDeadline) guaranteeFields.push({ label: "Prazo para mudança", value: moveInDeadlineLabels[rent.moveInDeadline] || rent.moveInDeadline });
     if (guaranteeFields.length > 0) {
       sections.push({ title: "Garantia e Prazo", icon: "📋", fields: guaranteeFields });
     }
@@ -802,12 +680,24 @@ const generateEmailHTML = (
 // ===== HANDLER =====
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { leadId, city, uf, intention, description, formData }: NotifyNewLeadRequest =
+    // Authenticate via shared secret (called from LP form, fire-and-forget)
+    const lpSecret = req.headers.get('x-lp-secret');
+    const expectedSecret = Deno.env.get('LP_FORM_SECRET');
+    if (!expectedSecret || lpSecret !== expectedSecret) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { leadId, city, uf, intention, description, formData } =
       await req.json();
 
     if (!leadId || !city || !intention) {
@@ -842,8 +732,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Found ${emails.length} active profiles to notify`);
 
-    console.log(`Sending notifications to ${emails.length} users`);
-
     if (emails.length === 0) {
       return new Response(
         JSON.stringify({ success: true, message: "No valid emails found", emailsSent: 0 }),
@@ -851,11 +739,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Extract ALL characteristics from form data
     const sections = extractAllCharacteristics(formData);
     console.log(`Extracted ${sections.length} sections from form data`);
 
-    // Generate email HTML
     const emailHTML = generateEmailHTML(city, uf || "", intention, sections, leadId);
 
     let successCount = 0;
@@ -878,7 +764,6 @@ const handler = async (req: Request): Promise<Response> => {
           console.log(`Email sent to ${email}. Resend ID: ${data?.id}`);
         }
 
-        // Resend free tier: max 2 requests/second — 600ms delay ensures compliance
         await new Promise(resolve => setTimeout(resolve, 600));
       } catch (emailError) {
         failCount++;

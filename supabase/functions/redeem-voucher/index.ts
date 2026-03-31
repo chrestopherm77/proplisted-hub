@@ -1,12 +1,23 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -48,10 +59,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Find voucher
+    // Find voucher to get its ID
     const { data: voucher, error: vErr } = await admin
       .from("vouchers")
-      .select("*")
+      .select("id")
       .eq("code", voucherCode.trim().toUpperCase())
       .single();
 
@@ -62,134 +73,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!voucher.is_active) {
-      return new Response(
-        JSON.stringify({ error: "Este voucher não está mais ativo" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check expiration
-    if (voucher.expires_at && new Date(voucher.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ error: "Este voucher já expirou" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 2. Check total redemptions < max_uses
-    const { count: totalRedemptions } = await admin
-      .from("voucher_redemptions")
-      .select("id", { count: "exact", head: true })
-      .eq("voucher_id", voucher.id);
-
-    if ((totalRedemptions ?? 0) >= voucher.max_uses) {
-      return new Response(
-        JSON.stringify({ error: "Este voucher já atingiu o limite de usos" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 3. Check per-user usage limit
-    const { count: userRedemptions } = await admin
-      .from("voucher_redemptions")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("voucher_id", voucher.id);
-
-    const maxPerUser = voucher.max_uses_per_user ?? 1;
-    if ((userRedemptions ?? 0) >= maxPerUser) {
-      return new Response(
-        JSON.stringify({ error: "Você já atingiu o limite de usos deste voucher" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 4. Check lead is active and available
-    const { data: lead, error: leadErr } = await admin
-      .from("leads")
-      .select("*")
-      .eq("id", leadId)
-      .single();
-
-    if (leadErr || !lead) {
-      return new Response(
-        JSON.stringify({ error: "Lead não encontrado" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!lead.is_active) {
-      return new Response(
-        JSON.stringify({ error: "Este lead não está mais disponível" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (lead.purchase_count >= lead.max_purchases) {
-      return new Response(
-        JSON.stringify({ error: "Este lead já atingiu o limite de vendas" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 5. Check if user already purchased this lead
-    const { data: existingPurchase } = await admin
-      .from("purchases")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("lead_id", leadId)
-      .eq("status", "PAID")
-      .maybeSingle();
-
-    if (existingPurchase) {
-      return new Response(
-        JSON.stringify({ error: "Você já possui este lead" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 6. Create purchase with amount 0
-    const { error: purchaseErr } = await admin.from("purchases").insert({
-      user_id: userId,
-      lead_id: leadId,
-      amount: 0,
-      status: "PAID",
-      payment_confirmed_at: new Date().toISOString(),
-      payment_method: "VOUCHER",
-      coupon_code: voucherCode.trim().toUpperCase(),
+    // Use atomic RPC to redeem — prevents race conditions
+    const { data: result, error: rpcError } = await admin.rpc('redeem_voucher_atomic', {
+      p_voucher_id: voucher.id,
+      p_user_id: userId,
+      p_lead_id: leadId,
+      p_voucher_code: voucherCode.trim().toUpperCase(),
     });
 
-    if (purchaseErr) {
-      console.error("Error creating purchase:", purchaseErr);
+    if (rpcError) {
+      console.error("RPC error:", rpcError);
       return new Response(
         JSON.stringify({ error: "Erro ao processar o voucher" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 7. Create voucher redemption
-    await admin.from("voucher_redemptions").insert({
-      voucher_id: voucher.id,
-      user_id: userId,
-      lead_id: leadId,
-    });
-
-    // 8. Increment purchase_count
-    await admin
-      .from("leads")
-      .update({ purchase_count: (lead.purchase_count || 0) + 1 })
-      .eq("id", leadId);
-
-    // 9. Remove from cart
-    await admin
-      .from("shopping_cart")
-      .delete()
-      .eq("user_id", userId)
-      .eq("lead_id", leadId);
+    if (result?.error) {
+      return new Response(
+        JSON.stringify({ error: result.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Voucher resgatado com sucesso!" }),
+      JSON.stringify({ success: true, message: result?.message || "Voucher resgatado com sucesso!" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
