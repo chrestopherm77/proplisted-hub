@@ -19,6 +19,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   is_promotion?: boolean;
+  is_exhausted?: boolean;
   form_data?: any;
   created_at?: string;
 }
@@ -242,8 +243,8 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, form_data, created_at')
-        .eq('is_active', true)
+        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at')
+        .or('is_active.eq.true,is_exhausted.eq.true')
         .order('is_promotion', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: true });
 
@@ -485,7 +486,7 @@ export default function Leads() {
   };
 
   const isInCart = (leadId: string) => cartItems.includes(leadId);
-  const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases;
+  const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases || lead.is_exhausted === true;
   const isPurchased = (leadId: string) => purchasedLeadIds.includes(leadId);
 
   if (loading) {

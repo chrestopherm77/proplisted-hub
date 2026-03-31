@@ -182,6 +182,7 @@ export type Database = {
           form_data: Json | null
           id: string
           is_active: boolean | null
+          is_exhausted: boolean | null
           is_promotion: boolean | null
           lead_submission_id: string | null
           max_purchases: number | null
@@ -197,6 +198,7 @@ export type Database = {
           form_data?: Json | null
           id?: string
           is_active?: boolean | null
+          is_exhausted?: boolean | null
           is_promotion?: boolean | null
           lead_submission_id?: string | null
           max_purchases?: number | null
@@ -212,6 +214,7 @@ export type Database = {
           form_data?: Json | null
           id?: string
           is_active?: boolean | null
+          is_exhausted?: boolean | null
           is_promotion?: boolean | null
           lead_submission_id?: string | null
           max_purchases?: number | null

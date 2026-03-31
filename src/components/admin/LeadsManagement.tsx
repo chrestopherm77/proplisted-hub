@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 
@@ -22,6 +22,7 @@ interface Lead {
   max_purchases: number;
   is_active: boolean;
   is_promotion: boolean;
+  is_exhausted: boolean;
   created_at: string | null;
 }
 
@@ -158,6 +159,29 @@ export function LeadsManagement() {
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar a promoção',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleExhausted = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ is_exhausted: !lead.is_exhausted })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      toast({
+        title: !lead.is_exhausted ? '🚫 Lead esgotado!' : 'Lead reativado',
+        description: `Lead ${!lead.is_exhausted ? 'marcado como esgotado' : 'removido do esgotamento'}`,
+      });
+      fetchLeads();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o lead',
         variant: 'destructive',
       });
     }
@@ -368,6 +392,11 @@ export function LeadsManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {lead.is_exhausted && (
+                    <Badge variant="destructive" className="text-xs">
+                      🚫 Esgotado
+                    </Badge>
+                  )}
                   {lead.is_promotion && (
                     <Badge className="text-xs animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent">
                       🔥 Promoção
@@ -395,6 +424,15 @@ export function LeadsManagement() {
                     title={lead.is_promotion ? 'Remover promoção' : 'Marcar como promoção'}
                   >
                     <Flame className="h-3 w-3 md:h-4 md:w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={lead.is_exhausted ? "default" : "outline"}
+                    onClick={() => toggleExhausted(lead)}
+                    className={`flex-1 sm:flex-none h-8 ${lead.is_exhausted ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
+                    title={lead.is_exhausted ? 'Reativar lead' : 'Esgotar lead'}
+                  >
+                    {lead.is_exhausted ? <RotateCcw className="h-3 w-3 md:h-4 md:w-4" /> : <Ban className="h-3 w-3 md:h-4 md:w-4" />}
                   </Button>
                   <Button
                     size="sm"
