@@ -12,6 +12,7 @@ import { UsersManagement } from '@/components/admin/UsersManagement';
 import { LeadTracking } from '@/components/admin/LeadTracking';
 import { VouchersManagement } from '@/components/admin/VouchersManagement';
 import { AccessHistory } from '@/components/admin/AccessHistory';
+import { PartnersManagement } from '@/components/admin/PartnersManagement';
 
 export default function Admin() {
   const { user, loading: authLoading, isAdmin } = useAuth();
