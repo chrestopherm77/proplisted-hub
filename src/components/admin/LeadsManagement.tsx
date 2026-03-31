@@ -164,6 +164,29 @@ export function LeadsManagement() {
     }
   };
 
+  const toggleExhausted = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ is_exhausted: !lead.is_exhausted })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      toast({
+        title: !lead.is_exhausted ? '🚫 Lead esgotado!' : 'Lead reativado',
+        description: `Lead ${!lead.is_exhausted ? 'marcado como esgotado' : 'removido do esgotamento'}`,
+      });
+      fetchLeads();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o lead',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const deleteLead = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este lead?')) return;
 
