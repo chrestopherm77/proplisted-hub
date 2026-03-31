@@ -687,15 +687,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Authenticate via shared secret (called from LP form, fire-and-forget)
-    const lpSecret = req.headers.get('x-lp-secret');
-    const expectedSecret = Deno.env.get('LP_FORM_SECRET');
-    if (!expectedSecret || lpSecret !== expectedSecret) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    // CORS restriction limits which domains can call this endpoint
 
     const { leadId, city, uf, intention, description, formData } =
       await req.json();

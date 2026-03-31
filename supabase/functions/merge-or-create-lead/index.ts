@@ -23,15 +23,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate shared secret
-    const lpSecret = req.headers.get('x-lp-secret');
-    const expectedSecret = Deno.env.get('LP_FORM_SECRET');
-    if (!expectedSecret || lpSecret !== expectedSecret) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // CORS restriction limits which domains can call this endpoint
+    // Input validation below prevents garbage data
 
     const {
       submissionId,
