@@ -1,28 +1,56 @@
 
 
-## Plano: Download CSV de Corretores e Leads com filtro de data
+# Plano: White-Label sem alteração de pagamento
 
-### 1. Botão "Exportar CSV" na aba Usuários (`UsersManagement.tsx`)
+## Objetivo
+Criar sistema white-label onde parceiros usam domínios próprios com branding customizado, **sem mexer no fluxo de pagamento atual**. Preços e checkout permanecem idênticos.
 
-- Adicionar botão "Exportar CSV" ao lado do campo de busca
-- Gera CSV com colunas: Nome, E-mail, Telefone, Tipo (PF/PJ), CPF/CNPJ, Profissão, Registro, UF, Cidade, Bairro, Status, Data Cadastro
-- Exporta os dados filtrados (respeitando a busca atual)
-- Download automático no navegador via `Blob` + `URL.createObjectURL`
+## O que muda
+- Parceiro acessa pelo domínio dele → app detecta e aplica logo/cores dele
+- Esconde elementos internos (admin, links LeadBay)
+- Compras ficam registradas com `partner_id` para rastreamento futuro
 
-### 2. Filtro de período + Botão "Exportar CSV" na aba Leads (`LeadsManagement.tsx`)
+## Etapas
 
-- Adicionar um `Select` com opções de período: "Todos", "Últimos 7 dias", "Últimos 15 dias", "Últimos 20 dias", "Últimos 30 dias"
-- Filtrar os leads exibidos pelo período selecionado (baseado em `created_at`)
-- Adicionar botão "Exportar CSV" que exporta os leads filtrados
-- Colunas do CSV: Nome, Telefone, Descrição, Preço, Vendas, Max Vendas, Promoção, Status, Data Cadastro
+### 1. Criar tabela `partners` no banco
+Campos: `id`, `name`, `slug`, `custom_domain`, `logo_url`, `primary_color`, `secondary_color`, `is_active`, `created_at`.
+RLS: admin gerencia tudo, leitura pública pelo domínio.
 
-### Detalhes técnicos
+### 2. Adicionar `partner_id` na tabela `purchases`
+Coluna nullable para rastrear origem da venda por parceiro.
 
-- Lógica de geração CSV pura no frontend (sem edge function), usando os dados já carregados
-- Função utilitária para converter array de objetos em string CSV com encoding UTF-8 BOM (compatível com Excel pt-BR)
-- Ambos os componentes usam `document.createElement('a')` para trigger do download
+### 3. Criar hook `usePartner` + `PartnerContext`
+- Lê `window.location.hostname`
+- Consulta tabela `partners` pelo `custom_domain`
+- Disponibiliza config do parceiro em contexto React
+- Se não encontrar parceiro, opera como LeadBay normal
 
-### Arquivos modificados
-- `src/components/admin/UsersManagement.tsx` — botão exportar CSV
-- `src/components/admin/LeadsManagement.tsx` — filtro de período + botão exportar CSV
+### 4. Adaptar `Layout.tsx`
+- Se há parceiro ativo: trocar logo, aplicar cores via CSS variables
+- Esconder link de Admin e elementos exclusivos LeadBay
+- Footer mostra nome do parceiro em vez de "LeadBay"
+
+### 5. Adaptar `Checkout.tsx` e `create-payment`
+- Passar `partner_id` no payload do checkout
+- Salvar `partner_id` na purchase (sem alterar valores/split)
+
+### 6. Aba "Parceiros" no Admin
+- CRUD de parceiros (nome, domínio, logo URL, cores, ativo/inativo)
+- Visualizar vendas originadas por cada parceiro
+
+### 7. Configuração de domínio (manual)
+- Adicionar domínio do parceiro no Vercel (Settings → Domains)
+- Parceiro aponta CNAME para o projeto Vercel
+- SSL automático pelo Vercel
+
+## O que NÃO muda
+- Preços dos leads (sem markup)
+- Fluxo de pagamento Asaas (sem split)
+- Autenticação (mesma base de usuários)
+- Dados centralizados no banco LeadBay
+
+## Arquivos principais afetados
+- **Novo**: `src/hooks/usePartner.tsx`, `src/contexts/PartnerContext.tsx`
+- **Editados**: `Layout.tsx`, `App.tsx`, `Admin.tsx`, `Checkout.tsx`, `create-payment/index.ts`
+- **Migração**: nova tabela `partners` + coluna `partner_id` em `purchases`
 
