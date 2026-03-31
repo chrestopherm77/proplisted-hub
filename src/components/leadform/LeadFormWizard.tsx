@@ -631,9 +631,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
         const description = generateDescription(formData);
 
         // Call edge function to merge or create lead (handles submission + lead in one call)
-        const lpFormSecret = import.meta.env.VITE_LP_FORM_SECRET || '';
         const { data: mergeResult, error: mergeError } = await supabase.functions.invoke('merge-or-create-lead', {
-          headers: { 'x-lp-secret': lpFormSecret },
           body: {
             submissionId,
             name: formData.name.trim(),
