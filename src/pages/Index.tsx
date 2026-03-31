@@ -32,7 +32,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <img src={leadbayLogo} alt="LeadBay" className="h-10" />
+          <img src={brandLogo} alt={brandName} className="h-10" />
           <Button onClick={() => navigate('/auth')} size="lg">
             Entrar
           </Button>
