@@ -1,6 +1,28 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+function hexToHsl(hex: string | null): { h: number; s: number; l: number } | null {
+  if (!hex) return null;
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
 export interface Partner {
   id: string;
   name: string;
@@ -34,7 +56,6 @@ export const PartnerProvider = ({ children }: { children: ReactNode }) => {
     const detectPartner = async () => {
       const hostname = window.location.hostname;
 
-      // Skip partner detection for known LeadBay domains
       const knownDomains = [
         'localhost',
         'leadbay.com.br',
@@ -68,14 +89,28 @@ export const PartnerProvider = ({ children }: { children: ReactNode }) => {
     detectPartner();
   }, []);
 
-  // Apply partner CSS variables
+  // Apply partner CSS variables (convert hex to HSL and override design system)
   useEffect(() => {
+    const root = document.documentElement;
     if (partner) {
-      document.documentElement.style.setProperty('--partner-primary', partner.primary_color);
-      document.documentElement.style.setProperty('--partner-secondary', partner.secondary_color);
+      const primary = hexToHsl(partner.primary_color);
+      const secondary = hexToHsl(partner.secondary_color);
+
+      if (primary) {
+        const p = `${primary.h} ${primary.s}% ${primary.l}%`;
+        root.style.setProperty('--primary', p);
+        root.style.setProperty('--primary-dark', `${primary.h} ${primary.s}% ${Math.max(primary.l - 10, 0)}%`);
+        root.style.setProperty('--primary-light', `${primary.h} ${primary.s}% 92%`);
+        root.style.setProperty('--ring', p);
+        root.style.setProperty('--info', p);
+      }
+      if (secondary) {
+        root.style.setProperty('--secondary', `${secondary.h} ${secondary.s}% ${secondary.l}%`);
+        root.style.setProperty('--secondary-dark', `${secondary.h} ${secondary.s}% ${Math.max(secondary.l - 10, 0)}%`);
+      }
     } else {
-      document.documentElement.style.removeProperty('--partner-primary');
-      document.documentElement.style.removeProperty('--partner-secondary');
+      ['--primary', '--primary-dark', '--primary-light', '--ring', '--info',
+       '--secondary', '--secondary-dark'].forEach(v => root.style.removeProperty(v));
     }
   }, [partner]);
 
