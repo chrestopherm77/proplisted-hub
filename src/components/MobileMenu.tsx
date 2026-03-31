@@ -32,7 +32,11 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
       <SheetContent side="left" className="w-72">
         <SheetHeader>
           <SheetTitle className="text-left">
-            <img src={leadbayLogo} alt="LeadBay" className="h-7" />
+            {isPartnerSite && partner?.logo_url ? (
+              <img src={partner.logo_url} alt={partner.name} className="h-7 max-w-[140px] object-contain" />
+            ) : (
+              <img src={leadbayLogo} alt="LeadBay" className="h-7" />
+            )}
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col space-y-2 mt-8">
