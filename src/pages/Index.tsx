@@ -9,7 +9,10 @@ import FakeNotification from '@/components/FakeNotification';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { partner, isPartnerSite } = usePartner();
   const navigate = useNavigate();
+  const brandName = isPartnerSite && partner ? partner.name : 'LeadBay';
+  const brandLogo = isPartnerSite && partner?.logo_url ? partner.logo_url : leadbayLogo;
 
   useEffect(() => {
     if (!loading && user) {
