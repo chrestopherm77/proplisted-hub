@@ -23,6 +23,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { user, isAdmin, signOut } = useAuth();
+  const { partner, isPartnerSite } = usePartner();
   const location = useLocation();
   const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
