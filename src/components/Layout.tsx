@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, Settings, LogOut, LayoutDashboard, Search } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
   DropdownMenu,
@@ -115,6 +115,14 @@ export const Layout = ({ children }: LayoutProps) => {
                   }`}
                 >
                   Marketplace
+                </Link>
+                <Link
+                  to="/property-searches"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive('/property-searches') ? 'text-primary' : 'text-foreground'
+                  }`}
+                >
+                  Procura-Imob
                 </Link>
                 {isAdmin && !isPartnerSite && (
                   <Link
