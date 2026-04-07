@@ -513,6 +513,63 @@ export type Database = {
         }
         Relationships: []
       }
+      property_searches: {
+        Row: {
+          bedrooms: string | null
+          city: string
+          created_at: string | null
+          house_type: string | null
+          id: string
+          is_active: boolean | null
+          neighborhood: string | null
+          observation: string | null
+          operation_type: string
+          parking_spots: string | null
+          property_type: string
+          rural_type: string | null
+          size_m2: string | null
+          user_id: string
+          value: string | null
+          zone: string | null
+        }
+        Insert: {
+          bedrooms?: string | null
+          city: string
+          created_at?: string | null
+          house_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          neighborhood?: string | null
+          observation?: string | null
+          operation_type: string
+          parking_spots?: string | null
+          property_type: string
+          rural_type?: string | null
+          size_m2?: string | null
+          user_id: string
+          value?: string | null
+          zone?: string | null
+        }
+        Update: {
+          bedrooms?: string | null
+          city?: string
+          created_at?: string | null
+          house_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          neighborhood?: string | null
+          observation?: string | null
+          operation_type?: string
+          parking_spots?: string | null
+          property_type?: string
+          rural_type?: string | null
+          size_m2?: string | null
+          user_id?: string
+          value?: string | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
       purchases: {
         Row: {
           amount: number

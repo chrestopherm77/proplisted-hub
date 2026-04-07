@@ -21,6 +21,9 @@ import LeadForm01 from "./pages/LeadForm01";
 import ResetPassword from "./pages/ResetPassword";
 import ThankYou from "./pages/ThankYou";
 import ThankYou01 from "./pages/ThankYou01";
+import PropertySearches from "./pages/PropertySearches";
+import PropertySearchDetail from "./pages/PropertySearchDetail";
+import NewPropertySearch from "./pages/NewPropertySearch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +69,9 @@ const App = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/lp-obrigado" element={<ThankYou />} />
           <Route path="/lp-obrigado-01" element={<ThankYou01 />} />
+          <Route path="/property-searches" element={<PropertySearches />} />
+          <Route path="/property-searches/new" element={<NewPropertySearch />} />
+          <Route path="/property-searches/:id" element={<PropertySearchDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
