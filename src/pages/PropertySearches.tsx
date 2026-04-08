@@ -158,7 +158,7 @@ const PropertySearches = () => {
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select value={filterState} onValueChange={setFilterState}>
+            <Select value={filterState} onValueChange={(v) => setFilterState(v === 'ALL' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Filtrar por Estado" />
               </SelectTrigger>
@@ -169,7 +169,7 @@ const PropertySearches = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterCity} onValueChange={setFilterCity}>
+            <Select value={filterCity} onValueChange={(v) => setFilterCity(v === 'ALL' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Filtrar por Cidade" />
               </SelectTrigger>
@@ -180,7 +180,7 @@ const PropertySearches = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select value={filterType} onValueChange={(v) => setFilterType(v === 'ALL' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Filtrar por Tipo" />
               </SelectTrigger>
