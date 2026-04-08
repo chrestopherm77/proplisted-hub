@@ -122,7 +122,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     isActive('/property-searches') ? 'text-primary' : 'text-foreground'
                   }`}
                 >
-                  Procura-Imob
+                  Buscar oferta
                 </Link>
                 {isAdmin && !isPartnerSite && (
                   <Link

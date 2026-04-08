@@ -71,7 +71,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
             }`}
           >
             <Search className="h-5 w-5" />
-            <span className="font-medium">Procura-Imob</span>
+            <span className="font-medium">Buscar oferta</span>
           </Link>
           {isAdmin && !isPartnerSite && (
             <Link
