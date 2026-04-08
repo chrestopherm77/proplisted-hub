@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,6 +17,7 @@ interface PropertySearch {
   property_type: string;
   operation_type: string;
   city: string;
+  state: string | null;
   neighborhood: string | null;
   zone: string | null;
   size_m2: string | null;
@@ -27,6 +28,7 @@ interface PropertySearch {
   house_type: string | null;
   rural_type: string | null;
   is_active: boolean;
+  offer_count: number;
   created_at: string;
 }
 
@@ -79,7 +81,7 @@ const PropertySearches = () => {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (!error && data) setSearches(data as PropertySearch[]);
+    if (!error && data) setSearches(data as unknown as PropertySearch[]);
     setLoading(false);
   };
 
@@ -145,12 +147,16 @@ const PropertySearches = () => {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
-                        {s.neighborhood ? `${s.neighborhood} — ` : ''}{s.city}
+                        {s.neighborhood ? `${s.neighborhood} — ` : ''}{s.city}{s.state ? ` / ${s.state}` : ''}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 space-y-1">
                     <p className="font-semibold text-foreground">{s.value ? `R$ ${s.value}` : '—'}</p>
+                    <div className="flex items-center gap-1 justify-end text-xs text-muted-foreground">
+                      <MessageCircle className="h-3 w-3" />
+                      <span>{s.offer_count ?? 0} ofertas</span>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(s.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
