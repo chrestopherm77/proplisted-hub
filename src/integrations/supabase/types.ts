@@ -139,6 +139,81 @@ export type Database = {
         }
         Relationships: []
       }
+      launches: {
+        Row: {
+          associative: string | null
+          banner_url: string | null
+          book_url: string | null
+          city: string
+          commission: string | null
+          coordinator_name: string | null
+          coordinator_phone: string | null
+          created_at: string | null
+          delivery_date: string | null
+          drive_url: string | null
+          floors: string | null
+          id: string
+          is_active: boolean | null
+          launch_date: string | null
+          name: string
+          neighborhood: string | null
+          price_from: string | null
+          state: string | null
+          table_url: string | null
+          total_units: string | null
+          user_id: string
+          zone: string | null
+        }
+        Insert: {
+          associative?: string | null
+          banner_url?: string | null
+          book_url?: string | null
+          city: string
+          commission?: string | null
+          coordinator_name?: string | null
+          coordinator_phone?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          drive_url?: string | null
+          floors?: string | null
+          id?: string
+          is_active?: boolean | null
+          launch_date?: string | null
+          name: string
+          neighborhood?: string | null
+          price_from?: string | null
+          state?: string | null
+          table_url?: string | null
+          total_units?: string | null
+          user_id: string
+          zone?: string | null
+        }
+        Update: {
+          associative?: string | null
+          banner_url?: string | null
+          book_url?: string | null
+          city?: string
+          commission?: string | null
+          coordinator_name?: string | null
+          coordinator_phone?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          drive_url?: string | null
+          floors?: string | null
+          id?: string
+          is_active?: boolean | null
+          launch_date?: string | null
+          name?: string
+          neighborhood?: string | null
+          price_from?: string | null
+          state?: string | null
+          table_url?: string | null
+          total_units?: string | null
+          user_id?: string
+          zone?: string | null
+        }
+        Relationships: []
+      }
       lead_submissions: {
         Row: {
           created_at: string | null

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Settings, LogOut, LayoutDashboard, Search } from 'lucide-react';
+import { ShoppingCart, User, Settings, LogOut, LayoutDashboard, Search, Rocket } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
   DropdownMenu,
@@ -123,6 +123,14 @@ export const Layout = ({ children }: LayoutProps) => {
                   }`}
                 >
                   Buscar oferta
+                </Link>
+                <Link
+                  to="/launches"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive('/launches') ? 'text-primary' : 'text-foreground'
+                  }`}
+                >
+                  Lançamentos
                 </Link>
                 {isAdmin && !isPartnerSite && (
                   <Link
