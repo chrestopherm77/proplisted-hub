@@ -1,38 +1,104 @@
 
 
-# Plano: Título do Imóvel, Formatação de Valor e Filtros
+# Plano: Seção "Lançamentos" — Cadastro e Vitrine de Empreendimentos
 
-## Mudanças
+## Resumo
+Nova seção para cadastrar e exibir lançamentos imobiliários com banner, informações gerais, valores, estrutura, arquivos PDF e contato do coordenador via WhatsApp.
 
-### 1. Migration SQL
-- Adicionar coluna `title` (text, nullable) na tabela `property_searches`
+---
 
-### 2. `NewPropertySearch.tsx` — Campo "Título do Imóvel"
-- Adicionar campo de texto "Título do Imóvel" no formulário de todos os 6 tipos, como primeiro campo do formulário
-- Salvar no insert como `title`
+## 1. Banco de Dados — Nova tabela `launches`
 
-### 3. `PropertySearches.tsx` — Reformular listagem
-- **Título**: onde hoje mostra "Casa" / "Apartamento" como texto principal, passa a mostrar o `title` do imóvel (ou fallback para o tipo se não tiver título)
-- **Tipo como tag colorida**: o tipo de imóvel (Casa, Apartamento, etc.) vira uma Badge com cor específica por tipo:
-  - Casa → azul
-  - Apartamento → roxo
-  - Sala Comercial → laranja
-  - Lote → amarelo
-  - Rural → verde
-  - Prédio Comercial → vermelho
-- **Valor formatado**: exibir com "R$" e separadores de milhar (já está parcialmente, garantir formatação consistente)
-- **Filtros estruturados**: adicionar selects de filtro por Cidade, Estado e Tipo de Imóvel (extraídos dos dados carregados), além do campo de busca texto existente
+```sql
+CREATE TABLE public.launches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  banner_url text,
+  name text NOT NULL,
+  state text,
+  city text NOT NULL,
+  neighborhood text,
+  zone text,
+  launch_date date,
+  delivery_date date,
+  price_from text,
+  commission text,
+  floors text,
+  total_units text,
+  associative text,
+  book_url text,
+  table_url text,
+  drive_url text,
+  coordinator_name text,
+  coordinator_phone text,
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
 
-### 4. `PropertySearchDetail.tsx`
-- Exibir o título no cabeçalho do detalhe
-- Incluir `title` na interface
+ALTER TABLE public.launches ENABLE ROW LEVEL SECURITY;
+```
 
-### Arquivos afetados
+**RLS**: Todos autenticados podem ver lançamentos ativos. Usuário insere/edita/deleta os próprios. Admins podem tudo.
+
+**Storage**: Criar bucket `launches` para upload de banners e PDFs.
+
+---
+
+## 2. Novas Páginas
+
+### `src/pages/Launches.tsx` — Listagem (Grid de Cards)
+- Layout inspirado na imagem 2: grid de cards com banner, nome e valor "A partir de R$ X"
+- Filtros: busca texto, cidade, tipo
+- Botão "+ Novo Lançamento" no topo
+- Ao clicar num card, navega para `/launches/:id`
+
+### `src/pages/LaunchDetail.tsx` — Detalhe do Lançamento
+- Layout inspirado na imagem 1:
+  - Banner grande no topo
+  - Nome do empreendimento como título
+  - Card "Informações Gerais": Bairro, Zona, Data Lançamento, Data Entrega
+  - Card "Valores e Bônus": A partir de, Comissão
+  - Card "Estrutura": Andares, Total de Unidades, Associativo
+  - Sidebar direita: Coordenador (nome + botão WhatsApp), Downloads (Book, Tabela, Drive — links para PDFs)
+
+### `src/pages/NewLaunch.tsx` — Formulário de Cadastro
+- Upload de imagem de banner (via Storage bucket `launches`)
+- Nome do empreendimento
+- Informações Gerais: Estado, Cidade, Bairro, Zona, Data Lançamento, Data Entrega
+- Valores: A partir de (com máscara R$), Comissão
+- Estrutura: Andares, Total de Unidades, Associativo
+- Upload de PDFs: Book, Tabela, Drive (3 campos de upload de arquivo)
+- Coordenador: Nome, Telefone (para link WhatsApp)
+- Botão "Publicar"
+
+---
+
+## 3. Navegação
+
+- Novo link "Lançamentos" no menu desktop (`Layout.tsx`) e mobile (`MobileMenu.tsx`)
+- Rotas: `/launches`, `/launches/new`, `/launches/:id`
+- Registrar em `App.tsx`
+
+---
+
+## 4. Storage
+
+- Criar bucket `launches` via migration
+- Policies: autenticados podem fazer upload; todos autenticados podem ler
+- Banners salvos como `banners/{id}.{ext}`
+- PDFs salvos como `docs/{id}/book.pdf`, `docs/{id}/tabela.pdf`, `docs/{id}/drive.pdf`
+
+---
+
+## Arquivos afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migration SQL | `ALTER TABLE property_searches ADD COLUMN title text` |
-| `src/pages/NewPropertySearch.tsx` | Campo "Título do Imóvel" no formulário |
-| `src/pages/PropertySearches.tsx` | Título na lista, tipo como badge colorida, valor formatado, filtros por cidade/estado/tipo |
-| `src/pages/PropertySearchDetail.tsx` | Exibir título no cabeçalho |
+| Migration SQL | Criar tabela `launches` + RLS + bucket storage |
+| `src/pages/Launches.tsx` | **Novo** — Grid de cards dos lançamentos |
+| `src/pages/LaunchDetail.tsx` | **Novo** — Página de detalhe com layout da imagem 1 |
+| `src/pages/NewLaunch.tsx` | **Novo** — Formulário de cadastro com uploads |
+| `src/App.tsx` | Adicionar 3 rotas |
+| `src/components/Layout.tsx` | Link "Lançamentos" no menu desktop |
+| `src/components/MobileMenu.tsx` | Link "Lançamentos" no menu mobile |
 
