@@ -24,6 +24,9 @@ import ThankYou01 from "./pages/ThankYou01";
 import PropertySearches from "./pages/PropertySearches";
 import PropertySearchDetail from "./pages/PropertySearchDetail";
 import NewPropertySearch from "./pages/NewPropertySearch";
+import Launches from "./pages/Launches";
+import LaunchDetail from "./pages/LaunchDetail";
+import NewLaunch from "./pages/NewLaunch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +75,9 @@ const App = () => {
           <Route path="/property-searches" element={<PropertySearches />} />
           <Route path="/property-searches/new" element={<NewPropertySearch />} />
           <Route path="/property-searches/:id" element={<PropertySearchDetail />} />
+          <Route path="/launches" element={<Launches />} />
+          <Route path="/launches/new" element={<NewLaunch />} />
+          <Route path="/launches/:id" element={<LaunchDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

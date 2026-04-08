@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import { usePartner } from '@/contexts/PartnerContext';
 import {
@@ -72,6 +72,17 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
           >
             <Search className="h-5 w-5" />
             <span className="font-medium">Buscar oferta</span>
+          </Link>
+          <Link
+            to="/launches"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/launches')
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            <Rocket className="h-5 w-5" />
+            <span className="font-medium">Lançamentos</span>
           </Link>
           {isAdmin && !isPartnerSite && (
             <Link
