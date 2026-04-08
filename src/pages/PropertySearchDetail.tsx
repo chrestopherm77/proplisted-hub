@@ -35,6 +35,7 @@ const ruralLabels: Record<string, string> = {
 interface PropertySearch {
   id: string;
   user_id: string;
+  title: string | null;
   property_type: string;
   operation_type: string;
   city: string;
@@ -158,7 +159,7 @@ const PropertySearchDetail = () => {
           <CardHeader>
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
-                {typeLabels[search.property_type] ?? search.property_type}
+                {search.title || typeLabels[search.property_type] || search.property_type}
               </CardTitle>
               <Badge variant="secondary">
                 {opLabels[search.operation_type] ?? search.operation_type}
