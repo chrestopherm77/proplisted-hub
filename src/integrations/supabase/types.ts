@@ -523,11 +523,13 @@ export type Database = {
           is_active: boolean | null
           neighborhood: string | null
           observation: string | null
+          offer_count: number
           operation_type: string
           parking_spots: string | null
           property_type: string
           rural_type: string | null
           size_m2: string | null
+          state: string | null
           user_id: string
           value: string | null
           zone: string | null
@@ -541,11 +543,13 @@ export type Database = {
           is_active?: boolean | null
           neighborhood?: string | null
           observation?: string | null
+          offer_count?: number
           operation_type: string
           parking_spots?: string | null
           property_type: string
           rural_type?: string | null
           size_m2?: string | null
+          state?: string | null
           user_id: string
           value?: string | null
           zone?: string | null
@@ -559,11 +563,13 @@ export type Database = {
           is_active?: boolean | null
           neighborhood?: string | null
           observation?: string | null
+          offer_count?: number
           operation_type?: string
           parking_spots?: string | null
           property_type?: string
           rural_type?: string | null
           size_m2?: string | null
+          state?: string | null
           user_id?: string
           value?: string | null
           zone?: string | null
@@ -782,12 +788,17 @@ export type Database = {
     }
     Functions: {
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
+      get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_offer_count: {
+        Args: { p_search_id: string }
+        Returns: undefined
       }
       increment_purchase_count: {
         Args: { p_lead_id: string }
