@@ -1,102 +1,53 @@
 
 
-# Plano: "Procura seu Imóvel" — Painel de Buscas de Imóveis
+# Plano: Ajustes no "Procura seu Imóvel"
 
-## Resumo
-Nova seção onde usuários cadastram o imóvel que procuram. Outros corretores veem a lista e podem enviar ofertas via WhatsApp direto para quem cadastrou.
+## Problemas identificados
 
----
-
-## 1. Banco de Dados — Nova tabela `property_searches`
-
-```sql
-CREATE TABLE public.property_searches (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  property_type text NOT NULL, -- CASA, APARTAMENTO, SALA_COMERCIAL, LOTE, RURAL, PREDIO_COMERCIAL
-  operation_type text NOT NULL, -- VENDA, ALUGUEL
-  city text NOT NULL,
-  neighborhood text, -- Bairro/Condomínio
-  zone text,
-  size_m2 text,
-  bedrooms text,
-  value text, -- valor em texto formatado
-  parking_spots text,
-  observation text,
-  house_type text, -- RUA, CONDOMINIO (só para CASA)
-  rural_type text, -- FAZENDA, SITIO, RANCHO, CHACARA (só para RURAL)
-  is_active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now()
-);
-```
-
-**RLS**: Todos autenticados podem ver buscas ativas. Usuário pode inserir/editar/deletar as próprias. Admins podem tudo.
+1. **Menu de tipos** mostra 10 cards (Casa Rua, Casa Condomínio separados, cada rural separado). Deve mostrar 6 cards, com sub-seleção dentro do formulário.
+2. **Falta campo "Estado"** em todos os tipos.
+3. **Campo Valor** não tem máscara de moeda (R$ X.XXX,XX).
+4. **Falta coluna "Ofertas"** na listagem — precisa de um contador no banco.
+5. **Botão "Enviar Oferta" não aparece** no detalhe — dois problemas:
+   - A condição `search.user_id !== user.id` esconde para o próprio dono, mas o problema real é que a RLS de `profiles` só permite ver o próprio perfil, então `ownerPhone` fica `null` para outros usuários, e o botão não funciona.
+   - Deve sempre mostrar o botão (exceto para o dono), e resolver o acesso ao telefone.
 
 ---
 
-## 2. Novas Páginas
+## Mudanças
 
-### `src/pages/PropertySearches.tsx` — Lista de Procuras
-- Layout similar à imagem 1 (tabela com colunas: Bairro/Condomínio, Operação, Preço, Ofertas)
-- Botão "+ Nova Procura" no topo
-- Filtros: busca por texto, status (Ativas), tipo de imóvel
-- Ícone por tipo de propriedade (casa, apartamento, etc.)
-- Badge "Ativa" verde ao lado do tipo
+### 1. Migration SQL
+- Adicionar coluna `state` (text, nullable) na tabela `property_searches`
+- Adicionar coluna `offer_count` (integer, default 0) na tabela `property_searches`
+- Criar uma policy RLS em `profiles` permitindo usuários autenticados lerem `phone` de qualquer perfil (necessário para o botão WhatsApp funcionar)
 
-### `src/pages/PropertySearchDetail.tsx` — Detalhe da Procura
-- Layout similar à imagem 3 (card com Operação, Tipo, Cidade, Bairro, Tamanho, Valor, Data, Observação)
-- Data de criação automática
-- Botão "Enviar Oferta" que abre WhatsApp (`https://wa.me/55{phone}`) usando o telefone do perfil do criador
-- Seção "Ofertas" (placeholder para futuro)
+### 2. `NewPropertySearch.tsx` — Reformular seleção de tipos
+- Mudar para 6 cards: Casa, Apartamento, Sala Comercial, Lote, Rural, Prédio Comercial
+- Para **Casa**: adicionar campo Select "Tipo de Casa" (Rua / Condomínio) dentro do formulário
+- Para **Rural**: adicionar campo Select "Tipo de Propriedade" (Fazenda / Sítio / Rancho / Chácara) dentro do formulário
+- Adicionar campo **Estado** (campo aberto) em todos os tipos
+- Adicionar máscara de moeda no campo **Valor (R$)** — ao digitar, formatar como `R$ 350.000`
+- Salvar `state` no insert
 
-### `src/pages/NewPropertySearch.tsx` — Criar Nova Procura
-- Tela de seleção de tipo (imagem 2): Casa de Rua, Casa em Condomínio, Apartamento, Sala Comercial, Lote, Fazenda, Sítio, Rancho, Chácara, Prédio Comercial
-- Ao selecionar tipo, abre formulário com os campos específicos
-- Botão "Adicionar" no final para salvar
+### 3. `PropertySearches.tsx` — Adicionar coluna Ofertas
+- Incluir `offer_count` na interface e exibir na listagem ao lado do preço/data
 
----
+### 4. `PropertySearchDetail.tsx` — Corrigir botão + ofertas
+- Sempre mostrar botão "Enviar Oferta" quando `user_id !== user.id` (já está assim, mas o phone não carrega por RLS)
+- Incrementar `offer_count` ao clicar em "Enviar Oferta" (update no banco antes de abrir WhatsApp)
+- Exibir campo "Estado" nos detalhes
+- Remover condição que depende de `ownerPhone` estar preenchido para mostrar o botão — mostrar botão sempre, buscar phone via abordagem que funcione com RLS
 
-## 3. Campos por Tipo de Imóvel
+### 5. RLS — Permitir leitura de phone de outros perfis
+- Nova policy SELECT em `profiles` para authenticated: permitir ler apenas a coluna `phone` de qualquer perfil. Como RLS não filtra por coluna, criar uma view ou usar uma function `security definer` que retorna o phone dado um user_id.
+- Abordagem escolhida: criar function `get_profile_phone(p_user_id uuid)` como `security definer` que retorna o phone. O frontend chama `.rpc('get_profile_phone', { p_user_id })` ao invés de query direta na profiles.
 
-| Campo | Casa | Apto | Sala Com. | Lote | Rural | Prédio Com. |
-|-------|------|------|-----------|------|-------|-------------|
-| Cidade | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Operação | Venda/Compra | ✅ | Venda/Aluguel | Venda/Aluguel | Venda/Aluguel | Venda/Aluguel |
-| Tipo casa (Rua/Cond.) | ✅ | - | - | - | - | - |
-| Bairro/Condomínio | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Zona | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Tamanho (m²) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Quartos | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Valor (R$) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Vagas garagem | ✅ | ✅ | ✅ | - | - | - |
-| Tipo rural | - | - | - | - | ✅ | - |
-| Observação | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
----
-
-## 4. Navegação
-
-- Novo link "Procura-Imob" no menu desktop (`Layout.tsx`) e mobile (`MobileMenu.tsx`)
-- Rotas: `/property-searches`, `/property-searches/new`, `/property-searches/:id`
-- Registrar em `App.tsx`
-
----
-
-## 5. Lógica do WhatsApp
-
-Ao clicar "Enviar Oferta", buscar o `phone` da tabela `profiles` pelo `user_id` da procura e abrir `https://wa.me/55{phone_limpo}` com mensagem pré-preenchida.
-
----
-
-## Arquivos Afetados
+### Arquivos afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| **Migration SQL** | Criar tabela `property_searches` + RLS |
-| `src/pages/PropertySearches.tsx` | **Novo** — Lista de procuras |
-| `src/pages/PropertySearchDetail.tsx` | **Novo** — Detalhe + botão WhatsApp |
-| `src/pages/NewPropertySearch.tsx` | **Novo** — Formulário de criação |
-| `src/App.tsx` | Adicionar 3 rotas |
-| `src/components/Layout.tsx` | Link "Procura-Imob" no menu desktop |
-| `src/components/MobileMenu.tsx` | Link "Procura-Imob" no menu mobile |
+| Migration SQL | `ALTER TABLE` add `state`, `offer_count`; criar function `get_profile_phone` |
+| `src/pages/NewPropertySearch.tsx` | 6 cards, sub-seleção Casa/Rural, campo Estado, máscara valor |
+| `src/pages/PropertySearches.tsx` | Mostrar ofertas na listagem |
+| `src/pages/PropertySearchDetail.tsx` | Exibir estado, incrementar offer_count, usar rpc para phone |
 
