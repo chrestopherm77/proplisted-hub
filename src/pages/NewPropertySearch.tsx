@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Home, Building2, Store, Landmark, TreePine, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
 
 type PropertyType = 'CASA' | 'APARTAMENTO' | 'SALA_COMERCIAL' | 'LOTE' | 'RURAL' | 'PREDIO_COMERCIAL';
 
@@ -25,20 +24,14 @@ interface TypeOption {
   type: PropertyType;
   label: string;
   icon: React.ReactNode;
-  houseType?: string;
-  ruralType?: string;
 }
 
 const typeOptions: TypeOption[] = [
-  { type: 'CASA', label: 'Casa de Rua', icon: <Home className="h-8 w-8" />, houseType: 'RUA' },
-  { type: 'CASA', label: 'Casa em Condomínio', icon: <Home className="h-8 w-8" />, houseType: 'CONDOMINIO' },
+  { type: 'CASA', label: 'Casa', icon: <Home className="h-8 w-8" /> },
   { type: 'APARTAMENTO', label: 'Apartamento', icon: <Building2 className="h-8 w-8" /> },
   { type: 'SALA_COMERCIAL', label: 'Sala Comercial', icon: <Store className="h-8 w-8" /> },
   { type: 'LOTE', label: 'Lote', icon: <Landmark className="h-8 w-8" /> },
-  { type: 'RURAL', label: 'Fazenda', icon: <TreePine className="h-8 w-8" />, ruralType: 'FAZENDA' },
-  { type: 'RURAL', label: 'Sítio', icon: <TreePine className="h-8 w-8" />, ruralType: 'SITIO' },
-  { type: 'RURAL', label: 'Rancho', icon: <TreePine className="h-8 w-8" />, ruralType: 'RANCHO' },
-  { type: 'RURAL', label: 'Chácara', icon: <TreePine className="h-8 w-8" />, ruralType: 'CHACARA' },
+  { type: 'RURAL', label: 'Rural', icon: <TreePine className="h-8 w-8" /> },
   { type: 'PREDIO_COMERCIAL', label: 'Prédio Comercial', icon: <Building className="h-8 w-8" /> },
 ];
 
@@ -60,6 +53,14 @@ const fieldConfigs: Record<PropertyType, FieldConfig> = {
 
 const opLabels: Record<string, string> = { VENDA: 'Venda', COMPRA: 'Compra', ALUGUEL: 'Aluguel' };
 
+const formatCurrency = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10);
+  if (num > 1000000000) return formatCurrency(digits.slice(0, -1));
+  return num.toLocaleString('pt-BR');
+};
+
 const NewPropertySearch = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -69,8 +70,11 @@ const NewPropertySearch = () => {
   const [saving, setSaving] = useState(false);
 
   // form fields
+  const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [operationType, setOperationType] = useState('');
+  const [houseType, setHouseType] = useState('');
+  const [ruralType, setRuralType] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [zone, setZone] = useState('');
   const [sizeM2, setSizeM2] = useState('');
@@ -83,6 +87,10 @@ const NewPropertySearch = () => {
     if (!authLoading && !user) navigate('/auth');
   }, [user, authLoading, navigate]);
 
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(formatCurrency(e.target.value));
+  };
+
   const handleSubmit = async () => {
     if (!selected || !user) return;
     if (!city.trim()) {
@@ -93,6 +101,14 @@ const NewPropertySearch = () => {
       toast({ title: 'Campo obrigatório', description: 'Selecione o tipo de operação.', variant: 'destructive' });
       return;
     }
+    if (selected.type === 'CASA' && !houseType) {
+      toast({ title: 'Campo obrigatório', description: 'Selecione o tipo de casa.', variant: 'destructive' });
+      return;
+    }
+    if (selected.type === 'RURAL' && !ruralType) {
+      toast({ title: 'Campo obrigatório', description: 'Selecione o tipo de propriedade rural.', variant: 'destructive' });
+      return;
+    }
 
     setSaving(true);
     const config = fieldConfigs[selected.type];
@@ -101,6 +117,7 @@ const NewPropertySearch = () => {
       user_id: user.id,
       property_type: selected.type,
       operation_type: operationType,
+      state: state.trim() || null,
       city: city.trim(),
       neighborhood: neighborhood.trim() || null,
       zone: zone.trim() || null,
@@ -109,8 +126,8 @@ const NewPropertySearch = () => {
       value: value.trim() || null,
       parking_spots: config.hasParking ? (parkingSpots.trim() || null) : null,
       observation: observation.trim() || null,
-      house_type: selected.houseType ?? null,
-      rural_type: selected.ruralType ?? null,
+      house_type: selected.type === 'CASA' ? houseType : null,
+      rural_type: selected.type === 'RURAL' ? ruralType : null,
     });
 
     setSaving(false);
@@ -136,7 +153,7 @@ const NewPropertySearch = () => {
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Adicionar Procura</h1>
           <p className="text-muted-foreground">Selecione o tipo de imóvel que você procura:</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {typeOptions.map((opt, i) => (
               <Card
                 key={i}
@@ -171,6 +188,41 @@ const NewPropertySearch = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Sub-select for Casa */}
+            {config.hasHouseType && (
+              <div className="space-y-2">
+                <Label>Tipo de Casa *</Label>
+                <Select value={houseType} onValueChange={setHouseType}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RUA">Rua</SelectItem>
+                    <SelectItem value="CONDOMINIO">Condomínio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Sub-select for Rural */}
+            {config.hasRuralType && (
+              <div className="space-y-2">
+                <Label>Tipo de Propriedade *</Label>
+                <Select value={ruralType} onValueChange={setRuralType}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FAZENDA">Fazenda</SelectItem>
+                    <SelectItem value="SITIO">Sítio</SelectItem>
+                    <SelectItem value="RANCHO">Rancho</SelectItem>
+                    <SelectItem value="CHACARA">Chácara</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Estado</Label>
+              <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="Ex: MG" />
+            </div>
+
             <div className="space-y-2">
               <Label>Cidade *</Label>
               <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex: Uberlândia" />
@@ -212,7 +264,7 @@ const NewPropertySearch = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Valor (R$)</Label>
-                <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Ex: 350.000" />
+                <Input value={value} onChange={handleValueChange} placeholder="Ex: 350.000" />
               </div>
               {config.hasParking && (
                 <div className="space-y-2">
