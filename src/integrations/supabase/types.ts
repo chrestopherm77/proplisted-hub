@@ -530,6 +530,7 @@ export type Database = {
           rural_type: string | null
           size_m2: string | null
           state: string | null
+          title: string | null
           user_id: string
           value: string | null
           zone: string | null
@@ -550,6 +551,7 @@ export type Database = {
           rural_type?: string | null
           size_m2?: string | null
           state?: string | null
+          title?: string | null
           user_id: string
           value?: string | null
           zone?: string | null
@@ -570,6 +572,7 @@ export type Database = {
           rural_type?: string | null
           size_m2?: string | null
           state?: string | null
+          title?: string | null
           user_id?: string
           value?: string | null
           zone?: string | null

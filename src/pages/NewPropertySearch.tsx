@@ -70,6 +70,7 @@ const NewPropertySearch = () => {
   const [saving, setSaving] = useState(false);
 
   // form fields
+  const [title, setTitle] = useState('');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [operationType, setOperationType] = useState('');
@@ -115,6 +116,7 @@ const NewPropertySearch = () => {
 
     const { error } = await supabase.from('property_searches').insert({
       user_id: user.id,
+      title: title.trim() || null,
       property_type: selected.type,
       operation_type: operationType,
       state: state.trim() || null,
@@ -188,6 +190,12 @@ const NewPropertySearch = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Título do Imóvel */}
+            <div className="space-y-2">
+              <Label>Título do Imóvel</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Casa 3 quartos no centro" />
+            </div>
+
             {/* Sub-select for Casa */}
             {config.hasHouseType && (
               <div className="space-y-2">
