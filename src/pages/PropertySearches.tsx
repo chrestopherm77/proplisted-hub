@@ -268,7 +268,7 @@ const PropertySearches = () => {
               <div
                 className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
                 style={{
-                  backgroundImage: 'url(/images/world-map-bg.svg)',
+                  backgroundImage: 'url(/images/map-bg.png)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
