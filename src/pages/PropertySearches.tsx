@@ -260,69 +260,68 @@ const PropertySearches = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="relative overflow-hidden rounded-xl bg-blue-50 dark:bg-blue-950/30 px-6 py-6 sm:px-8 sm:py-8">
+          <div
+            className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
+            style={{
+              backgroundImage: 'url(/images/map-bg.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          <div className="relative z-10 space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
+                <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
+              </div>
+              <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
+                <Plus className="h-4 w-4" /> Nova Procura
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por título, headline, bairro, cidade ou tipo..."
+                  className="pl-10 bg-white/80 dark:bg-background/80 backdrop-blur-sm"
+                  value={textFilter}
+                  onChange={(e) => setTextFilter(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Select value={filterState} onValueChange={(v) => setFilterState(v === 'ALL' ? '' : v)}>
+                  <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos os Estados</SelectItem>
+                    {uniqueStates.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterCity} onValueChange={(v) => setFilterCity(v === 'ALL' ? '' : v)}>
+                  <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Cidade" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todas as Cidades</SelectItem>
+                    {uniqueCities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterType} onValueChange={(v) => setFilterType(v === 'ALL' ? '' : v)}>
+                  <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Tipo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos os Tipos</SelectItem>
+                    {uniqueTypes.map((t) => <SelectItem key={t} value={t}>{propertyTypeLabels[t] ?? t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Main content */}
           <div className="flex-1 space-y-6">
-            <div className="relative overflow-hidden rounded-xl bg-blue-50 dark:bg-blue-950/30 p-6 sm:p-8 mb-2">
-              <div
-                className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
-                style={{
-                  backgroundImage: 'url(/images/map-bg.png)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              />
-              <div className="relative z-10 space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
-                    <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
-                  </div>
-                  <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
-                    <Plus className="h-4 w-4" /> Nova Procura
-                  </Button>
-                </div>
-
-                {/* Filters */}
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por título, headline, bairro, cidade ou tipo..."
-                      className="pl-10 bg-white/80 dark:bg-background/80 backdrop-blur-sm"
-                      value={textFilter}
-                      onChange={(e) => setTextFilter(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Select value={filterState} onValueChange={(v) => setFilterState(v === 'ALL' ? '' : v)}>
-                      <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Estado" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todos os Estados</SelectItem>
-                        {uniqueStates.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterCity} onValueChange={(v) => setFilterCity(v === 'ALL' ? '' : v)}>
-                      <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Cidade" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todas as Cidades</SelectItem>
-                        {uniqueCities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterType} onValueChange={(v) => setFilterType(v === 'ALL' ? '' : v)}>
-                      <SelectTrigger className="bg-white/80 dark:bg-background/80 backdrop-blur-sm"><SelectValue placeholder="Filtrar por Tipo" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todos os Tipos</SelectItem>
-                        {uniqueTypes.map((t) => <SelectItem key={t} value={t}>{propertyTypeLabels[t] ?? t}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Cards list */}
             {loading ? (
               <p className="text-muted-foreground text-center py-12">Carregando...</p>
