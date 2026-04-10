@@ -445,6 +445,7 @@ const PropertySearches = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       {/* Detail Modal */}
