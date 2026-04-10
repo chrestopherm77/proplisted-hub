@@ -17,10 +17,16 @@ import { cn } from '@/lib/utils';
 
 const NewLaunch = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
-  const navigateRef = useNavigate();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) { navigate('/auth'); return; }
+      if (isAdmin === false) { navigate('/'); return; }
+    }
+  }, [user, authLoading, isAdmin, navigate]);
 
   const [name, setName] = useState('');
   const [state, setState] = useState('');
