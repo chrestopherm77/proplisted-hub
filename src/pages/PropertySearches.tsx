@@ -264,14 +264,25 @@ const PropertySearches = () => {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Main content */}
           <div className="flex-1 space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
-                <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
+            <div className="relative overflow-hidden rounded-xl bg-blue-50 dark:bg-blue-950/30 p-6 sm:p-8 mb-2">
+              <div
+                className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
+                style={{
+                  backgroundImage: 'url(/images/world-map-bg.svg)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                }}
+              />
+              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
+                  <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
+                </div>
+                <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
+                  <Plus className="h-4 w-4" /> Nova Procura
+                </Button>
               </div>
-              <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
-                <Plus className="h-4 w-4" /> Nova Procura
-              </Button>
             </div>
 
             {/* Filters */}
