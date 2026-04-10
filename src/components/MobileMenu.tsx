@@ -62,28 +62,32 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
             <Package className="h-5 w-5" />
             <span className="font-medium">Marketplace</span>
           </Link>
-          <Link
-            to="/property-searches"
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/property-searches')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            <Search className="h-5 w-5" />
-            <span className="font-medium">Buscar oferta</span>
-          </Link>
-          <Link
-            to="/launches"
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/launches')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            <Rocket className="h-5 w-5" />
-            <span className="font-medium">Lançamentos</span>
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/property-searches"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/property-searches')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Search className="h-5 w-5" />
+              <span className="font-medium">Buscar oferta</span>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              to="/launches"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/launches')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Rocket className="h-5 w-5" />
+              <span className="font-medium">Lançamentos</span>
+            </Link>
+          )}
           {isAdmin && !isPartnerSite && (
             <Link
               to="/admin"

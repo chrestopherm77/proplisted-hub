@@ -16,7 +16,8 @@ import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NewLaunch = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
+  const navigateRef = useNavigate();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);

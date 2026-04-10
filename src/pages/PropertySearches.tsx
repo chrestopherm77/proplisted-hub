@@ -91,11 +91,14 @@ const PropertySearches = () => {
   const [filterState, setFilterState] = useState('');
   const [filterType, setFilterType] = useState('');
 
+  const { isAdmin } = useAuth();
+
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
+    if (!authLoading) {
+      if (!user) { navigate('/auth'); return; }
+      if (isAdmin === false) { navigate('/'); return; }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, isAdmin, navigate]);
 
   useEffect(() => {
     if (user) fetchSearches();

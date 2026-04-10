@@ -62,7 +62,7 @@ const formatCurrency = (raw: string): string => {
 };
 
 const NewPropertySearch = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -85,8 +85,11 @@ const NewPropertySearch = () => {
   const [observation, setObservation] = useState('');
 
   useEffect(() => {
-    if (!authLoading && !user) navigate('/auth');
-  }, [user, authLoading, navigate]);
+    if (!authLoading) {
+      if (!user) { navigate('/auth'); return; }
+      if (isAdmin === false) { navigate('/'); return; }
+    }
+  }, [user, authLoading, isAdmin, navigate]);
 
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(formatCurrency(e.target.value));
