@@ -51,7 +51,7 @@ const formatDate = (d: string | null): string => {
 
 const LaunchDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [launch, setLaunch] = useState<Launch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,8 +59,9 @@ const LaunchDetail = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    fetchLaunch();
-  }, [id, user, authLoading]);
+    if (isAdmin === false) { navigate('/'); return; }
+    if (isAdmin) fetchLaunch();
+  }, [id, user, authLoading, isAdmin]);
 
   const fetchLaunch = async () => {
     if (!id) return;
