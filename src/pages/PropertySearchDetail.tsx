@@ -95,6 +95,12 @@ const PropertySearchDetail = () => {
     // Increment offer count
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
 
+    // Register offer
+    await supabase.from('property_search_offers').upsert(
+      { search_id: search.id, user_id: user.id },
+      { onConflict: 'search_id,user_id' }
+    );
+
     // Get owner phone via security definer function
     const { data: phone } = await supabase.rpc('get_profile_phone', { p_user_id: search.user_id });
 

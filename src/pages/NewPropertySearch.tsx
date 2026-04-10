@@ -71,6 +71,7 @@ const NewPropertySearch = () => {
 
   // form fields
   const [title, setTitle] = useState('');
+  const [headline, setHeadline] = useState('');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [operationType, setOperationType] = useState('');
@@ -120,6 +121,7 @@ const NewPropertySearch = () => {
     const { error } = await supabase.from('property_searches').insert({
       user_id: user.id,
       title: title.trim() || null,
+      headline: headline.trim() || null,
       property_type: selected.type,
       operation_type: operationType,
       state: state.trim() || null,
@@ -197,6 +199,13 @@ const NewPropertySearch = () => {
             <div className="space-y-2">
               <Label>Título do Imóvel</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Casa 3 quartos no centro" />
+            </div>
+
+            {/* Headline */}
+            <div className="space-y-2">
+              <Label>Headline</Label>
+              <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Ex: Procuro casa para compra em condomínio fechado" />
+              <p className="text-xs text-muted-foreground">Descrição curta que aparecerá em destaque no card</p>
             </div>
 
             {/* Sub-select for Casa */}

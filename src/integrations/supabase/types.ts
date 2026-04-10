@@ -588,11 +588,41 @@ export type Database = {
         }
         Relationships: []
       }
+      property_search_offers: {
+        Row: {
+          created_at: string | null
+          id: string
+          search_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          search_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          search_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_search_offers_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "property_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_searches: {
         Row: {
           bedrooms: string | null
           city: string
           created_at: string | null
+          headline: string | null
           house_type: string | null
           id: string
           is_active: boolean | null
@@ -614,6 +644,7 @@ export type Database = {
           bedrooms?: string | null
           city: string
           created_at?: string | null
+          headline?: string | null
           house_type?: string | null
           id?: string
           is_active?: boolean | null
@@ -635,6 +666,7 @@ export type Database = {
           bedrooms?: string | null
           city?: string
           created_at?: string | null
+          headline?: string | null
           house_type?: string | null
           id?: string
           is_active?: boolean | null
