@@ -27,7 +27,7 @@ const formatCurrency = (raw: string | null): string => {
 };
 
 const Launches = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [launches, setLaunches] = useState<Launch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,8 +37,9 @@ const Launches = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    fetchLaunches();
-  }, [user, authLoading]);
+    if (isAdmin === false) { navigate('/'); return; }
+    if (isAdmin) fetchLaunches();
+  }, [user, authLoading, isAdmin]);
 
   const fetchLaunches = async () => {
     setLoading(true);

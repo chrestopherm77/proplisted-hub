@@ -56,7 +56,7 @@ interface PropertySearch {
 
 const PropertySearchDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [search, setSearch] = useState<PropertySearch | null>(null);
@@ -64,8 +64,11 @@ const PropertySearchDetail = () => {
   const [sendingOffer, setSendingOffer] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate('/auth');
-  }, [user, authLoading, navigate]);
+    if (!authLoading) {
+      if (!user) { navigate('/auth'); return; }
+      if (isAdmin === false) { navigate('/'); return; }
+    }
+  }, [user, authLoading, isAdmin, navigate]);
 
   useEffect(() => {
     if (user && id) fetchData();

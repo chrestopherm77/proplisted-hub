@@ -116,22 +116,26 @@ export const Layout = ({ children }: LayoutProps) => {
                 >
                   Marketplace
                 </Link>
-                <Link
-                  to="/property-searches"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    isActive('/property-searches') ? 'text-primary' : 'text-foreground'
-                  }`}
-                >
-                  Buscar oferta
-                </Link>
-                <Link
-                  to="/launches"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    isActive('/launches') ? 'text-primary' : 'text-foreground'
-                  }`}
-                >
-                  Lançamentos
-                </Link>
+                {isAdmin && !isPartnerSite && (
+                  <Link
+                    to="/property-searches"
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      isActive('/property-searches') ? 'text-primary' : 'text-foreground'
+                    }`}
+                  >
+                    Buscar oferta
+                  </Link>
+                )}
+                {isAdmin && !isPartnerSite && (
+                  <Link
+                    to="/launches"
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      isActive('/launches') ? 'text-primary' : 'text-foreground'
+                    }`}
+                  >
+                    Lançamentos
+                  </Link>
+                )}
                 {isAdmin && !isPartnerSite && (
                   <Link
                     to="/admin"

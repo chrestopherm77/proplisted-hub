@@ -82,7 +82,7 @@ const formatDisplayValue = (raw: string | null): string => {
 };
 
 const PropertySearches = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [searches, setSearches] = useState<PropertySearch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,10 +92,11 @@ const PropertySearches = () => {
   const [filterType, setFilterType] = useState('');
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
+    if (!authLoading) {
+      if (!user) { navigate('/auth'); return; }
+      if (isAdmin === false) { navigate('/'); return; }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, isAdmin, navigate]);
 
   useEffect(() => {
     if (user) fetchSearches();
