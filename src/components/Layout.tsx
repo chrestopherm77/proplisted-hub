@@ -133,7 +133,7 @@ export const Layout = ({ children }: LayoutProps) => {
                       isActive('/launches') ? 'text-primary' : 'text-foreground'
                     }`}
                   >
-                    Balcão de Parcerias
+                    Lançamentos
                   </Link>
                 )}
                 {isAdmin && !isPartnerSite && (
