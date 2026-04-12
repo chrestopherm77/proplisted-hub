@@ -638,6 +638,8 @@ export type Database = {
           title: string | null
           user_id: string
           value: string | null
+          value_max: string | null
+          value_min: string | null
           zone: string | null
         }
         Insert: {
@@ -660,6 +662,8 @@ export type Database = {
           title?: string | null
           user_id: string
           value?: string | null
+          value_max?: string | null
+          value_min?: string | null
           zone?: string | null
         }
         Update: {
@@ -682,6 +686,8 @@ export type Database = {
           title?: string | null
           user_id?: string
           value?: string | null
+          value_max?: string | null
+          value_min?: string | null
           zone?: string | null
         }
         Relationships: []
