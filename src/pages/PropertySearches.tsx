@@ -228,6 +228,12 @@ const PropertySearches = () => {
   const uniqueStates = useMemo(() => [...new Set(searches.map((s) => s.state).filter(Boolean) as string[])].sort(), [searches]);
   const uniqueTypes = useMemo(() => [...new Set(searches.map((s) => s.property_type))].sort(), [searches]);
 
+  const parseNumericValue = (val: string | null): number => {
+    if (!val) return 0;
+    const digits = val.replace(/\D/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+  };
+
   const filtered = searches.filter((s) => {
     const term = textFilter.toLowerCase();
     const matchesText =
@@ -242,7 +248,21 @@ const PropertySearches = () => {
     const matchesState = !filterState || s.state === filterState;
     const matchesType = !filterType || s.property_type === filterType;
 
-    return matchesText && matchesCity && matchesState && matchesType;
+    const matchesObjective = !filterObjective || s.operation_type === filterObjective;
+    const matchesNeighborhood = !filterNeighborhood || (s.neighborhood ?? '').toLowerCase().includes(filterNeighborhood.toLowerCase());
+    const matchesZone = !filterZone || (s.zone ?? '').toLowerCase().includes(filterZone.toLowerCase());
+
+    const numericValue = parseNumericValue(s.value);
+    const minPrice = filterPriceMin ? parseInt(filterPriceMin.replace(/\D/g, ''), 10) : 0;
+    const maxPrice = filterPriceMax ? parseInt(filterPriceMax.replace(/\D/g, ''), 10) : 0;
+    const matchesPriceMin = !minPrice || numericValue >= minPrice;
+    const matchesPriceMax = !maxPrice || numericValue <= maxPrice;
+
+    const matchesModality = !filterModality || 
+      (s.observation ?? '').toLowerCase().includes(filterModality.toLowerCase()) ||
+      (s.headline ?? '').toLowerCase().includes(filterModality.toLowerCase());
+
+    return matchesText && matchesCity && matchesState && matchesType && matchesObjective && matchesNeighborhood && matchesZone && matchesPriceMin && matchesPriceMax && matchesModality;
   });
 
   if (authLoading || !user) return null;
