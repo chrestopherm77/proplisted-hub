@@ -7,19 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Upload } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Loader2, Upload, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
 
 const NewLaunch = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const { states: ibgeStates, cities: ibgeCities, fetchCities, clearCities } = useIBGELocation();
 
   useEffect(() => {
     if (!authLoading) {
@@ -36,41 +39,61 @@ const NewLaunch = () => {
   const [launchDate, setLaunchDate] = useState<Date>();
   const [deliveryDate, setDeliveryDate] = useState<Date>();
   const [priceFrom, setPriceFrom] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [commission, setCommission] = useState('');
   const [floors, setFloors] = useState('');
   const [totalUnits, setTotalUnits] = useState('');
   const [associative, setAssociative] = useState('');
   const [coordinatorName, setCoordinatorName] = useState('');
   const [coordinatorPhone, setCoordinatorPhone] = useState('');
+  const [coordinatorPhone2, setCoordinatorPhone2] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [sizeM2Min, setSizeM2Min] = useState('');
+  const [sizeM2Max, setSizeM2Max] = useState('');
+  const [launchStatus, setLaunchStatus] = useState('');
 
   const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bookFile, setBookFile] = useState<File | null>(null);
-  const [tableFile, setTableFile] = useState<File | null>(null);
-  const [driveFile, setDriveFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Book & Table: PDF or Link
+  const [bookMode, setBookMode] = useState<'pdf' | 'link'>('pdf');
+  const [bookFile, setBookFile] = useState<File | null>(null);
+  const [bookLink, setBookLink] = useState('');
+  const [tableMode, setTableMode] = useState<'pdf' | 'link'>('pdf');
+  const [tableFile, setTableFile] = useState<File | null>(null);
+  const [tableLink, setTableLink] = useState('');
+  // Drive: Link only
+  const [driveLink, setDriveLink] = useState('');
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setBannerFile(file);
-      setBannerPreview(URL.createObjectURL(file));
-    }
+    if (file) { setBannerFile(file); setBannerPreview(URL.createObjectURL(file)); }
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) { setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); }
+  };
+
+  const handlePriceChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, '');
-    if (!v) { setPriceFrom(''); return; }
+    if (!v) { setter(''); return; }
     const num = parseInt(v, 10);
-    const formatted = (num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    setPriceFrom(`R$ ${formatted}`);
+    setter(`R$ ${(num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+  };
+
+  const handleStateChange = (uf: string) => {
+    setState(uf);
+    setCity('');
+    if (uf) fetchCities(uf);
+    else clearCities();
   };
 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     const { error } = await supabase.storage.from('launches').upload(path, file, { upsert: true });
-    if (error) {
-      console.error('Upload error:', error);
-      return null;
-    }
+    if (error) { console.error('Upload error:', error); return null; }
     const { data: urlData } = supabase.storage.from('launches').getPublicUrl(path);
     return urlData.publicUrl;
   };
@@ -87,25 +110,33 @@ const NewLaunch = () => {
       const launchId = crypto.randomUUID();
 
       let banner_url: string | null = null;
+      let logo_url: string | null = null;
       let book_url: string | null = null;
       let table_url: string | null = null;
-      let drive_url: string | null = null;
 
       if (bannerFile) {
         const ext = bannerFile.name.split('.').pop();
         banner_url = await uploadFile(bannerFile, `banners/${launchId}.${ext}`);
       }
-      if (bookFile) {
-        book_url = await uploadFile(bookFile, `docs/${launchId}/book.pdf`);
-      }
-      if (tableFile) {
-        table_url = await uploadFile(tableFile, `docs/${launchId}/tabela.pdf`);
-      }
-      if (driveFile) {
-        drive_url = await uploadFile(driveFile, `docs/${launchId}/drive.pdf`);
+      if (logoFile) {
+        const ext = logoFile.name.split('.').pop();
+        logo_url = await uploadFile(logoFile, `logos/${launchId}.${ext}`);
       }
 
-      const priceRaw = priceFrom.replace(/\D/g, '') || null;
+      if (bookMode === 'pdf' && bookFile) {
+        book_url = await uploadFile(bookFile, `docs/${launchId}/book.pdf`);
+      } else if (bookMode === 'link' && bookLink.trim()) {
+        book_url = bookLink.trim();
+      }
+
+      if (tableMode === 'pdf' && tableFile) {
+        table_url = await uploadFile(tableFile, `docs/${launchId}/tabela.pdf`);
+      } else if (tableMode === 'link' && tableLink.trim()) {
+        table_url = tableLink.trim();
+      }
+
+      const priceFromRaw = priceFrom.replace(/\D/g, '') || null;
+      const priceMaxRaw = priceMax.replace(/\D/g, '') || null;
 
       const { error } = await supabase.from('launches').insert({
         id: launchId,
@@ -117,17 +148,25 @@ const NewLaunch = () => {
         zone: zone || null,
         launch_date: launchDate ? format(launchDate, 'yyyy-MM-dd') : null,
         delivery_date: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null,
-        price_from: priceRaw,
+        price_from: priceFromRaw,
+        price_max: priceMaxRaw,
         commission: commission || null,
         floors: floors || null,
         total_units: totalUnits || null,
         associative: associative || null,
         book_url,
         table_url,
-        drive_url,
+        drive_url: null,
+        drive_link: driveLink.trim() || null,
         coordinator_name: coordinatorName || null,
         coordinator_phone: coordinatorPhone || null,
+        coordinator_phone2: coordinatorPhone2 || null,
         banner_url,
+        logo_url,
+        property_type: propertyType || null,
+        size_m2_min: sizeM2Min || null,
+        size_m2_max: sizeM2Max || null,
+        status: launchStatus || null,
       });
 
       if (error) throw error;
@@ -150,19 +189,34 @@ const NewLaunch = () => {
 
         <h1 className="text-2xl font-bold text-foreground">Novo Lançamento</h1>
 
-        {/* Banner */}
+        {/* Banner & Logo */}
         <Card>
-          <CardHeader><CardTitle>Imagem de Banner</CardTitle></CardHeader>
-          <CardContent>
-            {bannerPreview && (
-              <div className="mb-4 rounded-lg overflow-hidden aspect-[16/7] bg-muted">
-                <img src={bannerPreview} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            )}
-            <Label htmlFor="banner" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent text-sm">
-              <Upload className="h-4 w-4" /> Selecionar imagem
-            </Label>
-            <input id="banner" type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+          <CardHeader><CardTitle>Imagens</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-1 block">Banner</Label>
+              {bannerPreview && (
+                <div className="mb-2 rounded-lg overflow-hidden aspect-[16/7] bg-muted">
+                  <img src={bannerPreview} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <Label htmlFor="banner" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent text-sm">
+                <Upload className="h-4 w-4" /> Selecionar banner
+              </Label>
+              <input id="banner" type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1 block">Logo do Empreendimento</Label>
+              {logoPreview && (
+                <div className="mb-2 w-20 h-20 rounded-lg overflow-hidden bg-muted">
+                  <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                </div>
+              )}
+              <Label htmlFor="logo" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent text-sm">
+                <Upload className="h-4 w-4" /> Selecionar logo
+              </Label>
+              <input id="logo" type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+            </div>
           </CardContent>
         </Card>
 
@@ -180,11 +234,21 @@ const NewLaunch = () => {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Estado</Label>
-              <Input value={state} onChange={e => setState(e.target.value)} placeholder="PR" />
+              <Select value={state} onValueChange={handleStateChange}>
+                <SelectTrigger><SelectValue placeholder="Selecionar estado" /></SelectTrigger>
+                <SelectContent>
+                  {ibgeStates.map(s => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla} - {s.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Cidade</Label>
-              <Input value={city} onChange={e => setCity(e.target.value)} placeholder="Curitiba" />
+              <Select value={city} onValueChange={setCity} disabled={!state}>
+                <SelectTrigger><SelectValue placeholder="Selecionar cidade" /></SelectTrigger>
+                <SelectContent>
+                  {ibgeCities.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Bairro</Label>
@@ -192,7 +256,39 @@ const NewLaunch = () => {
             </div>
             <div>
               <Label>Zona</Label>
-              <Input value={zone} onChange={e => setZone(e.target.value)} placeholder="Sul" />
+              <Select value={zone} onValueChange={setZone}>
+                <SelectTrigger><SelectValue placeholder="Selecionar zona" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Norte">Norte</SelectItem>
+                  <SelectItem value="Sul">Sul</SelectItem>
+                  <SelectItem value="Leste">Leste</SelectItem>
+                  <SelectItem value="Oeste">Oeste</SelectItem>
+                  <SelectItem value="Centro">Centro</SelectItem>
+                  <SelectItem value="Rural">Rural</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={launchStatus} onValueChange={setLaunchStatus}>
+                <SelectTrigger><SelectValue placeholder="Selecionar status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Lançamento">Lançamento</SelectItem>
+                  <SelectItem value="Em construção">Em construção</SelectItem>
+                  <SelectItem value="Entregue">Entregue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo</Label>
+              <Select value={propertyType} onValueChange={setPropertyType}>
+                <SelectTrigger><SelectValue placeholder="Selecionar tipo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Casa">Casa</SelectItem>
+                  <SelectItem value="Apartamento">Apartamento</SelectItem>
+                  <SelectItem value="Terreno">Terreno</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Data de Lançamento</Label>
@@ -228,10 +324,14 @@ const NewLaunch = () => {
         {/* Valores */}
         <Card>
           <CardHeader><CardTitle>Valores</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label>A partir de</Label>
-              <Input value={priceFrom} onChange={handlePriceChange} placeholder="R$ 0,00" />
+              <Label>A partir de (R$)</Label>
+              <Input value={priceFrom} onChange={handlePriceChange(setPriceFrom)} placeholder="R$ 0,00" />
+            </div>
+            <div>
+              <Label>Até (R$)</Label>
+              <Input value={priceMax} onChange={handlePriceChange(setPriceMax)} placeholder="R$ 0,00" />
             </div>
             <div>
               <Label>Comissão</Label>
@@ -256,39 +356,74 @@ const NewLaunch = () => {
               <Label>Associativo</Label>
               <Input value={associative} onChange={e => setAssociative(e.target.value)} />
             </div>
+            <div>
+              <Label>Tamanho mín (m²)</Label>
+              <Input type="number" value={sizeM2Min} onChange={e => setSizeM2Min(e.target.value)} placeholder="Ex: 45" />
+            </div>
+            <div>
+              <Label>Tamanho máx (m²)</Label>
+              <Input type="number" value={sizeM2Max} onChange={e => setSizeM2Max(e.target.value)} placeholder="Ex: 120" />
+            </div>
           </CardContent>
         </Card>
 
-        {/* PDFs */}
+        {/* Arquivos */}
         <Card>
-          <CardHeader><CardTitle>Arquivos PDF</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Arquivos e Links</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {/* Book */}
             <div>
-              <Label>Book</Label>
-              <Input type="file" accept=".pdf" onChange={e => setBookFile(e.target.files?.[0] || null)} />
+              <div className="flex items-center gap-2 mb-2">
+                <Label>Book</Label>
+                <div className="flex gap-1">
+                  <Button type="button" size="sm" variant={bookMode === 'pdf' ? 'default' : 'outline'} onClick={() => setBookMode('pdf')} className="h-7 text-xs">PDF</Button>
+                  <Button type="button" size="sm" variant={bookMode === 'link' ? 'default' : 'outline'} onClick={() => setBookMode('link')} className="h-7 text-xs"><LinkIcon className="h-3 w-3 mr-1" />Link</Button>
+                </div>
+              </div>
+              {bookMode === 'pdf' ? (
+                <Input type="file" accept=".pdf" onChange={e => setBookFile(e.target.files?.[0] || null)} />
+              ) : (
+                <Input value={bookLink} onChange={e => setBookLink(e.target.value)} placeholder="https://..." />
+              )}
             </div>
+            {/* Tabela */}
             <div>
-              <Label>Tabela</Label>
-              <Input type="file" accept=".pdf" onChange={e => setTableFile(e.target.files?.[0] || null)} />
+              <div className="flex items-center gap-2 mb-2">
+                <Label>Tabela</Label>
+                <div className="flex gap-1">
+                  <Button type="button" size="sm" variant={tableMode === 'pdf' ? 'default' : 'outline'} onClick={() => setTableMode('pdf')} className="h-7 text-xs">PDF</Button>
+                  <Button type="button" size="sm" variant={tableMode === 'link' ? 'default' : 'outline'} onClick={() => setTableMode('link')} className="h-7 text-xs"><LinkIcon className="h-3 w-3 mr-1" />Link</Button>
+                </div>
+              </div>
+              {tableMode === 'pdf' ? (
+                <Input type="file" accept=".pdf" onChange={e => setTableFile(e.target.files?.[0] || null)} />
+              ) : (
+                <Input value={tableLink} onChange={e => setTableLink(e.target.value)} placeholder="https://..." />
+              )}
             </div>
+            {/* Drive */}
             <div>
-              <Label>Drive</Label>
-              <Input type="file" accept=".pdf" onChange={e => setDriveFile(e.target.files?.[0] || null)} />
+              <Label>Drive (Link)</Label>
+              <Input value={driveLink} onChange={e => setDriveLink(e.target.value)} placeholder="https://drive.google.com/..." />
             </div>
           </CardContent>
         </Card>
 
-        {/* Coordenador */}
+        {/* Coordenador de Vendas */}
         <Card>
-          <CardHeader><CardTitle>Coordenador</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Coordenador de Vendas</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Nome</Label>
               <Input value={coordinatorName} onChange={e => setCoordinatorName(e.target.value)} />
             </div>
             <div>
-              <Label>Telefone (WhatsApp)</Label>
+              <Label>Telefone 1 (WhatsApp)</Label>
               <Input value={coordinatorPhone} onChange={e => setCoordinatorPhone(e.target.value)} placeholder="(41) 99999-9999" />
+            </div>
+            <div>
+              <Label>Telefone 2 (WhatsApp)</Label>
+              <Input value={coordinatorPhone2} onChange={e => setCoordinatorPhone2(e.target.value)} placeholder="(41) 99999-9999" />
             </div>
           </CardContent>
         </Card>
