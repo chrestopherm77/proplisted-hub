@@ -347,6 +347,51 @@ const PropertySearches = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Select value={filterObjective} onValueChange={(v) => setFilterObjective(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Objetivo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos os Objetivos</SelectItem>
+                  <SelectItem value="COMPRA">Comprar</SelectItem>
+                  <SelectItem value="VENDA">Vender</SelectItem>
+                  <SelectItem value="ALUGUEL">Alugar</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Filtrar por Bairro"
+                className="border-border/70 bg-background/90"
+                value={filterNeighborhood}
+                onChange={(e) => setFilterNeighborhood(e.target.value)}
+              />
+              <Input
+                placeholder="Filtrar por Zona"
+                className="border-border/70 bg-background/90"
+                value={filterZone}
+                onChange={(e) => setFilterZone(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Input
+                placeholder="Preço mínimo (R$)"
+                className="border-border/70 bg-background/90"
+                value={filterPriceMin}
+                onChange={(e) => setFilterPriceMin(e.target.value)}
+              />
+              <Input
+                placeholder="Preço máximo (R$)"
+                className="border-border/70 bg-background/90"
+                value={filterPriceMax}
+                onChange={(e) => setFilterPriceMax(e.target.value)}
+              />
+              <Select value={filterModality} onValueChange={(v) => setFilterModality(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas as Modalidades</SelectItem>
+                  <SelectItem value="novo">Novo</SelectItem>
+                  <SelectItem value="usado">Usado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Cards + Sidebar */}
