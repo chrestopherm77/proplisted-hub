@@ -102,7 +102,7 @@ export default function Financing() {
       setSuccess(true);
     } catch (err) {
       console.error(err);
-      toast({ title: 'Erro ao enviar simulação', description: 'Tente novamente.', variant: 'destructive' });
+      toast({ title: 'Serviço temporariamente indisponível', description: 'Tente novamente em alguns minutos.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

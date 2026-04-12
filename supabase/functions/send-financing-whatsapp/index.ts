@@ -1,10 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+const ALLOWED_ORIGINS = [
+  'https://leadbay.com.br',
+  'https://www.leadbay.com.br',
+  'https://proplisted-hub.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 const BodySchema = z.object({
   modality: z.string().min(1).max(200),
@@ -19,8 +29,10 @@ const BodySchema = z.object({
 });
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -55,35 +67,49 @@ serve(async (req) => {
       );
     }
 
-    const megaRes = await fetch(
-      "https://api.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${MEGA_API_TOKEN}`,
-        },
-        body: JSON.stringify({
-          messageData: {
-            to: "553191914663@s.whatsapp.net",
-            text: message,
-          },
-        }),
-      }
-    );
+    const megaUrl = "https://api.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const megaBody = JSON.stringify({
+      messageData: {
+        to: "553191914663@s.whatsapp.net",
+        text: message,
+      },
+    });
+    const megaHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MEGA_API_TOKEN}`,
+    };
 
-    if (!megaRes.ok) {
-      const errText = await megaRes.text();
-      console.error("Mega API error:", errText);
-      return new Response(
-        JSON.stringify({ error: "Falha ao enviar mensagem" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Try up to 2 times for 5xx errors
+    let lastError = "";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const megaRes = await fetch(megaUrl, {
+        method: "POST",
+        headers: megaHeaders,
+        body: megaBody,
+      });
+
+      if (megaRes.ok) {
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      lastError = await megaRes.text();
+
+      if (megaRes.status >= 500 && attempt === 0) {
+        console.warn("Mega API 5xx, retrying in 2s...");
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+
+      break;
     }
 
+    console.error("Mega API error:", lastError);
     return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Serviço temporariamente indisponível. Tente novamente em alguns minutos." }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Error:", err);
