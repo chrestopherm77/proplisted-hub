@@ -27,6 +27,7 @@ import NewPropertySearch from "./pages/NewPropertySearch";
 import Launches from "./pages/Launches";
 import LaunchDetail from "./pages/LaunchDetail";
 import NewLaunch from "./pages/NewLaunch";
+import Financing from "./pages/Financing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => {
           <Route path="/launches" element={<Launches />} />
           <Route path="/launches/new" element={<NewLaunch />} />
           <Route path="/launches/:id" element={<LaunchDetail />} />
+          <Route path="/financiamento" element={<Financing />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
