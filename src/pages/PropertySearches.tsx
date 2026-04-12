@@ -128,6 +128,12 @@ const PropertySearches = () => {
   const [filterCity, setFilterCity] = useState('');
   const [filterState, setFilterState] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterObjective, setFilterObjective] = useState('');
+  const [filterNeighborhood, setFilterNeighborhood] = useState('');
+  const [filterZone, setFilterZone] = useState('');
+  const [filterPriceMin, setFilterPriceMin] = useState('');
+  const [filterPriceMax, setFilterPriceMax] = useState('');
+  const [filterModality, setFilterModality] = useState('');
   const [selectedSearch, setSelectedSearch] = useState<PropertySearch | null>(null);
   const [sendingOffer, setSendingOffer] = useState(false);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
