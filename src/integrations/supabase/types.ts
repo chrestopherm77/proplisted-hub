@@ -148,17 +148,25 @@ export type Database = {
           commission: string | null
           coordinator_name: string | null
           coordinator_phone: string | null
+          coordinator_phone2: string | null
           created_at: string | null
           delivery_date: string | null
+          drive_link: string | null
           drive_url: string | null
           floors: string | null
           id: string
           is_active: boolean | null
           launch_date: string | null
+          logo_url: string | null
           name: string
           neighborhood: string | null
           price_from: string | null
+          price_max: string | null
+          property_type: string | null
+          size_m2_max: string | null
+          size_m2_min: string | null
           state: string | null
+          status: string | null
           table_url: string | null
           total_units: string | null
           user_id: string
@@ -172,17 +180,25 @@ export type Database = {
           commission?: string | null
           coordinator_name?: string | null
           coordinator_phone?: string | null
+          coordinator_phone2?: string | null
           created_at?: string | null
           delivery_date?: string | null
+          drive_link?: string | null
           drive_url?: string | null
           floors?: string | null
           id?: string
           is_active?: boolean | null
           launch_date?: string | null
+          logo_url?: string | null
           name: string
           neighborhood?: string | null
           price_from?: string | null
+          price_max?: string | null
+          property_type?: string | null
+          size_m2_max?: string | null
+          size_m2_min?: string | null
           state?: string | null
+          status?: string | null
           table_url?: string | null
           total_units?: string | null
           user_id: string
@@ -196,17 +212,25 @@ export type Database = {
           commission?: string | null
           coordinator_name?: string | null
           coordinator_phone?: string | null
+          coordinator_phone2?: string | null
           created_at?: string | null
           delivery_date?: string | null
+          drive_link?: string | null
           drive_url?: string | null
           floors?: string | null
           id?: string
           is_active?: boolean | null
           launch_date?: string | null
+          logo_url?: string | null
           name?: string
           neighborhood?: string | null
           price_from?: string | null
+          price_max?: string | null
+          property_type?: string | null
+          size_m2_max?: string | null
+          size_m2_min?: string | null
           state?: string | null
+          status?: string | null
           table_url?: string | null
           total_units?: string | null
           user_id?: string
