@@ -72,7 +72,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
               }`}
             >
               <Search className="h-5 w-5" />
-              <span className="font-medium">Buscar oferta</span>
+              <span className="font-medium">Balcão de Parcerias</span>
             </Link>
           )}
           {isAdmin && (

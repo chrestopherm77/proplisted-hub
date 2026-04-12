@@ -128,6 +128,12 @@ const PropertySearches = () => {
   const [filterCity, setFilterCity] = useState('');
   const [filterState, setFilterState] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterObjective, setFilterObjective] = useState('');
+  const [filterNeighborhood, setFilterNeighborhood] = useState('');
+  const [filterZone, setFilterZone] = useState('');
+  const [filterPriceMin, setFilterPriceMin] = useState('');
+  const [filterPriceMax, setFilterPriceMax] = useState('');
+  const [filterModality, setFilterModality] = useState('');
   const [selectedSearch, setSelectedSearch] = useState<PropertySearch | null>(null);
   const [sendingOffer, setSendingOffer] = useState(false);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
@@ -222,6 +228,12 @@ const PropertySearches = () => {
   const uniqueStates = useMemo(() => [...new Set(searches.map((s) => s.state).filter(Boolean) as string[])].sort(), [searches]);
   const uniqueTypes = useMemo(() => [...new Set(searches.map((s) => s.property_type))].sort(), [searches]);
 
+  const parseNumericValue = (val: string | null): number => {
+    if (!val) return 0;
+    const digits = val.replace(/\D/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+  };
+
   const filtered = searches.filter((s) => {
     const term = textFilter.toLowerCase();
     const matchesText =
@@ -236,7 +248,21 @@ const PropertySearches = () => {
     const matchesState = !filterState || s.state === filterState;
     const matchesType = !filterType || s.property_type === filterType;
 
-    return matchesText && matchesCity && matchesState && matchesType;
+    const matchesObjective = !filterObjective || s.operation_type === filterObjective;
+    const matchesNeighborhood = !filterNeighborhood || (s.neighborhood ?? '').toLowerCase().includes(filterNeighborhood.toLowerCase());
+    const matchesZone = !filterZone || (s.zone ?? '').toLowerCase().includes(filterZone.toLowerCase());
+
+    const numericValue = parseNumericValue(s.value);
+    const minPrice = filterPriceMin ? parseInt(filterPriceMin.replace(/\D/g, ''), 10) : 0;
+    const maxPrice = filterPriceMax ? parseInt(filterPriceMax.replace(/\D/g, ''), 10) : 0;
+    const matchesPriceMin = !minPrice || numericValue >= minPrice;
+    const matchesPriceMax = !maxPrice || numericValue <= maxPrice;
+
+    const matchesModality = !filterModality || 
+      (s.observation ?? '').toLowerCase().includes(filterModality.toLowerCase()) ||
+      (s.headline ?? '').toLowerCase().includes(filterModality.toLowerCase());
+
+    return matchesText && matchesCity && matchesState && matchesType && matchesObjective && matchesNeighborhood && matchesZone && matchesPriceMin && matchesPriceMax && matchesModality;
   });
 
   if (authLoading || !user) return null;
@@ -278,11 +304,11 @@ const PropertySearches = () => {
           <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-5 backdrop-blur-[2px] sm:px-6 sm:py-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
-                <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
+                <h1 className="text-2xl font-bold text-foreground">Mural de Demandas</h1>
+                <p className="text-muted-foreground text-sm mt-1">Encontre compradores com o perfil exato dos seus imóveis e feche parcerias agora.</p>
               </div>
               <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
-                <Plus className="h-4 w-4" /> Nova Procura
+                <Plus className="h-4 w-4" /> Interesse do Comprador
               </Button>
             </div>
           </div>
@@ -318,6 +344,51 @@ const PropertySearches = () => {
                 <SelectContent>
                   <SelectItem value="ALL">Todos os Tipos</SelectItem>
                   {uniqueTypes.map((t) => <SelectItem key={t} value={t}>{propertyTypeLabels[t] ?? t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Select value={filterObjective} onValueChange={(v) => setFilterObjective(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Objetivo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos os Objetivos</SelectItem>
+                  <SelectItem value="COMPRA">Comprar</SelectItem>
+                  <SelectItem value="VENDA">Vender</SelectItem>
+                  <SelectItem value="ALUGUEL">Alugar</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Filtrar por Bairro"
+                className="border-border/70 bg-background/90"
+                value={filterNeighborhood}
+                onChange={(e) => setFilterNeighborhood(e.target.value)}
+              />
+              <Input
+                placeholder="Filtrar por Zona"
+                className="border-border/70 bg-background/90"
+                value={filterZone}
+                onChange={(e) => setFilterZone(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Input
+                placeholder="Preço mínimo (R$)"
+                className="border-border/70 bg-background/90"
+                value={filterPriceMin}
+                onChange={(e) => setFilterPriceMin(e.target.value)}
+              />
+              <Input
+                placeholder="Preço máximo (R$)"
+                className="border-border/70 bg-background/90"
+                value={filterPriceMax}
+                onChange={(e) => setFilterPriceMax(e.target.value)}
+              />
+              <Select value={filterModality} onValueChange={(v) => setFilterModality(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas as Modalidades</SelectItem>
+                  <SelectItem value="novo">Novo</SelectItem>
+                  <SelectItem value="usado">Usado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

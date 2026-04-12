@@ -123,7 +123,7 @@ export const Layout = ({ children }: LayoutProps) => {
                       isActive('/property-searches') ? 'text-primary' : 'text-foreground'
                     }`}
                   >
-                    Buscar oferta
+                    Balcão de Parcerias
                   </Link>
                 )}
                 {isAdmin && !isPartnerSite && (
