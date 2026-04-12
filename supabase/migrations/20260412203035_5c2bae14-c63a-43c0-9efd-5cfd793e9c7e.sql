@@ -1,0 +1,1 @@
+ALTER TABLE public.property_searches ADD COLUMN value_min text, ADD COLUMN value_max text;
