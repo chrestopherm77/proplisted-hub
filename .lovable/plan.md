@@ -1,42 +1,28 @@
 
 
-# Plano: Página de Financiamento com envio via WhatsApp
+# Plano: Corrigir Edge Function de Financiamento
 
-## Resumo
-Criar uma nova página `/financiamento` com formulário que coleta dados de simulação de financiamento. Ao enviar, uma Edge Function dispara a mensagem formatada via Mega API para o WhatsApp `553191914663`, incluindo nome e telefone do corretor logado.
+## Problema
+A API da Mega retornou erro 502 (servidor temporariamente fora). Além disso, há problemas de configuração na edge function.
 
-## Implementação
+## Correções
 
-### 1. Edge Function `send-financing-whatsapp`
-- Recebe os dados do formulário + nome/telefone do corretor
-- Valida inputs com Zod
-- Monta mensagem formatada com todos os campos
-- Envia via Mega API (mesma instância `megacode-Mj46Nd4U5tP`, token `MEGA_API_TOKEN` já configurado)
-- Destino fixo: `553191914663@s.whatsapp.net`
+### 1. `supabase/config.toml`
+Adicionar entrada para a função com `verify_jwt = false` (permite chamada sem JWT, como as demais funções de envio).
 
-### 2. Página `src/pages/Financing.tsx`
-- Formulário com os campos:
-  - **Modalidade**: Select (Imóvel Novo / Imóvel Usado / Aquisição de Terreno e Construção / Construção em Terreno Próprio / Outro)
-  - **UF do Imóvel**: Select via IBGE (`useIBGELocation`)
-  - **Cidade do Imóvel**: Select dinâmico via IBGE
-  - **Valor Aproximado do Imóvel**: Input com formatação R$
-  - **Renda Bruta Familiar Mensal**: Input com formatação R$
-  - **Data de Nascimento**: Input date
-  - **Utilizar FGTS?**: Select Sim/Não
-- Ao submeter, chama a Edge Function via `supabase.functions.invoke`
-- Nome e telefone do corretor puxados do perfil logado
-- Tela de sucesso após envio
+### 2. `supabase/functions/send-financing-whatsapp/index.ts`
+- Corrigir CORS: usar origens restritas (`leadbay.com.br` e `proplisted-hub.lovable.app`) em vez de `*`
+- Melhorar mensagem de erro: informar ao frontend quando é erro temporário da API externa
+- Adicionar retry simples (1 tentativa extra) para erros 5xx da Mega API
 
-### 3. Navegação
-- Adicionar link "Financiamento" no menu desktop (`Layout.tsx`) e mobile (`MobileMenu.tsx`)
+### 3. `src/pages/Financing.tsx`
+- Melhorar mensagem de erro para o usuário: "Serviço temporariamente indisponível. Tente novamente em alguns minutos."
 
-### Arquivos afetados
+## Arquivos afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/functions/send-financing-whatsapp/index.ts` | Nova Edge Function |
-| `src/pages/Financing.tsx` | Nova página com formulário |
-| `src/App.tsx` | Rota `/financiamento` |
-| `src/components/Layout.tsx` | Link no menu |
-| `src/components/MobileMenu.tsx` | Link no menu mobile |
+| `supabase/config.toml` | Adicionar `[functions.send-financing-whatsapp]` |
+| `supabase/functions/send-financing-whatsapp/index.ts` | CORS restrito, retry, melhor erro |
+| `src/pages/Financing.tsx` | Mensagem de erro mais clara |
 
