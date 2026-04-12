@@ -1,43 +1,60 @@
 
 
-# Plano: Reformular formulário "Interesse do Comprador"
+# Plano: Melhorias na aba de Lançamentos
 
-## Mudanças
+## 1. Migração de banco de dados
 
-### 1. Migração de banco de dados
-Adicionar colunas `value_min` e `value_max` na tabela `property_searches` (text, nullable). Manter a coluna `value` existente para compatibilidade.
+Adicionar novas colunas na tabela `launches`:
 
-### 2. Remover campos Título e Headline
-- Remover inputs de "Título do Imóvel" e "Headline" do formulário
-- O título será gerado automaticamente pela concatenação dos campos preenchidos (ex: "Casa - Condomínio - Venda - São Paulo/SP - Centro - 3 quartos")
-- O título é salvo automaticamente no campo `title` ao submeter
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `logo_url` | text | Logo do empreendimento |
+| `property_type` | text | Tipo (casa, apto, terreno) |
+| `size_m2_min` | text | Tamanho mínimo m² |
+| `size_m2_max` | text | Tamanho máximo m² |
+| `status` | text | Lançamento / Em construção / Entregue |
+| `price_max` | text | Preço máximo (já existe price_from para mín) |
+| `coordinator_phone2` | text | Segundo telefone do coordenador |
+| `drive_link` | text | Link externo do Drive (em vez de PDF) |
 
-### 3. Estado e Cidade via API IBGE
-- Usar o hook `useIBGELocation` já existente no projeto
-- Estado: Select com todos os estados brasileiros (carregados da API IBGE)
-- Cidade: Select populado dinamicamente ao selecionar o estado
+## 2. Listagem (`Launches.tsx`) - Novos filtros
 
-### 4. Zona como Select
-- Transformar o campo "Zona" de input texto para Select com opções:
-  - Norte, Sul, Leste, Oeste, Centro, Rural
+Adicionar filtros além do existente (cidade + busca):
+- **Estado** — Select dinâmico dos estados existentes
+- **Zona** — Select dinâmico
+- **Tamanho m²** — Inputs de/até
+- **Tipo** — Select: Casa, Apartamento, Terreno
+- **Preço** — Inputs mín/máx
+- **Status** — Select: Lançamento, Em construção, Entregue
 
-### 5. Valor com mínimo e máximo
-- Substituir o campo único "Valor (R$)" por dois campos: "Valor Mínimo (R$)" e "Valor Máximo (R$)"
-- Ambos com formatação de moeda
-- Salvar nos novos campos `value_min` e `value_max`
+**Cards**: Abaixo do nome, mostrar resumo: cidade, zona, status, valor, tipo, m²
 
-### 6. Quartos condicional por tipo
-- Mostrar campo "Quartos" apenas para: CASA e APARTAMENTO
-- Ocultar para: SALA_COMERCIAL, LOTE, RURAL, PREDIO_COMERCIAL
-- Adicionar `hasBedrooms` ao `fieldConfigs`
+## 3. Formulário (`NewLaunch.tsx`) - Melhorias
 
-### 7. Prédio Comercial com garagem
-- Alterar `fieldConfigs` para `PREDIO_COMERCIAL` ter `hasParking: true`
+- Adicionar upload de **Logo** (além do banner)
+- Adicionar campo **Status** (Select: Lançamento / Em construção / Entregue)
+- Adicionar campo **Tipo** (Select: Casa, Apto, Terreno)
+- Adicionar campos **Tamanho m²** (mín/máx)
+- Adicionar campo **Preço máximo** (além do "A partir de")
+- Renomear "Coordenador" para **"Coordenador de Vendas"**
+- Adicionar **segundo telefone** do coordenador
+- Na seção de arquivos: Book e Tabela aceitam **PDF ou Link**, Drive aceita apenas **Link**
+- Adicionar botão **"Excluir Empreendimento"** (com confirmação)
 
-### Arquivos afetados
+## 4. Detalhe (`LaunchDetail.tsx`)
+
+- Exibir **logo** ao lado do banner
+- Exibir **todas as informações** novas (status, tipo, m², preço máx)
+- Coordenador de Vendas com dois telefones (dois botões WhatsApp)
+- Drive como link externo
+- Botão de **excluir empreendimento** (com confirmação)
+
+## Arquivos afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `property_searches` (migração) | Adicionar colunas `value_min`, `value_max` |
-| `src/pages/NewPropertySearch.tsx` | Todas as mudanças de formulário acima |
+| `launches` (migração) | 8 novas colunas |
+| `src/pages/Launches.tsx` | Filtros + resumo nos cards |
+| `src/pages/NewLaunch.tsx` | Logo, status, tipo, m², preço máx, 2o telefone, PDF/link, excluir |
+| `src/pages/LaunchDetail.tsx` | Exibir todas as novas informações, excluir |
 
