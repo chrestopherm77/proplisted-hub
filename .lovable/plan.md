@@ -1,30 +1,43 @@
 
 
-# Plano: Renomear e adicionar filtros à página "Balcão de Parcerias"
+# Plano: Reformular formulário "Interesse do Comprador"
 
-## Mudanças de texto
+## Mudanças
 
-| De | Para |
-|---|---|
-| Menu "Buscar oferta" | **Balcão de Parcerias** |
-| Título "Buscar Oferta" | **Mural de Demandas** |
-| Subtítulo | **Encontre compradores com o perfil exato dos seus imóveis e feche parcerias agora.** |
-| Botão "Nova Procura" | **Interesse do Comprador** |
+### 1. Migração de banco de dados
+Adicionar colunas `value_min` e `value_max` na tabela `property_searches` (text, nullable). Manter a coluna `value` existente para compatibilidade.
 
-## Novos filtros
+### 2. Remover campos Título e Headline
+- Remover inputs de "Título do Imóvel" e "Headline" do formulário
+- O título será gerado automaticamente pela concatenação dos campos preenchidos (ex: "Casa - Condomínio - Venda - São Paulo/SP - Centro - 3 quartos")
+- O título é salvo automaticamente no campo `title` ao submeter
 
-Adicionar na grade de filtros existente (que já tem Estado, Cidade e Tipo):
-- **Objetivo** — Select: Comprar / Alugar (mapeia para `operation_type` COMPRA/VENDA e ALUGUEL)
-- **Bairro** — Input texto livre (filtra por `neighborhood`)
-- **Zona** — Input texto livre (filtra por `zone`)
-- **Preço mínimo / máximo** — Dois inputs de valor (R$), filtrando pelo campo `value`
-- **Modalidade** — Select: Novo / Usado (filtro local, sem coluna no banco por enquanto — filtra pelo texto do `observation` ou `headline`)
+### 3. Estado e Cidade via API IBGE
+- Usar o hook `useIBGELocation` já existente no projeto
+- Estado: Select com todos os estados brasileiros (carregados da API IBGE)
+- Cidade: Select populado dinamicamente ao selecionar o estado
 
-## Arquivos afetados
+### 4. Zona como Select
+- Transformar o campo "Zona" de input texto para Select com opções:
+  - Norte, Sul, Leste, Oeste, Centro, Rural
+
+### 5. Valor com mínimo e máximo
+- Substituir o campo único "Valor (R$)" por dois campos: "Valor Mínimo (R$)" e "Valor Máximo (R$)"
+- Ambos com formatação de moeda
+- Salvar nos novos campos `value_min` e `value_max`
+
+### 6. Quartos condicional por tipo
+- Mostrar campo "Quartos" apenas para: CASA e APARTAMENTO
+- Ocultar para: SALA_COMERCIAL, LOTE, RURAL, PREDIO_COMERCIAL
+- Adicionar `hasBedrooms` ao `fieldConfigs`
+
+### 7. Prédio Comercial com garagem
+- Alterar `fieldConfigs` para `PREDIO_COMERCIAL` ter `hasParking: true`
+
+### Arquivos afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/Layout.tsx` | Texto do link: "Balcão de Parcerias" |
-| `src/components/MobileMenu.tsx` | Texto do link: "Balcão de Parcerias" |
-| `src/pages/PropertySearches.tsx` | Título, subtítulo, botão + 5 novos filtros + lógica de filtragem |
+| `property_searches` (migração) | Adicionar colunas `value_min`, `value_max` |
+| `src/pages/NewPropertySearch.tsx` | Todas as mudanças de formulário acima |
 
