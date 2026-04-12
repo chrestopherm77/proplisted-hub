@@ -304,11 +304,11 @@ const PropertySearches = () => {
           <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-5 backdrop-blur-[2px] sm:px-6 sm:py-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Buscar Oferta</h1>
-                <p className="text-muted-foreground text-sm mt-1">Veja pessoas procurando imóveis agora</p>
+                <h1 className="text-2xl font-bold text-foreground">Mural de Demandas</h1>
+                <p className="text-muted-foreground text-sm mt-1">Encontre compradores com o perfil exato dos seus imóveis e feche parcerias agora.</p>
               </div>
               <Button onClick={() => navigate('/property-searches/new')} className="gap-2">
-                <Plus className="h-4 w-4" /> Nova Procura
+                <Plus className="h-4 w-4" /> Interesse do Comprador
               </Button>
             </div>
           </div>
