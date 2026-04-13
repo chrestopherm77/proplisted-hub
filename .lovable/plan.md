@@ -1,49 +1,83 @@
 
-Problema identificado: o erro não indica mais “Mega API fora do ar” de forma genérica. A causa mais provável está no endpoint usado pela função de financiamento.
 
-O que encontrei no código:
-- `send-financing-whatsapp` usa `https://api.megaapi.com.br/rest/sendMessage/...`
-- As outras integrações Mega que já funcionam no projeto (`send-whatsapp-code`, `check-whatsapp`, `recovery-abandoned-lead`) usam `https://apinocode01.megaapi.com.br/...`
-- Nos logs da função de financiamento, o retorno foi um HTML de Cloudflare Tunnel error 1033 para `api.megaapi.com.br`
-- Isso mostra que a função está chamando um host diferente do restante do sistema, e esse host é o que está falhando
+# Plano: Ofertas com Link, Notificação WhatsApp e Alertas de Filtro
 
-Plano de correção:
-1. Ajustar `supabase/functions/send-financing-whatsapp/index.ts`
-- Trocar o host de envio de:
-  - `api.megaapi.com.br`
-  para:
-  - `apinocode01.megaapi.com.br`
-- Manter a mesma rota `/rest/sendMessage/megacode-Mj46Nd4U5tP/text`
-- Manter token, payload e número de destino como já estão
+## Resumo
 
-2. Melhorar diagnóstico da função
-- Padronizar a resposta para sempre retornar JSON legível ao frontend
-- Incluir detalhes internos de diagnóstico no log:
-  - URL chamada
-  - status HTTP retornado
-  - trecho da resposta da Mega
-- Se a Mega falhar, retornar mensagem estruturada para o frontend em vez de depender só de status 502
+Três funcionalidades no Balcão de Parcerias:
+1. **Oferta com link**: ao clicar "Enviar Oferta", abre modal com opção de WhatsApp + campo para colar link do anúncio. Na tela de detalhes, listar ofertas recebidas (nome + link).
+2. **Notificação WhatsApp ao dono da procura**: quando alguém envia uma oferta, o sistema dispara mensagem via Mega API informando que há nova oferta.
+3. **Salvar filtro como Alerta**: botão que salva os filtros atuais. Quando uma nova procura é criada e se encaixa, o corretor recebe WhatsApp.
 
-3. Melhorar o frontend em `src/pages/Financing.tsx`
-- Ler o corpo retornado pela função (`data`) além de `error`
-- Exibir mensagem específica quando a função retornar falha estruturada
-- Evitar o erro genérico “Erro ao enviar simulação” quando já houver mensagem melhor disponível
+---
 
-4. Validação final
-- Confirmar que a função de financiamento ficou alinhada com o mesmo padrão já usado nas integrações de WhatsApp do projeto
-- Testar o envio novamente após a troca do endpoint
+## 1. Migração de banco de dados
 
-Arquivos afetados:
-- `supabase/functions/send-financing-whatsapp/index.ts`
-- `src/pages/Financing.tsx`
+### Alterar tabela `property_search_offers`
+- Adicionar coluna `offer_link` (text, nullable) — link do anúncio
+- Adicionar coluna `offer_name` (text, nullable) — nome de quem ofertou (cache para exibir sem join)
 
-Detalhe técnico:
-O indício principal é a inconsistência entre hosts:
-```text
-Funcionando no projeto:
-apinocode01.megaapi.com.br
-
-Falhando no financiamento:
-api.megaapi.com.br
+### Nova tabela `property_search_alerts`
+```sql
+CREATE TABLE public.property_search_alerts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  filters jsonb NOT NULL DEFAULT '{}',
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.property_search_alerts ENABLE ROW LEVEL SECURITY;
+-- Users manage own alerts
+CREATE POLICY "Users can manage own alerts" ON public.property_search_alerts FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+-- Admins can view all
+CREATE POLICY "Admins can view all alerts" ON public.property_search_alerts FOR SELECT TO public USING (has_role(auth.uid(), 'MASTER_ADMIN'));
 ```
-Como os outros fluxos já usam `apinocode01`, a correção mais segura é alinhar a função de financiamento ao mesmo endpoint.
+
+---
+
+## 2. Edge Function `notify-offer-whatsapp`
+
+Quando o corretor envia uma oferta:
+- Recebe: `searchId`, `offerUserName`, `offerLink`
+- Busca o `user_id` da procura → busca `phone` e `name` do dono via profiles
+- Monta mensagem: "Olá [nome]! Alguém enviou uma oferta na sua procura de [tipo] em [cidade]. [Link se houver]"
+- Dispara via Mega API (mesmo padrão do `send-financing-whatsapp`)
+
+## 3. Edge Function `notify-alert-match`
+
+Chamada quando uma nova procura é criada:
+- Busca todos os alertas ativos
+- Compara filtros (state, city, property_type, operation_type, faixa de preço) com a nova procura
+- Para cada match, busca o telefone do corretor e envia WhatsApp via Mega API
+
+---
+
+## 4. Frontend
+
+### `PropertySearches.tsx`
+- **Botão "Enviar Oferta"**: ao clicar, abre modal com:
+  - Botão "Chamar no WhatsApp" (comportamento atual)
+  - Campo de texto "Link do seu anúncio" + botão "Enviar Link"
+  - Ao enviar link, salva na `property_search_offers` com `offer_link` e chama `notify-offer-whatsapp`
+- **Botão "Salvar como Alerta"** nos filtros: salva os filtros atuais na tabela `property_search_alerts`
+
+### `PropertySearchDetail.tsx` e Modal de detalhes
+- Abaixo dos detalhes, seção "Ofertas Recebidas": lista com nome do corretor e link clicável (se houver)
+- Busca ofertas da tabela `property_search_offers` com join no profiles para nome
+
+### `NewPropertySearch.tsx`
+- Após criar a procura com sucesso, chamar `notify-alert-match` passando os dados da nova procura
+
+---
+
+## Arquivos afetados
+
+| Arquivo | Mudança |
+|---------|---------|
+| Migração SQL | `offer_link`, `offer_name` em `property_search_offers` + tabela `property_search_alerts` |
+| `supabase/functions/notify-offer-whatsapp/index.ts` | Nova Edge Function |
+| `supabase/functions/notify-alert-match/index.ts` | Nova Edge Function |
+| `src/pages/PropertySearches.tsx` | Modal de oferta com link + botão Salvar Alerta |
+| `src/pages/PropertySearchDetail.tsx` | Listar ofertas recebidas |
+| `src/pages/NewPropertySearch.tsx` | Chamar `notify-alert-match` ao criar |
+
