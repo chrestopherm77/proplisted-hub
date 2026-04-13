@@ -178,6 +178,38 @@ const NewPropertySearch = () => {
       return;
     }
 
+    // Notify alert subscribers
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      // Get the inserted search id
+      const { data: lastSearch } = await supabase
+        .from('property_searches')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastSearch) {
+        await fetch(`https://${projectId}.supabase.co/functions/v1/notify-alert-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            searchId: lastSearch.id,
+            state: state.trim() || undefined,
+            city: city.trim(),
+            property_type: selected.type,
+            operation_type: operationType,
+            value_min: valueMin.trim() || undefined,
+            value_max: valueMax.trim() || undefined,
+            creatorUserId: user.id,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error('Alert notification error:', e);
+    }
+
     toast({ title: 'Procura adicionada!', description: 'Sua procura foi publicada com sucesso.' });
     navigate('/property-searches');
   };

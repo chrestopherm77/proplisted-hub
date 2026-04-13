@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +54,14 @@ interface MyOffer {
   search_id: string;
   created_at: string;
   search?: PropertySearch;
+}
+
+interface OfferRecord {
+  id: string;
+  user_id: string;
+  offer_name: string | null;
+  offer_link: string | null;
+  created_at: string | null;
 }
 
 const propertyTypeLabels: Record<string, string> = {
@@ -138,6 +146,18 @@ const PropertySearches = () => {
   const [sendingOffer, setSendingOffer] = useState(false);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
 
+  // Offer modal state
+  const [offerModalSearch, setOfferModalSearch] = useState<PropertySearch | null>(null);
+  const [offerLink, setOfferLink] = useState('');
+  const [sendingLink, setSendingLink] = useState(false);
+
+  // Detail modal offers
+  const [detailOffers, setDetailOffers] = useState<OfferRecord[]>([]);
+  const [loadingDetailOffers, setLoadingDetailOffers] = useState(false);
+
+  // Alert
+  const [savingAlert, setSavingAlert] = useState(false);
+
   useEffect(() => {
     if (!authLoading) {
       if (!user) { navigate('/auth'); return; }
@@ -151,6 +171,15 @@ const PropertySearches = () => {
       fetchMyOffers();
     }
   }, [user]);
+
+  // Load offers when detail modal opens for own searches
+  useEffect(() => {
+    if (selectedSearch && selectedSearch.user_id === user?.id) {
+      fetchDetailOffers(selectedSearch.id);
+    } else {
+      setDetailOffers([]);
+    }
+  }, [selectedSearch]);
 
   const fetchSearches = async () => {
     setLoading(true);
@@ -186,20 +215,38 @@ const PropertySearches = () => {
     }
   };
 
-  const handleSendOffer = async (search: PropertySearch) => {
+  const fetchDetailOffers = async (searchId: string) => {
+    setLoadingDetailOffers(true);
+    const { data } = await supabase
+      .from('property_search_offers')
+      .select('id, user_id, offer_name, offer_link, created_at')
+      .eq('search_id', searchId)
+      .order('created_at', { ascending: false });
+
+    setDetailOffers((data ?? []) as OfferRecord[]);
+    setLoadingDetailOffers(false);
+  };
+
+  const openOfferModal = (search: PropertySearch) => {
+    setOfferModalSearch(search);
+    setOfferLink('');
+  };
+
+  const handleWhatsAppOffer = async (search: PropertySearch) => {
     if (!user) return;
     setSendingOffer(true);
 
-    // Increment offer count
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
 
-    // Register offer
+    // Get user profile name
+    const { data: myProfile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+    const myName = myProfile?.name ?? 'Corretor';
+
     await supabase.from('property_search_offers').upsert(
-      { search_id: search.id, user_id: user.id },
+      { search_id: search.id, user_id: user.id, offer_name: myName } as any,
       { onConflict: 'search_id,user_id' }
     );
 
-    // Get owner phone
     const { data: phone } = await supabase.rpc('get_profile_phone', { p_user_id: search.user_id });
 
     if (!phone) {
@@ -215,13 +262,87 @@ const PropertySearches = () => {
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
-    // Update local state
     setSearches(prev => prev.map(s => s.id === search.id ? { ...s, offer_count: (s.offer_count ?? 0) + 1 } : s));
     if (selectedSearch?.id === search.id) {
       setSelectedSearch(prev => prev ? { ...prev, offer_count: (prev.offer_count ?? 0) + 1 } : prev);
     }
     fetchMyOffers();
     setSendingOffer(false);
+    setOfferModalSearch(null);
+  };
+
+  const handleSendLink = async () => {
+    if (!offerModalSearch || !user || !offerLink.trim()) return;
+    setSendingLink(true);
+
+    const { data: myProfile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+    const myName = myProfile?.name ?? 'Corretor';
+
+    await supabase.rpc('increment_offer_count', { p_search_id: offerModalSearch.id });
+
+    await supabase.from('property_search_offers').upsert(
+      { search_id: offerModalSearch.id, user_id: user.id, offer_name: myName, offer_link: offerLink.trim() } as any,
+      { onConflict: 'search_id,user_id' }
+    );
+
+    // Notify owner via WhatsApp
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      await fetch(`https://${projectId}.supabase.co/functions/v1/notify-offer-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          searchId: offerModalSearch.id,
+          offerUserName: myName,
+          offerLink: offerLink.trim(),
+        }),
+      });
+    } catch (e) {
+      console.error('Notification error:', e);
+    }
+
+    setSearches(prev => prev.map(s => s.id === offerModalSearch.id ? { ...s, offer_count: (s.offer_count ?? 0) + 1 } : s));
+    if (selectedSearch?.id === offerModalSearch.id) {
+      setSelectedSearch(prev => prev ? { ...prev, offer_count: (prev.offer_count ?? 0) + 1 } : prev);
+    }
+    fetchMyOffers();
+    setSendingLink(false);
+    setOfferModalSearch(null);
+    toast({ title: 'Oferta enviada!', description: 'Seu link foi registrado e o proprietário foi notificado.' });
+  };
+
+  const handleSaveAlert = async () => {
+    if (!user) return;
+    setSavingAlert(true);
+
+    const filters: Record<string, string> = {};
+    if (filterState) filters.state = filterState;
+    if (filterCity) filters.city = filterCity;
+    if (filterType) filters.property_type = filterType;
+    if (filterObjective) filters.operation_type = filterObjective;
+    if (filterNeighborhood) filters.neighborhood = filterNeighborhood;
+    if (filterZone) filters.zone = filterZone;
+    if (filterPriceMin) filters.priceMin = filterPriceMin;
+    if (filterPriceMax) filters.priceMax = filterPriceMax;
+
+    if (Object.keys(filters).length === 0) {
+      toast({ title: 'Nenhum filtro ativo', description: 'Selecione pelo menos um filtro antes de salvar o alerta.', variant: 'destructive' });
+      setSavingAlert(false);
+      return;
+    }
+
+    const { error } = await supabase.from('property_search_alerts').insert({
+      user_id: user.id,
+      filters,
+    } as any);
+
+    setSavingAlert(false);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível salvar o alerta.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Alerta salvo!', description: 'Você será notificado via WhatsApp quando uma nova procura compatível for publicada.' });
+    }
   };
 
   const uniqueCities = useMemo(() => [...new Set(searches.map((s) => s.city))].sort(), [searches]);
@@ -267,6 +388,8 @@ const PropertySearches = () => {
 
   if (authLoading || !user) return null;
 
+  const hasActiveFilters = filterState || filterCity || filterType || filterObjective || filterNeighborhood || filterZone || filterPriceMin || filterPriceMax;
+
   const modalDetails: { label: string; value: string | null }[] = selectedSearch ? [
     { label: 'Operação', value: operationLabels[selectedSearch.operation_type] ?? selectedSearch.operation_type },
     { label: 'Tipo', value: propertyTypeLabels[selectedSearch.property_type] ?? selectedSearch.property_type },
@@ -287,7 +410,6 @@ const PropertySearches = () => {
   return (
     <Layout>
       <div className="relative max-w-7xl mx-auto">
-        {/* Map background covering entire page content */}
         <div
           className="absolute inset-0 pointer-events-none opacity-55 dark:opacity-20 rounded-2xl"
           style={{
@@ -392,13 +514,25 @@ const PropertySearches = () => {
                 </SelectContent>
               </Select>
             </div>
+            {/* Save Alert Button */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleSaveAlert}
+                disabled={savingAlert}
+              >
+                <Bell className="h-4 w-4" />
+                {savingAlert ? 'Salvando...' : 'Salvar esse filtro como Alerta'}
+              </Button>
+            )}
           </div>
 
           {/* Cards + Sidebar */}
           <div className="flex flex-col lg:flex-row gap-6">
           {/* Main content */}
           <div className="flex-1 space-y-6">
-            {/* Cards list */}
             {loading ? (
               <p className="text-muted-foreground text-center py-12">Carregando...</p>
             ) : filtered.length === 0 ? (
@@ -413,11 +547,9 @@ const PropertySearches = () => {
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 flex-1">
-                            {/* Headline */}
                             <p className="font-semibold text-foreground text-base">
                               {s.headline || s.title || `${propertyTypeLabels[s.property_type] ?? s.property_type} para ${operationLabels[s.operation_type] ?? s.operation_type}`}
                             </p>
-                            {/* Badges */}
                             <div className="flex items-center gap-1.5 flex-wrap mt-2">
                               <Badge variant="outline" className={`text-xs ${propertyTypeBadgeColors[s.property_type] ?? ''}`}>
                                 {propertyTypeLabels[s.property_type] ?? s.property_type}
@@ -426,12 +558,10 @@ const PropertySearches = () => {
                                 {operationLabels[s.operation_type] ?? s.operation_type}
                               </Badge>
                             </div>
-                            {/* Description */}
                             {desc && (
                               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{desc}</p>
                             )}
                           </div>
-                          {/* Value + Location */}
                           <div className="text-right shrink-0 space-y-1">
                             {displayValue && (
                               <p className="font-bold text-foreground text-lg">{displayValue}</p>
@@ -446,7 +576,6 @@ const PropertySearches = () => {
                             </div>
                           </div>
                         </div>
-                        {/* Actions */}
                         <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border">
                           <Button
                             variant="outline"
@@ -461,7 +590,7 @@ const PropertySearches = () => {
                               size="sm"
                               className="gap-2"
                               disabled={sendingOffer}
-                              onClick={() => handleSendOffer(s)}
+                              onClick={() => openOfferModal(s)}
                             >
                               <MessageCircle className="h-4 w-4" /> Enviar Oferta
                             </Button>
@@ -556,17 +685,120 @@ const PropertySearches = () => {
                   <p className="text-foreground text-sm">{selectedSearch.observation}</p>
                 </div>
               )}
+
+              {/* Ofertas Recebidas (only for search owner) */}
+              {selectedSearch.user_id === user!.id && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Ofertas Recebidas</h3>
+                  {loadingDetailOffers ? (
+                    <p className="text-xs text-muted-foreground">Carregando...</p>
+                  ) : detailOffers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma oferta recebida ainda.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {detailOffers.map((offer) => (
+                        <div key={offer.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border/50">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {offer.offer_name ?? 'Corretor'}
+                            </p>
+                            {offer.created_at && (
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(offer.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              </p>
+                            )}
+                          </div>
+                          {offer.offer_link && (
+                            <a
+                              href={offer.offer_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-primary hover:text-primary/80 flex items-center gap-1 text-xs"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Ver anúncio
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {selectedSearch.user_id !== user!.id && (
                 <Button
-                  onClick={() => handleSendOffer(selectedSearch)}
+                  onClick={() => { setSelectedSearch(null); openOfferModal(selectedSearch); }}
                   disabled={sendingOffer}
                   className="w-full gap-2 mt-4"
                   size="lg"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  {sendingOffer ? 'Enviando...' : 'Enviar Oferta'}
+                  Enviar Oferta
                 </Button>
               )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Offer Modal */}
+      <Dialog open={!!offerModalSearch} onOpenChange={(open) => { if (!open) setOfferModalSearch(null); }}>
+        <DialogContent className="max-w-md">
+          {offerModalSearch && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Enviar Oferta</DialogTitle>
+                <DialogDescription>
+                  {offerModalSearch.headline || offerModalSearch.title || `${propertyTypeLabels[offerModalSearch.property_type]} em ${offerModalSearch.city}`}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 mt-2">
+                {/* WhatsApp option */}
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={sendingOffer}
+                  onClick={() => handleWhatsAppOffer(offerModalSearch)}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {sendingOffer ? 'Abrindo...' : 'Chamar no WhatsApp'}
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+
+                {/* Link option */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Link do seu anúncio</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="https://..."
+                        className="pl-9"
+                        value={offerLink}
+                        onChange={(e) => setOfferLink(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    disabled={sendingLink || !offerLink.trim()}
+                    onClick={handleSendLink}
+                  >
+                    <Link2 className="h-4 w-4" />
+                    {sendingLink ? 'Enviando...' : 'Enviar Link'}
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </DialogContent>

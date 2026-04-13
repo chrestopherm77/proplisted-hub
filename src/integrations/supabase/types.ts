@@ -612,22 +612,52 @@ export type Database = {
         }
         Relationships: []
       }
+      property_search_alerts: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       property_search_offers: {
         Row: {
           created_at: string | null
           id: string
+          offer_link: string | null
+          offer_name: string | null
           search_id: string
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
+          offer_link?: string | null
+          offer_name?: string | null
           search_id: string
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
+          offer_link?: string | null
+          offer_name?: string | null
           search_id?: string
           user_id?: string
         }
