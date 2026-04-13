@@ -98,11 +98,17 @@ export default function Financing() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const msg = (error as any)?.message || '';
+        throw new Error(msg);
+      }
       setSuccess(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast({ title: 'Serviço temporariamente indisponível', description: 'Tente novamente em alguns minutos.', variant: 'destructive' });
+      const description = err?.message && !err.message.includes('FunctionsHttpError')
+        ? err.message
+        : 'Tente novamente em alguns minutos.';
+      toast({ title: 'Serviço temporariamente indisponível', description, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

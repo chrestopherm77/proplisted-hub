@@ -67,7 +67,7 @@ serve(async (req) => {
       );
     }
 
-    const megaUrl = "https://api.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
     const megaBody = JSON.stringify({
       messageData: {
         to: "553191914663@s.whatsapp.net",
@@ -96,6 +96,7 @@ serve(async (req) => {
       }
 
       lastError = await megaRes.text();
+      console.error(`Mega API status: ${megaRes.status}, url: ${megaUrl}, response snippet: ${lastError.substring(0, 300)}`);
 
       if (megaRes.status >= 500 && attempt === 0) {
         console.warn("Mega API 5xx, retrying in 2s...");
