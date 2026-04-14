@@ -33,12 +33,14 @@ serve(async (req) => {
     }
 
     const digits = phone.replace(/\D/g, '');
+    const withCC = digits.startsWith('55') ? digits : `55${digits}`;
 
     let formatted: string;
-    if (digits.length === 11) {
-      const ddd = digits.substring(0, 2);
-      const number = digits.substring(3);
-      formatted = `55${ddd}${number}`;
+    // 13 dígitos = 55 + DDD(2) + 9 + número(8) → remover o '9' extra
+    if (withCC.length === 13 && withCC[4] === '9') {
+      formatted = withCC.slice(0, 4) + withCC.slice(5);
+    } else if (withCC.length === 12) {
+      formatted = withCC;
     } else if (digits.length === 10) {
       formatted = `55${digits}`;
     } else {

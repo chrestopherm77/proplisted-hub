@@ -350,17 +350,20 @@ const PropertySearches = () => {
       { onConflict: 'search_id,user_id' }
     );
 
-    // Fire-and-forget: don't await the notification
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    fetch(`https://${projectId}.supabase.co/functions/v1/notify-offer-whatsapp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        searchId: offerModalSearch.id,
-        offerUserName: myName,
-        offerLink: offerLink.trim(),
-      }),
-    }).catch(e => console.error('Notification error:', e));
+    // Notify owner via WhatsApp
+    try {
+      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-offer-whatsapp', {
+        body: {
+          searchId: offerModalSearch.id,
+          offerUserName: myName,
+          offerLink: offerLink.trim(),
+        },
+      });
+      if (notifyError) console.error('Offer notification error:', notifyError);
+      else console.log('Offer notification result:', notifyResult);
+    } catch (e) {
+      console.error('Offer notification exception:', e);
+    }
 
     setSearches(prev => prev.map(s => s.id === offerModalSearch.id ? { ...s, offer_count: (s.offer_count ?? 0) + 1 } : s));
     if (selectedSearch?.id === offerModalSearch.id) {

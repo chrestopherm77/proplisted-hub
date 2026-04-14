@@ -180,8 +180,6 @@ const NewPropertySearch = () => {
 
     // Notify alert subscribers
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      // Get the inserted search id
       const { data: lastSearch } = await supabase
         .from('property_searches')
         .select('id')
@@ -191,10 +189,8 @@ const NewPropertySearch = () => {
         .single();
 
       if (lastSearch) {
-        await fetch(`https://${projectId}.supabase.co/functions/v1/notify-alert-match`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-alert-match', {
+          body: {
             searchId: lastSearch.id,
             state: state.trim() || undefined,
             city: city.trim(),
@@ -203,8 +199,10 @@ const NewPropertySearch = () => {
             value_min: valueMin.trim() || undefined,
             value_max: valueMax.trim() || undefined,
             creatorUserId: user.id,
-          }),
+          },
         });
+        if (notifyError) console.error('Alert notification error:', notifyError);
+        else console.log('Alert notification result:', notifyResult);
       }
     } catch (e) {
       console.error('Alert notification error:', e);

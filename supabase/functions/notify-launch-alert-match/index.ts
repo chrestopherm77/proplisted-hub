@@ -20,6 +20,15 @@ const BodySchema = z.object({
   creatorUserId: z.string().uuid(),
 });
 
+function normalizeWhatsAppPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const withCC = digits.startsWith('55') ? digits : `55${digits}`;
+  if (withCC.length === 13 && withCC[4] === '9') {
+    return withCC.slice(0, 4) + withCC.slice(5);
+  }
+  return withCC;
+}
+
 async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
   try {
     const res = await fetch(megaUrl, {
@@ -86,13 +95,10 @@ serve(async (req) => {
     }
 
     if (!alerts || alerts.length === 0) {
-      console.log("No active launch alerts");
       return new Response(JSON.stringify({ success: true, matched: 0 }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    console.log(`Found ${alerts.length} active launch alert(s)`);
 
     const parseNum = (v: string | null | undefined): number => {
       if (!v) return 0;
@@ -109,14 +115,12 @@ serve(async (req) => {
       const f = alert.filters as Record<string, string>;
       if (!f) continue;
 
-      // Match filters
       if (f.state && data.state && f.state !== data.state) continue;
       if (f.city && data.city && f.city !== data.city) continue;
       if (f.zone && data.zone && f.zone !== data.zone) continue;
       if (f.property_type && data.property_type && f.property_type !== data.property_type) continue;
       if (f.status && data.status && f.status !== data.status) continue;
 
-      // Price range
       if (f.priceMin) {
         const alertMin = parseNum(f.priceMin);
         const launchMax = parseNum(data.price_max) || parseNum(data.price_from);
@@ -128,7 +132,6 @@ serve(async (req) => {
         if (alertMax > 0 && launchMin > 0 && launchMin > alertMax) continue;
       }
 
-      // Match! Get user phone
       const { data: profile } = await supabase
         .from("profiles")
         .select("phone, name")
@@ -137,8 +140,8 @@ serve(async (req) => {
 
       if (!profile?.phone) continue;
 
-      const clean = profile.phone.replace(/\D/g, '');
-      const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+      const fullPhone = normalizeWhatsAppPhone(profile.phone);
+      console.log(`Launch alert ${alert.id}: phone ${profile.phone} -> ${fullPhone}`);
 
       const message = `*🔔 Novo Lançamento Compatível com seu Alerta!*\n\nOlá${profile.name ? `, ${profile.name}` : ''}! O empreendimento *${data.name}* em *${data.city}${data.state ? `/${data.state}` : ''}* foi publicado e se encaixa nos seus filtros salvos.\n\nAcesse o LeadByA para conferir os detalhes!`;
 
