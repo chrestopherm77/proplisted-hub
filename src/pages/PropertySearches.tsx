@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,16 +16,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface PropertySearch {
   id: string;
@@ -181,6 +196,10 @@ const PropertySearches = () => {
   const [alertNeighborhood, setAlertNeighborhood] = useState('');
   const [alertPriceMin, setAlertPriceMin] = useState('');
   const [alertPriceMax, setAlertPriceMax] = useState('');
+  const [alertCityComboboxOpen, setAlertCityComboboxOpen] = useState(false);
+
+  // IBGE location for alert modal
+  const { states: ibgeStates, cities: ibgeCities, loadingStates: ibgeLoadingStates, loadingCities: ibgeLoadingCities, fetchCities: ibgeFetchCities, clearCities: ibgeClearCities } = useIBGELocation();
 
   // Saved alerts
   const [savedAlerts, setSavedAlerts] = useState<SavedAlert[]>([]);
@@ -388,6 +407,20 @@ const PropertySearches = () => {
       resetAlertForm();
       fetchSavedAlerts();
     }
+  };
+
+  // Fetch IBGE cities when alert state changes
+  useEffect(() => {
+    if (alertState) {
+      ibgeFetchCities(alertState);
+    } else {
+      ibgeClearCities();
+    }
+  }, [alertState, ibgeFetchCities, ibgeClearCities]);
+
+  const handleAlertStateChange = (newState: string) => {
+    setAlertState(newState === 'ALL' ? '' : newState);
+    setAlertCity('');
   };
 
   const resetAlertForm = () => {
@@ -919,21 +952,53 @@ const PropertySearches = () => {
           </DialogHeader>
 
           <div className="space-y-3 mt-2">
-            <Select value={alertState} onValueChange={(v) => setAlertState(v === 'ALL' ? '' : v)}>
-              <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
+            <Select value={alertState} onValueChange={handleAlertStateChange}>
+              <SelectTrigger><SelectValue placeholder={ibgeLoadingStates ? "Carregando..." : "Estado"} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos</SelectItem>
-                {uniqueStates.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+                {ibgeStates.map((st) => <SelectItem key={st.id} value={st.sigla}>{st.nome} ({st.sigla})</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Select value={alertCity} onValueChange={(v) => setAlertCity(v === 'ALL' ? '' : v)}>
-              <SelectTrigger><SelectValue placeholder="Cidade" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todas</SelectItem>
-                {uniqueCities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Popover open={alertCityComboboxOpen} onOpenChange={setAlertCityComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn("w-full justify-between font-normal")}
+                  disabled={!alertState || ibgeLoadingCities}
+                >
+                  {ibgeLoadingCities ? (
+                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Carregando...</span>
+                  ) : alertCity ? (
+                    alertCity
+                  ) : (
+                    <span className="text-muted-foreground">{!alertState ? "Selecione o estado" : "Buscar cidade..."}</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0 pointer-events-auto" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar cidade..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {ibgeCities.map((c) => (
+                        <CommandItem
+                          key={c.id}
+                          value={c.nome}
+                          onSelect={() => { setAlertCity(c.nome); setAlertCityComboboxOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", alertCity === c.nome ? "opacity-100" : "opacity-0")} />
+                          {c.nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
             <Select value={alertType} onValueChange={(v) => setAlertType(v === 'ALL' ? '' : v)}>
               <SelectTrigger><SelectValue placeholder="Tipo de Imóvel" /></SelectTrigger>
