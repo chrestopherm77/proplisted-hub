@@ -409,6 +409,20 @@ const PropertySearches = () => {
     }
   };
 
+  // Fetch IBGE cities when alert state changes
+  useEffect(() => {
+    if (alertState) {
+      ibgeFetchCities(alertState);
+    } else {
+      ibgeClearCities();
+    }
+  }, [alertState, ibgeFetchCities, ibgeClearCities]);
+
+  const handleAlertStateChange = (newState: string) => {
+    setAlertState(newState === 'ALL' ? '' : newState);
+    setAlertCity('');
+  };
+
   const resetAlertForm = () => {
     setAlertState('');
     setAlertCity('');
