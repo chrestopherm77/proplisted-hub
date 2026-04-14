@@ -269,7 +269,7 @@ export function LeadTracking() {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Page Views</CardTitle>
@@ -288,6 +288,16 @@ export function LeadTracking() {
           <CardContent>
             <div className="text-2xl font-bold">{partialLeads.length}</div>
             <p className="text-xs text-muted-foreground">Não finalizaram o formulário</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Aguardando WhatsApp</CardTitle>
+            <MessageSquare className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{standbyLeads.length}</div>
+            <p className="text-xs text-muted-foreground">Não confirmaram interesse</p>
           </CardContent>
         </Card>
         <Card>
