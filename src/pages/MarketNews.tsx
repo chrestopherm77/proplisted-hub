@@ -333,7 +333,7 @@ const MarketNews = () => {
                 <CardContent className="p-4 space-y-3">
                   {/* Title */}
                   {post.title && (
-                    <h2 className="text-lg font-bold text-foreground">{post.title}</h2>
+                    <h2 className="text-xl font-extrabold text-foreground leading-tight border-l-4 border-primary pl-3">{post.title}</h2>
                   )}
                   {/* Content */}
                   <div>
