@@ -317,6 +317,7 @@ export type Database = {
           price: number
           purchase_count: number | null
           updated_at: string | null
+          whatsapp_confirmed: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -333,6 +334,7 @@ export type Database = {
           price: number
           purchase_count?: number | null
           updated_at?: string | null
+          whatsapp_confirmed?: boolean | null
         }
         Update: {
           created_at?: string | null
@@ -349,6 +351,7 @@ export type Database = {
           price?: number
           purchase_count?: number | null
           updated_at?: string | null
+          whatsapp_confirmed?: boolean | null
         }
         Relationships: [
           {

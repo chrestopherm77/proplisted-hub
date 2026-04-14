@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN whatsapp_confirmed boolean DEFAULT false;
