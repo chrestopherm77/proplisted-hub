@@ -196,6 +196,10 @@ const PropertySearches = () => {
   const [alertNeighborhood, setAlertNeighborhood] = useState('');
   const [alertPriceMin, setAlertPriceMin] = useState('');
   const [alertPriceMax, setAlertPriceMax] = useState('');
+  const [alertCityComboboxOpen, setAlertCityComboboxOpen] = useState(false);
+
+  // IBGE location for alert modal
+  const { states: ibgeStates, cities: ibgeCities, loadingStates: ibgeLoadingStates, loadingCities: ibgeLoadingCities, fetchCities: ibgeFetchCities, clearCities: ibgeClearCities } = useIBGELocation();
 
   // Saved alerts
   const [savedAlerts, setSavedAlerts] = useState<SavedAlert[]>([]);
