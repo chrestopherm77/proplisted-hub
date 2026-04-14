@@ -1,45 +1,58 @@
 
 
-# Plano: Renomear Marketplace, Abrir Lançamentos para Construtoras, Ajustar Cadastro
+# Plano: Sidebar Lateral + Página "Nossa IA"
 
-## 1. Renomear "Marketplace" para "Leads Disponíveis"
+## 1. Converter navegação de topo para sidebar lateral
 
-Trocar o texto em todos os lugares onde aparece:
-- `src/components/Layout.tsx` linha 117: "Marketplace" -> "Leads Disponíveis"
-- `src/components/MobileMenu.tsx` linha ~63: "Marketplace" -> "Leads Disponíveis"
-- `src/pages/Leads.tsx`: verificar se tem título na página e renomear
+Trocar o layout atual (header com nav horizontal) por uma sidebar fixa à esquerda usando os componentes `SidebarProvider` e `Sidebar` já existentes no projeto.
 
-## 2. Lançamentos: permitir acesso a Construtoras (PJ + CONSTRUTORA) e Admins
+**Estrutura nova:**
+- **Sidebar esquerda** (desktop): logo no topo, links de navegação vertical, botão de sair no rodapé
+- **Mobile**: mantém o Sheet lateral que já existe (MobileMenu), sem mudança
+- **Header**: fica reduzido a apenas o `SidebarTrigger` + ícones de carrinho/perfil (no desktop, o header pode até sumir - a sidebar assume tudo)
 
-Atualmente, Lançamentos é restrito a `isAdmin`. Precisa expandir para incluir usuários PJ com `company_type = 'CONSTRUTORA'`.
+**Arquivos afetados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/components/Layout.tsx` | Refatorar para usar `SidebarProvider` + `Sidebar` + `SidebarContent` ao invés de header com nav |
+| `src/components/MobileMenu.tsx` | Manter como está (já é sheet lateral) |
 
-**Mudanças no hook `useAuth`:**
-- Adicionar campo `isConstrutora` que consulta `profiles.company_type` quando `person_type = 'PJ'`
+**Comportamento:**
+- Desktop: sidebar fixa à esquerda com logo, links (Meus Leads, Leads Disponíveis, Balcão de Parcerias, Lançamentos, Financiamento, Giro do Mercado, Nossa IA, Admin) e ações (perfil, sair)
+- Sidebar colapsável via ícone
+- Carrinho visível no topo ou na sidebar
+- Páginas públicas (sem user logado) mantêm layout simples sem sidebar
 
-**Mudanças nas páginas:**
-- `src/pages/Launches.tsx`: trocar `isAdmin === false` por `!isAdmin && !isConstrutora`
-- `src/pages/NewLaunch.tsx`: mesma lógica
-- `src/pages/LaunchDetail.tsx`: verificar e ajustar se necessário
-- `src/components/Layout.tsx`: mostrar link "Lançamentos" para admins OU construtoras
-- `src/components/MobileMenu.tsx`: mesma lógica no menu mobile
+## 2. Criar página "Nossa IA"
 
-## 3. Ajustar cadastro para incluir "Construtora" corretamente
+Nova página `/nossa-ia` com as 4 imagens enviadas organizadas em seções com copy descritivo e espaço para vídeo.
 
-O cadastro PJ já tem a opção CONSTRUTORA no step `PJCompanyTypeStep.tsx`. Verificar se:
-- O valor `company_type = 'CONSTRUTORA'` está sendo salvo corretamente no perfil (sim, já está no `handleSubmit` do `MultiStepSignup`)
-- A visualização está adequada (cards com ícones para Imobiliária e Construtora já existem)
+**Layout da página:**
+1. **Hero/Intro** com título "Nossa IA" e subtítulo explicativo
+2. **Espaço para vídeo** - placeholder com ícone de play, pronto para receber URL de vídeo
+3. **Seção CRM** (image-72) - Kanban de gestão de leads com copy sobre pipeline comercial
+4. **Seção Dashboard** (image-73) - Métricas de vendas com copy sobre analytics
+5. **Seção Agentes IA** (image-74) - Agentes especialistas com copy sobre atendimento automatizado
+6. **Seção Agendamentos** (image-75) - Gestão de visitas com copy sobre organização
 
-Nenhuma mudança estrutural necessária no cadastro - o fluxo PJ já suporta Construtora. Apenas garantir que a visualização dos cards está ok.
+As imagens serão copiadas para `src/assets/` e importadas no componente.
+
+**Arquivos novos/afetados:**
+| Arquivo | Ação |
+|---------|------|
+| `src/pages/NossaIA.tsx` | Criar página com seções, imagens e vídeo placeholder |
+| `src/App.tsx` | Adicionar rota `/nossa-ia` |
+| `src/components/Layout.tsx` | Adicionar link "Nossa IA" na sidebar |
+| `src/components/MobileMenu.tsx` | Adicionar link "Nossa IA" no menu mobile |
+| `src/assets/nossa-ia-crm.png` | Copiar imagem CRM |
+| `src/assets/nossa-ia-dashboard.png` | Copiar imagem Dashboard |
+| `src/assets/nossa-ia-agentes.png` | Copiar imagem Agentes |
+| `src/assets/nossa-ia-agendamentos.png` | Copiar imagem Agendamentos |
 
 ## Detalhes técnicos
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/hooks/useAuth.tsx` | Adicionar `isConstrutora: boolean` consultando `profiles` |
-| `src/components/Layout.tsx` | Renomear "Marketplace", mostrar Lançamentos para construtoras |
-| `src/components/MobileMenu.tsx` | Renomear "Marketplace", mostrar Lançamentos para construtoras |
-| `src/pages/Launches.tsx` | Permitir acesso a construtoras |
-| `src/pages/NewLaunch.tsx` | Permitir acesso a construtoras |
-| `src/pages/LaunchDetail.tsx` | Verificar e ajustar guarda de rota |
-| `src/pages/Leads.tsx` | Renomear título se aplicável |
+- Sidebar usa componentes de `@/components/ui/sidebar` (SidebarProvider, Sidebar, SidebarContent, SidebarMenu, etc.)
+- Páginas sem autenticação (Auth, LeadForm, ThankYou, etc.) continuam sem sidebar
+- A página "Nossa IA" fica acessível para todos os usuários logados
+- Link "Nossa IA" terá ícone de `Bot` ou `Brain` do lucide-react
 
