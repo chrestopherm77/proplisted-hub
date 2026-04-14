@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : '';
+    const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : null;
     const noticia = typeof body.noticia === 'string' ? body.noticia.trim() : '';
     const imagem = typeof body.imagem === 'string' ? body.imagem.trim() : null;
 
