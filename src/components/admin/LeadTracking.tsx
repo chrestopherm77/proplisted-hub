@@ -4,9 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, UserX, Clock, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Eye, UserX, Clock, Monitor, MessageSquare, CheckCircle, Send } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatFormDataToSections } from '@/lib/formatFormData';
+import { useToast } from '@/hooks/use-toast';
+
+interface StandbyLead {
+  id: string;
+  name: string;
+  phone: string;
+  description: string;
+  whatsapp_confirmed: boolean | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  form_data: any;
+}
 
 interface PageView {
   id: string;
