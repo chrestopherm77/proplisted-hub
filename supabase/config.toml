@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.create-news-post]
 verify_jwt = false
+
+[functions.send-lead-confirmation]
+verify_jwt = false
+
+[functions.mega-webhook]
+verify_jwt = false
