@@ -18,43 +18,38 @@ const BodySchema = z.object({
   creatorUserId: z.string().uuid(),
 });
 
+/**
+ * Normaliza telefone brasileiro para formato WhatsApp (12 dígitos):
+ * 55 + DDD(2) + número(8)
+ * Remove o nono dígito quando presente.
+ */
 function normalizeWhatsAppPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  const withCountryCode = digits.startsWith('55') ? digits : `55${digits}`;
-
-  if (withCountryCode.length === 13 && withCountryCode.startsWith('55') && withCountryCode[4] === '9') {
-    return `${withCountryCode.slice(0, 4)}${withCountryCode.slice(5)}`;
+  const withCC = digits.startsWith('55') ? digits : `55${digits}`;
+  // 13 dígitos = 55 + DDD(2) + 9 + número(8) → remover o '9' extra
+  if (withCC.length === 13 && withCC[4] === '9') {
+    return withCC.slice(0, 4) + withCC.slice(5);
   }
-
-  return withCountryCode;
+  return withCC;
 }
 
 async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
   try {
-    console.log(`Mega API attempt ${attempt}...`);
     const res = await fetch(megaUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
-
     if (res.ok) {
-      const resText = await res.text();
-      console.log(`Mega API success on attempt ${attempt}: ${resText.substring(0, 200)}`);
+      console.log(`Mega API success (attempt ${attempt})`);
       return true;
     }
-
     const errText = await res.text();
     console.error(`Mega API error (attempt ${attempt}): ${res.status} - ${errText.substring(0, 300)}`);
-
     if (res.status >= 500 && attempt < 2) {
       await new Promise(r => setTimeout(r, 2000));
       return sendMegaMessage(megaUrl, token, body, attempt + 1);
     }
-
     return false;
   } catch (err) {
     console.error(`Mega API fetch error (attempt ${attempt}):`, err);
@@ -87,7 +82,6 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Fetch all active alerts
     const { data: alerts, error: alertsErr } = await supabase
       .from("property_search_alerts")
       .select("*")
@@ -129,59 +123,29 @@ serve(async (req) => {
     };
 
     let matched = 0;
+    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
 
     for (const alert of alerts) {
-      // Don't notify the creator of their own search
-      if (alert.user_id === data.creatorUserId) {
-        console.log(`Skipping alert ${alert.id}: belongs to creator`);
-        continue;
-      }
+      if (alert.user_id === data.creatorUserId) continue;
 
       const f = alert.filters as Record<string, string>;
-      if (!f) {
-        console.log(`Skipping alert ${alert.id}: no filters`);
-        continue;
-      }
+      if (!f) continue;
 
-      console.log(`Checking alert ${alert.id} filters:`, JSON.stringify(f));
+      if (f.state && data.state && f.state !== data.state) continue;
+      if (f.city && f.city !== data.city) continue;
+      if (f.property_type && f.property_type !== data.property_type) continue;
+      if (f.operation_type && f.operation_type !== data.operation_type) continue;
 
-      // Match filters
-      if (f.state && data.state && f.state !== data.state) {
-        console.log(`Alert ${alert.id}: state mismatch (${f.state} vs ${data.state})`);
-        continue;
-      }
-      if (f.city && f.city !== data.city) {
-        console.log(`Alert ${alert.id}: city mismatch (${f.city} vs ${data.city})`);
-        continue;
-      }
-      if (f.property_type && f.property_type !== data.property_type) {
-        console.log(`Alert ${alert.id}: property_type mismatch (${f.property_type} vs ${data.property_type})`);
-        continue;
-      }
-      if (f.operation_type && f.operation_type !== data.operation_type) {
-        console.log(`Alert ${alert.id}: operation_type mismatch (${f.operation_type} vs ${data.operation_type})`);
-        continue;
-      }
-
-      // Price range check
       if (f.priceMin) {
         const alertMin = parseNum(f.priceMin);
         const searchMax = parseNum(data.value_max);
-        if (alertMin > 0 && searchMax > 0 && searchMax < alertMin) {
-          console.log(`Alert ${alert.id}: price min mismatch (alert min ${alertMin} > search max ${searchMax})`);
-          continue;
-        }
+        if (alertMin > 0 && searchMax > 0 && searchMax < alertMin) continue;
       }
       if (f.priceMax) {
         const alertMax = parseNum(f.priceMax);
         const searchMin = parseNum(data.value_min);
-        if (alertMax > 0 && searchMin > 0 && searchMin > alertMax) {
-          console.log(`Alert ${alert.id}: price max mismatch (search min ${searchMin} > alert max ${alertMax})`);
-          continue;
-        }
+        if (alertMax > 0 && searchMin > 0 && searchMin > alertMax) continue;
       }
-
-      console.log(`Alert ${alert.id}: MATCH! Fetching user profile...`);
 
       // Match! Get user phone
       const { data: profile } = await supabase
@@ -198,11 +162,10 @@ serve(async (req) => {
       const fullPhone = normalizeWhatsAppPhone(profile.phone);
       const typeName = typeLabels[data.property_type] ?? data.property_type;
 
-      console.log(`Sending WhatsApp to ${fullPhone} for alert ${alert.id} (from ${profile.phone})`);
+      console.log(`Alert ${alert.id}: MATCH! phone ${profile.phone} -> ${fullPhone}`);
 
       const message = `*🔔 Novo Imóvel Compatível com seu Alerta!*\n\nOlá${profile.name ? `, ${profile.name}` : ''}! Uma nova procura de *${typeName}* em *${data.city}${data.state ? `/${data.state}` : ''}* foi publicada e se encaixa nos seus filtros salvos.\n\nAcesse o Mural de Demandas para enviar sua oferta!`;
 
-      const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
       const megaBody = {
         messageData: {
           to: `${fullPhone}@s.whatsapp.net`,
@@ -213,9 +176,9 @@ serve(async (req) => {
       const sent = await sendMegaMessage(megaUrl, MEGA_API_TOKEN, megaBody, 1);
       if (sent) {
         matched++;
-        console.log(`Alert ${alert.id}: WhatsApp sent successfully`);
+        console.log(`Alert ${alert.id}: WhatsApp sent successfully to ${fullPhone}`);
       } else {
-        console.error(`Alert ${alert.id}: WhatsApp send FAILED`);
+        console.error(`Alert ${alert.id}: WhatsApp send FAILED to ${fullPhone}`);
       }
     }
 
