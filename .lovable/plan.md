@@ -1,65 +1,36 @@
 
 
-# Plano: Edge Function para receber notícias via API (n8n)
+# Plano: Ajustar Edge Function create-news-post
 
-## Resumo
+## Problemas identificados
 
-Criar edge function `create-news-post` + adicionar coluna `title` na tabela `news_posts`. O n8n envia título, imagem e conteúdo via HTTP POST.
+1. **Limite de 500 caracteres no título** - precisa ser removido/aumentado
+2. **Publicações separadas** - pela screenshot, o n8n está enviando 3 requisições separadas (título, imagem, notícia). A edge function já insere tudo junto quando recebe no mesmo POST. O problema é provavelmente no n8n, mas vou ajustar a function para ser mais flexível.
 
-## 1. Migração: adicionar coluna `title`
+## Correções
 
-```sql
-ALTER TABLE public.news_posts ADD COLUMN title text;
-```
+### 1. Remover limite de 500 chars no título (linha 59-64)
+Remover a validação que rejeita títulos com mais de 500 caracteres.
 
-## 2. Edge Function: `supabase/functions/create-news-post/index.ts`
+### 2. Tornar campos mais flexíveis
+- Tornar `titulo` opcional (só `noticia` obrigatório), para que mesmo que o n8n envie parcialmente, não dê erro
+- Aumentar limite da notícia para 50000 caracteres
 
-**Payload esperado do n8n:**
-```json
-{
-  "titulo": "Título da notícia",
-  "imagem": "https://link-da-imagem.com/foto.jpg",
-  "noticia": "Texto completo da notícia..."
-}
-```
-
-- `titulo` (obrigatório) - título da notícia
-- `noticia` (obrigatório) - corpo da notícia
-- `imagem` (opcional) - URL da imagem
-
-**Header obrigatório:**
-```
-x-api-secret: <valor do CRON_SECRET>
-```
-
-**Resposta:**
-```json
-{ "success": true, "post_id": "uuid" }
-```
-
-**Detalhes:**
-- Validação via `x-api-secret` usando `CRON_SECRET` (já existente)
-- Inserção com `SUPABASE_SERVICE_ROLE_KEY` (bypass RLS)
-- `user_id` fixo do admin: `81437001-3b5a-4c32-8396-52f63a9f983a`
-- CORS restrito aos domínios do projeto
-- `verify_jwt = false` no config.toml
-
-## 3. Atualizar frontend
-
-Exibir o título (`title`) nos cards do feed, acima do conteúdo.
-
-## URL para configurar no n8n
-
-```
-https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/create-news-post
-```
-
-## Arquivos afetados
+## Arquivo afetado
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | `ALTER TABLE` + coluna `title` |
-| `supabase/functions/create-news-post/index.ts` | Nova edge function |
-| `supabase/config.toml` | Config da function |
-| `src/pages/MarketNews.tsx` | Exibir título nos posts |
+| `supabase/functions/create-news-post/index.ts` | Remover limite título, flexibilizar campos |
+
+## Nota importante
+
+O fato de título, imagem e conteúdo aparecerem como posts separados indica que o **n8n está fazendo 3 chamadas HTTP separadas** em vez de uma só. A edge function já insere tudo junto. Você precisa configurar o n8n para enviar **um único POST** com os 3 campos no mesmo JSON:
+
+```json
+{
+  "titulo": "Título aqui",
+  "imagem": "https://url-da-imagem.jpg",
+  "noticia": "Conteúdo da notícia aqui"
+}
+```
 
