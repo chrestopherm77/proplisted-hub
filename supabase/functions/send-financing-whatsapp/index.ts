@@ -70,7 +70,7 @@ serve(async (req) => {
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
     const megaBody = JSON.stringify({
       messageData: {
-        to: "5531991914663@s.whatsapp.net",
+        to: "553191914663@s.whatsapp.net",
         text: message,
       },
     });
