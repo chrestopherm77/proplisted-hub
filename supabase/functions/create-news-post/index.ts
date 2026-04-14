@@ -45,26 +45,19 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : '';
+    const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : null;
     const noticia = typeof body.noticia === 'string' ? body.noticia.trim() : '';
     const imagem = typeof body.imagem === 'string' ? body.imagem.trim() : null;
 
-    if (!titulo || !noticia) {
-      return new Response(JSON.stringify({ error: 'Fields "titulo" and "noticia" are required' }), {
+    if (!noticia) {
+      return new Response(JSON.stringify({ error: 'Field "noticia" is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (titulo.length > 500) {
-      return new Response(JSON.stringify({ error: '"titulo" exceeds 500 characters' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (noticia.length > 10000) {
-      return new Response(JSON.stringify({ error: '"noticia" exceeds 10000 characters' }), {
+    if (noticia.length > 50000) {
+      return new Response(JSON.stringify({ error: '"noticia" exceeds 50000 characters' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
