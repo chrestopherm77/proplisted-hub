@@ -205,7 +205,8 @@ Deno.serve(async (req) => {
           price: defaultPrice || 27,
           form_data: { ...formDataJson, intention },
           lead_submission_id: submissionId,
-          is_active: true,
+          is_active: false,
+          whatsapp_confirmed: false,
           max_purchases: 5,
           purchase_count: 0,
         }]);
@@ -218,7 +219,23 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log(`Created new lead ${leadId}`);
+      console.log(`Created new lead ${leadId} (inactive, awaiting WhatsApp confirmation)`);
+
+      // Send WhatsApp confirmation message (fire-and-forget)
+      try {
+        const confirmUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-lead-confirmation`;
+        await fetch(confirmUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ name: name.trim(), phone, leadId }),
+        });
+        console.log(`WhatsApp confirmation request sent for lead ${leadId}`);
+      } catch (confirmErr) {
+        console.error("Failed to send WhatsApp confirmation (non-blocking):", confirmErr);
+      }
     }
 
     return new Response(

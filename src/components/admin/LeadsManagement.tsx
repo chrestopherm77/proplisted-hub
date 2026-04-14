@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 
@@ -23,6 +23,7 @@ interface Lead {
   is_active: boolean;
   is_promotion: boolean;
   is_exhausted: boolean;
+  whatsapp_confirmed: boolean;
   created_at: string | null;
 }
 
@@ -392,6 +393,16 @@ export function LeadsManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {!lead.whatsapp_confirmed && !lead.is_active && (
+                    <Badge className="text-xs bg-yellow-500 hover:bg-yellow-500 text-white border-transparent">
+                      ⏳ Aguardando confirmação
+                    </Badge>
+                  )}
+                  {lead.whatsapp_confirmed && (
+                    <Badge className="text-xs bg-green-600 hover:bg-green-600 text-white border-transparent">
+                      ✅ Confirmado via WhatsApp
+                    </Badge>
+                  )}
                   {lead.is_exhausted && (
                     <Badge variant="destructive" className="text-xs">
                       🚫 Esgotado
@@ -416,6 +427,23 @@ export function LeadsManagement() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <span className="text-base md:text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
                 <div className="flex gap-2 w-full sm:w-auto">
+                  {!lead.whatsapp_confirmed && !lead.is_active && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await supabase.from('leads').update({ is_active: true, whatsapp_confirmed: true }).eq('id', lead.id);
+                          toast({ title: 'Lead ativado manualmente' });
+                          fetchLeads();
+                        } catch { toast({ title: 'Erro', variant: 'destructive' }); }
+                      }}
+                      className="flex-1 sm:flex-none h-8 bg-green-600 hover:bg-green-700 text-white"
+                      title="Ativar manualmente"
+                    >
+                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant={lead.is_promotion ? "default" : "outline"}
