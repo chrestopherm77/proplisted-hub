@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Settings, LogOut, LayoutDashboard, Search, Rocket, DollarSign } from 'lucide-react';
+import { ShoppingCart, User, Settings, LogOut, LayoutDashboard, Search, Rocket, DollarSign, Newspaper } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
   DropdownMenu,
@@ -143,6 +143,14 @@ export const Layout = ({ children }: LayoutProps) => {
                   }`}
                 >
                   Financiamento
+                </Link>
+                <Link
+                  to="/giro-do-mercado"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive('/giro-do-mercado') ? 'text-primary' : 'text-foreground'
+                  }`}
+                >
+                  Giro do Mercado
                 </Link>
                 {isAdmin && !isPartnerSite && (
                   <Link

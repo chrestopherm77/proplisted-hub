@@ -28,6 +28,7 @@ import Launches from "./pages/Launches";
 import LaunchDetail from "./pages/LaunchDetail";
 import NewLaunch from "./pages/NewLaunch";
 import Financing from "./pages/Financing";
+import MarketNews from "./pages/MarketNews";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => {
           <Route path="/launches/new" element={<NewLaunch />} />
           <Route path="/launches/:id" element={<LaunchDetail />} />
           <Route path="/financiamento" element={<Financing />} />
+          <Route path="/giro-do-mercado" element={<MarketNews />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
