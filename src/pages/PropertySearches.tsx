@@ -16,16 +16,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface PropertySearch {
   id: string;
