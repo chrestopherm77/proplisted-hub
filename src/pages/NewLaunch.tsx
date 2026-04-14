@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 
 const NewLaunch = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isConstrutora } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -27,7 +27,7 @@ const NewLaunch = () => {
   useEffect(() => {
     if (!authLoading) {
       if (!user) { navigate('/auth'); return; }
-      if (isAdmin === false) { navigate('/'); return; }
+      if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
     }
   }, [user, authLoading, isAdmin, navigate]);
 

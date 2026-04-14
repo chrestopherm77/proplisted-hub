@@ -59,7 +59,7 @@ const whatsLink = (phone: string | null) =>
 
 const LaunchDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isConstrutora } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [launch, setLaunch] = useState<Launch | null>(null);
@@ -69,8 +69,8 @@ const LaunchDetail = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    if (isAdmin === false) { navigate('/'); return; }
-    if (isAdmin) fetchLaunch();
+    if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
+    if (isAdmin || isConstrutora) fetchLaunch();
   }, [id, user, authLoading, isAdmin]);
 
   const fetchLaunch = async () => {

@@ -501,7 +501,7 @@ export default function Leads() {
     <Layout>
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Marketplace de Leads</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
           <p className="text-sm md:text-base text-muted-foreground">
             Explore e compre leads qualificados para seu negócio imobiliário
           </p>
