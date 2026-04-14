@@ -1,58 +1,98 @@
 
 
-# Plano: Sidebar Lateral + Página "Nossa IA"
+# Plano: Confirmação de Lead via WhatsApp (Lista de Opções)
 
-## 1. Converter navegação de topo para sidebar lateral
+## Resumo
 
-Trocar o layout atual (header com nav horizontal) por uma sidebar fixa à esquerda usando os componentes `SidebarProvider` e `Sidebar` já existentes no projeto.
+Quando um lead se cadastra na /lp, o sistema envia uma mensagem WhatsApp com lista de opções pedindo confirmação. Se confirmar, o lead fica visível em "Leads Disponíveis". Se não confirmar, fica em standby visível apenas para admins.
 
-**Estrutura nova:**
-- **Sidebar esquerda** (desktop): logo no topo, links de navegação vertical, botão de sair no rodapé
-- **Mobile**: mantém o Sheet lateral que já existe (MobileMenu), sem mudança
-- **Header**: fica reduzido a apenas o `SidebarTrigger` + ícones de carrinho/perfil (no desktop, o header pode até sumir - a sidebar assume tudo)
+## Fluxo completo
 
-**Arquivos afetados:**
-| Arquivo | Mudança |
-|---------|---------|
-| `src/components/Layout.tsx` | Refatorar para usar `SidebarProvider` + `Sidebar` + `SidebarContent` ao invés de header com nav |
-| `src/components/MobileMenu.tsx` | Manter como está (já é sheet lateral) |
+```text
+Lead preenche /lp
+       │
+       ▼
+merge-or-create-lead (já existe)
+  → cria lead com is_active = false (NOVO: começa inativo)
+  → chama nova edge function "send-lead-confirmation"
+       │
+       ▼
+send-lead-confirmation
+  → envia listMessage via Mega API para o telefone do lead
+  → mensagem: "Olá {nome}! Somos da LeadBay..."
+  → botão: "Confirmar"
+  → opção: "Sim, estou buscando" (rowId: "confirm")
+       │
+       ▼
+Mega API webhook → nossa edge function "mega-webhook"
+  → recebe messageType: "listResponseMessage"
+  → verifica selectedRowId === "confirm"
+  → atualiza lead: is_active = true, whatsapp_confirmed = true
+       │
+       ▼
+Lead aparece em "Leads Disponíveis" para todos os corretores
+```
 
-**Comportamento:**
-- Desktop: sidebar fixa à esquerda com logo, links (Meus Leads, Leads Disponíveis, Balcão de Parcerias, Lançamentos, Financiamento, Giro do Mercado, Nossa IA, Admin) e ações (perfil, sair)
-- Sidebar colapsável via ícone
-- Carrinho visível no topo ou na sidebar
-- Páginas públicas (sem user logado) mantêm layout simples sem sidebar
+## Mudanças necessárias
 
-## 2. Criar página "Nossa IA"
+### 1. Migration: adicionar coluna `whatsapp_confirmed` na tabela `leads`
 
-Nova página `/nossa-ia` com as 4 imagens enviadas organizadas em seções com copy descritivo e espaço para vídeo.
+```sql
+ALTER TABLE public.leads ADD COLUMN whatsapp_confirmed boolean DEFAULT false;
+```
 
-**Layout da página:**
-1. **Hero/Intro** com título "Nossa IA" e subtítulo explicativo
-2. **Espaço para vídeo** - placeholder com ícone de play, pronto para receber URL de vídeo
-3. **Seção CRM** (image-72) - Kanban de gestão de leads com copy sobre pipeline comercial
-4. **Seção Dashboard** (image-73) - Métricas de vendas com copy sobre analytics
-5. **Seção Agentes IA** (image-74) - Agentes especialistas com copy sobre atendimento automatizado
-6. **Seção Agendamentos** (image-75) - Gestão de visitas com copy sobre organização
+### 2. Alterar `merge-or-create-lead/index.ts`
 
-As imagens serão copiadas para `src/assets/` e importadas no componente.
+- Novos leads criados com `is_active: false` (ao invés de `true`)
+- Após criar o lead, chamar a edge function `send-lead-confirmation` passando nome, telefone e leadId
 
-**Arquivos novos/afetados:**
+### 3. Nova edge function: `send-lead-confirmation`
+
+- Recebe: `name`, `phone`, `leadId`
+- Normaliza telefone (remove nono dígito, formato 12 dígitos)
+- Envia `listMessage` via Mega API:
+  - **to**: `{telefone}@s.whatsapp.net`
+  - **title**: "LeadBay"
+  - **text**: "Olá {nome}! Somos da LeadBay, uma plataforma que conecta você com corretores especializados na sua região. Confirme abaixo que está buscando um imóvel para que um corretor entre em contato."
+  - **buttonText**: "Confirmar"
+  - **sections**: 1 seção com 1 opção "Sim, estou buscando!" (rowId: `confirm_{leadId}`)
+
+### 4. Nova edge function: `mega-webhook`
+
+- Endpoint público que recebe webhooks da Mega API
+- Filtra `messageType === "listResponseMessage"`
+- Extrai `selectedRowId` do payload (`singleSelectReply.selectedRowId`)
+- Se começa com `confirm_`, extrai o leadId
+- Atualiza no banco: `leads.is_active = true, whatsapp_confirmed = true`
+- Ignora outros tipos de mensagem
+
+### 5. Ajustar `src/pages/Leads.tsx` (Leads Disponíveis)
+
+- Filtrar apenas leads com `whatsapp_confirmed = true` (ou `is_active = true`, que já é o comportamento atual)
+
+### 6. Ajustar painel Admin (LeadsManagement)
+
+- Admins veem TODOS os leads, incluindo os não confirmados
+- Badge visual "Aguardando confirmação" para leads com `whatsapp_confirmed = false`
+- Botão para admin forçar ativação manual se necessário
+
+### 7. Configurar webhook na Mega API
+
+- Você precisará acessar o painel da Mega API e configurar a URL do webhook:
+  `https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/mega-webhook`
+
+## Arquivos afetados
+
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/NossaIA.tsx` | Criar página com seções, imagens e vídeo placeholder |
-| `src/App.tsx` | Adicionar rota `/nossa-ia` |
-| `src/components/Layout.tsx` | Adicionar link "Nossa IA" na sidebar |
-| `src/components/MobileMenu.tsx` | Adicionar link "Nossa IA" no menu mobile |
-| `src/assets/nossa-ia-crm.png` | Copiar imagem CRM |
-| `src/assets/nossa-ia-dashboard.png` | Copiar imagem Dashboard |
-| `src/assets/nossa-ia-agentes.png` | Copiar imagem Agentes |
-| `src/assets/nossa-ia-agendamentos.png` | Copiar imagem Agendamentos |
+| `supabase/functions/merge-or-create-lead/index.ts` | Alterar `is_active: false`, chamar confirmação |
+| `supabase/functions/send-lead-confirmation/index.ts` | **Novo** - envia listMessage |
+| `supabase/functions/mega-webhook/index.ts` | **Novo** - recebe resposta do WhatsApp |
+| `src/pages/Leads.tsx` | Sem mudança (já filtra `is_active`) |
+| `src/components/admin/LeadsManagement.tsx` | Mostrar status de confirmação |
+| Migration SQL | Adicionar coluna `whatsapp_confirmed` |
 
-## Detalhes técnicos
+## Pré-requisito do usuário
 
-- Sidebar usa componentes de `@/components/ui/sidebar` (SidebarProvider, Sidebar, SidebarContent, SidebarMenu, etc.)
-- Páginas sem autenticação (Auth, LeadForm, ThankYou, etc.) continuam sem sidebar
-- A página "Nossa IA" fica acessível para todos os usuários logados
-- Link "Nossa IA" terá ícone de `Bot` ou `Brain` do lucide-react
+Após a implementação, você precisará configurar o webhook no painel da Mega API apontando para a URL da edge function `mega-webhook`.
 
