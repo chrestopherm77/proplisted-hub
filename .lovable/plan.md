@@ -1,78 +1,93 @@
 
 
-# Plano: Validade da Tabela, Alertas de Lançamentos e Melhorias nos Filtros
+# Plano: Página "Giro do Mercado" - Feed de Notícias
 
 ## Resumo
 
-Adicionar campo de "Data de Validade da Tabela/Valores" nos lançamentos com disparo automático via WhatsApp 2 dias antes do vencimento. Implementar sistema de alertas (salvar filtro + receber notificação) na listagem de lançamentos, igual ao que existe em PropertySearches. Aplicar máscara monetária nos filtros de preço e tornar Zona selecionável nos filtros.
+Criar uma nova página com feed estilo Instagram onde admins publicam notícias (imagem + texto). Usuários autenticados podem curtir, comentar e compartilhar via WhatsApp. Estrutura preparada para futura integração via API.
 
 ---
 
-## 1. Migração: novo campo `table_expires_at`
-
-Adicionar coluna `table_expires_at DATE` na tabela `launches`.
+## 1. Migração: Tabelas do Feed
 
 ```sql
-ALTER TABLE public.launches ADD COLUMN table_expires_at date;
-```
-
-## 2. Nova tabela `launch_alerts`
-
-Tabela para salvar filtros de lançamentos com alertas (mesma lógica de `property_search_alerts`).
-
-```sql
-CREATE TABLE public.launch_alerts (
+-- Tabela de posts
+CREATE TABLE public.news_posts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  filters jsonb NOT NULL DEFAULT '{}'::jsonb,
-  is_active boolean NOT NULL DEFAULT true,
+  image_url text,
+  content text NOT NULL,
+  is_active boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE public.launch_alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.news_posts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can manage own launch alerts" ON public.launch_alerts
-  FOR ALL TO authenticated
-  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+-- Todos autenticados podem ver posts ativos
+CREATE POLICY "Authenticated can view active posts" ON public.news_posts
+  FOR SELECT TO authenticated USING (is_active = true);
 
-CREATE POLICY "Admins can view all launch alerts" ON public.launch_alerts
-  FOR SELECT TO public
-  USING (has_role(auth.uid(), 'MASTER_ADMIN'::app_role));
+-- Admins gerenciam tudo
+CREATE POLICY "Admins can manage posts" ON public.news_posts
+  FOR ALL TO public USING (has_role(auth.uid(), 'MASTER_ADMIN'::app_role));
+
+-- Tabela de curtidas
+CREATE TABLE public.news_likes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL REFERENCES public.news_posts(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(post_id, user_id)
+);
+ALTER TABLE public.news_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own likes" ON public.news_likes
+  FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can view likes" ON public.news_likes
+  FOR SELECT TO authenticated USING (true);
+
+-- Tabela de comentários
+CREATE TABLE public.news_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL REFERENCES public.news_posts(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.news_comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated can view comments" ON public.news_comments
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Users can insert own comments" ON public.news_comments
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage comments" ON public.news_comments
+  FOR ALL TO public USING (has_role(auth.uid(), 'MASTER_ADMIN'::app_role));
 ```
 
-## 3. Formulário de cadastro (NewLaunch.tsx)
+## 2. Storage Bucket
 
-- Adicionar campo datepicker "Data de Validade da Tabela" (`table_expires_at`)
-- Salvar no insert do lançamento
+Criar bucket `news-images` (público) para as imagens dos posts.
 
-## 4. Detalhe do lançamento (LaunchDetail.tsx)
+## 3. Nova Página: `src/pages/MarketNews.tsx`
 
-- Exibir "Validade da Tabela" na seção de Valores
+- Feed vertical com scroll infinito (ou paginação)
+- Cada card: imagem, texto com "ver mais" (truncado em ~3 linhas), data, autor
+- Botões: Curtir (Heart com contagem), Comentar (abre seção), Compartilhar (WhatsApp)
+- Admins veem botão "Nova Publicação" no topo com modal para upload de imagem + texto
+- Compartilhar via WhatsApp: `https://wa.me/?text=...` com link e texto do post
 
-## 5. Edge Function: `notify-launch-expiry`
+## 4. Navegação
 
-Cron job que roda diariamente. Para cada lançamento ativo com `table_expires_at` = daqui a 2 dias, envia WhatsApp para `coordinator_phone` via Mega API avisando que a tabela está prestes a vencer.
+- Adicionar link "Giro do Mercado" no `Layout.tsx` (nav desktop) e `MobileMenu.tsx`
+- Visível para todos os usuários autenticados (não restrito a admin)
+- Rota `/giro-do-mercado` no `App.tsx`
 
-Mensagem:
-> "Olá {coordinator_name}, a tabela de valores do empreendimento *{name}* vence em 2 dias ({data}). Acesse o LeadByA para atualizar."
+## 5. Preparação para API
 
-## 6. Cron job via pg_cron
-
-Agendar execução diária da function `notify-launch-expiry`.
-
-## 7. Edge Function: `notify-launch-alert-match`
-
-Quando um novo lançamento for criado, chamar esta function (fire-and-forget no frontend). Ela verifica os `launch_alerts` salvos, compara filtros (estado, cidade, zona, tipo, status, faixa de preço) e dispara WhatsApp para os usuários que possuem alertas compatíveis.
-
-## 8. Filtros na listagem (Launches.tsx)
-
-- **Zona**: trocar de Select dinâmico (baseado nos dados) para Select fixo com opções: Norte, Sul, Leste, Oeste, Centro, Rural
-- **Preço mín/máx**: aplicar máscara monetária (R$ X.XXX,XX) nos inputs, mesma lógica do PropertySearches
-- **Salvar Alerta**: botão + modal para salvar filtros atuais como alerta (inserir em `launch_alerts`)
-- **Meus Alertas**: seção colapsável listando alertas salvos com opção de excluir
-
-## 9. Chamada no frontend (NewLaunch.tsx)
-
-Após criar o lançamento com sucesso, chamar `notify-launch-alert-match` fire-and-forget passando os dados do lançamento (estado, cidade, zona, tipo, status, preço).
+- Os posts são inseridos via tabela `news_posts`, então uma futura edge function ou API externa pode inserir diretamente nessa tabela
+- Campo `user_id` pode ser o ID de um "bot user" quando vindo de API
 
 ---
 
@@ -80,11 +95,9 @@ Após criar o lançamento com sucesso, chamar `notify-launch-alert-match` fire-a
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | `table_expires_at` em launches + tabela `launch_alerts` |
-| `src/pages/NewLaunch.tsx` | Campo validade, fire-and-forget notify |
-| `src/pages/LaunchDetail.tsx` | Exibir validade |
-| `src/pages/Launches.tsx` | Máscara preço, zona fixa, salvar alerta, listar alertas |
-| `supabase/functions/notify-launch-expiry/index.ts` | Nova function cron |
-| `supabase/functions/notify-launch-alert-match/index.ts` | Nova function de matching |
-| pg_cron insert | Agendar notify-launch-expiry diariamente |
+| Migração SQL | 3 tabelas + bucket |
+| `src/pages/MarketNews.tsx` | Nova página (feed + criar post) |
+| `src/App.tsx` | Rota `/giro-do-mercado` |
+| `src/components/Layout.tsx` | Link na nav desktop |
+| `src/components/MobileMenu.tsx` | Link no menu mobile |
 
