@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +64,12 @@ interface OfferRecord {
   created_at: string | null;
 }
 
+interface SavedAlert {
+  id: string;
+  filters: Record<string, string>;
+  created_at: string | null;
+}
+
 const propertyTypeLabels: Record<string, string> = {
   CASA: 'Casa',
   APARTAMENTO: 'Apartamento',
@@ -87,6 +93,8 @@ const ruralLabels: Record<string, string> = {
   CHACARA: 'Chácara',
 };
 
+const zoneOptions = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
+
 const propertyTypeIcons: Record<string, React.ReactNode> = {
   CASA: <Home className="h-5 w-5" />,
   APARTAMENTO: <Building2 className="h-5 w-5" />,
@@ -108,6 +116,13 @@ const propertyTypeBadgeColors: Record<string, string> = {
 const formatDisplayValue = (raw: string | null): string => {
   if (!raw) return '';
   const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10);
+  return `R$ ${num.toLocaleString('pt-BR')}`;
+};
+
+const formatCurrencyInput = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
   if (!digits) return '';
   const num = parseInt(digits, 10);
   return `R$ ${num.toLocaleString('pt-BR')}`;
@@ -157,6 +172,19 @@ const PropertySearches = () => {
 
   // Alert
   const [savingAlert, setSavingAlert] = useState(false);
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertState, setAlertState] = useState('');
+  const [alertCity, setAlertCity] = useState('');
+  const [alertType, setAlertType] = useState('');
+  const [alertObjective, setAlertObjective] = useState('');
+  const [alertZone, setAlertZone] = useState('');
+  const [alertNeighborhood, setAlertNeighborhood] = useState('');
+  const [alertPriceMin, setAlertPriceMin] = useState('');
+  const [alertPriceMax, setAlertPriceMax] = useState('');
+
+  // Saved alerts
+  const [savedAlerts, setSavedAlerts] = useState<SavedAlert[]>([]);
+  const [showSavedAlerts, setShowSavedAlerts] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -169,12 +197,13 @@ const PropertySearches = () => {
     if (user) {
       fetchSearches();
       fetchMyOffers();
+      fetchSavedAlerts();
     }
   }, [user]);
 
-  // Load offers when detail modal opens for own searches
+  // Load offers when detail modal opens — for ALL searches now
   useEffect(() => {
-    if (selectedSearch && selectedSearch.user_id === user?.id) {
+    if (selectedSearch) {
       fetchDetailOffers(selectedSearch.id);
     } else {
       setDetailOffers([]);
@@ -227,6 +256,24 @@ const PropertySearches = () => {
     setLoadingDetailOffers(false);
   };
 
+  const fetchSavedAlerts = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('property_search_alerts')
+      .select('id, filters, created_at')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    setSavedAlerts((data ?? []).map(a => ({ ...a, filters: (a.filters as Record<string, string>) ?? {} })));
+  };
+
+  const handleDeleteAlert = async (alertId: string) => {
+    await supabase.from('property_search_alerts').delete().eq('id', alertId);
+    setSavedAlerts(prev => prev.filter(a => a.id !== alertId));
+    toast({ title: 'Alerta removido' });
+  };
+
   const openOfferModal = (search: PropertySearch) => {
     setOfferModalSearch(search);
     setOfferLink('');
@@ -238,7 +285,6 @@ const PropertySearches = () => {
 
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
 
-    // Get user profile name
     const { data: myProfile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
     const myName = myProfile?.name ?? 'Corretor';
 
@@ -285,21 +331,17 @@ const PropertySearches = () => {
       { onConflict: 'search_id,user_id' }
     );
 
-    // Notify owner via WhatsApp
-    try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      await fetch(`https://${projectId}.supabase.co/functions/v1/notify-offer-whatsapp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          searchId: offerModalSearch.id,
-          offerUserName: myName,
-          offerLink: offerLink.trim(),
-        }),
-      });
-    } catch (e) {
-      console.error('Notification error:', e);
-    }
+    // Fire-and-forget: don't await the notification
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    fetch(`https://${projectId}.supabase.co/functions/v1/notify-offer-whatsapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchId: offerModalSearch.id,
+        offerUserName: myName,
+        offerLink: offerLink.trim(),
+      }),
+    }).catch(e => console.error('Notification error:', e));
 
     setSearches(prev => prev.map(s => s.id === offerModalSearch.id ? { ...s, offer_count: (s.offer_count ?? 0) + 1 } : s));
     if (selectedSearch?.id === offerModalSearch.id) {
@@ -316,17 +358,17 @@ const PropertySearches = () => {
     setSavingAlert(true);
 
     const filters: Record<string, string> = {};
-    if (filterState) filters.state = filterState;
-    if (filterCity) filters.city = filterCity;
-    if (filterType) filters.property_type = filterType;
-    if (filterObjective) filters.operation_type = filterObjective;
-    if (filterNeighborhood) filters.neighborhood = filterNeighborhood;
-    if (filterZone) filters.zone = filterZone;
-    if (filterPriceMin) filters.priceMin = filterPriceMin;
-    if (filterPriceMax) filters.priceMax = filterPriceMax;
+    if (alertState) filters.state = alertState;
+    if (alertCity) filters.city = alertCity;
+    if (alertType) filters.property_type = alertType;
+    if (alertObjective) filters.operation_type = alertObjective;
+    if (alertNeighborhood) filters.neighborhood = alertNeighborhood;
+    if (alertZone) filters.zone = alertZone;
+    if (alertPriceMin) filters.priceMin = alertPriceMin;
+    if (alertPriceMax) filters.priceMax = alertPriceMax;
 
     if (Object.keys(filters).length === 0) {
-      toast({ title: 'Nenhum filtro ativo', description: 'Selecione pelo menos um filtro antes de salvar o alerta.', variant: 'destructive' });
+      toast({ title: 'Nenhum filtro preenchido', description: 'Selecione pelo menos um filtro antes de salvar o alerta.', variant: 'destructive' });
       setSavingAlert(false);
       return;
     }
@@ -342,7 +384,21 @@ const PropertySearches = () => {
       toast({ title: 'Erro', description: 'Não foi possível salvar o alerta.', variant: 'destructive' });
     } else {
       toast({ title: 'Alerta salvo!', description: 'Você será notificado via WhatsApp quando uma nova procura compatível for publicada.' });
+      setAlertModalOpen(false);
+      resetAlertForm();
+      fetchSavedAlerts();
     }
+  };
+
+  const resetAlertForm = () => {
+    setAlertState('');
+    setAlertCity('');
+    setAlertType('');
+    setAlertObjective('');
+    setAlertZone('');
+    setAlertNeighborhood('');
+    setAlertPriceMin('');
+    setAlertPriceMax('');
   };
 
   const uniqueCities = useMemo(() => [...new Set(searches.map((s) => s.city))].sort(), [searches]);
@@ -388,8 +444,6 @@ const PropertySearches = () => {
 
   if (authLoading || !user) return null;
 
-  const hasActiveFilters = filterState || filterCity || filterType || filterObjective || filterNeighborhood || filterZone || filterPriceMin || filterPriceMax;
-
   const modalDetails: { label: string; value: string | null }[] = selectedSearch ? [
     { label: 'Operação', value: operationLabels[selectedSearch.operation_type] ?? selectedSearch.operation_type },
     { label: 'Tipo', value: propertyTypeLabels[selectedSearch.property_type] ?? selectedSearch.property_type },
@@ -406,6 +460,19 @@ const PropertySearches = () => {
     { label: 'Ofertas', value: String(selectedSearch.offer_count ?? 0) },
     { label: 'Data de Criação', value: format(new Date(selectedSearch.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
   ] : [];
+
+  const buildAlertDescription = (filters: Record<string, string>): string => {
+    const parts: string[] = [];
+    if (filters.state) parts.push(filters.state);
+    if (filters.city) parts.push(filters.city);
+    if (filters.property_type) parts.push(propertyTypeLabels[filters.property_type] ?? filters.property_type);
+    if (filters.operation_type) parts.push(operationLabels[filters.operation_type] ?? filters.operation_type);
+    if (filters.zone) parts.push(`Zona ${filters.zone}`);
+    if (filters.neighborhood) parts.push(filters.neighborhood);
+    if (filters.priceMin) parts.push(`Min ${formatDisplayValue(filters.priceMin)}`);
+    if (filters.priceMax) parts.push(`Max ${formatDisplayValue(filters.priceMax)}`);
+    return parts.join(' · ') || 'Sem filtros';
+  };
 
   return (
     <Layout>
@@ -485,25 +552,26 @@ const PropertySearches = () => {
                 value={filterNeighborhood}
                 onChange={(e) => setFilterNeighborhood(e.target.value)}
               />
-              <Input
-                placeholder="Filtrar por Zona"
-                className="border-border/70 bg-background/90"
-                value={filterZone}
-                onChange={(e) => setFilterZone(e.target.value)}
-              />
+              <Select value={filterZone} onValueChange={(v) => setFilterZone(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Filtrar por Zona" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas as Zonas</SelectItem>
+                  {zoneOptions.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Input
                 placeholder="Preço mínimo (R$)"
                 className="border-border/70 bg-background/90"
                 value={filterPriceMin}
-                onChange={(e) => setFilterPriceMin(e.target.value)}
+                onChange={(e) => setFilterPriceMin(formatCurrencyInput(e.target.value))}
               />
               <Input
                 placeholder="Preço máximo (R$)"
                 className="border-border/70 bg-background/90"
                 value={filterPriceMax}
-                onChange={(e) => setFilterPriceMax(e.target.value)}
+                onChange={(e) => setFilterPriceMax(formatCurrencyInput(e.target.value))}
               />
               <Select value={filterModality} onValueChange={(v) => setFilterModality(v === 'ALL' ? '' : v)}>
                 <SelectTrigger className="border-border/70 bg-background/90"><SelectValue placeholder="Modalidade" /></SelectTrigger>
@@ -514,18 +582,56 @@ const PropertySearches = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Save Alert Button */}
-            {hasActiveFilters && (
+            {/* Save Alert + My Saved Alerts */}
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                onClick={handleSaveAlert}
-                disabled={savingAlert}
+                onClick={() => setAlertModalOpen(true)}
               >
                 <Bell className="h-4 w-4" />
-                {savingAlert ? 'Salvando...' : 'Salvar esse filtro como Alerta'}
+                Salvar filtro como Alerta
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowSavedAlerts(!showSavedAlerts)}
+              >
+                <Bell className="h-4 w-4" />
+                Meus Alertas ({savedAlerts.length})
+              </Button>
+            </div>
+
+            {/* Saved Alerts List */}
+            {showSavedAlerts && savedAlerts.length > 0 && (
+              <div className="space-y-2 p-3 rounded-lg border border-border/60 bg-background/80">
+                <h3 className="text-sm font-semibold text-foreground">Meus Alertas Salvos</h3>
+                {savedAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 border border-border/50">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-foreground truncate">{buildAlertDescription(alert.filters)}</p>
+                      {alert.created_at && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(alert.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteAlert(alert.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {showSavedAlerts && savedAlerts.length === 0 && (
+              <p className="text-sm text-muted-foreground p-3">Nenhum alerta salvo.</p>
             )}
           </div>
 
@@ -686,45 +792,43 @@ const PropertySearches = () => {
                 </div>
               )}
 
-              {/* Ofertas Recebidas (only for search owner) */}
-              {selectedSearch.user_id === user!.id && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <h3 className="text-sm font-semibold text-foreground mb-3">Ofertas Recebidas</h3>
-                  {loadingDetailOffers ? (
-                    <p className="text-xs text-muted-foreground">Carregando...</p>
-                  ) : detailOffers.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhuma oferta recebida ainda.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {detailOffers.map((offer) => (
-                        <div key={offer.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border/50">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {offer.offer_name ?? 'Corretor'}
+              {/* Ofertas Recebidas — visible to ALL users */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Ofertas Recebidas</h3>
+                {loadingDetailOffers ? (
+                  <p className="text-xs text-muted-foreground">Carregando...</p>
+                ) : detailOffers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma oferta recebida ainda.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {detailOffers.map((offer) => (
+                      <div key={offer.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border/50">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            {offer.offer_name ?? 'Corretor'}
+                          </p>
+                          {offer.created_at && (
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(offer.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                             </p>
-                            {offer.created_at && (
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(offer.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                              </p>
-                            )}
-                          </div>
-                          {offer.offer_link && (
-                            <a
-                              href={offer.offer_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 text-primary hover:text-primary/80 flex items-center gap-1 text-xs"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              Ver anúncio
-                            </a>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                        {offer.offer_link && (
+                          <a
+                            href={offer.offer_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-primary hover:text-primary/80 flex items-center gap-1 text-xs"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Ver anúncio
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {selectedSearch.user_id !== user!.id && (
                 <Button
@@ -801,6 +905,89 @@ const PropertySearches = () => {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Alert Modal */}
+      <Dialog open={alertModalOpen} onOpenChange={setAlertModalOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar Alerta</DialogTitle>
+            <DialogDescription>
+              Defina os filtros e você será notificado via WhatsApp quando uma nova procura compatível for publicada.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-2">
+            <Select value={alertState} onValueChange={(v) => setAlertState(v === 'ALL' ? '' : v)}>
+              <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos</SelectItem>
+                {uniqueStates.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={alertCity} onValueChange={(v) => setAlertCity(v === 'ALL' ? '' : v)}>
+              <SelectTrigger><SelectValue placeholder="Cidade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas</SelectItem>
+                {uniqueCities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={alertType} onValueChange={(v) => setAlertType(v === 'ALL' ? '' : v)}>
+              <SelectTrigger><SelectValue placeholder="Tipo de Imóvel" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos</SelectItem>
+                {Object.entries(propertyTypeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={alertObjective} onValueChange={(v) => setAlertObjective(v === 'ALL' ? '' : v)}>
+              <SelectTrigger><SelectValue placeholder="Objetivo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos</SelectItem>
+                <SelectItem value="COMPRA">Comprar</SelectItem>
+                <SelectItem value="VENDA">Vender</SelectItem>
+                <SelectItem value="ALUGUEL">Alugar</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={alertZone} onValueChange={(v) => setAlertZone(v === 'ALL' ? '' : v)}>
+              <SelectTrigger><SelectValue placeholder="Zona" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas</SelectItem>
+                {zoneOptions.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Input
+              placeholder="Bairro (opcional)"
+              value={alertNeighborhood}
+              onChange={(e) => setAlertNeighborhood(e.target.value)}
+            />
+
+            <Input
+              placeholder="Valor mínimo (R$)"
+              value={alertPriceMin}
+              onChange={(e) => setAlertPriceMin(formatCurrencyInput(e.target.value))}
+            />
+
+            <Input
+              placeholder="Valor máximo (R$)"
+              value={alertPriceMax}
+              onChange={(e) => setAlertPriceMax(formatCurrencyInput(e.target.value))}
+            />
+
+            <Button
+              className="w-full gap-2"
+              disabled={savingAlert}
+              onClick={handleSaveAlert}
+            >
+              <Bell className="h-4 w-4" />
+              {savingAlert ? 'Salvando...' : 'Salvar Alerta'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

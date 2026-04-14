@@ -13,6 +13,43 @@ const BodySchema = z.object({
   offerLink: z.string().max(2000).optional(),
 });
 
+async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
+  try {
+    console.log(`Mega API attempt ${attempt}...`);
+    const res = await fetch(megaUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      console.log(`Mega API success on attempt ${attempt}`);
+      return true;
+    }
+
+    const errText = await res.text();
+    console.error(`Mega API error (attempt ${attempt}): ${res.status} - ${errText.substring(0, 300)}`);
+
+    // Retry on 5xx errors
+    if (res.status >= 500 && attempt < 2) {
+      await new Promise(r => setTimeout(r, 2000));
+      return sendMegaMessage(megaUrl, token, body, attempt + 1);
+    }
+
+    return false;
+  } catch (err) {
+    console.error(`Mega API fetch error (attempt ${attempt}):`, err);
+    if (attempt < 2) {
+      await new Promise(r => setTimeout(r, 2000));
+      return sendMegaMessage(megaUrl, token, body, attempt + 1);
+    }
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,7 +69,6 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Get search details
     const { data: search, error: searchErr } = await supabase
       .from("property_searches")
       .select("user_id, property_type, city, title")
@@ -45,7 +81,6 @@ serve(async (req) => {
       });
     }
 
-    // Get owner profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("phone, name")
@@ -74,6 +109,7 @@ serve(async (req) => {
 
     const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
     if (!MEGA_API_TOKEN) {
+      console.error("MEGA_API_TOKEN not configured");
       return new Response(JSON.stringify({ error: "MEGA_API_TOKEN not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -83,26 +119,16 @@ serve(async (req) => {
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
 
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
-    const megaRes = await fetch(megaUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${MEGA_API_TOKEN}`,
+    const megaBody = {
+      messageData: {
+        to: `${fullPhone}@s.whatsapp.net`,
+        text: message,
       },
-      body: JSON.stringify({
-        messageData: {
-          to: `${fullPhone}@s.whatsapp.net`,
-          text: message,
-        },
-      }),
-    });
+    };
 
-    if (!megaRes.ok) {
-      const errText = await megaRes.text();
-      console.error(`Mega API error: ${megaRes.status} - ${errText.substring(0, 300)}`);
-    }
+    const sent = await sendMegaMessage(megaUrl, MEGA_API_TOKEN, megaBody, 1);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, whatsapp_sent: sent }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
