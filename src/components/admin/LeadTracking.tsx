@@ -334,7 +334,74 @@ export function LeadTracking() {
         </Card>
       )}
 
-      {/* Leads em espera */}
+      {/* Leads aguardando confirmação WhatsApp */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Leads Aguardando Confirmação WhatsApp
+            {standbyLeads.length > 0 && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 ml-2">{standbyLeads.length}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {standbyLeads.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-6">Nenhum lead aguardando confirmação.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {standbyLeads.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium">{lead.name}</TableCell>
+                      <TableCell>{lead.phone}</TableCell>
+                      <TableCell className="text-xs">{formatDate(lead.created_at)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          Aguardando
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={resendingId === lead.id}
+                          onClick={() => handleResendConfirmation(lead)}
+                          title="Reenviar confirmação WhatsApp"
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" />
+                          {resendingId === lead.id ? 'Enviando...' : 'Reenviar'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          disabled={activatingId === lead.id}
+                          onClick={() => handleActivateLead(lead.id)}
+                          title="Ativar lead manualmente"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                          {activatingId === lead.id ? 'Ativando...' : 'Ativar'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
