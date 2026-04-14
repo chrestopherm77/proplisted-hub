@@ -1,58 +1,78 @@
 
 
-# Plano: Correções e Melhorias no Balcão de Parcerias
+# Plano: Validade da Tabela, Alertas de Lançamentos e Melhorias nos Filtros
 
-## Problemas Identificados
+## Resumo
 
-1. **Loading infinito ao enviar link**: A Mega API retornou erro 524 (timeout Cloudflare). A função retorna `{success: true}` mesmo quando a Mega falha, mas o frontend pode estar travando na chamada fetch. O problema real é que a chamada `await fetch(notify-offer-whatsapp...)` pode demorar e o `setSendingLink(false)` só roda depois dela.
-2. **WhatsApp não chegou**: Logs confirmam `Mega API error: 524` — a Mega estava com timeout naquele momento. A função não faz retry.
-3. **Ofertas visíveis só para o criador**: Linha 690 do `PropertySearches.tsx` tem `selectedSearch.user_id === user!.id` como condição. RLS também restringe SELECT apenas ao dono da procura e ao dono da oferta.
-4. **Filtro de Zona é texto livre** no mural (deveria ser Select como no formulário de criação).
-5. **Valores sem máscara monetária** nos filtros do mural.
-6. **Botão "Salvar filtro" só aparece quando há filtros ativos** — falta interface de "Meus filtros salvos" com opção de excluir.
-7. **Salvar Alerta não abre modal com filtros** — salva direto os filtros ativos da tela.
+Adicionar campo de "Data de Validade da Tabela/Valores" nos lançamentos com disparo automático via WhatsApp 2 dias antes do vencimento. Implementar sistema de alertas (salvar filtro + receber notificação) na listagem de lançamentos, igual ao que existe em PropertySearches. Aplicar máscara monetária nos filtros de preço e tornar Zona selecionável nos filtros.
 
 ---
 
-## Correções
+## 1. Migração: novo campo `table_expires_at`
 
-### 1. Migração SQL — Visibilidade das ofertas para todos
-- Adicionar nova RLS policy em `property_search_offers` para permitir SELECT a todos os usuários autenticados (qualquer MASTER_ADMIN já pode, mas agora qualquer autenticado com acesso ao módulo também verá).
+Adicionar coluna `table_expires_at DATE` na tabela `launches`.
 
 ```sql
-CREATE POLICY "Authenticated can view all offers"
-  ON public.property_search_offers
-  FOR SELECT TO authenticated
-  USING (true);
+ALTER TABLE public.launches ADD COLUMN table_expires_at date;
 ```
 
-### 2. Edge Function `notify-offer-whatsapp` — Retry e resiliência
-- Adicionar retry (1 tentativa extra) para erros 5xx da Mega API.
-- Adicionar logging mais detalhado.
+## 2. Nova tabela `launch_alerts`
 
-### 3. Frontend `PropertySearches.tsx` — Múltiplas correções
+Tabela para salvar filtros de lançamentos com alertas (mesma lógica de `property_search_alerts`).
 
-**a) Loading infinito ao enviar link**:
-- Mover a chamada `notify-offer-whatsapp` para ser fire-and-forget (sem `await`), para que o modal feche imediatamente após salvar a oferta no banco.
+```sql
+CREATE TABLE public.launch_alerts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  filters jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.launch_alerts ENABLE ROW LEVEL SECURITY;
 
-**b) Ofertas visíveis para todos no modal de detalhes**:
-- Remover a condição `selectedSearch.user_id === user!.id` da seção "Ofertas Recebidas".
-- Carregar ofertas para qualquer procura ao abrir o modal de detalhes (não apenas para procuras do próprio usuário).
+CREATE POLICY "Users can manage own launch alerts" ON public.launch_alerts
+  FOR ALL TO authenticated
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
-**c) Filtro de Zona como Select**:
-- Trocar o `<Input>` de zona por um `<Select>` com as opções: Norte, Sul, Leste, Oeste, Centro, Rural (mesmas do formulário de criação).
+CREATE POLICY "Admins can view all launch alerts" ON public.launch_alerts
+  FOR SELECT TO public
+  USING (has_role(auth.uid(), 'MASTER_ADMIN'::app_role));
+```
 
-**d) Valores com máscara monetária**:
-- Aplicar a mesma função `formatCurrency` nos campos de preço mínimo e máximo dos filtros.
+## 3. Formulário de cadastro (NewLaunch.tsx)
 
-**e) Botão "Salvar filtro como Alerta" fixo + "Meus filtros salvos"**:
-- Mover o botão para ficar sempre visível (não condicionado a `hasActiveFilters`).
-- Ao clicar, abrir um modal com os mesmos campos de filtro (Estado, Cidade, Tipo, Objetivo, Zona como Select, Bairro opcional, Valor mín/máx com máscara) + botão "Salvar".
-- Adicionar seção "Meus Alertas Salvos" na sidebar ou abaixo do botão, listando os alertas do usuário com botão de excluir (delete da tabela `property_search_alerts`).
+- Adicionar campo datepicker "Data de Validade da Tabela" (`table_expires_at`)
+- Salvar no insert do lançamento
 
-### 4. `PropertySearchDetail.tsx` — Listar ofertas
-- Adicionar seção "Ofertas Recebidas" (para todos os usuários, não só o dono).
-- Buscar ofertas de `property_search_offers` para a procura atual e listar nome + link.
+## 4. Detalhe do lançamento (LaunchDetail.tsx)
+
+- Exibir "Validade da Tabela" na seção de Valores
+
+## 5. Edge Function: `notify-launch-expiry`
+
+Cron job que roda diariamente. Para cada lançamento ativo com `table_expires_at` = daqui a 2 dias, envia WhatsApp para `coordinator_phone` via Mega API avisando que a tabela está prestes a vencer.
+
+Mensagem:
+> "Olá {coordinator_name}, a tabela de valores do empreendimento *{name}* vence em 2 dias ({data}). Acesse o LeadByA para atualizar."
+
+## 6. Cron job via pg_cron
+
+Agendar execução diária da function `notify-launch-expiry`.
+
+## 7. Edge Function: `notify-launch-alert-match`
+
+Quando um novo lançamento for criado, chamar esta function (fire-and-forget no frontend). Ela verifica os `launch_alerts` salvos, compara filtros (estado, cidade, zona, tipo, status, faixa de preço) e dispara WhatsApp para os usuários que possuem alertas compatíveis.
+
+## 8. Filtros na listagem (Launches.tsx)
+
+- **Zona**: trocar de Select dinâmico (baseado nos dados) para Select fixo com opções: Norte, Sul, Leste, Oeste, Centro, Rural
+- **Preço mín/máx**: aplicar máscara monetária (R$ X.XXX,XX) nos inputs, mesma lógica do PropertySearches
+- **Salvar Alerta**: botão + modal para salvar filtros atuais como alerta (inserir em `launch_alerts`)
+- **Meus Alertas**: seção colapsável listando alertas salvos com opção de excluir
+
+## 9. Chamada no frontend (NewLaunch.tsx)
+
+Após criar o lançamento com sucesso, chamar `notify-launch-alert-match` fire-and-forget passando os dados do lançamento (estado, cidade, zona, tipo, status, preço).
 
 ---
 
@@ -60,8 +80,11 @@ CREATE POLICY "Authenticated can view all offers"
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | Nova policy SELECT em `property_search_offers` para autenticados |
-| `supabase/functions/notify-offer-whatsapp/index.ts` | Retry para erros 5xx |
-| `src/pages/PropertySearches.tsx` | Fire-and-forget na notificação, ofertas visíveis para todos, zona como Select, valores com máscara, modal de salvar alerta, lista de "Meus Alertas" |
-| `src/pages/PropertySearchDetail.tsx` | Seção de ofertas recebidas visível para todos |
+| Migração SQL | `table_expires_at` em launches + tabela `launch_alerts` |
+| `src/pages/NewLaunch.tsx` | Campo validade, fire-and-forget notify |
+| `src/pages/LaunchDetail.tsx` | Exibir validade |
+| `src/pages/Launches.tsx` | Máscara preço, zona fixa, salvar alerta, listar alertas |
+| `supabase/functions/notify-launch-expiry/index.ts` | Nova function cron |
+| `supabase/functions/notify-launch-alert-match/index.ts` | Nova function de matching |
+| pg_cron insert | Agendar notify-launch-expiry diariamente |
 
