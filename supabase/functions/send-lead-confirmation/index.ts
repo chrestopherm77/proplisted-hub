@@ -62,24 +62,23 @@ Deno.serve(async (req) => {
     const megaBody = {
       messageData: {
         to: jid,
-        listMessage: {
-          title: "LeadBay",
-          text: `Olá ${firstName}! 👋\n\nSomos da *LeadBay*, uma plataforma que conecta você com corretores especializados na sua região.\n\nConfirme abaixo que está buscando um imóvel para que um corretor qualificado entre em contato com você.`,
-          buttonText: "Confirmar interesse",
-          footerText: "LeadBay - Conectando você ao corretor ideal",
-          sections: [
-            {
-              title: "Confirmação",
-              rows: [
-                {
-                  rowId: `confirm_${leadId}`,
-                  title: "Sim, estou buscando!",
-                  description: "Confirmo que estou buscando um imóvel e autorizo o contato de um corretor"
-                }
-              ]
-            }
-          ]
-        }
+        title: "LeadBay",
+        text: `Olá ${firstName}! 👋\n\nSomos da *LeadBay*, uma plataforma que conecta você com corretores especializados na sua região.\n\nConfirme abaixo que está buscando um imóvel para que um corretor qualificado entre em contato com você.`,
+        buttonText: "Confirmar interesse",
+        description: "LeadBay - Conectando você ao corretor ideal",
+        sections: [
+          {
+            title: "Confirmação",
+            rows: [
+              {
+                rowId: `confirm_${leadId}`,
+                title: "Sim, estou buscando!",
+                description: "Confirmo que estou buscando um imóvel e autorizo o contato de um corretor"
+              }
+            ]
+          }
+        ],
+        listType: 0
       }
     };
 
