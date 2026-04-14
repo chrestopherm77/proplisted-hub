@@ -176,7 +176,7 @@ export function LeadTracking() {
 
   async function fetchData() {
     setLoading(true);
-    const [viewsRes, partialsRes, submissionsRes] = await Promise.all([
+    const [viewsRes, partialsRes, submissionsRes, standbyRes] = await Promise.all([
       supabase
         .from('lp_page_views')
         .select('*')
@@ -191,6 +191,12 @@ export function LeadTracking() {
       supabase
         .from('lead_submissions')
         .select('phone'),
+      supabase
+        .from('leads')
+        .select('id, name, phone, description, whatsapp_confirmed, is_active, created_at, form_data')
+        .eq('whatsapp_confirmed', false)
+        .eq('is_active', false)
+        .order('created_at', { ascending: false }),
     ]);
 
     if (viewsRes.data) {
@@ -207,7 +213,6 @@ export function LeadTracking() {
     }
 
     if (partialsRes.data) {
-      // Cross-reference: exclude partial leads whose phone already exists in lead_submissions
       const effectivePhones = new Set(
         (submissionsRes.data || []).map(s => s.phone?.replace(/\D/g, '')).filter(Boolean)
       );
@@ -217,7 +222,40 @@ export function LeadTracking() {
       setPartialLeads(filtered);
     }
 
+    if (standbyRes.data) {
+      setStandbyLeads(standbyRes.data as StandbyLead[]);
+    }
+
     setLoading(false);
+  }
+
+  async function handleActivateLead(leadId: string) {
+    setActivatingId(leadId);
+    const { error } = await supabase
+      .from('leads')
+      .update({ is_active: true, whatsapp_confirmed: true, updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    setActivatingId(null);
+    if (error) {
+      toast({ title: 'Erro ao ativar lead', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Lead ativado com sucesso!' });
+      setStandbyLeads(prev => prev.filter(l => l.id !== leadId));
+    }
+  }
+
+  async function handleResendConfirmation(lead: StandbyLead) {
+    setResendingId(lead.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-lead-confirmation', {
+        body: { name: lead.name, phone: lead.phone, leadId: lead.id },
+      });
+      if (error) throw error;
+      toast({ title: 'Confirmação reenviada via WhatsApp!' });
+    } catch (err: any) {
+      toast({ title: 'Erro ao reenviar', description: err.message, variant: 'destructive' });
+    }
+    setResendingId(null);
   }
 
   const detailSections = selectedLead?.form_data && selectedLead?.intention
