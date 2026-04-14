@@ -4,9 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, UserX, Clock, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Eye, UserX, Clock, Monitor, MessageSquare, CheckCircle, Send } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatFormDataToSections } from '@/lib/formatFormData';
+import { useToast } from '@/hooks/use-toast';
+
+interface StandbyLead {
+  id: string;
+  name: string;
+  phone: string;
+  description: string;
+  whatsapp_confirmed: boolean | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  form_data: any;
+}
 
 interface PageView {
   id: string;
@@ -122,6 +135,11 @@ export function LeadTracking() {
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<PartialLead | null>(null);
 
+  const [standbyLeads, setStandbyLeads] = useState<StandbyLead[]>([]);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
   useEffect(() => {
     fetchData();
 
@@ -158,7 +176,7 @@ export function LeadTracking() {
 
   async function fetchData() {
     setLoading(true);
-    const [viewsRes, partialsRes, submissionsRes] = await Promise.all([
+    const [viewsRes, partialsRes, submissionsRes, standbyRes] = await Promise.all([
       supabase
         .from('lp_page_views')
         .select('*')
@@ -173,6 +191,12 @@ export function LeadTracking() {
       supabase
         .from('lead_submissions')
         .select('phone'),
+      supabase
+        .from('leads')
+        .select('id, name, phone, description, whatsapp_confirmed, is_active, created_at, form_data')
+        .eq('whatsapp_confirmed', false)
+        .eq('is_active', false)
+        .order('created_at', { ascending: false }),
     ]);
 
     if (viewsRes.data) {
@@ -189,7 +213,6 @@ export function LeadTracking() {
     }
 
     if (partialsRes.data) {
-      // Cross-reference: exclude partial leads whose phone already exists in lead_submissions
       const effectivePhones = new Set(
         (submissionsRes.data || []).map(s => s.phone?.replace(/\D/g, '')).filter(Boolean)
       );
@@ -199,7 +222,40 @@ export function LeadTracking() {
       setPartialLeads(filtered);
     }
 
+    if (standbyRes.data) {
+      setStandbyLeads(standbyRes.data as StandbyLead[]);
+    }
+
     setLoading(false);
+  }
+
+  async function handleActivateLead(leadId: string) {
+    setActivatingId(leadId);
+    const { error } = await supabase
+      .from('leads')
+      .update({ is_active: true, whatsapp_confirmed: true, updated_at: new Date().toISOString() })
+      .eq('id', leadId);
+    setActivatingId(null);
+    if (error) {
+      toast({ title: 'Erro ao ativar lead', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Lead ativado com sucesso!' });
+      setStandbyLeads(prev => prev.filter(l => l.id !== leadId));
+    }
+  }
+
+  async function handleResendConfirmation(lead: StandbyLead) {
+    setResendingId(lead.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-lead-confirmation', {
+        body: { name: lead.name, phone: lead.phone, leadId: lead.id },
+      });
+      if (error) throw error;
+      toast({ title: 'Confirmação reenviada via WhatsApp!' });
+    } catch (err: any) {
+      toast({ title: 'Erro ao reenviar', description: err.message, variant: 'destructive' });
+    }
+    setResendingId(null);
   }
 
   const detailSections = selectedLead?.form_data && selectedLead?.intention
@@ -213,7 +269,7 @@ export function LeadTracking() {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Page Views</CardTitle>
@@ -232,6 +288,16 @@ export function LeadTracking() {
           <CardContent>
             <div className="text-2xl font-bold">{partialLeads.length}</div>
             <p className="text-xs text-muted-foreground">Não finalizaram o formulário</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Aguardando WhatsApp</CardTitle>
+            <MessageSquare className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{standbyLeads.length}</div>
+            <p className="text-xs text-muted-foreground">Não confirmaram interesse</p>
           </CardContent>
         </Card>
         <Card>
@@ -268,7 +334,74 @@ export function LeadTracking() {
         </Card>
       )}
 
-      {/* Leads em espera */}
+      {/* Leads aguardando confirmação WhatsApp */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Leads Aguardando Confirmação WhatsApp
+            {standbyLeads.length > 0 && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 ml-2">{standbyLeads.length}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {standbyLeads.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-6">Nenhum lead aguardando confirmação.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {standbyLeads.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium">{lead.name}</TableCell>
+                      <TableCell>{lead.phone}</TableCell>
+                      <TableCell className="text-xs">{formatDate(lead.created_at)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          Aguardando
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={resendingId === lead.id}
+                          onClick={() => handleResendConfirmation(lead)}
+                          title="Reenviar confirmação WhatsApp"
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" />
+                          {resendingId === lead.id ? 'Enviando...' : 'Reenviar'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          disabled={activatingId === lead.id}
+                          onClick={() => handleActivateLead(lead.id)}
+                          title="Ativar lead manualmente"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                          {activatingId === lead.id ? 'Ativando...' : 'Ativar'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
