@@ -427,6 +427,23 @@ export function LeadsManagement() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <span className="text-base md:text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
                 <div className="flex gap-2 w-full sm:w-auto">
+                  {!lead.whatsapp_confirmed && !lead.is_active && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await supabase.from('leads').update({ is_active: true, whatsapp_confirmed: true }).eq('id', lead.id);
+                          toast({ title: 'Lead ativado manualmente' });
+                          fetchLeads();
+                        } catch { toast({ title: 'Erro', variant: 'destructive' }); }
+                      }}
+                      className="flex-1 sm:flex-none h-8 bg-green-600 hover:bg-green-700 text-white"
+                      title="Ativar manualmente"
+                    >
+                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant={lead.is_promotion ? "default" : "outline"}
