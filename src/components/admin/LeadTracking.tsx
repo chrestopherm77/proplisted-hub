@@ -135,6 +135,11 @@ export function LeadTracking() {
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<PartialLead | null>(null);
 
+  const [standbyLeads, setStandbyLeads] = useState<StandbyLead[]>([]);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
   useEffect(() => {
     fetchData();
 
