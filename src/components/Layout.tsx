@@ -22,7 +22,7 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isConstrutora, signOut } = useAuth();
   const { partner, isPartnerSite } = usePartner();
   const location = useLocation();
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <header className="bg-white border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {user && <MobileMenu isAdmin={isAdmin} onSignOut={handleSignOut} />}
+            {user && <MobileMenu isAdmin={isAdmin} isConstrutora={isConstrutora} onSignOut={handleSignOut} />}
             
             <Link to="/" className="flex items-center">
               {isPartnerSite && partner?.logo_url ? (
@@ -114,7 +114,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     isActive('/leads') ? 'text-primary' : 'text-foreground'
                   }`}
                 >
-                  Marketplace
+                  Leads Disponíveis
                 </Link>
                 {isAdmin && !isPartnerSite && (
                   <Link
@@ -126,7 +126,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     Balcão de Parcerias
                   </Link>
                 )}
-                {isAdmin && !isPartnerSite && (
+                {(isAdmin || isConstrutora) && !isPartnerSite && (
                   <Link
                     to="/launches"
                     className={`text-sm font-medium transition-colors hover:text-primary ${

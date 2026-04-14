@@ -52,7 +52,7 @@ const handlePriceMask = (value: string): string => {
 const ZONE_OPTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
 
 const Launches = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isConstrutora } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [launches, setLaunches] = useState<Launch[]>([]);
@@ -76,8 +76,8 @@ const Launches = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    if (isAdmin === false) { navigate('/'); return; }
-    if (isAdmin) {
+    if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
+    if (isAdmin || isConstrutora) {
       fetchLaunches();
       fetchAlerts();
     }

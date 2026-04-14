@@ -14,10 +14,11 @@ import { Menu } from 'lucide-react';
 
 interface MobileMenuProps {
   isAdmin: boolean;
+  isConstrutora: boolean;
   onSignOut: () => void;
 }
 
-export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
+export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProps) => {
   const location = useLocation();
   const { partner, isPartnerSite } = usePartner();
   const isActive = (path: string) => location.pathname === path;
@@ -60,7 +61,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
             }`}
           >
             <Package className="h-5 w-5" />
-            <span className="font-medium">Marketplace</span>
+            <span className="font-medium">Leads Disponíveis</span>
           </Link>
           {isAdmin && (
             <Link
@@ -75,7 +76,7 @@ export const MobileMenu = ({ isAdmin, onSignOut }: MobileMenuProps) => {
               <span className="font-medium">Balcão de Parcerias</span>
             </Link>
           )}
-          {isAdmin && (
+          {(isAdmin || isConstrutora) && (
             <Link
               to="/launches"
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${

@@ -7,24 +7,24 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isConstrutora, setIsConstrutora] = useState<boolean>(false);
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status after state update
         if (session?.user) {
           checkAdminStatus(session.user.id);
+          checkConstrutora(session.user.id);
         } else {
           setIsAdmin(false);
+          setIsConstrutora(false);
         }
       }
     );
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -32,6 +32,7 @@ export const useAuth = () => {
       
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkConstrutora(session.user.id);
       }
     });
 
@@ -52,9 +53,27 @@ export const useAuth = () => {
     }
   };
 
+  const checkConstrutora = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('person_type, company_type')
+        .eq('id', userId)
+        .single();
+
+      if (!error && data) {
+        setIsConstrutora(data.person_type === 'PJ' && data.company_type === 'CONSTRUTORA');
+      } else {
+        setIsConstrutora(false);
+      }
+    } catch {
+      setIsConstrutora(false);
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, isAdmin, signOut };
+  return { user, session, loading, isAdmin, isConstrutora, signOut };
 };
