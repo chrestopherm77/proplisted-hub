@@ -13,6 +13,17 @@ const BodySchema = z.object({
   offerLink: z.string().max(2000).optional(),
 });
 
+function normalizeWhatsAppPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const withCountryCode = digits.startsWith('55') ? digits : `55${digits}`;
+
+  if (withCountryCode.length === 13 && withCountryCode.startsWith('55') && withCountryCode[4] === '9') {
+    return `${withCountryCode.slice(0, 4)}${withCountryCode.slice(5)}`;
+  }
+
+  return withCountryCode;
+}
+
 async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
   try {
     console.log(`Mega API attempt ${attempt}...`);
@@ -115,8 +126,8 @@ serve(async (req) => {
       });
     }
 
-    const clean = profile.phone.replace(/\D/g, '');
-    const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+    const fullPhone = normalizeWhatsAppPhone(profile.phone);
+    console.log(`Normalized owner phone ${profile.phone} -> ${fullPhone}`);
 
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
     const megaBody = {

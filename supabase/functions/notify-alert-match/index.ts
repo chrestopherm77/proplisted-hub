@@ -18,6 +18,17 @@ const BodySchema = z.object({
   creatorUserId: z.string().uuid(),
 });
 
+function normalizeWhatsAppPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const withCountryCode = digits.startsWith('55') ? digits : `55${digits}`;
+
+  if (withCountryCode.length === 13 && withCountryCode.startsWith('55') && withCountryCode[4] === '9') {
+    return `${withCountryCode.slice(0, 4)}${withCountryCode.slice(5)}`;
+  }
+
+  return withCountryCode;
+}
+
 async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
   try {
     console.log(`Mega API attempt ${attempt}...`);
@@ -184,11 +195,10 @@ serve(async (req) => {
         continue;
       }
 
-      const clean = profile.phone.replace(/\D/g, '');
-      const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+      const fullPhone = normalizeWhatsAppPhone(profile.phone);
       const typeName = typeLabels[data.property_type] ?? data.property_type;
 
-      console.log(`Sending WhatsApp to ${fullPhone} for alert ${alert.id}`);
+      console.log(`Sending WhatsApp to ${fullPhone} for alert ${alert.id} (from ${profile.phone})`);
 
       const message = `*🔔 Novo Imóvel Compatível com seu Alerta!*\n\nOlá${profile.name ? `, ${profile.name}` : ''}! Uma nova procura de *${typeName}* em *${data.city}${data.state ? `/${data.state}` : ''}* foi publicada e se encaixa nos seus filtros salvos.\n\nAcesse o Mural de Demandas para enviar sua oferta!`;
 
