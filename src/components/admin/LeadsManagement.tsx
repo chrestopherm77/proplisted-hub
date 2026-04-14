@@ -393,6 +393,16 @@ export function LeadsManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {!lead.whatsapp_confirmed && !lead.is_active && (
+                    <Badge className="text-xs bg-yellow-500 hover:bg-yellow-500 text-white border-transparent">
+                      ⏳ Aguardando confirmação
+                    </Badge>
+                  )}
+                  {lead.whatsapp_confirmed && (
+                    <Badge className="text-xs bg-green-600 hover:bg-green-600 text-white border-transparent">
+                      ✅ Confirmado via WhatsApp
+                    </Badge>
+                  )}
                   {lead.is_exhausted && (
                     <Badge variant="destructive" className="text-xs">
                       🚫 Esgotado
