@@ -530,6 +530,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          title: string | null
           user_id: string
         }
         Insert: {
@@ -538,6 +539,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          title?: string | null
           user_id: string
         }
         Update: {
@@ -546,6 +548,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          title?: string | null
           user_id?: string
         }
         Relationships: []

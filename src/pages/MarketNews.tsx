@@ -15,6 +15,7 @@ import { ptBR } from 'date-fns/locale';
 interface NewsPost {
   id: string;
   user_id: string;
+  title: string | null;
   image_url: string | null;
   content: string;
   is_active: boolean;
@@ -330,6 +331,10 @@ const MarketNews = () => {
                   />
                 )}
                 <CardContent className="p-4 space-y-3">
+                  {/* Title */}
+                  {post.title && (
+                    <h2 className="text-lg font-bold text-foreground">{post.title}</h2>
+                  )}
                   {/* Content */}
                   <div>
                     <p className={`text-foreground whitespace-pre-wrap ${!expandedContent[post.id] ? 'line-clamp-3' : ''}`}>

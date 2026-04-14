@@ -1,0 +1,1 @@
+ALTER TABLE public.news_posts ADD COLUMN title text;
