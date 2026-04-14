@@ -139,6 +139,30 @@ export type Database = {
         }
         Relationships: []
       }
+      launch_alerts: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       launches: {
         Row: {
           associative: string | null
@@ -167,6 +191,7 @@ export type Database = {
           size_m2_min: string | null
           state: string | null
           status: string | null
+          table_expires_at: string | null
           table_url: string | null
           total_units: string | null
           user_id: string
@@ -199,6 +224,7 @@ export type Database = {
           size_m2_min?: string | null
           state?: string | null
           status?: string | null
+          table_expires_at?: string | null
           table_url?: string | null
           total_units?: string | null
           user_id: string
@@ -231,6 +257,7 @@ export type Database = {
           size_m2_min?: string | null
           state?: string | null
           status?: string | null
+          table_expires_at?: string | null
           table_url?: string | null
           total_units?: string | null
           user_id?: string
