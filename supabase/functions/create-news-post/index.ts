@@ -45,21 +45,36 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : null;
-    const noticia = typeof body.noticia === 'string' ? body.noticia.trim() : '';
-    const imagem = typeof body.imagem === 'string' ? body.imagem.trim() : null;
 
-    if (!noticia) {
-      return new Response(JSON.stringify({ error: 'Field "noticia" is required' }), {
+    // Accept single object or array
+    const items: Array<{ titulo?: string; imagem?: string; noticia?: string }> = Array.isArray(body) ? body : [body];
+
+    if (items.length === 0) {
+      return new Response(JSON.stringify({ error: 'Empty array' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (noticia.length > 50000) {
-      return new Response(JSON.stringify({ error: '"noticia" exceeds 50000 characters' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const rows = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const noticia = typeof item.noticia === 'string' ? item.noticia.trim() : '';
+      const titulo = typeof item.titulo === 'string' ? item.titulo.trim() : null;
+      const imagem = typeof item.imagem === 'string' ? item.imagem.trim() : null;
+
+      if (!noticia) {
+        return new Response(JSON.stringify({ error: `Item ${i}: field "noticia" is required` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      rows.push({
+        user_id: ADMIN_USER_ID,
+        title: titulo,
+        content: noticia,
+        image_url: imagem || null,
       });
     }
 
@@ -70,24 +85,18 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from('news_posts')
-      .insert({
-        user_id: ADMIN_USER_ID,
-        title: titulo,
-        content: noticia,
-        image_url: imagem || null,
-      })
-      .select('id')
-      .single();
+      .insert(rows)
+      .select('id');
 
     if (error) {
       console.error('Insert error:', error);
-      return new Response(JSON.stringify({ error: 'Failed to create post' }), {
+      return new Response(JSON.stringify({ error: 'Failed to create posts' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ success: true, post_id: data.id }), {
+    return new Response(JSON.stringify({ success: true, created: data.length, post_ids: data.map((d: any) => d.id) }), {
       status: 201,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
