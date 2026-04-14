@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -54,6 +54,14 @@ interface PropertySearch {
   created_at: string;
 }
 
+interface OfferRecord {
+  id: string;
+  user_id: string;
+  offer_name: string | null;
+  offer_link: string | null;
+  created_at: string | null;
+}
+
 const PropertySearchDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -62,6 +70,8 @@ const PropertySearchDetail = () => {
   const [search, setSearch] = useState<PropertySearch | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingOffer, setSendingOffer] = useState(false);
+  const [offers, setOffers] = useState<OfferRecord[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -71,7 +81,10 @@ const PropertySearchDetail = () => {
   }, [user, authLoading, isAdmin, navigate]);
 
   useEffect(() => {
-    if (user && id) fetchData();
+    if (user && id) {
+      fetchData();
+      fetchOffers();
+    }
   }, [user, id]);
 
   const fetchData = async () => {
@@ -88,20 +101,30 @@ const PropertySearchDetail = () => {
     setLoading(false);
   };
 
+  const fetchOffers = async () => {
+    if (!id) return;
+    setLoadingOffers(true);
+    const { data } = await supabase
+      .from('property_search_offers')
+      .select('id, user_id, offer_name, offer_link, created_at')
+      .eq('search_id', id)
+      .order('created_at', { ascending: false });
+
+    setOffers((data ?? []) as OfferRecord[]);
+    setLoadingOffers(false);
+  };
+
   const handleSendOffer = async () => {
     if (!search || !user) return;
     setSendingOffer(true);
 
-    // Increment offer count
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
 
-    // Register offer
     await supabase.from('property_search_offers').upsert(
       { search_id: search.id, user_id: user.id },
       { onConflict: 'search_id,user_id' }
     );
 
-    // Get owner phone via security definer function
     const { data: phone } = await supabase.rpc('get_profile_phone', { p_user_id: search.user_id });
 
     if (!phone) {
@@ -117,7 +140,6 @@ const PropertySearchDetail = () => {
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
-    // Update local state
     setSearch(prev => prev ? { ...prev, offer_count: (prev.offer_count ?? 0) + 1 } : prev);
     setSendingOffer(false);
   };
@@ -140,6 +162,14 @@ const PropertySearchDetail = () => {
     );
   }
 
+  const formatDisplayValue = (raw: string | null): string => {
+    if (!raw) return '';
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return '';
+    const num = parseInt(digits, 10);
+    return `R$ ${num.toLocaleString('pt-BR')}`;
+  };
+
   const details: { label: string; value: string | null }[] = [
     { label: 'Operação', value: opLabels[search.operation_type] ?? search.operation_type },
     { label: 'Tipo', value: typeLabels[search.property_type] ?? search.property_type },
@@ -151,7 +181,7 @@ const PropertySearchDetail = () => {
     { label: 'Zona', value: search.zone },
     { label: 'Tamanho (m²)', value: search.size_m2 },
     { label: 'Quartos', value: search.bedrooms },
-    { label: 'Valor (R$)', value: search.value },
+    { label: 'Valor (R$)', value: search.value ? formatDisplayValue(search.value) : null },
     { label: 'Vagas de Garagem', value: search.parking_spots },
     { label: 'Ofertas', value: String(search.offer_count ?? 0) },
     { label: 'Data de Criação', value: format(new Date(search.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
@@ -197,6 +227,44 @@ const PropertySearchDetail = () => {
                 <p className="text-foreground">{search.observation}</p>
               </div>
             )}
+
+            {/* Ofertas Recebidas — visible to ALL */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Ofertas Recebidas</h3>
+              {loadingOffers ? (
+                <p className="text-xs text-muted-foreground">Carregando...</p>
+              ) : offers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma oferta recebida ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {offers.map((offer) => (
+                    <div key={offer.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border/50">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {offer.offer_name ?? 'Corretor'}
+                        </p>
+                        {offer.created_at && (
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(offer.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </p>
+                        )}
+                      </div>
+                      {offer.offer_link && (
+                        <a
+                          href={offer.offer_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-primary hover:text-primary/80 flex items-center gap-1 text-xs"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Ver anúncio
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {search.user_id !== user.id && (
               <Button
