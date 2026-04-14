@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import { usePartner } from '@/contexts/PartnerContext';
 import {
@@ -110,6 +110,17 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
           >
             <Newspaper className="h-5 w-5" />
             <span className="font-medium">Giro do Mercado</span>
+          </Link>
+          <Link
+            to="/nossa-ia"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/nossa-ia')
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            <Bot className="h-5 w-5" />
+            <span className="font-medium">Nossa IA</span>
           </Link>
           {isAdmin && !isPartnerSite && (
             <Link
