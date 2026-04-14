@@ -178,6 +178,7 @@ const LaunchDetail = () => {
                   <InfoRow icon={<DollarSign className="h-4 w-4" />} label="A partir de" value={formatCurrency(launch.price_from)} valueClass="text-primary font-semibold" />
                   <InfoRow icon={<DollarSign className="h-4 w-4" />} label="Até" value={formatCurrency(launch.price_max)} valueClass="text-primary font-semibold" />
                   <InfoRow icon={<DollarSign className="h-4 w-4" />} label="Comissão" value={launch.commission || '—'} />
+                  <InfoRow icon={<Calendar className="h-4 w-4" />} label="Validade da Tabela" value={formatDate((launch as any).table_expires_at)} />
                 </div>
               </CardContent>
             </Card>
