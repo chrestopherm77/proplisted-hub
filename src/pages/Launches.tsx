@@ -6,7 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Launch {
   id: string;
@@ -25,6 +27,13 @@ interface Launch {
   is_active: boolean;
 }
 
+interface LaunchAlert {
+  id: string;
+  filters: Record<string, string>;
+  is_active: boolean;
+  created_at: string;
+}
+
 const formatCurrency = (raw: string | null): string => {
   if (!raw) return '';
   const digits = raw.replace(/\D/g, '');
@@ -33,9 +42,19 @@ const formatCurrency = (raw: string | null): string => {
   return `R$ ${(num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 };
 
+const handlePriceMask = (value: string): string => {
+  const v = value.replace(/\D/g, '');
+  if (!v) return '';
+  const num = parseInt(v, 10);
+  return `R$ ${(num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+};
+
+const ZONE_OPTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
+
 const Launches = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [launches, setLaunches] = useState<Launch[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,11 +68,19 @@ const Launches = () => {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
 
+  // Alerts
+  const [alerts, setAlerts] = useState<LaunchAlert[]>([]);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [savingAlert, setSavingAlert] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
     if (isAdmin === false) { navigate('/'); return; }
-    if (isAdmin) fetchLaunches();
+    if (isAdmin) {
+      fetchLaunches();
+      fetchAlerts();
+    }
   }, [user, authLoading, isAdmin]);
 
   const fetchLaunches = async () => {
@@ -63,14 +90,63 @@ const Launches = () => {
       .select('id, name, banner_url, logo_url, city, state, zone, price_from, price_max, property_type, size_m2_min, size_m2_max, status, is_active')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
-
     if (!error && data) setLaunches(data);
     setLoading(false);
   };
 
+  const fetchAlerts = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('launch_alerts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    if (data) setAlerts(data as unknown as LaunchAlert[]);
+  };
+
+  const saveAlert = async () => {
+    if (!user) return;
+    setSavingAlert(true);
+    const filters: Record<string, string> = {};
+    if (stateFilter !== 'ALL') filters.state = stateFilter;
+    if (cityFilter !== 'ALL') filters.city = cityFilter;
+    if (zoneFilter !== 'ALL') filters.zone = zoneFilter;
+    if (typeFilter !== 'ALL') filters.property_type = typeFilter;
+    if (statusFilter !== 'ALL') filters.status = statusFilter;
+    if (priceMin) filters.priceMin = priceMin;
+    if (priceMax) filters.priceMax = priceMax;
+
+    if (Object.keys(filters).length === 0) {
+      toast({ title: 'Selecione ao menos um filtro para salvar o alerta', variant: 'destructive' });
+      setSavingAlert(false);
+      return;
+    }
+
+    const { error } = await supabase.from('launch_alerts').insert({
+      user_id: user.id,
+      filters,
+    } as any);
+
+    if (error) {
+      toast({ title: 'Erro ao salvar alerta', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Alerta salvo! Você será notificado quando novos lançamentos compatíveis forem publicados.' });
+      fetchAlerts();
+    }
+    setSavingAlert(false);
+  };
+
+  const deleteAlert = async (id: string) => {
+    const { error } = await supabase.from('launch_alerts').delete().eq('id', id);
+    if (!error) {
+      setAlerts(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Alerta removido' });
+    }
+  };
+
   const cities = [...new Set(launches.map(l => l.city))].sort();
   const states = [...new Set(launches.map(l => l.state).filter(Boolean))].sort() as string[];
-  const zones = [...new Set(launches.map(l => l.zone).filter(Boolean))].sort() as string[];
 
   const parseCurrency = (v: string) => {
     const d = v.replace(/\D/g, '');
@@ -110,6 +186,18 @@ const Launches = () => {
     return true;
   });
 
+  const formatAlertFilters = (f: Record<string, string>) => {
+    const parts: string[] = [];
+    if (f.state) parts.push(f.state);
+    if (f.city) parts.push(f.city);
+    if (f.zone) parts.push(f.zone);
+    if (f.property_type) parts.push(f.property_type);
+    if (f.status) parts.push(f.status);
+    if (f.priceMin) parts.push(`Min: ${formatCurrency(f.priceMin) || f.priceMin}`);
+    if (f.priceMax) parts.push(`Max: ${formatCurrency(f.priceMax) || f.priceMax}`);
+    return parts.join(' • ') || 'Sem filtros';
+  };
+
   if (authLoading || loading) {
     return (
       <Layout>
@@ -125,10 +213,41 @@ const Launches = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Lançamentos</h1>
-          <Button onClick={() => navigate('/launches/new')} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Lançamento
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Bell className="h-4 w-4" />
+                  Meus Alertas {alerts.length > 0 && `(${alerts.length})`}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Meus Alertas de Lançamentos</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {alerts.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-4">Nenhum alerta salvo.</p>
+                  ) : (
+                    alerts.map(a => (
+                      <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate">{formatAlertFilters(a.filters)}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => deleteAlert(a.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={() => navigate('/launches/new')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Lançamento
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -158,7 +277,7 @@ const Launches = () => {
             <SelectTrigger><SelectValue placeholder="Zona" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Todas as Zonas</SelectItem>
-              {zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+              {ZONE_OPTIONS.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -188,9 +307,25 @@ const Launches = () => {
           </div>
 
           <div className="flex gap-2">
-            <Input placeholder="Preço mín" value={priceMin} onChange={e => setPriceMin(e.target.value)} />
-            <Input placeholder="Preço máx" value={priceMax} onChange={e => setPriceMax(e.target.value)} />
+            <Input
+              placeholder="Preço mín"
+              value={priceMin}
+              onChange={e => setPriceMin(handlePriceMask(e.target.value))}
+            />
+            <Input
+              placeholder="Preço máx"
+              value={priceMax}
+              onChange={e => setPriceMax(handlePriceMask(e.target.value))}
+            />
           </div>
+        </div>
+
+        {/* Save Alert Button */}
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" className="gap-2" onClick={saveAlert} disabled={savingAlert}>
+            {savingAlert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar Alerta com Filtros Atuais
+          </Button>
         </div>
 
         {/* Grid */}

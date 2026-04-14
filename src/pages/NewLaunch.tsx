@@ -51,6 +51,7 @@ const NewLaunch = () => {
   const [sizeM2Min, setSizeM2Min] = useState('');
   const [sizeM2Max, setSizeM2Max] = useState('');
   const [launchStatus, setLaunchStatus] = useState('');
+  const [tableExpiresAt, setTableExpiresAt] = useState<Date>();
 
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -167,9 +168,31 @@ const NewLaunch = () => {
         size_m2_min: sizeM2Min || null,
         size_m2_max: sizeM2Max || null,
         status: launchStatus || null,
-      });
+        table_expires_at: tableExpiresAt ? format(tableExpiresAt, 'yyyy-MM-dd') : null,
+      } as any);
 
       if (error) throw error;
+
+      // Fire-and-forget: notify users with matching launch alerts
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        fetch(`https://${projectId}.supabase.co/functions/v1/notify-launch-alert-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+          body: JSON.stringify({
+            launchId,
+            state: state || null,
+            city: city.trim(),
+            zone: zone || null,
+            property_type: propertyType || null,
+            status: launchStatus || null,
+            price_from: priceFromRaw,
+            price_max: priceMaxRaw,
+            name: name.trim(),
+            creatorUserId: user.id,
+          }),
+        }).catch(err => console.error('notify-launch-alert-match error:', err));
+      } catch {}
 
       toast({ title: 'Lançamento publicado com sucesso!' });
       navigate('/launches');
@@ -324,7 +347,7 @@ const NewLaunch = () => {
         {/* Valores */}
         <Card>
           <CardHeader><CardTitle>Valores</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>A partir de (R$)</Label>
               <Input value={priceFrom} onChange={handlePriceChange(setPriceFrom)} placeholder="R$ 0,00" />
@@ -336,6 +359,20 @@ const NewLaunch = () => {
             <div>
               <Label>Comissão</Label>
               <Input value={commission} onChange={e => setCommission(e.target.value)} placeholder="Ex: 5%" />
+            </div>
+            <div>
+              <Label>Validade da Tabela/Valores</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !tableExpiresAt && 'text-muted-foreground')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {tableExpiresAt ? format(tableExpiresAt, 'dd/MM/yyyy') : 'Selecionar data'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={tableExpiresAt} onSelect={setTableExpiresAt} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
