@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
           name: name.trim(),
           phone,
           description: prefixedDescription,
-          price: defaultPrice || 27,
+          price: defaultPrice || 140,
           form_data: { ...formDataJson, intention },
           lead_submission_id: submissionId,
           is_active: false,

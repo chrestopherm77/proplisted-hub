@@ -534,11 +534,6 @@ export default function Leads() {
                     )}
                   </div>
                   
-                  {isAdmin === true && lead.created_at && (
-                    <p className="text-xs text-muted-foreground">
-                      Cadastrado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  )}
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">

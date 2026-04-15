@@ -85,7 +85,7 @@ export default function BuyCredits() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
 
   const bestValueIdx = packages.length > 0
-    ? packages.reduce((best, pkg, idx) => (pkg.price / pkg.credits < packages[best].price / packages[best].credits ? idx : best), 0)
+    ? packages.findIndex(pkg => pkg.credits === 1400)
     : -1;
 
   const handleSelectPackage = (pkgId: string) => {
@@ -253,13 +253,12 @@ export default function BuyCredits() {
             <h1 className="text-3xl font-bold">Comprar Créditos</h1>
           </div>
           <p className="text-muted-foreground">
-            Adquira créditos para comprar leads instantaneamente. Quanto maior o pacote, menor o custo por lead!
+            Adquira créditos para comprar leads instantaneamente.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg, idx) => {
-            const costPerLead = pkg.price / pkg.lead_count;
             const isBestValue = idx === bestValueIdx && packages.length > 2;
             return (
               <Card
@@ -285,9 +284,6 @@ export default function BuyCredits() {
                     <Coins className="h-5 w-5" />
                     <span className="text-xl font-bold">{pkg.credits.toLocaleString('pt-BR')} créditos</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    ~{formatPrice(costPerLead)} por lead
-                  </p>
                   <Button className="w-full mt-4" size="lg">
                     <Zap className="h-4 w-4 mr-2" />
                     Selecionar
