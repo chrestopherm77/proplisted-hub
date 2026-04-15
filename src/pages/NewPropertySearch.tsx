@@ -208,6 +208,23 @@ const NewPropertySearch = () => {
       console.error('Alert notification error:', e);
     }
 
+    // Notify WhatsApp group
+    try {
+      await supabase.functions.invoke('notify-group-new-search', {
+        body: {
+          state: state.trim() || undefined,
+          city: city.trim(),
+          operationType: operationType,
+          propertyType: selected.type,
+          zone: zone.trim() || undefined,
+          neighborhood: neighborhood.trim() || undefined,
+          valueMax: valueMax.trim() || undefined,
+        },
+      });
+    } catch (e) {
+      console.error('Group notification error:', e);
+    }
+
     toast({ title: 'Procura adicionada!', description: 'Sua procura foi publicada com sucesso.' });
     navigate('/property-searches');
   };

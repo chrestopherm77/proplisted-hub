@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.notify-alert-match]
 verify_jwt = false
 
+[functions.notify-group-new-search]
+verify_jwt = false
+
 [functions.create-news-post]
 verify_jwt = false
 
