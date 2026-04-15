@@ -1,58 +1,45 @@
 
 
-# Ajustes no Balcão de Parcerias
+# Disparar mensagem no grupo WhatsApp quando lead confirmar WhatsApp
 
 ## Resumo
-Tres mudanças: (1) disparar mensagem no grupo WhatsApp quando nova procura for criada, (2) remover botão "Chamar no WhatsApp" do modal de oferta, (3) incluir nome e telefone do corretor na notificação de oferta.
+Adicionar no `mega-webhook` (que já processa a confirmação do lead) um disparo de mensagem para o grupo WhatsApp com os dados do lead, no mesmo momento em que o email é enviado (após confirmação).
 
----
+## Arquivo modificado
 
-## 1. Disparar mensagem no grupo ao criar nova procura
+**`supabase/functions/mega-webhook/index.ts`** (após a chamada ao `notify-new-lead`, ~linha 116):
 
-**`src/pages/NewPropertySearch.tsx`** (após o insert, junto com o `notify-alert-match`):
-- Chamar uma nova edge function `notify-group-new-search` passando os dados da procura (estado, cidade, operação, tipo, zona, bairro, valor máximo).
+Adicionar uma chamada direta à Mega API (mesmo padrão usado no `notify-group-new-search`) para enviar mensagem ao grupo `120363425145687461@g.us`.
 
-**Nova edge function `supabase/functions/notify-group-new-search/index.ts`**:
-- Recebe os dados da procura via POST
-- Monta a mensagem formatada:
+A mensagem será montada extraindo do `form_data`:
+- **Interesse**: intention (Comprar/Vender/Alugar/Construir)
+- **Dados relevantes**: cidade, UF, tipo de imóvel, finalidade, valor, quartos, etc. — sem nome nem telefone do lead
+
+Formato:
 ```
-Nova Procura Cadastrada! 🚀
+🚀 Novo lead na sua região!
 
-Estado: {state}
-Cidade: {city}
-Operação: {operation}
-Tipo: {type}
-Zona: {zone}
-Bairro/Condomínio: {neighborhood}
-Valor Máximo: {valueMax}
+Interesse: Comprar um imóvel
 
-Há um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.leadbay.com.br/property-searches
+São Paulo - SP
+Residencial - Apartamento
+3 quarto(s)
+Moradia
+
+Seja rápido! Leads recentes têm maior taxa de conversão.
+
+Clique abaixo para entrar em contato agora:
+
+👉 https://www.leadbay.com.br/leads
 ```
-- Envia via Mega API para o grupo `120363425145687461@g.us` usando o mesmo endpoint de texto (`/rest/sendMessage/megacode-Mj46Nd4U5tP/text`)
-- Usa `MEGA_API_TOKEN` (já configurado)
 
-## 2. Remover opção "Chamar no WhatsApp" do modal de oferta
+Os campos XXXXX serão preenchidos com: cidade/UF, tipo de imóvel, subtipo, quartos, finalidade, valor — o que estiver disponível no `form_data`. Campos ausentes são omitidos.
 
-**`src/pages/PropertySearches.tsx`** (linhas 898-916):
-- Remover o botão "Chamar no WhatsApp" e o divisor "ou"
-- Manter apenas o campo de link + botão "Enviar Link"
-- Remover a função `handleWhatsAppOffer` (não será mais usada)
+## Detalhes técnicos
 
-## 3. Incluir nome e telefone do corretor na notificação de oferta WhatsApp
-
-**`supabase/functions/notify-offer-whatsapp/index.ts`**:
-- Adicionar `offerUserPhone` ao schema (recebido do frontend)
-- Incluir na mensagem enviada ao dono da procura: nome e telefone do corretor que enviou a oferta
-
-**`src/pages/PropertySearches.tsx`** (`handleSendLink`):
-- Buscar também o `phone` do perfil do usuário logado
-- Enviar `offerUserPhone` junto no body da chamada a `notify-offer-whatsapp`
-
----
-
-## Arquivos modificados
-1. `src/pages/NewPropertySearch.tsx` — chamar edge function de grupo após criar procura
-2. `supabase/functions/notify-group-new-search/index.ts` — **novo** — envia mensagem no grupo WhatsApp
-3. `src/pages/PropertySearches.tsx` — remover botão WhatsApp do modal, enviar phone do corretor
-4. `supabase/functions/notify-offer-whatsapp/index.ts` — incluir nome/telefone do corretor na mensagem
+- Usa `MEGA_API_TOKEN` (já configurado) e o mesmo endpoint de texto da Mega API
+- Fire-and-forget (não bloqueia a resposta do webhook)
+- Mapa de labels para traduzir intention: `BUY→Comprar`, `SELL→Vender`, `RENT→Alugar`, `BUILD→Construir`
+- Extrai dados do flow correspondente (`formData.buy`, `.sell`, `.rent`, `.build`)
+- Redeploy da function após edição
 
