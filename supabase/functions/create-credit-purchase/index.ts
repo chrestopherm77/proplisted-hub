@@ -75,7 +75,7 @@ serve(async (req) => {
         quantity: 1,
       }],
       callback: {
-        successUrl: `${FRONTEND_URL}/checkout-success?type=credits`,
+        successUrl: `${FRONTEND_URL}/checkout-success?type=credits&orderId=${orderId}`,
         errorUrl: `${FRONTEND_URL}/checkout-error`,
         expiredUrl: `${FRONTEND_URL}/checkout-expired`,
         cancelUrl: `${FRONTEND_URL}/checkout-error`,
