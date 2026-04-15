@@ -555,9 +555,20 @@ export default function Leads() {
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={applyFilters}>Filtrar</Button>
-            <Button variant="outline" onClick={clearFilters}>Limpar</Button>
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={saveAlert} 
+              disabled={savingAlert}
+              className="gap-2"
+            >
+              {savingAlert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar Alerta
+            </Button>
+            <div className="flex gap-2">
+              <Button onClick={applyFilters}>Filtrar</Button>
+              <Button variant="outline" onClick={clearFilters}>Limpar</Button>
+            </div>
           </div>
         </div>
 
