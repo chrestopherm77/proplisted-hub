@@ -207,7 +207,57 @@ export default function Leads() {
     fetchCart();
     fetchPurchases();
     fetchCreditBalance();
+    fetchAlerts();
   }, [user, authLoading]);
+
+  const fetchAlerts = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('lead_alerts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    setAlerts(data || []);
+  };
+
+  const saveAlert = async () => {
+    if (!user) return;
+    if (tempUF === 'all' || tempCity === 'all') {
+      toast({ title: 'Estado e Cidade são obrigatórios para salvar um alerta', variant: 'destructive' });
+      return;
+    }
+    setSavingAlert(true);
+    try {
+      const filters: Record<string, string> = { state: tempUF, city: tempCity };
+      if (tempBairro !== 'all') filters.bairro = tempBairro;
+      if (tempObjective !== 'all') filters.objective = tempObjective;
+      if (tempValueRange !== 'all') filters.valueRange = tempValueRange;
+
+      const { error } = await supabase.from('lead_alerts').insert({
+        user_id: user.id,
+        filters,
+      });
+      if (error) throw error;
+      toast({ title: '✅ Alerta salvo com sucesso!' });
+      fetchAlerts();
+    } catch (error: any) {
+      toast({ title: 'Erro ao salvar alerta', description: error.message, variant: 'destructive' });
+    } finally {
+      setSavingAlert(false);
+    }
+  };
+
+  const deleteAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase.from('lead_alerts').delete().eq('id', alertId);
+      if (error) throw error;
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+      toast({ title: 'Alerta removido' });
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    }
+  };
 
   const fetchCreditBalance = async () => {
     if (!user) return;
