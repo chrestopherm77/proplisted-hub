@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -8,24 +7,23 @@ const corsHeaders = {
 };
 
 const BodySchema = z.object({
-  searchId: z.string().uuid(),
-  offerUserName: z.string().min(1).max(300),
-  offerUserPhone: z.string().max(30).optional(),
-  offerLink: z.string().max(2000).optional(),
+  state: z.string().optional(),
+  city: z.string().min(1),
+  operationType: z.string().min(1),
+  propertyType: z.string().min(1),
+  zone: z.string().optional(),
+  neighborhood: z.string().optional(),
+  valueMax: z.string().optional(),
 });
 
-/**
- * Normaliza telefone brasileiro para formato WhatsApp (12 dígitos):
- * 55 + DDD(2) + número(8)
- */
-function normalizeWhatsAppPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  const withCC = digits.startsWith('55') ? digits : `55${digits}`;
-  if (withCC.length === 13 && withCC[4] === '9') {
-    return withCC.slice(0, 4) + withCC.slice(5);
-  }
-  return withCC;
-}
+const typeLabels: Record<string, string> = {
+  CASA: 'Casa', APARTAMENTO: 'Apartamento', SALA_COMERCIAL: 'Sala Comercial',
+  LOTE: 'Lote', RURAL: 'Rural', PREDIO_COMERCIAL: 'Prédio Comercial',
+};
+
+const opLabels: Record<string, string> = {
+  VENDA: 'Venda', COMPRA: 'Compra', ALUGUEL: 'Aluguel',
+};
 
 async function sendMegaMessage(megaUrl: string, token: string, body: unknown, attempt: number): Promise<boolean> {
   try {
@@ -68,53 +66,7 @@ serve(async (req) => {
       });
     }
 
-    const { searchId, offerUserName, offerUserPhone, offerLink } = parsed.data;
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const { data: search, error: searchErr } = await supabase
-      .from("property_searches")
-      .select("user_id, property_type, city, title")
-      .eq("id", searchId)
-      .single();
-
-    if (searchErr || !search) {
-      return new Response(JSON.stringify({ error: "Procura não encontrada" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("phone, name")
-      .eq("id", search.user_id)
-      .single();
-
-    if (!profile?.phone) {
-      return new Response(JSON.stringify({ error: "Telefone do proprietário não encontrado" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const typeLabels: Record<string, string> = {
-      CASA: 'Casa', APARTAMENTO: 'Apartamento', SALA_COMERCIAL: 'Sala Comercial',
-      LOTE: 'Lote', RURAL: 'Rural', PREDIO_COMERCIAL: 'Prédio Comercial',
-    };
-
-    const typeName = typeLabels[search.property_type] ?? search.property_type;
-    let message = `*🏠 Nova Oferta Recebida!*\n\nOlá${profile.name ? `, ${profile.name}` : ''}! O corretor *${offerUserName}*`;
-    if (offerUserPhone) {
-      message += ` (📞 ${offerUserPhone})`;
-    }
-    message += ` enviou uma oferta na sua procura de *${typeName}* em *${search.city}*.`;
-
-    if (offerLink) {
-      message += `\n\n🔗 Link do anúncio: ${offerLink}`;
-    }
-
-    message += `\n\nAcesse o Mural de Demandas para ver mais detalhes.`;
+    const { state, city, operationType, propertyType, zone, neighborhood, valueMax } = parsed.data;
 
     const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
     if (!MEGA_API_TOKEN) {
@@ -124,17 +76,29 @@ serve(async (req) => {
       });
     }
 
-    const fullPhone = normalizeWhatsAppPhone(profile.phone);
-    console.log(`Offer notification: phone ${profile.phone} -> ${fullPhone}`);
+    const typeName = typeLabels[propertyType] ?? propertyType;
+    const opName = opLabels[operationType] ?? operationType;
 
+    let message = `*Nova Procura Cadastrada! 🚀*\n\n`;
+    message += `*Estado:* ${state || 'Não informado'}\n`;
+    message += `*Cidade:* ${city}\n`;
+    message += `*Operação:* ${opName}\n`;
+    message += `*Tipo:* ${typeName}\n`;
+    message += `*Zona:* ${zone || 'Não informado'}\n`;
+    message += `*Bairro/Condomínio:* ${neighborhood || 'Não informado'}\n`;
+    message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
+    message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.leadbay.com.br/property-searches`;
+
+    const GROUP_ID = "120363425145687461@g.us";
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
     const megaBody = {
       messageData: {
-        to: `${fullPhone}@s.whatsapp.net`,
+        to: GROUP_ID,
         text: message,
       },
     };
 
+    console.log(`Sending group notification for new search in ${city}`);
     const sent = await sendMegaMessage(megaUrl, MEGA_API_TOKEN, megaBody, 1);
 
     return new Response(JSON.stringify({ success: true, whatsapp_sent: sent }), {

@@ -340,8 +340,9 @@ const PropertySearches = () => {
     if (!offerModalSearch || !user || !offerLink.trim()) return;
     setSendingLink(true);
 
-    const { data: myProfile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+    const { data: myProfile } = await supabase.from('profiles').select('name, phone').eq('id', user.id).single();
     const myName = myProfile?.name ?? 'Corretor';
+    const myPhone = myProfile?.phone ?? '';
 
     await supabase.rpc('increment_offer_count', { p_search_id: offerModalSearch.id });
 
@@ -356,6 +357,7 @@ const PropertySearches = () => {
         body: {
           searchId: offerModalSearch.id,
           offerUserName: myName,
+          offerUserPhone: myPhone,
           offerLink: offerLink.trim(),
         },
       });
@@ -895,26 +897,6 @@ const PropertySearches = () => {
               </DialogHeader>
 
               <div className="space-y-4 mt-2">
-                {/* WhatsApp option */}
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  disabled={sendingOffer}
-                  onClick={() => handleWhatsAppOffer(offerModalSearch)}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  {sendingOffer ? 'Abrindo...' : 'Chamar no WhatsApp'}
-                </Button>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">ou</span>
-                  </div>
-                </div>
-
                 {/* Link option */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Link do seu anúncio</label>
