@@ -229,6 +229,10 @@ export function LeadsManagement() {
     return `${Math.round(price)} créditos`;
   };
 
+  const formatBRL = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
+  };
+
   const filteredLeads = useMemo(() => {
     if (periodFilter === 'all') return leads;
     const days = parseInt(periodFilter);
@@ -422,7 +426,7 @@ export function LeadsManagement() {
             <CardContent>
               <p className="text-xs md:text-sm text-muted-foreground mb-3">{lead.description}</p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <span className="text-base md:text-lg font-bold text-primary">{formatCredits(lead.price)}</span>
+                <span className="text-base md:text-lg font-bold text-primary">{formatCredits(lead.price)} <span className="text-sm font-normal text-muted-foreground">({formatBRL(lead.price)})</span></span>
                 <div className="flex gap-2 w-full sm:w-auto">
                   {!lead.whatsapp_confirmed && !lead.is_active && (
                     <Button
