@@ -112,6 +112,113 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_packages: {
+        Row: {
+          created_at: string | null
+          credits: number
+          id: string
+          is_active: boolean | null
+          lead_count: number
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string | null
+          credits: number
+          id?: string
+          is_active?: boolean | null
+          lead_count: number
+          name: string
+          price: number
+        }
+        Update: {
+          created_at?: string | null
+          credits?: number
+          id?: string
+          is_active?: boolean | null
+          lead_count?: number
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      credit_purchases: {
+        Row: {
+          amount: number
+          asaas_checkout_id: string | null
+          asaas_payment_id: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          credits: number
+          id: string
+          package_id: string | null
+          payment_method: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asaas_checkout_id?: string | null
+          asaas_payment_id?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          credits: number
+          id?: string
+          package_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asaas_checkout_id?: string | null
+          asaas_payment_id?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          credits?: number
+          id?: string
+          package_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "credit_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          created_at: string | null
+          credits_used: number
+          id: string
+          lead_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_used: number
+          id?: string
+          lead_id?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_used?: number
+          id?: string
+          lead_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_verification_codes: {
         Row: {
           code: string
@@ -642,6 +749,7 @@ export type Database = {
           creci_pj: string | null
           creci_pj_uf: string | null
           creci_uf: string | null
+          credit_balance: number
           email: string | null
           id: string
           is_active: boolean
@@ -679,6 +787,7 @@ export type Database = {
           creci_pj?: string | null
           creci_pj_uf?: string | null
           creci_uf?: string | null
+          credit_balance?: number
           email?: string | null
           id: string
           is_active?: boolean
@@ -716,6 +825,7 @@ export type Database = {
           creci_pj?: string | null
           creci_pj_uf?: string | null
           creci_uf?: string | null
+          credit_balance?: number
           email?: string | null
           id?: string
           is_active?: boolean
@@ -1098,6 +1208,10 @@ export type Database = {
           max_purchases: number
           new_count: number
         }[]
+      }
+      purchase_lead_with_credits: {
+        Args: { p_lead_id: string; p_user_id: string }
+        Returns: Json
       }
       redeem_voucher_atomic: {
         Args: {
