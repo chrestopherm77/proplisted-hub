@@ -459,11 +459,22 @@ export default function Leads() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Explore e compre leads qualificados para seu negócio imobiliário
-          </p>
+        <div className="mb-6 md:mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Explore e compre leads qualificados para seu negócio imobiliário
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setShowAlerts(true)} className="relative">
+            <Bell className="h-4 w-4 mr-2" />
+            Meus Alertas
+            {alerts.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {alerts.length}
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Credit Balance & Buy Credits CTA */}
