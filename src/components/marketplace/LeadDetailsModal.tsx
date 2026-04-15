@@ -1,10 +1,10 @@
 import React from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShoppingCart, X } from "lucide-react";
-import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
+import { Coins, Loader2, X } from "lucide-react";
+import { formatFormDataToSections } from "@/lib/formatFormData";
 
 interface Lead {
   id: string;
@@ -27,35 +27,22 @@ interface LeadDetailsModalProps {
   isSoldOut: boolean;
   isPurchased?: boolean;
   isAdmin?: boolean;
+  creditBalance?: number;
+  buyingLeadId?: string | null;
+  onBuyWithCredits?: (leadId: string) => void;
   onAddToCart: () => void;
   onRemoveFromCart: () => void;
   formatPrice: (price: number) => string;
 }
 
-// Normalize form_data that might be string or object
 function normalizeFormData(raw: any): any {
   if (!raw) return null;
-  
-  // If it's a string, try to parse it
-  if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-  
-  // If it's already an object, return it
-  if (typeof raw === 'object') {
-    return raw;
-  }
-  
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return null; } }
+  if (typeof raw === 'object') return raw;
   return null;
 }
 
-// Infer intention from form_data if not explicit
 function inferIntention(formData: any, description: string): string {
-  // Try explicit intention field first
   if (formData?.intention) {
     const raw = String(formData.intention).trim().toUpperCase();
     const map: Record<string, string> = {
@@ -66,14 +53,10 @@ function inferIntention(formData: any, description: string): string {
     };
     if (map[raw]) return map[raw];
   }
-  
-  // Infer from existing flow keys
   if (formData?.sell && Object.keys(formData.sell).length > 0) return 'SELL';
   if (formData?.buy && Object.keys(formData.buy).length > 0) return 'BUY';
   if (formData?.build && Object.keys(formData.build).length > 0) return 'BUILD';
   if (formData?.rent && Object.keys(formData.rent).length > 0) return 'RENT';
-  
-  // Fallback to parsing description
   return parseIntentionFromDescription(description);
 }
 
@@ -85,19 +68,21 @@ export function LeadDetailsModal({
   isSoldOut,
   isPurchased = false,
   isAdmin = false,
+  creditBalance = 0,
+  buyingLeadId = null,
+  onBuyWithCredits,
   onAddToCart,
   onRemoveFromCart,
   formatPrice,
 }: LeadDetailsModalProps) {
   if (!lead) return null;
 
-  // Normalize and process form_data
   const normalizedFormData = normalizeFormData(lead.form_data);
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
   const intention = inferIntention(normalizedFormData, lead.description);
   const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
-
-
+  const leadCredits = Math.round(lead.price);
+  const canAfford = creditBalance >= leadCredits;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,7 +113,6 @@ export function LeadDetailsModal({
             </Badge>
           </div>
           
-          {/* Summary from description */}
           <div className="pt-1 text-muted-foreground text-base space-y-1">
             {parseDescriptionToDisplay(lead.description)}
           </div>
@@ -144,7 +128,6 @@ export function LeadDetailsModal({
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
                       </div>
-                      
                       {sections.map((section, idx) => (
                         <div key={idx} className="space-y-2">
                           <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -163,20 +146,15 @@ export function LeadDetailsModal({
                       ))}
                     </>
                   )}
-                  
                   {sections.length === 0 && (
                     <div className="py-3">
-                      <p className="text-base text-muted-foreground">
-                        Nenhuma informação do formulário foi fornecida.
-                      </p>
+                      <p className="text-base text-muted-foreground">Nenhuma informação do formulário foi fornecida.</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="py-3">
-                  <p className="text-base text-muted-foreground">
-                    Este lead foi criado sem formulário completo. Apenas o resumo está disponível.
-                  </p>
+                  <p className="text-base text-muted-foreground">Este lead foi criado sem formulário completo.</p>
                 </div>
               )}
             </div>
@@ -185,7 +163,11 @@ export function LeadDetailsModal({
 
         <div className="flex-shrink-0 px-6 py-3 border-t flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <p className="text-2xl font-bold text-primary">{formatPrice(lead.price)}</p>
+            <div className="flex items-center gap-1.5">
+              <Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{leadCredits}</p>
+              <span className="text-sm text-muted-foreground">créditos</span>
+            </div>
             <span className="text-sm text-muted-foreground">· {lead.purchase_count} vendidos</span>
           </div>
 
@@ -194,23 +176,24 @@ export function LeadDetailsModal({
               ✓ Já comprado
             </Button>
           ) : isSoldOut ? (
-            <Button disabled variant="secondary" size="lg">
-              Esgotado
-            </Button>
-          ) : isInCart ? (
+            <Button disabled variant="secondary" size="lg">Esgotado</Button>
+          ) : onBuyWithCredits ? (
             <Button
-              onClick={onRemoveFromCart}
-              variant="outline"
-              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => onBuyWithCredits(lead.id)}
+              disabled={buyingLeadId === lead.id}
               size="lg"
+              className={canAfford ? '' : 'bg-yellow-500 hover:bg-yellow-600 text-black'}
             >
-              <X className="mr-2 h-5 w-5" />
-              Remover
+              {buyingLeadId === lead.id ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Coins className="h-4 w-4 mr-2" />
+              )}
+              {canAfford ? 'Comprar com Créditos' : 'Comprar Créditos'}
             </Button>
           ) : (
             <Button onClick={onAddToCart} size="lg">
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Adicionar ao Carrinho
+              Comprar
             </Button>
           )}
         </div>
@@ -230,11 +213,9 @@ function parseIntentionFromDescription(description: string): string {
 
 function parseDescriptionToDisplay(description: string) {
   const lines = description.split('\n').map(line => line.trim()).filter(Boolean);
-  
   return lines.map((line, idx) => {
     const [label, ...valueParts] = line.split(':');
     const value = valueParts.join(':').trim();
-    
     if (value) {
       return (
         <p key={idx}>

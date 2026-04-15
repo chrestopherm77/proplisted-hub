@@ -100,6 +100,9 @@ serve(async (req) => {
       console.error('Error storing webhook event:', webhookError);
     }
 
+    // Determine if this is a credit purchase based on externalReference prefix
+    const isCreditPurchase = externalReference?.startsWith('credits_');
+
     // Process checkout events
     if (event === 'CHECKOUT_CREATED') {
       console.log('Checkout created event received');
@@ -107,23 +110,39 @@ serve(async (req) => {
 
     if (event === 'CHECKOUT_PAID' || event === 'CHECKOUT_CONFIRMED') {
       console.log('Checkout payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await processCreditPaymentConfirmation(supabaseClient, externalReference, checkoutSession, eventId);
+      } else {
+        await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference, checkoutSession);
+      }
     }
 
     if (event === 'CHECKOUT_EXPIRED') {
       console.log('Checkout expired');
-      await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await updateCreditPurchaseStatus(supabaseClient, externalReference, checkoutSession, 'EXPIRED');
+      } else {
+        await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference, checkoutSession);
+      }
     }
 
     // Handle direct payment events
     if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       console.log('Direct payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await processCreditPaymentConfirmation(supabaseClient, externalReference, checkoutSession, eventId);
+      } else {
+        await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
+      }
     }
 
     if (event === 'PAYMENT_OVERDUE') {
       console.log('Payment overdue');
-      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await updateCreditPurchaseStatus(supabaseClient, externalReference, checkoutSession, 'OVERDUE');
+      } else {
+        await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
+      }
     }
 
     console.log('=== Webhook processed successfully ===');
@@ -409,4 +428,105 @@ async function updatePurchaseStatus(
   } else {
     console.log('✅ Updated purchases by payment ID');
   }
+}
+
+// Process credit purchase payment confirmation
+async function processCreditPaymentConfirmation(
+  supabaseClient: any,
+  externalReference: string,
+  checkoutSession: string | null,
+  eventId: string
+) {
+  console.log('Processing CREDIT payment confirmation for:', externalReference);
+
+  // Find credit purchase
+  let creditPurchase = null;
+
+  const { data: byRef } = await supabaseClient
+    .from('credit_purchases')
+    .select('*')
+    .eq('asaas_payment_id', externalReference)
+    .single();
+
+  creditPurchase = byRef;
+
+  if (!creditPurchase && checkoutSession) {
+    const { data: bySession } = await supabaseClient
+      .from('credit_purchases')
+      .select('*')
+      .eq('asaas_checkout_id', checkoutSession)
+      .single();
+    creditPurchase = bySession;
+  }
+
+  if (!creditPurchase) {
+    console.log('⚠️ No credit purchase found for:', externalReference);
+    return;
+  }
+
+  if (creditPurchase.status === 'PAID') {
+    console.log('⏭️ Credit purchase already PAID, skipping');
+    return;
+  }
+
+  // Update credit purchase status
+  await supabaseClient
+    .from('credit_purchases')
+    .update({ status: 'PAID', confirmed_at: new Date().toISOString() })
+    .eq('id', creditPurchase.id);
+
+  // Add credits to user profile
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('credit_balance')
+    .eq('id', creditPurchase.user_id)
+    .single();
+
+  const newBalance = (profile?.credit_balance || 0) + creditPurchase.credits;
+
+  await supabaseClient
+    .from('profiles')
+    .update({ credit_balance: newBalance })
+    .eq('id', creditPurchase.user_id);
+
+  // Record transaction
+  await supabaseClient
+    .from('credit_transactions')
+    .insert({
+      user_id: creditPurchase.user_id,
+      credits_used: -creditPurchase.credits, // negative = credits added
+      type: 'CREDIT_PURCHASE',
+    });
+
+  // Mark webhook event as processed
+  await supabaseClient
+    .from('asaas_webhook_events')
+    .update({ processed: true, processed_at: new Date().toISOString() })
+    .eq('asaas_event_id', eventId);
+
+  console.log(`✅ Credited ${creditPurchase.credits} credits to user ${creditPurchase.user_id}. New balance: ${newBalance}`);
+}
+
+// Update credit purchase status (for expired/overdue)
+async function updateCreditPurchaseStatus(
+  supabaseClient: any,
+  externalReference: string,
+  checkoutSession: string | null,
+  status: string
+) {
+  console.log(`Updating credit purchase status to ${status} for:`, externalReference);
+
+  if (externalReference) {
+    await supabaseClient
+      .from('credit_purchases')
+      .update({ status })
+      .eq('asaas_payment_id', externalReference);
+  } else if (checkoutSession) {
+    await supabaseClient
+      .from('credit_purchases')
+      .update({ status })
+      .eq('asaas_checkout_id', checkoutSession);
+  }
+
+  console.log('✅ Credit purchase status updated to', status);
 }

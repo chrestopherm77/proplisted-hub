@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShoppingCart, Filter } from 'lucide-react';
+import { Coins, Filter, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
@@ -62,19 +62,12 @@ const objectiveLabels: Record<string, string> = {
 function normalizeFormData(raw: any): any {
   if (!raw) return null;
   if (typeof raw === 'string') {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    try { return JSON.parse(raw); } catch { return null; }
   }
-  if (typeof raw === 'object') {
-    return raw;
-  }
+  if (typeof raw === 'object') return raw;
   return null;
 }
 
-// Extract UF from form_data (direct fields first, then region fallback)
 function extractUFFromFormData(formData: any): string {
   if (!formData) return '';
   const intention = formData?.intention;
@@ -93,22 +86,17 @@ function extractUF(region: string | undefined): string {
   return match ? match[1] : '';
 }
 
-// Extract city from form_data (direct fields first, then region fallback)
 function extractCityFromFormData(formData: any): string {
   if (!formData) return '';
   const intention = formData?.intention;
   const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
-  if (intentionData?.city) {
-    const city = intentionData.city.trim();
-    return city;
-  }
+  if (intentionData?.city) return intentionData.city.trim();
   const region = formData?.region || '';
   return extractCityFromRegion(region);
 }
 
 function extractCityFromRegion(region: string | undefined): string {
   if (!region) return '';
-  // Format: "indiferente - Ribeirão Preto/SP"
   const dashIndex = region.lastIndexOf(' - ');
   if (dashIndex >= 0) {
     const afterDash = region.substring(dashIndex + 3);
@@ -117,13 +105,10 @@ function extractCityFromRegion(region: string | undefined): string {
     if (city) return city;
   }
   const slashIdx = region.indexOf('/');
-  if (slashIdx > 0) {
-    return region.substring(0, slashIdx).trim();
-  }
+  if (slashIdx > 0) return region.substring(0, slashIdx).trim();
   return '';
 }
 
-// Extract neighborhood from form_data based on intention
 function extractBairro(formData: any): string {
   if (!formData) return '';
   const intention = formData?.intention;
@@ -131,33 +116,20 @@ function extractBairro(formData: any): string {
   return intentionData?.neighborhood || '';
 }
 
-// Extract objective from form_data
 function extractObjective(formData: any): string {
   return formData?.intention || '';
 }
 
-// Extract value and convert to number
 function extractValue(formData: any): number | null {
   const intention = formData?.intention;
   let valueStr = '';
-  
   switch(intention) {
-    case 'SELL':
-      valueStr = formData?.sell?.expectedValue;
-      break;
-    case 'BUY':
-      valueStr = formData?.buy?.budgetMax || formData?.buy?.budget;
-      break;
-    case 'BUILD':
-      valueStr = formData?.build?.budget;
-      break;
-    case 'RENT':
-      valueStr = formData?.rent?.maxRent;
-      break;
+    case 'SELL': valueStr = formData?.sell?.expectedValue; break;
+    case 'BUY': valueStr = formData?.buy?.budgetMax || formData?.buy?.budget; break;
+    case 'BUILD': valueStr = formData?.build?.budget; break;
+    case 'RENT': valueStr = formData?.rent?.maxRent; break;
   }
-  
   if (!valueStr) return null;
-  // Parse "R$ 250.000,00" → 250000
   const numbers = String(valueStr).replace(/\D/g, '');
   return numbers ? parseInt(numbers, 10) / 100 : null;
 }
@@ -167,7 +139,6 @@ const parseDescription = (description: string): ParsedDescription => {
   let interest = '';
   let region = '';
   let characteristics = '';
-
   for (const line of lines) {
     const lowerLine = line.toLowerCase();
     if (lowerLine.startsWith('interesse:') || lowerLine.startsWith('interest:')) {
@@ -178,12 +149,7 @@ const parseDescription = (description: string): ParsedDescription => {
       characteristics = line.split(':').slice(1).join(':').trim();
     }
   }
-
-  // If no structured format found, use the whole description as characteristics
-  if (!interest && !region && !characteristics) {
-    characteristics = description;
-  }
-
+  if (!interest && !region && !characteristics) characteristics = description;
   return { interest, region, characteristics };
 };
 
@@ -194,8 +160,10 @@ export default function Leads() {
   const [purchasedLeadIds, setPurchasedLeadIds] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [buyingLeadId, setBuyingLeadId] = useState<string | null>(null);
   
-  // Temporary filter states (before clicking "Filtrar")
+  // Temporary filter states
   const [tempUF, setTempUF] = useState<string>('all');
   const [tempCity, setTempCity] = useState<string>('all');
   const [tempBairro, setTempBairro] = useState<string>('all');
@@ -214,7 +182,6 @@ export default function Leads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Handle deep linking from email notifications
   useEffect(() => {
     const leadIdFromUrl = searchParams.get('leadId');
     if (leadIdFromUrl && leads.length > 0) {
@@ -222,7 +189,6 @@ export default function Leads() {
       if (targetLead) {
         setSelectedLead(targetLead);
         setDialogOpen(true);
-        // Clear the URL parameter after opening the modal
         setSearchParams({});
       }
     }
@@ -230,14 +196,22 @@ export default function Leads() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
+    if (!user) { navigate('/auth'); return; }
     fetchLeads();
     fetchCart();
     fetchPurchases();
+    fetchCreditBalance();
   }, [user, authLoading]);
+
+  const fetchCreditBalance = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('credit_balance')
+      .eq('id', user.id)
+      .single();
+    if (data) setCreditBalance(data.credit_balance || 0);
+  };
 
   const fetchLeads = async () => {
     try {
@@ -247,16 +221,11 @@ export default function Leads() {
         .or('is_active.eq.true,is_exhausted.eq.true')
         .order('is_promotion', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: true });
-
       if (error) throw error;
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
-      toast({
-        title: 'Erro ao carregar leads',
-        description: 'Não foi possível carregar os leads disponíveis',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro ao carregar leads', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -264,57 +233,74 @@ export default function Leads() {
 
   const fetchPurchases = async () => {
     if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('purchases')
-        .select('lead_id')
-        .eq('user_id', user.id)
-        .eq('status', 'PAID');
-      if (!error && data) {
-        setPurchasedLeadIds(data.map(p => p.lead_id));
-      }
-    } catch (error) {
-      console.error('Error fetching purchases:', error);
-    }
+    const { data, error } = await supabase
+      .from('purchases')
+      .select('lead_id')
+      .eq('user_id', user.id)
+      .eq('status', 'PAID');
+    if (!error && data) setPurchasedLeadIds(data.map(p => p.lead_id));
   };
 
   const fetchCart = async () => {
     if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('shopping_cart')
-        .select('lead_id')
-        .eq('user_id', user.id);
+    const { data, error } = await supabase
+      .from('shopping_cart')
+      .select('lead_id')
+      .eq('user_id', user.id);
+    if (!error) setCartItems(data?.map((item) => item.lead_id) || []);
+  };
 
+  const buyWithCredits = async (leadId: string) => {
+    if (!user) return;
+    setBuyingLeadId(leadId);
+    try {
+      const { data, error } = await supabase.functions.invoke('purchase-lead-with-credits', {
+        body: { leadId },
+      });
       if (error) throw error;
-      setCartItems(data?.map((item) => item.lead_id) || []);
-    } catch (error) {
-      console.error('Error fetching cart:', error);
+      if (data?.error) {
+        if (data.needed) {
+          toast({
+            title: 'Créditos insuficientes',
+            description: `Você precisa de ${data.needed} créditos. Saldo: ${data.balance}`,
+            variant: 'destructive',
+          });
+          navigate('/comprar-creditos');
+          return;
+        }
+        toast({ title: data.error, variant: 'destructive' });
+        return;
+      }
+      toast({ title: '✅ Lead comprado com sucesso!' });
+      setCreditBalance(data.new_balance);
+      setPurchasedLeadIds(prev => [...prev, leadId]);
+      setCartItems(prev => prev.filter(id => id !== leadId));
+      fetchLeads();
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } finally {
+      setBuyingLeadId(null);
     }
   };
 
-  // Extract unique filter options from leads
+  // Extract unique filter options
   const filterOptions = useMemo(() => {
     const ufs = new Set<string>();
     const cities = new Set<string>();
     const bairros = new Set<string>();
     const objectives = new Set<string>();
-
     leads.forEach(lead => {
       const formData = normalizeFormData(lead.form_data);
-      
       const uf = extractUFFromFormData(formData);
       const city = extractCityFromFormData(formData);
       const bairro = extractBairro(formData);
       const objective = extractObjective(formData);
-      
       if (uf) ufs.add(uf);
       if (city) cities.add(city);
       if (bairro) bairros.add(bairro);
       if (objective) objectives.add(objective);
     });
-
     return {
       uniqueUFs: Array.from(ufs).sort(),
       uniqueCities: Array.from(cities).sort(),
@@ -323,28 +309,18 @@ export default function Leads() {
     };
   }, [leads]);
 
-  // Get cities filtered by selected UF
   const filteredCities = useMemo(() => {
-    if (tempUF === 'all') {
-      return filterOptions.uniqueCities;
-    }
-    
+    if (tempUF === 'all') return filterOptions.uniqueCities;
     const citiesForUF = new Set<string>();
     leads.forEach(lead => {
       const formData = normalizeFormData(lead.form_data);
-      
       const uf = extractUFFromFormData(formData);
       const city = extractCityFromFormData(formData);
-      
-      if (uf === tempUF && city) {
-        citiesForUF.add(city);
-      }
+      if (uf === tempUF && city) citiesForUF.add(city);
     });
-    
     return Array.from(citiesForUF).sort();
   }, [leads, tempUF, filterOptions.uniqueCities]);
 
-  // Apply filters when button is clicked
   const applyFilters = () => {
     setFilterUF(tempUF);
     setFilterCity(tempCity);
@@ -353,137 +329,64 @@ export default function Leads() {
     setFilterValueRange(tempValueRange);
   };
 
-  // Clear all filters
   const clearFilters = () => {
-    setTempUF('all');
-    setTempCity('all');
-    setTempBairro('all');
-    setTempObjective('all');
-    setTempValueRange('all');
-    setFilterUF('all');
-    setFilterCity('all');
-    setFilterBairro('all');
-    setFilterObjective('all');
-    setFilterValueRange('all');
+    setTempUF('all'); setTempCity('all'); setTempBairro('all');
+    setTempObjective('all'); setTempValueRange('all');
+    setFilterUF('all'); setFilterCity('all'); setFilterBairro('all');
+    setFilterObjective('all'); setFilterValueRange('all');
   };
 
-  // Reset city when UF changes
-  const handleUFChange = (value: string) => {
-    setTempUF(value);
-    setTempCity('all');
-  };
+  const handleUFChange = (value: string) => { setTempUF(value); setTempCity('all'); };
+  const handleObjectiveChange = (value: string) => { setTempObjective(value); setTempValueRange('all'); };
 
-  // Reset value range when objective changes
-  const handleObjectiveChange = (value: string) => {
-    setTempObjective(value);
-    setTempValueRange('all');
-  };
-
-  // Filter leads based on applied filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const formData = normalizeFormData(lead.form_data);
-      
       const leadUF = extractUFFromFormData(formData);
       const leadCity = extractCityFromFormData(formData);
       const leadBairro = extractBairro(formData);
       const leadObjective = extractObjective(formData);
       const leadValue = extractValue(formData);
-      
-      // Filter by UF
-      if (filterUF !== 'all' && leadUF !== filterUF) {
-        return false;
-      }
-      
-      // Filter by City
-      if (filterCity !== 'all' && leadCity !== filterCity) {
-        return false;
-      }
-      
-      // Filter by Bairro
-      if (filterBairro !== 'all' && leadBairro !== filterBairro) {
-        return false;
-      }
-      
-      // Filter by Objective
-      if (filterObjective !== 'all' && leadObjective !== filterObjective) {
-        return false;
-      }
-      
-      // Filter by Value Range
+      if (filterUF !== 'all' && leadUF !== filterUF) return false;
+      if (filterCity !== 'all' && leadCity !== filterCity) return false;
+      if (filterBairro !== 'all' && leadBairro !== filterBairro) return false;
+      if (filterObjective !== 'all' && leadObjective !== filterObjective) return false;
       if (filterValueRange !== 'all' && leadValue !== null) {
         const ranges = leadObjective === 'RENT' ? rentValueRanges : valueRanges;
         const range = ranges.find(r => r.value === filterValueRange);
-        if (range && (leadValue < range.min || leadValue > range.max)) {
-          return false;
-        }
+        if (range && (leadValue < range.min || leadValue > range.max)) return false;
       }
-      
       return true;
     });
   }, [leads, filterUF, filterCity, filterBairro, filterObjective, filterValueRange]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
-
     try {
-      const { error } = await supabase
-        .from('shopping_cart')
-        .insert({ user_id: user.id, lead_id: leadId });
-
+      const { error } = await supabase.from('shopping_cart').insert({ user_id: user.id, lead_id: leadId });
       if (error) throw error;
-
       setCartItems([...cartItems, leadId]);
-      toast({
-        title: 'Adicionado ao carrinho!',
-        description: 'Lead adicionado com sucesso',
-      });
+      toast({ title: 'Adicionado ao carrinho!' });
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível adicionar ao carrinho',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
   };
 
   const removeFromCart = async (leadId: string) => {
     if (!user) return;
-
     try {
-      const { error } = await supabase
-        .from('shopping_cart')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('lead_id', leadId);
-
+      const { error } = await supabase.from('shopping_cart').delete().eq('user_id', user.id).eq('lead_id', leadId);
       if (error) throw error;
-
       setCartItems(cartItems.filter(id => id !== leadId));
-      toast({
-        title: 'Removido do carrinho',
-        description: 'Lead removido com sucesso',
-      });
+      toast({ title: 'Removido do carrinho' });
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível remover do carrinho',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
   };
 
-  const openLeadDetails = (lead: Lead) => {
-    setSelectedLead(lead);
-    setDialogOpen(true);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
+  const openLeadDetails = (lead: Lead) => { setSelectedLead(lead); setDialogOpen(true); };
+  
+  const formatCredits = (credits: number) => `${credits.toLocaleString('pt-BR')} créditos`;
 
   const isInCart = (leadId: string) => cartItems.includes(leadId);
   const isSoldOut = (lead: Lead) => lead.purchase_count >= lead.max_purchases || lead.is_exhausted === true;
@@ -507,6 +410,25 @@ export default function Leads() {
           </p>
         </div>
 
+        {/* Credit Balance & Buy Credits CTA */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Coins className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+            <div>
+              <p className="text-sm text-muted-foreground">Seu saldo</p>
+              <p className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{creditBalance.toLocaleString('pt-BR')} créditos</p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => navigate('/comprar-creditos')}
+            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+            size="lg"
+          >
+            <Coins className="h-4 w-4 mr-2" />
+            Compre Créditos
+          </Button>
+        </div>
+
         {/* Filters */}
         <div className="mb-6 p-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
@@ -514,77 +436,50 @@ export default function Leads() {
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {/* UF Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">UF</label>
               <Select value={tempUF} onValueChange={handleUFChange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os estados" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os estados" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os estados</SelectItem>
-                  {filterOptions.uniqueUFs.map(uf => (
-                    <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                  ))}
+                  {filterOptions.uniqueUFs.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            
-            {/* City Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Cidade</label>
               <Select value={tempCity} onValueChange={setTempCity}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todas as cidades" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todas as cidades" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as cidades</SelectItem>
-                  {filteredCities.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
+                  {filteredCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            
-            {/* Bairro Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Bairro</label>
               <Select value={tempBairro} onValueChange={setTempBairro}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os bairros" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os bairros" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os bairros</SelectItem>
-                  {filterOptions.uniqueBairros.map(bairro => (
-                    <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>
-                  ))}
+                  {filterOptions.uniqueBairros.map(bairro => <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            
-            {/* Objective Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Objetivo</label>
               <Select value={tempObjective} onValueChange={handleObjectiveChange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os objetivos" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os objetivos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os objetivos</SelectItem>
-                  {filterOptions.uniqueObjectives.map(obj => (
-                    <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || obj}</SelectItem>
-                  ))}
+                  {filterOptions.uniqueObjectives.map(obj => <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || obj}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            
-            {/* Value Range Filter */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">Valor</label>
               <Select value={tempValueRange} onValueChange={setTempValueRange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos os valores" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os valores" /></SelectTrigger>
                 <SelectContent>
                   {(tempObjective === 'RENT' ? rentValueRanges : valueRanges).map(range => (
                     <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
@@ -593,24 +488,16 @@ export default function Leads() {
               </Select>
             </div>
           </div>
-          
-          {/* Filter Buttons */}
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={applyFilters}>
-              Filtrar
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={clearFilters}
-            >
-              Limpar
-            </Button>
+            <Button onClick={applyFilters}>Filtrar</Button>
+            <Button variant="outline" onClick={clearFilters}>Limpar</Button>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredLeads.map((lead) => {
             const parsed = parseDescription(lead.description);
+            const leadCredits = Math.round(lead.price);
             return (
               <Card 
                 key={lead.id} 
@@ -630,11 +517,6 @@ export default function Leads() {
                     {isPurchased(lead.id) ? (
                       <Badge className="text-xs bg-green-600 hover:bg-green-600 text-white border-transparent">
                         ✓ Já comprado
-                      </Badge>
-                    ) : isInCart(lead.id) ? (
-                      <Badge variant="outline" className="text-xs">
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        No carrinho
                       </Badge>
                     ) : null}
                   </div>
@@ -659,16 +541,38 @@ export default function Leads() {
                   )}
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-primary">{formatPrice(lead.price)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <span className="text-lg font-bold text-yellow-700 dark:text-yellow-300">{leadCredits}</span>
+                        <span className="text-xs text-muted-foreground">créditos</span>
+                      </div>
                       <Badge 
                         variant={isSoldOut(lead) ? 'destructive' : 'secondary'}
                         className="text-xs"
                       >
                         {isSoldOut(lead)
                           ? 'Esgotado'
-                          : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disponíveis`}
+                          : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disp.`}
                       </Badge>
                     </div>
+                    {!isPurchased(lead.id) && !isSoldOut(lead) && (
+                      <Button 
+                        className="w-full mt-2" 
+                        size="sm"
+                        disabled={buyingLeadId === lead.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          buyWithCredits(lead.id);
+                        }}
+                      >
+                        {buyingLeadId === lead.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <Coins className="h-4 w-4 mr-1" />
+                        )}
+                        Comprar
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -685,6 +589,9 @@ export default function Leads() {
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
           isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
           isAdmin={isAdmin === true}
+          creditBalance={creditBalance}
+          buyingLeadId={buyingLeadId}
+          onBuyWithCredits={(leadId) => buyWithCredits(leadId)}
           onAddToCart={() => {
             if (selectedLead) {
               addToCart(selectedLead.id);
@@ -697,7 +604,7 @@ export default function Leads() {
               setDialogOpen(false);
             }
           }}
-          formatPrice={formatPrice}
+          formatPrice={(price) => formatCredits(Math.round(price))}
         />
 
         {filteredLeads.length === 0 && (
