@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, Coins } from 'lucide-react';
+import { CheckCircle, Loader2, Coins, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -18,6 +18,7 @@ export default function CheckoutSuccess() {
   const [confirmed, setConfirmed] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const [pollFailed, setPollFailed] = useState(false);
+  const [checkingManually, setCheckingManually] = useState(false);
   const pollRef = useRef(false);
 
   // Polling for credit purchases
@@ -72,6 +73,34 @@ export default function CheckoutSuccess() {
     return () => { cancelled = true; };
   }, [isCredits, user]);
 
+  // Manual check via edge function fallback
+  const handleManualCheck = async () => {
+    if (!user) return;
+    setCheckingManually(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-credit-status');
+
+      if (error) {
+        console.error('Manual check error:', error);
+        setCheckingManually(false);
+        return;
+      }
+
+      if (data?.status === 'PAID') {
+        setNewBalance(data.balance ?? 0);
+        setConfirmed(true);
+        setPollFailed(false);
+      } else {
+        // Still pending - show message
+        setCheckingManually(false);
+      }
+    } catch (e) {
+      console.error('Manual check error:', e);
+      setCheckingManually(false);
+    }
+  };
+
   // Countdown for redirect (non-credits or after confirmation)
   useEffect(() => {
     if (isCredits && !confirmed) return;
@@ -119,17 +148,33 @@ export default function CheckoutSuccess() {
                 <h1 className="text-2xl font-bold mb-3 text-foreground">
                   Pagamento em processamento
                 </h1>
-                <p className="text-muted-foreground mb-8 leading-relaxed">
+                <p className="text-muted-foreground mb-6 leading-relaxed">
                   Seu pagamento foi recebido mas ainda está sendo processado.<br />
-                  Os créditos serão adicionados automaticamente em breve.
+                  Clique abaixo para verificar o status diretamente.
                 </p>
                 <Button
+                  onClick={handleManualCheck}
+                  disabled={checkingManually}
+                  size="lg"
+                  className="w-full mb-4 text-base font-medium"
+                >
+                  {checkingManually ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verificando...</>
+                  ) : (
+                    <><RefreshCw className="mr-2 h-4 w-4" />Verificar status do pagamento</>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/leads-disponiveis')}
                   size="lg"
                   className="w-full text-base font-medium"
                 >
                   Ir para leads disponíveis
                 </Button>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Os créditos serão adicionados automaticamente assim que o pagamento for confirmado.
+                </p>
               </>
             ) : (
               <>
