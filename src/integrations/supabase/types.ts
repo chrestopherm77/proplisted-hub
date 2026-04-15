@@ -372,6 +372,30 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_alerts: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_submissions: {
         Row: {
           created_at: string | null

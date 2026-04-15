@@ -194,6 +194,80 @@ Deno.serve(async (req) => {
       console.error("Failed to send group notification (non-blocking):", groupErr);
     }
 
+    // Match lead_alerts and send WhatsApp notifications (fire-and-forget)
+    try {
+      const { data: leadForAlerts } = await supabase
+        .from("leads")
+        .select("form_data")
+        .eq("id", leadId)
+        .single();
+
+      if (leadForAlerts?.form_data) {
+        const fd = leadForAlerts.form_data as Record<string, unknown>;
+        const intentionRaw = (fd.intention as string) || "";
+        const flowKey = intentionRaw.toLowerCase();
+        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const leadCity = (flow?.city as string || "").trim();
+        const leadUF = (flow?.uf as string || "").trim().toUpperCase();
+
+        if (leadCity && leadUF) {
+          const { data: matchingAlerts } = await supabase
+            .from("lead_alerts")
+            .select("id, user_id, filters")
+            .eq("is_active", true);
+
+          if (matchingAlerts && matchingAlerts.length > 0) {
+            const matched = matchingAlerts.filter((alert) => {
+              const f = alert.filters as Record<string, string>;
+              if (f.state?.toUpperCase() !== leadUF) return false;
+              if (f.city?.trim().toLowerCase() !== leadCity.toLowerCase()) return false;
+              if (f.objective && f.objective !== intentionRaw) return false;
+              return true;
+            });
+
+            if (matched.length > 0) {
+              const userIds = [...new Set(matched.map((a) => a.user_id))];
+              const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, phone, name")
+                .in("id", userIds);
+
+              const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
+              if (MEGA_API_TOKEN && profiles) {
+                const intentionMap: Record<string, string> = {
+                  BUY: "Comprar", SELL: "Vender", RENT: "Alugar", BUILD: "Construir",
+                };
+                const intentionLabel = intentionMap[intentionRaw] || intentionRaw;
+
+                for (const profile of profiles) {
+                  if (!profile.phone) continue;
+                  const phone = profile.phone.replace(/\D/g, "");
+                  if (phone.length < 10) continue;
+
+                  const msg = `Olá ${profile.name?.split(" ")[0] || ""}! 🚀\n\n` +
+                    `Um novo lead de *${intentionLabel}* em *${leadCity} - ${leadUF}* acabou de ser cadastrado e combina com seu alerta!\n\n` +
+                    `Acesse agora para garantir antes de outros:\n👉 https://www.leadbay.com.br/leads\n\n` +
+                    `Seja rápido! 💨`;
+
+                  const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+                  await fetch(megaUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
+                    body: JSON.stringify({ messageData: { to: `${phone}@s.whatsapp.net`, text: msg } }),
+                  });
+                  // 600ms delay between messages
+                  await new Promise((r) => setTimeout(r, 600));
+                }
+                console.log(`Sent alert notifications to ${profiles.length} users for lead ${leadId}`);
+              }
+            }
+          }
+        }
+      }
+    } catch (alertErr) {
+      console.error("Failed to process lead alerts (non-blocking):", alertErr);
+    }
+
     return new Response(
       JSON.stringify({ ok: true, leadId, activated: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Coins, Filter, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Coins, Filter, Loader2, Bell, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
@@ -163,6 +164,11 @@ export default function Leads() {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [buyingLeadId, setBuyingLeadId] = useState<string | null>(null);
   
+  // Alert states
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [savingAlert, setSavingAlert] = useState(false);
+  
   // Temporary filter states
   const [tempUF, setTempUF] = useState<string>('all');
   const [tempCity, setTempCity] = useState<string>('all');
@@ -201,7 +207,57 @@ export default function Leads() {
     fetchCart();
     fetchPurchases();
     fetchCreditBalance();
+    fetchAlerts();
   }, [user, authLoading]);
+
+  const fetchAlerts = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('lead_alerts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    setAlerts(data || []);
+  };
+
+  const saveAlert = async () => {
+    if (!user) return;
+    if (tempUF === 'all' || tempCity === 'all') {
+      toast({ title: 'Estado e Cidade são obrigatórios para salvar um alerta', variant: 'destructive' });
+      return;
+    }
+    setSavingAlert(true);
+    try {
+      const filters: Record<string, string> = { state: tempUF, city: tempCity };
+      if (tempBairro !== 'all') filters.bairro = tempBairro;
+      if (tempObjective !== 'all') filters.objective = tempObjective;
+      if (tempValueRange !== 'all') filters.valueRange = tempValueRange;
+
+      const { error } = await supabase.from('lead_alerts').insert({
+        user_id: user.id,
+        filters,
+      });
+      if (error) throw error;
+      toast({ title: '✅ Alerta salvo com sucesso!' });
+      fetchAlerts();
+    } catch (error: any) {
+      toast({ title: 'Erro ao salvar alerta', description: error.message, variant: 'destructive' });
+    } finally {
+      setSavingAlert(false);
+    }
+  };
+
+  const deleteAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase.from('lead_alerts').delete().eq('id', alertId);
+      if (error) throw error;
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+      toast({ title: 'Alerta removido' });
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    }
+  };
 
   const fetchCreditBalance = async () => {
     if (!user) return;
@@ -403,11 +459,22 @@ export default function Leads() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Explore e compre leads qualificados para seu negócio imobiliário
-          </p>
+        <div className="mb-6 md:mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Explore e compre leads qualificados para seu negócio imobiliário
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setShowAlerts(true)} className="relative">
+            <Bell className="h-4 w-4 mr-2" />
+            Meus Alertas
+            {alerts.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {alerts.length}
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Credit Balance & Buy Credits CTA */}
@@ -488,9 +555,20 @@ export default function Leads() {
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={applyFilters}>Filtrar</Button>
-            <Button variant="outline" onClick={clearFilters}>Limpar</Button>
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={saveAlert} 
+              disabled={savingAlert}
+              className="gap-2"
+            >
+              {savingAlert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar Alerta
+            </Button>
+            <div className="flex gap-2">
+              <Button onClick={applyFilters}>Filtrar</Button>
+              <Button variant="outline" onClick={clearFilters}>Limpar</Button>
+            </div>
           </div>
         </div>
 
@@ -611,6 +689,48 @@ export default function Leads() {
             </p>
           </div>
         )}
+        {/* Alerts Dialog */}
+        <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Meus Alertas de Leads
+              </DialogTitle>
+              <DialogDescription>
+                Você será notificado quando novos leads compatíveis forem cadastrados.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {alerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum alerta salvo. Use os filtros acima e clique em "Salvar Alerta".
+                </p>
+              ) : (
+                alerts.map((alert) => {
+                  const f = alert.filters as Record<string, string>;
+                  return (
+                    <div key={alert.id} className="flex items-start justify-between p-3 border rounded-lg">
+                      <div className="text-sm space-y-0.5">
+                        <p className="font-medium">{f.city} - {f.state}</p>
+                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || f.objective}</p>}
+                        {f.bairro && <p className="text-muted-foreground">Bairro: {f.bairro}</p>}
+                        {f.valueRange && f.valueRange !== 'all' && (
+                          <p className="text-muted-foreground">
+                            Valor: {(f.objective === 'RENT' ? rentValueRanges : valueRanges).find(r => r.value === f.valueRange)?.label || f.valueRange}
+                          </p>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => deleteAlert(alert.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
