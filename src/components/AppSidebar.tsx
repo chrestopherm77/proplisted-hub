@@ -1,6 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
+import { supabase } from '@/integrations/supabase/client';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
   ShoppingBag,
@@ -14,6 +16,7 @@ import {
   LogOut,
   ShoppingCart,
   Bot,
+  Coins,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -35,8 +38,39 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const [creditBalance, setCreditBalance] = useState(0);
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchBalance = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('credit_balance')
+        .eq('id', user.id)
+        .single();
+      if (data) setCreditBalance(data.credit_balance || 0);
+    };
+    fetchBalance();
+
+    // Listen for realtime changes
+    const channel = supabase
+      .channel('credit-balance')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${user.id}`,
+      }, (payload: any) => {
+        if (payload.new?.credit_balance !== undefined) {
+          setCreditBalance(payload.new.credit_balance);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -68,6 +102,24 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
+      {/* Credit Balance */}
+      <div className="px-3 pb-2">
+        <Link
+          to="/comprar-creditos"
+          className="flex items-center gap-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-2.5 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+        >
+          <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+          {!collapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs text-muted-foreground">Créditos</span>
+              <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300 truncate">
+                {creditBalance.toLocaleString('pt-BR')}
+              </span>
+            </div>
+          )}
+        </Link>
+      </div>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -95,6 +147,14 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-2">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isActive('/comprar-creditos')} tooltip="Comprar Créditos">
+              <Link to="/comprar-creditos">
+                <Coins className="h-4 w-4" />
+                <span>Comprar Créditos</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Carrinho">
               <Link to="/cart">

@@ -429,3 +429,104 @@ async function updatePurchaseStatus(
     console.log('✅ Updated purchases by payment ID');
   }
 }
+
+// Process credit purchase payment confirmation
+async function processCreditPaymentConfirmation(
+  supabaseClient: any,
+  externalReference: string,
+  checkoutSession: string | null,
+  eventId: string
+) {
+  console.log('Processing CREDIT payment confirmation for:', externalReference);
+
+  // Find credit purchase
+  let creditPurchase = null;
+
+  const { data: byRef } = await supabaseClient
+    .from('credit_purchases')
+    .select('*')
+    .eq('asaas_payment_id', externalReference)
+    .single();
+
+  creditPurchase = byRef;
+
+  if (!creditPurchase && checkoutSession) {
+    const { data: bySession } = await supabaseClient
+      .from('credit_purchases')
+      .select('*')
+      .eq('asaas_checkout_id', checkoutSession)
+      .single();
+    creditPurchase = bySession;
+  }
+
+  if (!creditPurchase) {
+    console.log('⚠️ No credit purchase found for:', externalReference);
+    return;
+  }
+
+  if (creditPurchase.status === 'PAID') {
+    console.log('⏭️ Credit purchase already PAID, skipping');
+    return;
+  }
+
+  // Update credit purchase status
+  await supabaseClient
+    .from('credit_purchases')
+    .update({ status: 'PAID', confirmed_at: new Date().toISOString() })
+    .eq('id', creditPurchase.id);
+
+  // Add credits to user profile
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('credit_balance')
+    .eq('id', creditPurchase.user_id)
+    .single();
+
+  const newBalance = (profile?.credit_balance || 0) + creditPurchase.credits;
+
+  await supabaseClient
+    .from('profiles')
+    .update({ credit_balance: newBalance })
+    .eq('id', creditPurchase.user_id);
+
+  // Record transaction
+  await supabaseClient
+    .from('credit_transactions')
+    .insert({
+      user_id: creditPurchase.user_id,
+      credits_used: -creditPurchase.credits, // negative = credits added
+      type: 'CREDIT_PURCHASE',
+    });
+
+  // Mark webhook event as processed
+  await supabaseClient
+    .from('asaas_webhook_events')
+    .update({ processed: true, processed_at: new Date().toISOString() })
+    .eq('asaas_event_id', eventId);
+
+  console.log(`✅ Credited ${creditPurchase.credits} credits to user ${creditPurchase.user_id}. New balance: ${newBalance}`);
+}
+
+// Update credit purchase status (for expired/overdue)
+async function updateCreditPurchaseStatus(
+  supabaseClient: any,
+  externalReference: string,
+  checkoutSession: string | null,
+  status: string
+) {
+  console.log(`Updating credit purchase status to ${status} for:`, externalReference);
+
+  if (externalReference) {
+    await supabaseClient
+      .from('credit_purchases')
+      .update({ status })
+      .eq('asaas_payment_id', externalReference);
+  } else if (checkoutSession) {
+    await supabaseClient
+      .from('credit_purchases')
+      .update({ status })
+      .eq('asaas_checkout_id', checkoutSession);
+  }
+
+  console.log('✅ Credit purchase status updated to', status);
+}
