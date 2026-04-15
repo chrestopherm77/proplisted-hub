@@ -1,39 +1,47 @@
 
 
-# Plano: Créditos automáticos na página de confirmação
+# Diagnóstico: Créditos não aparecem após pagamento
 
-## Problema
-Quando o pagamento de créditos é confirmado no Asaas, o webhook atualiza o saldo no banco de forma assíncrona. A página `CheckoutSuccess` atual:
-1. Não diferencia compra de créditos vs compra de lead
-2. Sempre redireciona para `/my-leads`
-3. Não espera os créditos serem processados pelo webhook
+## Problema encontrado
 
-## Solução
+Analisei o banco de dados e encontrei o seguinte:
 
-### 1. Atualizar `CheckoutSuccess.tsx`
-- Detectar `?type=credits` na URL (já enviado pelo `create-credit-purchase`)
-- Implementar **polling** que verifica o `credit_balance` do perfil a cada 2 segundos (máx 15 tentativas)
-- Mostrar spinner "Processando seus créditos..." enquanto aguarda
-- Quando os créditos forem confirmados, mostrar o saldo atualizado
-- Redirecionar para `/leads-disponiveis` (não `/my-leads`) após confirmação de créditos
-- Para compras de lead, manter o comportamento atual (redireciona para `/my-leads`)
+1. **As duas compras de créditos (625 cada) estão com status `PENDING`** — nunca foram atualizadas para `PAID`
+2. **Nenhum webhook do Asaas foi recebido** para essas compras — a tabela `asaas_webhook_events` não tem nenhum registro com referência `credits_`
+3. **O saldo de créditos está em 0** porque o webhook nunca chegou para processar o pagamento
 
-### 2. Lógica de polling
-- Buscar `credit_balance` do perfil do usuário logado
-- Comparar com o saldo anterior (ou verificar se `credit_purchases` com status `PAID` existe)
-- Consultar `credit_purchases` mais recente do usuário para verificar se o status mudou para `PAID`
-- Quando confirmado: exibir mensagem de sucesso com o novo saldo e redirecionar para `/leads-disponiveis`
+**Causa raiz**: O Asaas Sandbox tem configuração de webhook **separada** da produção. O webhook URL precisa ser configurado no painel do sandbox.asaas.com, e o webhook secret do sandbox pode ser diferente do de produção.
 
-### 3. Fluxo visual
-```text
-Pagamento feito no Asaas
-  → Redireciona para /checkout-success?type=credits
-  → Mostra "Processando seus créditos..." com spinner
-  → Polling a cada 2s verificando credit_purchases.status
-  → Quando PAID: "Créditos adicionados! Saldo: X créditos"
-  → Redireciona para /leads-disponiveis em 3 segundos
-```
+## Solução (2 partes)
+
+### Parte 1: Configuração no Asaas Sandbox (ação manual)
+Você precisa acessar **sandbox.asaas.com** → Configurações → Integrações → Webhooks e configurar:
+- **URL**: `https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/asaas-webhook`
+- **Token de autenticação**: o mesmo valor que está no secret `ASAAS_WEBHOOK_SECRET`
+- **Eventos**: ativar todos os eventos de pagamento e checkout
+
+### Parte 2: Melhorias no código (robustez)
+
+**Arquivo: `supabase/functions/asaas-webhook/index.ts`**
+- Adicionar log mais claro quando webhook de créditos é recebido
+- Garantir que o campo `confirmed_at` seja atualizado corretamente
+
+**Arquivo: `src/pages/CheckoutSuccess.tsx`**
+- Quando o polling falhar (15 tentativas sem sucesso), mostrar botão "Verificar novamente" que faz nova tentativa
+- Adicionar fallback que consulta a API do Asaas diretamente via edge function para verificar status do pagamento
+
+**Nova edge function: `check-credit-status/index.ts`**
+- Recebe o ID da compra de créditos mais recente do usuário
+- Consulta a API do Asaas para verificar se o pagamento foi confirmado
+- Se confirmado, atualiza o `credit_purchases` para `PAID` e adiciona os créditos ao perfil
+- Isso serve como fallback caso o webhook não chegue
+
+### Parte 3: Corrigir as compras pendentes atuais
+- Migration SQL para atualizar as 2 compras pendentes para `PAID` e adicionar 1250 créditos (625 × 2) ao perfil do usuário
 
 ### Arquivos modificados
-- `src/pages/CheckoutSuccess.tsx` — Adicionar detecção de tipo e polling de créditos
+- `src/pages/CheckoutSuccess.tsx` — botão de retry e chamada ao fallback
+- `supabase/functions/check-credit-status/index.ts` — nova edge function de fallback
+- `supabase/functions/asaas-webhook/index.ts` — melhorias de log
+- Migration SQL — corrigir compras pendentes atuais
 
