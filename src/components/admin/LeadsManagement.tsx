@@ -225,11 +225,8 @@ export function LeadsManagement() {
     setIsDialogOpen(true);
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
+  const formatCredits = (price: number) => {
+    return `${Math.round(price)} créditos`;
   };
 
   const filteredLeads = useMemo(() => {
@@ -241,12 +238,12 @@ export function LeadsManagement() {
   }, [leads, periodFilter]);
 
   const exportLeadsCsv = () => {
-    const headers = ['Nome', 'Telefone', 'Descrição', 'Preço', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
+    const headers = ['Nome', 'Telefone', 'Descrição', 'Créditos', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
     const rows = filteredLeads.map((l) => [
       l.name,
       l.phone,
       l.description,
-      l.price.toFixed(2).replace('.', ','),
+      Math.round(l.price),
       l.purchase_count,
       l.max_purchases,
       l.is_promotion ? 'Sim' : 'Não',
@@ -342,11 +339,11 @@ export function LeadsManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="price">Preço (R$)</Label>
+                <Label htmlFor="price">Créditos</Label>
                 <Input
                   id="price"
                   type="number"
-                  step="0.01"
+                  step="1"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   required
@@ -425,7 +422,7 @@ export function LeadsManagement() {
             <CardContent>
               <p className="text-xs md:text-sm text-muted-foreground mb-3">{lead.description}</p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <span className="text-base md:text-lg font-bold text-primary">{formatPrice(lead.price)}</span>
+                <span className="text-base md:text-lg font-bold text-primary">{formatCredits(lead.price)}</span>
                 <div className="flex gap-2 w-full sm:w-auto">
                   {!lead.whatsapp_confirmed && !lead.is_active && (
                     <Button
