@@ -7,8 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateDescription } from "@/lib/formatFormData";
 
-// Default price for leads from form (in BRL)
-const DEFAULT_LEAD_PRICE = 27.00;
+// Lead pricing by intention (in credits — 1 real = 5 credits)
+const LEAD_PRICE_MAP: Record<string, number> = {
+  BUY: 140,
+  RENT: 110,
+  SELL: 110,
+  BUILD: 120,
+};
+const DEFAULT_LEAD_PRICE = 140;
 
 const createClientUuid = () => {
   // Prefer the native UUID implementation when available
@@ -640,7 +646,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
             intention: formData.intention!,
             formDataJson: JSON.parse(JSON.stringify(formDataJson)),
             description,
-            defaultPrice: DEFAULT_LEAD_PRICE,
+            defaultPrice: LEAD_PRICE_MAP[formData.intention!] || DEFAULT_LEAD_PRICE,
           }
         });
 
@@ -655,28 +661,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
         const leadUf = formData.sell?.uf || formData.buy?.uf || 
                        formData.build?.uf || formData.rent?.uf;
 
-        if (leadCity) {
-          const safeFormData = {
-            intention: formData.intention,
-            sell: formData.sell ? { ...formData.sell } : undefined,
-            buy: formData.buy ? { ...formData.buy } : undefined,
-            build: formData.build ? { ...formData.build } : undefined,
-            rent: formData.rent ? { ...formData.rent } : undefined,
-          };
-
-          supabase.functions.invoke('notify-new-lead', {
-            body: {
-              leadId,
-              city: leadCity,
-              uf: leadUf,
-              intention: formData.intention,
-              description,
-              formData: safeFormData,
-            }
-          }).catch(err => {
-            console.error('Error sending notifications:', err);
-          });
-        }
+        // Email notifications are now sent after WhatsApp confirmation (mega-webhook)
 
         // 6. Mark partial lead as completed (by session_id)
         supabase.from('lp_partial_leads')

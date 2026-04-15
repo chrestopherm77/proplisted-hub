@@ -15,19 +15,15 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     console.log("Mega webhook received:", JSON.stringify(payload).substring(0, 500));
 
-    // The Mega API sends different message types
-    // We care about listResponseMessage (user selected from the list)
     const messageType = payload?.messageType;
 
     if (messageType !== "listResponseMessage") {
-      // Ignore non-list-response messages
       return new Response(
         JSON.stringify({ ok: true, ignored: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Extract the selected row ID from the list response
     const selectedRowId =
       payload?.listResponseMessage?.singleSelectReply?.selectedRowId ||
       payload?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
@@ -77,6 +73,52 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Lead ${leadId} confirmed via WhatsApp and activated`);
+
+    // Notify professionals about the new lead (fire-and-forget)
+    try {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("id, description, form_data")
+        .eq("id", leadId)
+        .single();
+
+      if (lead && lead.form_data) {
+        const formData = lead.form_data as Record<string, unknown>;
+        const intention = formData.intention as string | undefined;
+        const city =
+          (formData.sell as Record<string, unknown>)?.city ||
+          (formData.buy as Record<string, unknown>)?.city ||
+          (formData.build as Record<string, unknown>)?.city ||
+          (formData.rent as Record<string, unknown>)?.city;
+        const uf =
+          (formData.sell as Record<string, unknown>)?.uf ||
+          (formData.buy as Record<string, unknown>)?.uf ||
+          (formData.build as Record<string, unknown>)?.uf ||
+          (formData.rent as Record<string, unknown>)?.uf;
+
+        if (city) {
+          const notifyUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-new-lead`;
+          await fetch(notifyUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              leadId,
+              city,
+              uf,
+              intention,
+              description: lead.description,
+              formData,
+            }),
+          });
+          console.log(`Notify-new-lead sent for lead ${leadId}`);
+        }
+      }
+    } catch (notifyErr) {
+      console.error("Failed to send notify-new-lead (non-blocking):", notifyErr);
+    }
 
     return new Response(
       JSON.stringify({ ok: true, leadId, activated: true }),
