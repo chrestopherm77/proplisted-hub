@@ -274,8 +274,9 @@ async function processPaymentConfirmation(
   if (!purchases || purchases.length === 0) {
     console.log('💡 Attempting to fetch payment details from Asaas API...');
     try {
-      const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
-      const ASAAS_BASE_URL = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true' ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+      const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
+      const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
+      const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
       
       const paymentResponse = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}`, {
         headers: {
