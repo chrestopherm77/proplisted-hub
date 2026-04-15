@@ -258,17 +258,17 @@ export default function Leads() {
         body: { leadId },
       });
       if (error) throw error;
-      if (data?.error) {
-        if (data.needed) {
+      if (!data?.ok) {
+        if (data?.needed) {
           toast({
             title: 'Créditos insuficientes',
-            description: `Você precisa de ${data.needed} créditos. Saldo: ${data.balance}`,
+            description: `Você precisa de ${data.needed} créditos. Seu saldo: ${data.balance}. Recarregue seus créditos!`,
             variant: 'destructive',
           });
           navigate('/comprar-creditos');
           return;
         }
-        toast({ title: data.error, variant: 'destructive' });
+        toast({ title: data?.error || 'Erro ao comprar lead', variant: 'destructive' });
         return;
       }
       toast({ title: '✅ Lead comprado com sucesso!' });

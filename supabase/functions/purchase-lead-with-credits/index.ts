@@ -17,16 +17,31 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Token de autenticação não fornecido' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Não autorizado' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { leadId } = await req.json();
-    if (!leadId) throw new Error('leadId é obrigatório');
+    if (!leadId) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'leadId é obrigatório' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Call atomic function
     const { data, error } = await supabaseClient.rpc('purchase_lead_with_credits', {
@@ -34,25 +49,33 @@ serve(async (req) => {
       p_lead_id: leadId,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('RPC error:', error.message);
+      return new Response(
+        JSON.stringify({ ok: false, error: error.message }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const result = data as any;
+
+    // RPC returned a business error (e.g. insufficient credits)
     if (result?.error) {
       return new Response(
-        JSON.stringify(result),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ ok: false, ...result }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ ok: true, ...result }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
     console.error('Error in purchase-lead-with-credits:', error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ ok: false, error: error.message || 'Erro interno' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
