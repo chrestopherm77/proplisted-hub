@@ -82,36 +82,23 @@ export default function Financing() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('send-financing-whatsapp', {
-        body: {
-          modality,
-          uf,
-          city,
-          propertyValue,
-          familyIncome,
-          birthDate,
-          useFgts,
-          userName,
-          userPhone,
-        },
-      });
+    const message = [
+      `*Simulação de Financiamento*`,
+      ``,
+      `*Modalidade:* ${modality}`,
+      `*Localização:* ${city}/${uf}`,
+      `*Valor do Imóvel:* ${propertyValue}`,
+      `*Renda Familiar:* ${familyIncome}`,
+      `*Data de Nascimento:* ${birthDate}`,
+      `*Utilizar FGTS:* ${useFgts}`,
+      ``,
+      `*Corretor:* ${userName}`,
+      `*Telefone:* ${userPhone}`,
+    ].join('\n');
 
-      if (error) {
-        const msg = (error as any)?.message || '';
-        throw new Error(msg);
-      }
-      setSuccess(true);
-    } catch (err: any) {
-      console.error(err);
-      const description = err?.message && !err.message.includes('FunctionsHttpError')
-        ? err.message
-        : 'Tente novamente em alguns minutos.';
-      toast({ title: 'Serviço temporariamente indisponível', description, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
+    const phone = '5516992456258';
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   if (!user) {
