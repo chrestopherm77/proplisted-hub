@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.mega-webhook]
 verify_jwt = false
+
+[functions.create-credit-purchase]
+verify_jwt = true
+
+[functions.purchase-lead-with-credits]
+verify_jwt = true

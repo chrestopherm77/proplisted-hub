@@ -100,6 +100,9 @@ serve(async (req) => {
       console.error('Error storing webhook event:', webhookError);
     }
 
+    // Determine if this is a credit purchase based on externalReference prefix
+    const isCreditPurchase = externalReference?.startsWith('credits_');
+
     // Process checkout events
     if (event === 'CHECKOUT_CREATED') {
       console.log('Checkout created event received');
@@ -107,23 +110,39 @@ serve(async (req) => {
 
     if (event === 'CHECKOUT_PAID' || event === 'CHECKOUT_CONFIRMED') {
       console.log('Checkout payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await processCreditPaymentConfirmation(supabaseClient, externalReference, checkoutSession, eventId);
+      } else {
+        await processPaymentConfirmation(supabaseClient, checkoutId, eventId, externalReference, checkoutSession);
+      }
     }
 
     if (event === 'CHECKOUT_EXPIRED') {
       console.log('Checkout expired');
-      await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await updateCreditPurchaseStatus(supabaseClient, externalReference, checkoutSession, 'EXPIRED');
+      } else {
+        await updatePurchaseStatus(supabaseClient, checkoutId, 'EXPIRED', externalReference, checkoutSession);
+      }
     }
 
     // Handle direct payment events
     if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       console.log('Direct payment confirmed!');
-      await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await processCreditPaymentConfirmation(supabaseClient, externalReference, checkoutSession, eventId);
+      } else {
+        await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
+      }
     }
 
     if (event === 'PAYMENT_OVERDUE') {
       console.log('Payment overdue');
-      await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
+      if (isCreditPurchase) {
+        await updateCreditPurchaseStatus(supabaseClient, externalReference, checkoutSession, 'OVERDUE');
+      } else {
+        await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
+      }
     }
 
     console.log('=== Webhook processed successfully ===');
