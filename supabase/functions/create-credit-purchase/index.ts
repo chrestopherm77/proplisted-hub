@@ -53,8 +53,9 @@ serve(async (req) => {
 
     if (pkgError || !pkg) throw new Error('Pacote não encontrado ou inativo');
 
-    const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
-    const ASAAS_BASE_URL = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true' ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+    const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
+    const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
+    const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const FRONTEND_URL = 'https://leadbay.com.br';
 
