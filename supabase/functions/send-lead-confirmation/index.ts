@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
       messageData: {
         to: jid,
         title: "LeadBay",
-        text: `Olá ${firstName}! 👋\n\nSomos da *LeadBay*, uma plataforma que conecta você com corretores especializados na sua região.\n\nConfirme abaixo que está buscando um imóvel para que um corretor qualificado entre em contato com você.`,
-        buttonText: "Confirmar interesse",
+        text: `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
+        buttonText: "LIBERAR MEU ACESSO",
         description: "LeadBay - Conectando você ao corretor ideal",
         sections: [
           {
@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
             rows: [
               {
                 rowId: `confirm_${leadId}`,
-                title: "Sim, estou buscando!",
-                description: "Confirmo que estou buscando um imóvel e autorizo o contato de um corretor"
+                title: "Liberar meu acesso",
+                description: "Libero meu perfil e ativo a busca por corretores"
               }
             ]
           }
