@@ -62,3 +62,6 @@ verify_jwt = true
 
 [functions.purchase-lead-with-credits]
 verify_jwt = true
+
+[functions.check-credit-status]
+verify_jwt = true
