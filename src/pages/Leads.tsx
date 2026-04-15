@@ -689,6 +689,48 @@ export default function Leads() {
             </p>
           </div>
         )}
+        {/* Alerts Dialog */}
+        <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Meus Alertas de Leads
+              </DialogTitle>
+              <DialogDescription>
+                Você será notificado quando novos leads compatíveis forem cadastrados.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {alerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum alerta salvo. Use os filtros acima e clique em "Salvar Alerta".
+                </p>
+              ) : (
+                alerts.map((alert) => {
+                  const f = alert.filters as Record<string, string>;
+                  return (
+                    <div key={alert.id} className="flex items-start justify-between p-3 border rounded-lg">
+                      <div className="text-sm space-y-0.5">
+                        <p className="font-medium">{f.city} - {f.state}</p>
+                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || f.objective}</p>}
+                        {f.bairro && <p className="text-muted-foreground">Bairro: {f.bairro}</p>}
+                        {f.valueRange && f.valueRange !== 'all' && (
+                          <p className="text-muted-foreground">
+                            Valor: {(f.objective === 'RENT' ? rentValueRanges : valueRanges).find(r => r.value === f.valueRange)?.label || f.valueRange}
+                          </p>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => deleteAlert(alert.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
