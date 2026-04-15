@@ -120,6 +120,80 @@ Deno.serve(async (req) => {
       console.error("Failed to send notify-new-lead (non-blocking):", notifyErr);
     }
 
+    // Send group WhatsApp notification (fire-and-forget)
+    try {
+      const { data: leadForGroup } = await supabase
+        .from("leads")
+        .select("form_data")
+        .eq("id", leadId)
+        .single();
+
+      if (leadForGroup?.form_data) {
+        const fd = leadForGroup.form_data as Record<string, unknown>;
+        const intentionRaw = (fd.intention as string) || "";
+        const intentionMap: Record<string, string> = {
+          BUY: "Comprar", SELL: "Vender", RENT: "Alugar", BUILD: "Construir",
+        };
+        const intentionLabel = intentionMap[intentionRaw] || intentionRaw;
+
+        const flowKey = intentionRaw === "BUY" ? "buy" : intentionRaw === "SELL" ? "sell" : intentionRaw === "RENT" ? "rent" : intentionRaw === "BUILD" ? "build" : null;
+        const flow = flowKey ? (fd[flowKey.toLowerCase()] as Record<string, unknown> | undefined) : null;
+
+        const lines: string[] = [];
+
+        // City / UF
+        const city = flow?.city as string | undefined;
+        const uf = flow?.uf as string | undefined;
+        if (city) lines.push(uf ? `${city} - ${uf}` : city);
+
+        // Property type / subtype
+        const propType = flow?.propertyType as string | undefined;
+        const propLabels: Record<string, string> = {
+          RESIDENTIAL: "Residencial", COMMERCIAL: "Comercial", MIXED: "Misto", RURAL: "Rural", LAND: "Terreno",
+        };
+        const subType = (flow?.residentialType || flow?.commercialType || flow?.mixedType || flow?.ruralType) as string | undefined;
+        if (propType) lines.push(subType ? `${propLabels[propType] || propType} - ${subType}` : (propLabels[propType] || propType));
+
+        // Bedrooms
+        const bedrooms = flow?.bedrooms as string | undefined;
+        if (bedrooms) lines.push(`${bedrooms} quarto(s)`);
+
+        // Purpose
+        const purpose = flow?.purpose as string | undefined;
+        const purposeLabels: Record<string, string> = {
+          HOUSING: "Moradia", INVESTMENT: "Investimento", COMMERCIAL: "Comercial", TEMPORARY: "Temporário",
+        };
+        if (purpose) lines.push(purposeLabels[purpose] || purpose);
+
+        // Value
+        const value = (flow?.expectedValue || flow?.budgetMax || flow?.maxRent || flow?.budget) as string | undefined;
+        if (value) lines.push(`R$ ${value}`);
+
+        const details = lines.join("\n");
+
+        let groupMsg = `*🚀 Novo lead na sua região!*\n\n`;
+        groupMsg += `*Interesse:* ${intentionLabel} um imóvel\n\n`;
+        if (details) groupMsg += `${details}\n\n`;
+        groupMsg += `Seja rápido! Leads recentes têm maior taxa de conversão.\n\n`;
+        groupMsg += `Clique abaixo para entrar em contato agora:\n\n`;
+        groupMsg += `👉 https://www.leadbay.com.br/leads`;
+
+        const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
+        if (MEGA_API_TOKEN) {
+          const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+          const GROUP_ID = "120363425145687461@g.us";
+          await fetch(megaUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
+            body: JSON.stringify({ messageData: { to: GROUP_ID, text: groupMsg } }),
+          });
+          console.log(`Group notification sent for lead ${leadId}`);
+        }
+      }
+    } catch (groupErr) {
+      console.error("Failed to send group notification (non-blocking):", groupErr);
+    }
+
     return new Response(
       JSON.stringify({ ok: true, leadId, activated: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
