@@ -7,6 +7,13 @@ import { CheckCircle, Loader2, Coins, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+type CreditPurchaseSnapshot = {
+  status: string | null;
+  confirmed_at: string | null;
+  credits: number;
+  created_at: string | null;
+};
+
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -20,6 +27,47 @@ export default function CheckoutSuccess() {
   const [pollFailed, setPollFailed] = useState(false);
   const [checkingManually, setCheckingManually] = useState(false);
   const pollRef = useRef(false);
+  const checkoutStartedAtRef = useRef(new Date().toISOString());
+
+  const confirmCreditPurchase = (balance: number) => {
+    setNewBalance(balance);
+    setConfirmed(true);
+    setPolling(false);
+    setPollFailed(false);
+    setCheckingManually(false);
+  };
+
+  const fetchCreditStatus = async () => {
+    if (!user) return null;
+
+    const startedAt = checkoutStartedAtRef.current;
+    const [{ data: purchases, error: purchaseError }, { data: profile, error: profileError }] = await Promise.all([
+      supabase
+        .from('credit_purchases')
+        .select('status, confirmed_at, credits, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', startedAt)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('profiles')
+        .select('credit_balance')
+        .eq('id', user.id)
+        .single(),
+    ]);
+
+    if (purchaseError) throw purchaseError;
+    if (profileError) throw profileError;
+
+    const recentPurchases = (purchases ?? []) as CreditPurchaseSnapshot[];
+    const paidPurchase = recentPurchases.find((purchase) => purchase.status === 'PAID' || Boolean(purchase.confirmed_at));
+
+    return {
+      paidPurchase,
+      balance: profile?.credit_balance ?? 0,
+      hasRecentPurchase: recentPurchases.length > 0,
+    };
+  };
 
   // Polling for credit purchases
   useEffect(() => {
@@ -34,25 +82,11 @@ export default function CheckoutSuccess() {
         if (cancelled) return;
 
         try {
-          const { data: purchase } = await supabase
-            .from('credit_purchases')
-            .select('status')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+          const status = await fetchCreditStatus();
 
-          if (purchase?.status === 'PAID') {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('credit_balance')
-              .eq('id', user.id)
-              .single();
-
+          if (status?.paidPurchase) {
             if (!cancelled) {
-              setNewBalance(profile?.credit_balance ?? 0);
-              setConfirmed(true);
-              setPolling(false);
+              confirmCreditPurchase(status.balance);
             }
             return;
           }
@@ -79,6 +113,12 @@ export default function CheckoutSuccess() {
     setCheckingManually(true);
 
     try {
+      const currentStatus = await fetchCreditStatus();
+      if (currentStatus?.paidPurchase) {
+        confirmCreditPurchase(currentStatus.balance);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('check-credit-status');
 
       if (error) {
@@ -88,11 +128,8 @@ export default function CheckoutSuccess() {
       }
 
       if (data?.status === 'PAID') {
-        setNewBalance(data.balance ?? 0);
-        setConfirmed(true);
-        setPollFailed(false);
+        confirmCreditPurchase(data.balance ?? 0);
       } else {
-        // Still pending - show message
         setCheckingManually(false);
       }
     } catch (e) {
@@ -105,7 +142,7 @@ export default function CheckoutSuccess() {
   useEffect(() => {
     if (isCredits && !confirmed) return;
 
-    const target = isCredits ? '/leads-disponiveis' : '/my-leads';
+    const target = isCredits ? '/leads' : '/my-leads';
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -119,7 +156,7 @@ export default function CheckoutSuccess() {
     return () => clearInterval(timer);
   }, [navigate, isCredits, confirmed]);
 
-  const redirectTarget = isCredits ? '/leads-disponiveis' : '/my-leads';
+  const redirectTarget = isCredits ? '/leads' : '/my-leads';
   const redirectLabel = isCredits ? 'Ver leads disponíveis' : 'Acompanhar meu pedido';
 
   return (
@@ -166,7 +203,7 @@ export default function CheckoutSuccess() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => navigate('/leads-disponiveis')}
+                  onClick={() => navigate('/leads')}
                   size="lg"
                   className="w-full text-base font-medium"
                 >
