@@ -164,6 +164,11 @@ export default function Leads() {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [buyingLeadId, setBuyingLeadId] = useState<string | null>(null);
   
+  // Alert states
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [savingAlert, setSavingAlert] = useState(false);
+  
   // Temporary filter states
   const [tempUF, setTempUF] = useState<string>('all');
   const [tempCity, setTempCity] = useState<string>('all');
