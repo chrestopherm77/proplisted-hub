@@ -121,6 +121,7 @@ export default function Calculadora() {
 
     setLoading(true);
     setResult(null);
+    setDiagnostics(null);
     try {
       const body: Record<string, unknown> = {
         codigo_municipio: parseInt(municipioId, 10),
@@ -130,32 +131,48 @@ export default function Calculadora() {
       if (valorFinanciamento > 0) body.valor_financiamento = valorFinanciamento;
       if (desconto.trim()) body.desconto = desconto.trim();
 
-      const { data, error } = await supabase.functions.invoke("calculate-emoluments", {
-        body,
-      });
+      const { data: response, error } = await supabase.functions.invoke(
+        "calculate-emoluments",
+        { body }
+      );
 
       if (error) {
-        console.error(error);
+        console.error("invoke error:", error);
         toast({
-          title: "Erro ao calcular",
-          description: error.message ?? "Tente novamente.",
+          title: "Erro de conexão",
+          description: error.message ?? "Não foi possível chamar a Calculadora.",
           variant: "destructive",
         });
         return;
       }
 
-      if (data?.error) {
-        toast({
-          title: "Erro da Calculadora",
-          description:
-            typeof data.error === "string" ? data.error : JSON.stringify(data.error),
-          variant: "destructive",
+      // Novo formato: { ok, data?, error?, upstreamStatus?, upstreamBody?, sentPayload? }
+      if (response && typeof response === "object") {
+        setDiagnostics({
+          upstreamStatus: response.upstreamStatus,
+          upstreamBody: response.upstreamBody,
+          sentPayload: response.sentPayload,
         });
-        setResult(data);
-        return;
+
+        if (response.ok === false) {
+          toast({
+            title: "Não foi possível calcular",
+            description: response.error ?? "Tente novamente.",
+            variant: "destructive",
+          });
+          setResult(null);
+          return;
+        }
+
+        if (response.ok === true) {
+          setResult(response.data);
+          toast({ title: "Cálculo concluído" });
+          return;
+        }
       }
 
-      setResult(data);
+      // Fallback (formato antigo, não deveria mais acontecer)
+      setResult(response);
       toast({ title: "Cálculo concluído" });
     } catch (e: any) {
       toast({
