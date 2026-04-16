@@ -82,8 +82,8 @@ export function AppSidebar() {
   const navItems = [
     { title: 'Meus Leads', url: '/my-leads', icon: ShoppingBag, show: true },
     { title: 'Leads Disponíveis', url: '/leads', icon: Package, show: true },
-    { title: 'Balcão de Parcerias', url: '/property-searches', icon: Search, show: isAdmin && !isPartnerSite },
-    { title: 'Lançamentos', url: '/launches', icon: Rocket, show: (isAdmin || isConstrutora) && !isPartnerSite },
+    { title: 'Balcão de Parcerias', url: '/property-searches', icon: Search, show: !isPartnerSite },
+    { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },
     { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: true },

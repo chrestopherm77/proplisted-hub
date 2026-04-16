@@ -63,7 +63,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             <Package className="h-5 w-5" />
             <span className="font-medium">Leads Disponíveis</span>
           </Link>
-          {isAdmin && (
+          {true && (
             <Link
               to="/property-searches"
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
@@ -76,7 +76,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
               <span className="font-medium">Balcão de Parcerias</span>
             </Link>
           )}
-          {(isAdmin || isConstrutora) && (
+          {true && (
             <Link
               to="/launches"
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${

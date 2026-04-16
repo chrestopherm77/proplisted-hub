@@ -76,12 +76,9 @@ const Launches = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    if (isAdmin || isConstrutora) {
-      fetchLaunches();
-      fetchAlerts();
-    }
-  }, [user, authLoading, isAdmin]);
+    fetchLaunches();
+    fetchAlerts();
+  }, [user, authLoading]);
 
   const fetchLaunches = async () => {
     setLoading(true);
@@ -243,10 +240,12 @@ const Launches = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button onClick={() => navigate('/launches/new')} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Lançamento
-            </Button>
+            {(isAdmin || isConstrutora) && (
+              <Button onClick={() => navigate('/launches/new')} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Lançamento
+              </Button>
+            )}
           </div>
         </div>
 
