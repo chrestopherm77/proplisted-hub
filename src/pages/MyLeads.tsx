@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Calendar, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Phone, Calendar, DollarSign, MessageCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PurchasedLeadModal } from '@/components/marketplace/PurchasedLeadModal';
@@ -28,6 +29,8 @@ export default function MyLeads() {
   const [loading, setLoading] = useState(true);
   const [selectedPurchase, setSelectedPurchase] = useState<PurchasedLead | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userPhone, setUserPhone] = useState('');
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
