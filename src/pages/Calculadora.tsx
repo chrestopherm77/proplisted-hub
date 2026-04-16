@@ -12,12 +12,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Calculator as CalculatorIcon, Loader2 } from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Calculator as CalculatorIcon,
+  Loader2,
+  Building2,
+  Landmark,
+  FileText,
+  ArrowLeft,
+  ChevronDown,
+  Info,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIBGELocation } from "@/hooks/useIBGELocation";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,11 +54,50 @@ const COVERED_UFS = [
   { sigla: "SP", nome: "São Paulo" },
 ];
 
-const CONSULTAS = [
-  { id: "1", label: "Registro em Geral" },
-  { id: "2", label: "Registro de Compra e Venda com Alienação Fiduciária" },
-  { id: "3", label: "Averbação com Valor Econômico" },
+type ServiceId = "1" | "2" | "3";
+
+interface ServiceOption {
+  id: ServiceId;
+  title: string;
+  subtitle: string;
+  icon: React.ElementType;
+  needsFinancing: boolean;
+  observations: string;
+}
+
+const SERVICES: ServiceOption[] = [
+  {
+    id: "1",
+    title: "Registro em Geral",
+    subtitle: "Registro de Compra e Venda e outros",
+    icon: Building2,
+    needsFinancing: false,
+    observations:
+      "Use esta opção para registros de compra e venda à vista, doações, permutas e demais atos sem financiamento bancário com alienação fiduciária. O valor é estimado com base na tabela do registro de imóveis vigente para o município selecionado.",
+  },
+  {
+    id: "2",
+    title: "Registro de Compra e Venda com Alienação Fiduciária",
+    subtitle:
+      "Registro de Contrato de Compra com Alienação Fiduciária (com financiamento)",
+    icon: Landmark,
+    needsFinancing: true,
+    observations:
+      "Use esta opção quando há financiamento imobiliário com garantia de alienação fiduciária. Informe o valor total do imóvel e o valor financiado. O cálculo considera os dois atos: o registro da compra e venda e o registro da alienação fiduciária.",
+  },
+  {
+    id: "3",
+    title: "Averbação com Valor Econômico",
+    subtitle: "Averbação de atos com expressão econômica",
+    icon: FileText,
+    needsFinancing: false,
+    observations:
+      "Use esta opção para averbações que envolvam valor econômico, como construções, ampliações ou alterações que precisem ser registradas na matrícula do imóvel.",
+  },
 ];
+
+const INTRO_TEXT =
+  "A Calculadora de Emolumentos estima os custos do registro do imóvel de forma rápida, eficaz e gratuita. Desta forma não é necessário se deslocar até o cartório para realizar a previsão do preço do registro do imóvel. Caso o negócio jurídico envolva mais de um imóvel, deve ser realizado um cálculo separado para cada um dos imóveis. O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo.";
 
 function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", {
@@ -53,7 +108,6 @@ function formatBRL(value: number) {
 }
 
 function parseCurrencyInput(raw: string): number {
-  // Remove tudo exceto dígitos
   const digits = raw.replace(/\D/g, "");
   if (!digits) return 0;
   return parseInt(digits, 10) / 100;
@@ -67,26 +121,156 @@ function formatCurrencyInput(value: number): string {
   });
 }
 
+// Tenta converter qualquer valor (number, string com vírgula/ponto) em número
+function toNumber(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+    const n = parseFloat(cleaned);
+    if (!isNaN(n)) return n;
+    const n2 = parseFloat(v);
+    if (!isNaN(n2)) return n2;
+  }
+  return 0;
+}
+
+// Pega primeira chave existente de um objeto (case-insensitive, com aliases)
+function pick(obj: any, keys: string[]): unknown {
+  if (!obj || typeof obj !== "object") return undefined;
+  const lowerMap: Record<string, string> = {};
+  for (const k of Object.keys(obj)) lowerMap[k.toLowerCase()] = k;
+  for (const k of keys) {
+    const real = lowerMap[k.toLowerCase()];
+    if (real !== undefined && obj[real] !== undefined && obj[real] !== null) {
+      return obj[real];
+    }
+  }
+  return undefined;
+}
+
+interface ResultRow {
+  descricao: string;
+  emolumento: number;
+  tj: number;
+  defensoria: number;
+  mp: number;
+  procuradoria: number;
+  subtotal: number;
+}
+
+interface ParsedResult {
+  rows: ResultRow[];
+  iss: number;
+  total: number;
+}
+
+function parseApiResult(data: any): ParsedResult {
+  const rows: ResultRow[] = [];
+  let iss = 0;
+  let total = 0;
+
+  if (!data || typeof data !== "object") {
+    return { rows, iss, total };
+  }
+
+  // Procurar array de linhas
+  const possibleArrays = [
+    data.itens,
+    data.linhas,
+    data.servicos,
+    data.services,
+    data.items,
+    data.rows,
+    data.calculo,
+    data.calculos,
+    data.resultado,
+    data.resultados,
+    data.data,
+  ];
+
+  let arr: any[] | undefined;
+  for (const candidate of possibleArrays) {
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      arr = candidate;
+      break;
+    }
+  }
+
+  // Se data tem chaves indicando ser um único item, tratar como array de 1
+  if (!arr && (pick(data, ["descricao", "description", "ato"]) !== undefined)) {
+    arr = [data];
+  }
+
+  if (arr) {
+    for (const item of arr) {
+      if (!item || typeof item !== "object") continue;
+      rows.push({
+        descricao: String(
+          pick(item, ["descricao", "description", "ato", "nome", "name", "servico"]) ?? "Serviço"
+        ),
+        emolumento: toNumber(
+          pick(item, ["emolumento", "emolumentos", "valor_emolumento", "valor"])
+        ),
+        tj: toNumber(
+          pick(item, ["tj", "tribunal_justica", "tribunal", "tribunal_de_justica", "valor_tj"])
+        ),
+        defensoria: toNumber(
+          pick(item, ["defensoria", "valor_defensoria", "defensoria_publica"])
+        ),
+        mp: toNumber(
+          pick(item, ["mp", "ministerio_publico", "valor_mp", "ministerio"])
+        ),
+        procuradoria: toNumber(
+          pick(item, ["procuradoria", "valor_procuradoria"])
+        ),
+        subtotal: toNumber(
+          pick(item, ["subtotal", "total", "valor_total", "soma"])
+        ),
+      });
+    }
+  }
+
+  iss = toNumber(pick(data, ["iss", "valor_iss", "imposto_iss"]));
+  total = toNumber(
+    pick(data, ["total", "total_geral", "valor_total", "totalGeral", "grand_total"])
+  );
+
+  // Calcular subtotais se não vierem
+  for (const row of rows) {
+    if (!row.subtotal) {
+      row.subtotal = row.emolumento + row.tj + row.defensoria + row.mp + row.procuradoria;
+    }
+  }
+
+  // Se total não veio, calcular a partir das linhas + ISS
+  if (!total && rows.length > 0) {
+    total = rows.reduce((s, r) => s + r.subtotal, 0) + iss;
+  }
+
+  return { rows, iss, total };
+}
+
+type Step = "location" | "service" | "form" | "result";
+
 export default function Calculadora() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { cities, loadingCities, fetchCities } = useIBGELocation();
 
+  const [step, setStep] = useState<Step>("location");
   const [uf, setUf] = useState("");
   const [municipioId, setMunicipioId] = useState("");
-  const [consultaId, setConsultaId] = useState("1");
+  const [serviceId, setServiceId] = useState<ServiceId>("1");
+
   const [valorImovel, setValorImovel] = useState(0);
   const [valorImovelStr, setValorImovelStr] = useState("");
   const [valorFinanciamento, setValorFinanciamento] = useState(0);
   const [valorFinanciamentoStr, setValorFinanciamentoStr] = useState("");
   const [desconto, setDesconto] = useState("");
+  const [descontoOpen, setDescontoOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [diagnostics, setDiagnostics] = useState<{
-    upstreamStatus?: number;
-    upstreamBody?: unknown;
-    sentPayload?: Record<string, string>;
-  } | null>(null);
+  const [parsed, setParsed] = useState<ParsedResult | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -106,29 +290,58 @@ export default function Calculadora() {
     [cities]
   );
 
-  const handleCalcular = async () => {
+  const selectedService = SERVICES.find((s) => s.id === serviceId)!;
+  const selectedCity = sortedCities.find((c) => String(c.id) === municipioId);
+  const selectedUf = COVERED_UFS.find((u) => u.sigla === uf);
+
+  const handleLocationContinue = () => {
     if (!uf) return toast({ title: "Selecione o estado", variant: "destructive" });
     if (!municipioId) return toast({ title: "Selecione o município", variant: "destructive" });
-    if (!valorImovel || valorImovel <= 0)
+    setStep("service");
+  };
+
+  const handleSelectService = (id: ServiceId) => {
+    setServiceId(id);
+    setValorImovel(0);
+    setValorImovelStr("");
+    setValorFinanciamento(0);
+    setValorFinanciamentoStr("");
+    setDesconto("");
+    setDescontoOpen(false);
+    setStep("form");
+  };
+
+  const handleCalcular = async () => {
+    if (!valorImovel || valorImovel <= 0) {
       return toast({ title: "Informe o valor do imóvel", variant: "destructive" });
-    if (valorFinanciamento && valorFinanciamento > valorImovel) {
-      return toast({
-        title: "Valor de financiamento inválido",
-        description: "Deve ser menor ou igual ao valor do imóvel.",
-        variant: "destructive",
-      });
+    }
+    if (selectedService.needsFinancing) {
+      if (!valorFinanciamento || valorFinanciamento <= 0) {
+        return toast({
+          title: "Informe o valor do financiamento",
+          variant: "destructive",
+        });
+      }
+      if (valorFinanciamento > valorImovel) {
+        return toast({
+          title: "Valor de financiamento inválido",
+          description: "Deve ser menor ou igual ao valor do imóvel.",
+          variant: "destructive",
+        });
+      }
     }
 
     setLoading(true);
-    setResult(null);
-    setDiagnostics(null);
+    setParsed(null);
     try {
       const body: Record<string, unknown> = {
         codigo_municipio: parseInt(municipioId, 10),
-        consulta_id: parseInt(consultaId, 10),
+        consulta_id: parseInt(serviceId, 10),
         valor_imovel: valorImovel,
       };
-      if (valorFinanciamento > 0) body.valor_financiamento = valorFinanciamento;
+      if (selectedService.needsFinancing && valorFinanciamento > 0) {
+        body.valor_financiamento = valorFinanciamento;
+      }
       if (desconto.trim()) body.desconto = desconto.trim();
 
       const { data: response, error } = await supabase.functions.invoke(
@@ -136,8 +349,12 @@ export default function Calculadora() {
         { body }
       );
 
+      // Logs apenas no console — não na UI
+      console.log("[Calculadora] request:", body);
+      console.log("[Calculadora] response:", response);
+      if (error) console.error("[Calculadora] invoke error:", error);
+
       if (error) {
-        console.error("invoke error:", error);
         toast({
           title: "Erro de conexão",
           description: error.message ?? "Não foi possível chamar a Calculadora.",
@@ -146,34 +363,28 @@ export default function Calculadora() {
         return;
       }
 
-      // Novo formato: { ok, data?, error?, upstreamStatus?, upstreamBody?, sentPayload? }
       if (response && typeof response === "object") {
-        setDiagnostics({
-          upstreamStatus: response.upstreamStatus,
-          upstreamBody: response.upstreamBody,
-          sentPayload: response.sentPayload,
-        });
-
         if (response.ok === false) {
           toast({
             title: "Não foi possível calcular",
             description: response.error ?? "Tente novamente.",
             variant: "destructive",
           });
-          setResult(null);
           return;
         }
-
-        if (response.ok === true) {
-          setResult(response.data);
-          toast({ title: "Cálculo concluído" });
+        const result = parseApiResult(response.ok === true ? response.data : response);
+        if (result.rows.length === 0 && result.total === 0) {
+          toast({
+            title: "Resposta inesperada",
+            description: "Não foi possível interpretar o resultado. Tente outro município.",
+            variant: "destructive",
+          });
           return;
         }
+        setParsed(result);
+        setStep("result");
+        toast({ title: "Cálculo concluído" });
       }
-
-      // Fallback (formato antigo, não deveria mais acontecer)
-      setResult(response);
-      toast({ title: "Cálculo concluído" });
     } catch (e: any) {
       toast({
         title: "Erro inesperado",
@@ -185,48 +396,16 @@ export default function Calculadora() {
     }
   };
 
-  // Extrair principais valores numéricos da resposta para destaque
-  const renderHighlights = () => {
-    if (!result || typeof result !== "object") return null;
-    const entries: Array<[string, number]> = [];
-    const walk = (obj: any, prefix = "") => {
-      if (!obj || typeof obj !== "object") return;
-      for (const [k, v] of Object.entries(obj)) {
-        const key = prefix ? `${prefix}.${k}` : k;
-        if (typeof v === "number") {
-          entries.push([key, v]);
-        } else if (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v)) {
-          entries.push([key, parseFloat(v)]);
-        } else if (typeof v === "object" && v !== null) {
-          walk(v, key);
-        }
-      }
-    };
-    walk(result);
-    if (entries.length === 0) return null;
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {entries.map(([k, v]) => (
-          <div
-            key={k}
-            className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col"
-          >
-            <span className="text-xs text-muted-foreground truncate" title={k}>
-              {k}
-            </span>
-            <span className="text-base font-semibold text-foreground">
-              {formatBRL(v)}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
+  const handleNovoCalculo = () => {
+    setParsed(null);
+    setStep("service");
   };
+
+  const headerTitle = `${selectedService.title} (${uf}${selectedCity ? " - " + selectedCity.nome : ""})`;
 
   return (
     <Layout>
-      <div className="container max-w-3xl py-6 space-y-6">
+      <div className="container max-w-5xl py-6 space-y-6">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary/10 p-2">
             <CalculatorIcon className="h-6 w-6 text-primary" />
@@ -234,204 +413,343 @@ export default function Calculadora() {
           <div>
             <h1 className="text-2xl font-bold">Calculadora de Emolumentos</h1>
             <p className="text-sm text-muted-foreground">
-              Calcule taxas de registro de imóveis para os estados disponíveis.
+              Disponível para AM, BA, ES, GO, MG, MS, PA, PR, RJ, RS e SP.
             </p>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados do imóvel</CardTitle>
-            <CardDescription>
-              Disponível para AM, BA, ES, GO, MG, MS, PA, PR, RJ, RS e SP.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Estado (UF)</Label>
-                <Select value={uf} onValueChange={setUf}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COVERED_UFS.map((u) => (
-                      <SelectItem key={u.sigla} value={u.sigla}>
-                        {u.sigla} — {u.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Município</Label>
-                <Select
-                  value={municipioId}
-                  onValueChange={setMunicipioId}
-                  disabled={!uf || loadingCities}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        !uf
-                          ? "Selecione a UF primeiro"
-                          : loadingCities
-                          ? "Carregando..."
-                          : "Selecione"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {sortedCities.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tipo de consulta</Label>
-              <Select value={consultaId} onValueChange={setConsultaId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONSULTAS.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.id} — {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Valor do imóvel (R$)</Label>
-                <Input
-                  inputMode="numeric"
-                  placeholder="0,00"
-                  value={valorImovelStr}
-                  onChange={(e) => {
-                    const v = parseCurrencyInput(e.target.value);
-                    setValorImovel(v);
-                    setValorImovelStr(formatCurrencyInput(v));
-                  }}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Valor do financiamento (R$) — opcional</Label>
-                <Input
-                  inputMode="numeric"
-                  placeholder="0,00"
-                  value={valorFinanciamentoStr}
-                  onChange={(e) => {
-                    const v = parseCurrencyInput(e.target.value);
-                    setValorFinanciamento(v);
-                    setValorFinanciamentoStr(formatCurrencyInput(v));
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Código de desconto — opcional</Label>
-              <Input
-                placeholder="Ex: MCMV"
-                value={desconto}
-                onChange={(e) => setDesconto(e.target.value)}
-                maxLength={50}
-              />
-            </div>
-
-            <Button
-              onClick={handleCalcular}
-              disabled={loading}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Calculando...
-                </>
-              ) : (
-                <>
-                  <CalculatorIcon className="h-4 w-4 mr-2" />
-                  Calcular
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {result && (
+        {/* Etapa 1: Localização */}
+        {step === "location" && (
           <Card>
             <CardHeader>
-              <CardTitle>Resultado</CardTitle>
+              <CardTitle className="text-lg">Comece pela localização</CardTitle>
+              <CardDescription className="leading-relaxed pt-2">
+                {INTRO_TEXT}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {renderHighlights()}
-              <Accordion type="single" collapsible>
-                <AccordionItem value="raw">
-                  <AccordionTrigger>Ver resposta completa (JSON)</AccordionTrigger>
-                  <AccordionContent>
-                    <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
-                      {JSON.stringify(result, null, 2)}
-                    </pre>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Estado (UF)</Label>
+                  <Select value={uf} onValueChange={setUf}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COVERED_UFS.map((u) => (
+                        <SelectItem key={u.sigla} value={u.sigla}>
+                          {u.sigla} — {u.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Município</Label>
+                  <Select
+                    value={municipioId}
+                    onValueChange={setMunicipioId}
+                    disabled={!uf || loadingCities}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          !uf
+                            ? "Selecione a UF primeiro"
+                            : loadingCities
+                            ? "Carregando..."
+                            : "Selecione"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {sortedCities.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button onClick={handleLocationContinue} className="w-full" size="lg">
+                Continuar
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {diagnostics && (diagnostics.upstreamStatus || diagnostics.upstreamBody || diagnostics.sentPayload) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
-              <CardDescription>
-                Detalhes da chamada à API externa (útil para entender erros).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible>
-                <AccordionItem value="diag">
-                  <AccordionTrigger>
-                    Ver payload enviado e resposta da API
-                    {diagnostics.upstreamStatus
-                      ? ` (HTTP ${diagnostics.upstreamStatus})`
-                      : ""}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3">
-                      {diagnostics.sentPayload && (
-                        <div>
-                          <p className="text-xs font-medium mb-1">Payload enviado:</p>
-                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
-                            {JSON.stringify(diagnostics.sentPayload, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                      {diagnostics.upstreamBody !== undefined && (
-                        <div>
-                          <p className="text-xs font-medium mb-1">Resposta da API:</p>
-                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
-                            {JSON.stringify(diagnostics.upstreamBody, null, 2)}
-                          </pre>
-                        </div>
-                      )}
+        {/* Etapa 2: Tipo de serviço */}
+        {step === "service" && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("location")}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Alterar localização ({uf}
+              {selectedCity ? " - " + selectedCity.nome : ""})
+            </Button>
+
+            <div>
+              <h2 className="text-xl font-semibold mb-1">
+                Escolha o tipo de serviço a calcular
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Selecione o tipo que melhor se aplica ao seu cálculo.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {SERVICES.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => handleSelectService(s.id)}
+                    className="text-left rounded-lg border border-border bg-card p-5 hover:border-primary hover:shadow-md transition-all group"
+                  >
+                    <div className="rounded-lg bg-primary/10 p-3 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                      <Icon className="h-6 w-6 text-primary" />
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
+                    <h3 className="font-semibold text-base mb-2 leading-snug">
+                      {s.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {s.subtitle}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Etapa 3: Formulário condicional */}
+        {step === "form" && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("service")}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Trocar tipo de serviço
+            </Button>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg leading-snug">{headerTitle}</CardTitle>
+                  <CardDescription>
+                    Preencha os valores para calcular os emolumentos.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Valor do imóvel / Transação (R$)</Label>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={valorImovelStr}
+                      onChange={(e) => {
+                        const v = parseCurrencyInput(e.target.value);
+                        setValorImovel(v);
+                        setValorImovelStr(formatCurrencyInput(v));
+                      }}
+                    />
+                  </div>
+
+                  {selectedService.needsFinancing && (
+                    <div className="space-y-2">
+                      <Label>Valor do financiamento (R$)</Label>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="0,00"
+                        value={valorFinanciamentoStr}
+                        onChange={(e) => {
+                          const v = parseCurrencyInput(e.target.value);
+                          setValorFinanciamento(v);
+                          setValorFinanciamentoStr(formatCurrencyInput(v));
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <Collapsible open={descontoOpen} onOpenChange={setDescontoOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        Possui desconto?
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${descontoOpen ? "rotate-180" : ""}`}
+                        />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3">
+                      <div className="space-y-2">
+                        <Label>Código de desconto</Label>
+                        <Input
+                          placeholder="Ex: MCMV"
+                          value={desconto}
+                          onChange={(e) => setDesconto(e.target.value)}
+                          maxLength={50}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <Button
+                    onClick={handleCalcular}
+                    disabled={loading}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Calculando...
+                      </>
+                    ) : (
+                      <>
+                        <CalculatorIcon className="h-4 w-4 mr-2" />
+                        Calcular
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-muted/30">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Info className="h-4 w-4 text-primary" />
+                    Observações importantes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedService.observations}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-3 pt-3 border-t border-border">
+                    O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Etapa 4: Resultado */}
+        {step === "result" && parsed && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep("form")}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Refazer cálculo
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNovoCalculo}>
+                Novo cálculo
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg leading-snug">{headerTitle}</CardTitle>
+                <CardDescription>
+                  Valor do imóvel: {formatBRL(valorImovel)}
+                  {selectedService.needsFinancing && valorFinanciamento > 0 && (
+                    <> • Financiamento: {formatBRL(valorFinanciamento)}</>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold">Descrição</TableHead>
+                        <TableHead className="text-right font-semibold">Emolumento</TableHead>
+                        <TableHead className="text-right font-semibold">TJ - 10%</TableHead>
+                        <TableHead className="text-right font-semibold">Defensoria - 5%</TableHead>
+                        <TableHead className="text-right font-semibold">MP - 5%</TableHead>
+                        <TableHead className="text-right font-semibold">Procuradoria - 5%</TableHead>
+                        <TableHead className="text-right font-semibold">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parsed.rows.map((row, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{row.descricao}</TableCell>
+                          <TableCell className="text-right">{formatBRL(row.emolumento)}</TableCell>
+                          <TableCell className="text-right">{formatBRL(row.tj)}</TableCell>
+                          <TableCell className="text-right">{formatBRL(row.defensoria)}</TableCell>
+                          <TableCell className="text-right">{formatBRL(row.mp)}</TableCell>
+                          <TableCell className="text-right">{formatBRL(row.procuradoria)}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatBRL(row.subtotal)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {parsed.rows.length > 1 && (
+                        <TableRow className="bg-muted/30 font-semibold">
+                          <TableCell>SUBTOTAIS</TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.emolumento, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.tj, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.defensoria, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.mp, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.procuradoria, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatBRL(parsed.rows.reduce((s, r) => s + r.subtotal, 0))}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {parsed.iss > 0 && (
+                        <TableRow>
+                          <TableCell className="font-medium" colSpan={6}>
+                            ISS
+                          </TableCell>
+                          <TableCell className="text-right">{formatBRL(parsed.iss)}</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="rounded-lg bg-primary/10 border border-primary/20 p-4 flex items-center justify-between">
+                  <span className="text-base font-semibold text-foreground">
+                    TOTAL
+                  </span>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatBRL(parsed.total)}
+                  </span>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  * O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo. Esta é uma estimativa baseada nas tabelas vigentes do município selecionado.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </Layout>
