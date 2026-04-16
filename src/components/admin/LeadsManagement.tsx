@@ -466,6 +466,24 @@ export function LeadsManagement() {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={async () => {
+                      try {
+                        const { data, error } = await supabase.functions.invoke('notify-lead-group', {
+                          body: { leadId: lead.id },
+                        });
+                        if (error) throw error;
+                        toast({ title: '✅ Notificação enviada ao grupo WhatsApp!' });
+                      } catch (err: any) {
+                        toast({ title: 'Erro ao disparar no grupo', description: err.message, variant: 'destructive' });
+                      }
+                    }}
+                    className="flex-1 sm:flex-none h-8"
+                    title="Disparar no grupo WhatsApp"
+                  >
+                    <Megaphone className="h-3 w-3 md:h-4 md:w-4" />
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => toggleLeadStatus(lead)}
                     className="flex-1 sm:flex-none h-8"
                   >
