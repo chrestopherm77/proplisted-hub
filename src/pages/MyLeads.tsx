@@ -52,6 +52,19 @@ export default function MyLeads() {
     return () => clearInterval(interval);
   }, [user, authLoading]);
 
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', user.id)
+      .single();
+    if (data) {
+      setUserName(data.name || '');
+      setUserPhone(data.phone || '');
+    }
+  };
+
   const fetchPurchases = async () => {
     if (!user) return;
 
