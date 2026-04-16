@@ -1,63 +1,77 @@
 
+Objetivo: corrigir o envio da primeira mensagem de confirmação no WhatsApp, porque hoje o sistema pode marcar como “enviado” mesmo quando a Mega API não aceitou de fato a mensagem interativa.
 
-# Alertas de Leads Disponíveis
+Diagnóstico encontrado
+- A primeira mensagem é enviada por `supabase/functions/send-lead-confirmation/index.ts` usando o endpoint `listMessage`.
+- O código atual considera sucesso apenas porque a resposta HTTP veio `200`.
+- Pela documentação da Mega API, mesmo com `200` ela ainda retorna campos como `error` e `message`.
+- Hoje o código não lê esse corpo de resposta. Então:
+  - pode estar falhando para alguns números;
+  - o log fica como sucesso mesmo assim;
+  - o botão de reenviar no admin também mostra sucesso falso;
+  - por isso a mensagem “não aparece no seu WhatsApp”, embora o sistema diga que enviou.
 
-## Resumo
-Adicionar sistema de alertas na página "Leads Disponíveis" para que usuários salvem filtros (cidade e estado obrigatórios) e sejam notificados quando novos leads compatíveis forem cadastrados. Inclui filtro de objetivo (Comprar/Vender/Alugar/Construir).
+Plano de correção
+1. Ajustar `send-lead-confirmation`
+- Ler o JSON retornado pela Mega API.
+- Só considerar sucesso quando:
+  - HTTP for OK
+  - e `error !== true`
+- Registrar no log:
+  - número normalizado
+  - `message`
+  - `id`
+  - `remoteJid`
+  - payload resumido de erro quando houver
 
-## 1. Criar tabela `lead_alerts`
+2. Criar fallback automático
+- Se o `listMessage` falhar, disparar uma mensagem de texto simples no endpoint `/text`.
+- Assim o lead pelo menos recebe a primeira mensagem, mesmo se o formato interativo não for aceito para aquele número.
 
-```sql
-CREATE TABLE public.lead_alerts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  filters jsonb NOT NULL DEFAULT '{}'::jsonb,
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz DEFAULT now()
-);
+3. Melhorar o retorno para o admin
+- Fazer `send-lead-confirmation` devolver status real:
+  - `sent_interactive`
+  - `sent_fallback_text`
+  - `failed`
+- Atualizar `src/components/admin/LeadTracking.tsx` para mostrar toast correto, em vez de sempre “Confirmação reenviada via WhatsApp!”.
 
-ALTER TABLE public.lead_alerts ENABLE ROW LEVEL SECURITY;
+4. Opcional, mas recomendado: persistir rastreio do envio
+- Adicionar campos no lead, por exemplo:
+  - `confirmation_whatsapp_status`
+  - `confirmation_whatsapp_error`
+  - `confirmation_whatsapp_message_id`
+  - `confirmation_whatsapp_sent_at`
+- Isso permite saber no admin exatamente por que cada envio falhou.
 
-CREATE POLICY "Users can manage own lead alerts"
-  ON public.lead_alerts FOR ALL TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+5. Validar a estratégia de número
+- Manter a normalização atual, mas instrumentar logs para comparar os casos que falham.
+- Se a Mega estiver rejeitando parte dos números por causa do formato com remoção do 9, eu ajusto a regra para tentar:
+  - formato atual
+  - e, se falhar, uma segunda tentativa com o número completo
 
-CREATE POLICY "Admins can view all lead alerts"
-  ON public.lead_alerts FOR SELECT TO public
-  USING (has_role(auth.uid(), 'MASTER_ADMIN'::app_role));
-```
+Arquivos envolvidos
+- `supabase/functions/send-lead-confirmation/index.ts`
+- `src/components/admin/LeadTracking.tsx`
+- possivelmente uma migration nova, se formos salvar status detalhado no banco
 
-Filtros salvos no JSONB: `{ state, city, objective, bairro, valueRange }` — `state` e `city` obrigatórios.
+Resultado esperado
+- Parar de ter “sucesso falso”.
+- Saber exatamente por que Eduardo, Helena e Sandro não receberam.
+- Garantir que, se a mensagem interativa falhar, a mensagem simples ainda chegue.
+- Deixar o reenviar manual confiável e auditável.
 
-## 2. Atualizar `src/pages/Leads.tsx`
+Detalhe técnico importante
+- O problema mais provável não é o formulário nem o lead em si.
+- O ponto fraco está no tratamento da resposta da Mega API no primeiro disparo.
+- Hoje o sistema faz, na prática:
+  - “recebi 200 = enviado”
+- A correção será:
+  - “recebi 200 + corpo válido sem erro = enviado”
+  - senão registrar falha e tentar fallback.
 
-- Importar `Bell`, `Save`, `Trash2` e `Dialog`
-- Adicionar states para `alerts`, `showAlerts`, `savingAlert`
-- `fetchAlerts()` — busca alertas do usuário
-- `saveAlert()` — valida que UF e cidade estão preenchidos, insere na tabela
-- `deleteAlert()` — remove alerta
-- UI: botão "Meus Alertas" ao lado do título + botão "Salvar Alerta" abaixo dos filtros
-- Dialog mostrando alertas salvos com opção de excluir
-
-## 3. Atualizar `supabase/functions/mega-webhook/index.ts`
-
-Após o bloco existente de envio ao grupo WhatsApp, adicionar bloco de matching com `lead_alerts`:
-- Buscar todos alertas ativos
-- Para cada alerta, comparar `filters.state`, `filters.city`, `filters.objective` com os dados do lead
-- Se match, buscar email/phone do profile e enviar notificação (email via Resend)
-- Fire-and-forget para não bloquear resposta do webhook
-
-## 4. Atualizar `supabase/functions/notify-new-lead/index.ts`
-
-Adicionar matching de `lead_alerts` no mesmo fluxo:
-- Após enviar emails para todos os perfis, buscar alertas que correspondem ao lead (por city, uf, intention)
-- Enviar emails personalizados para usuários com alertas compatíveis que não receberam no envio geral (evitar duplicatas)
-
-**Alternativa mais simples**: como o `notify-new-lead` já envia para TODOS os perfis ativos, o matching de alertas serve para uma futura segmentação. Por agora, focar em salvar os alertas na UI e manter a lógica de disparo existente.
-
-## Arquivos modificados
-1. **Migration SQL** — criar tabela `lead_alerts`
-2. **`src/pages/Leads.tsx`** — UI de salvar/ver/excluir alertas com validação de cidade+estado obrigatórios
-3. **`supabase/functions/mega-webhook/index.ts`** — matching de alertas ao confirmar lead (opcional, depende se quer disparo segmentado)
-
+Sequência de implementação
+1. corrigir parsing e validação da resposta da Mega API
+2. adicionar fallback para texto simples
+3. ajustar toast/status do admin
+4. testar reenvio com números que falharam
+5. se necessário, instrumentar e ajustar a normalização do telefone
