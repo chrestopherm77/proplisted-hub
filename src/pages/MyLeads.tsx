@@ -137,6 +137,12 @@ export default function MyLeads() {
     setModalOpen(true);
   };
 
+  const handleNoContact = (e: React.MouseEvent, leadName: string) => {
+    e.stopPropagation();
+    const msg = `Olá, sou o corretor ${userName} (${userPhone}) e não consegui contato com o Lead ${leadName}.`;
+    window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   if (loading) {
     return (
       <Layout>
