@@ -1,9 +1,10 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Phone, Mail, Calendar, DollarSign } from "lucide-react";
+import { Phone, Mail, Calendar, DollarSign, MessageCircle } from "lucide-react";
 import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
 
 interface PurchasedLeadModalProps {
@@ -22,6 +23,8 @@ interface PurchasedLeadModalProps {
   } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userName?: string;
+  userPhone?: string;
 }
 
 // Normalize form_data that might be string or object

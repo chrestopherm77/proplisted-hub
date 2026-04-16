@@ -228,7 +228,6 @@ export default function MyLeads() {
         userName={userName}
         userPhone={userPhone}
       />
-      />
     </Layout>
   );
 }
