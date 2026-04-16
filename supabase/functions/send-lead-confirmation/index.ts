@@ -18,7 +18,6 @@ function getCorsHeaders(req: Request) {
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   const withCC = digits.startsWith('55') ? digits : `55${digits}`;
-  // 13 digits = 55 + DDD(2) + 9 + number(8) → remove the extra '9'
   if (withCC.length === 13 && withCC[4] === '9') {
     return withCC.slice(0, 4) + withCC.slice(5);
   }
@@ -28,13 +27,39 @@ function normalizePhone(phone: string): string {
 function normalizePhoneWith9(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   const withCC = digits.startsWith('55') ? digits : `55${digits}`;
-  // If already 13 digits, keep as is
   if (withCC.length === 13) return withCC;
-  // If 12 digits, add the 9 back
   if (withCC.length === 12) {
     return withCC.slice(0, 4) + '9' + withCC.slice(4);
   }
   return withCC;
+}
+
+/** Check which phone format is actually registered on WhatsApp */
+async function findWhatsAppNumber(
+  phone12: string,
+  phone13: string,
+  instanceKey: string,
+  token: string
+): Promise<string | null> {
+  // Try both formats in parallel
+  const candidates = [phone13, phone12]; // prioritize with-9 first
+  
+  for (const candidate of candidates) {
+    try {
+      const url = `https://apinocode01.megaapi.com.br/rest/instance/isOnWhatsApp/${instanceKey}?jid=${candidate}`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const result = await res.json();
+      const exists = result?.exists === true || result?.result === true || result?.isOnWhatsApp === true;
+      console.log(`isOnWhatsApp ${candidate}: ${JSON.stringify(result).substring(0, 200)} → exists=${exists}`);
+      if (exists) return candidate;
+    } catch (e) {
+      console.warn(`isOnWhatsApp check failed for ${candidate}: ${e.message}`);
+    }
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -63,23 +88,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Init supabase for status tracking
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    const normalized = normalizePhone(phone);
-    const normalizedWith9 = normalizePhoneWith9(phone);
+    const phone12 = normalizePhone(phone);
+    const phone13 = normalizePhoneWith9(phone);
     const instanceKey = "megacode-Mj46Nd4U5tP";
     const firstName = name.trim().split(' ')[0];
 
-    const textBody = `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`;
+    console.log(`Processing lead ${leadId}: phone=${phone}, 12-digit=${phone12}, 13-digit=${phone13}`);
 
-    // Try sending interactive list message
-    const listResult = await trySendListMessage(normalized, firstName, leadId, instanceKey, MEGA_API_TOKEN);
-    
+    // Step 1: Find which number format is on WhatsApp
+    const verifiedNumber = await findWhatsAppNumber(phone12, phone13, instanceKey, MEGA_API_TOKEN);
+
+    if (!verifiedNumber) {
+      const errMsg = `Número não encontrado no WhatsApp (tentou ${phone12} e ${phone13})`;
+      console.error(`Lead ${leadId}: ${errMsg}`);
+      await updateLeadStatus(sb, leadId, "failed", errMsg, null);
+      return new Response(
+        JSON.stringify({ error: errMsg, delivery_status: "failed" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Lead ${leadId}: verified WhatsApp number is ${verifiedNumber}`);
+
+    // Step 2: Try interactive list message
+    const listResult = await trySendListMessage(verifiedNumber, firstName, leadId, instanceKey, MEGA_API_TOKEN);
+
     if (listResult.success) {
-      console.log(`Interactive message sent to ${normalized} for lead ${leadId}. MsgId: ${listResult.messageId}`);
+      console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${listResult.messageId}`);
       await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult.messageId);
       return new Response(
         JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId }),
@@ -87,26 +126,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.warn(`Interactive message failed for ${normalized}: ${listResult.error}. Trying with 9-digit format...`);
+    console.warn(`Interactive failed for ${verifiedNumber}: ${listResult.error}. Trying text fallback...`);
 
-    // Retry interactive with 9-digit number if different
-    if (normalizedWith9 !== normalized) {
-      const listResult2 = await trySendListMessage(normalizedWith9, firstName, leadId, instanceKey, MEGA_API_TOKEN);
-      if (listResult2.success) {
-        console.log(`Interactive message sent to ${normalizedWith9} (with 9) for lead ${leadId}. MsgId: ${listResult2.messageId}`);
-        await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult2.messageId);
-        return new Response(
-          JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult2.messageId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      console.warn(`Interactive with 9-digit also failed for ${normalizedWith9}: ${listResult2.error}. Trying text fallback...`);
-    }
+    // Step 3: Fallback to plain text
+    const textBody = `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`;
 
-    // Fallback: send plain text message
-    const textResult = await trySendTextMessage(normalized, textBody, instanceKey, MEGA_API_TOKEN);
+    const textResult = await trySendTextMessage(verifiedNumber, textBody, instanceKey, MEGA_API_TOKEN);
     if (textResult.success) {
-      console.log(`Fallback text message sent to ${normalized} for lead ${leadId}. MsgId: ${textResult.messageId}`);
+      console.log(`Fallback text sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${textResult.messageId}`);
       await updateLeadStatus(sb, leadId, "sent_fallback_text", listResult.error, textResult.messageId);
       return new Response(
         JSON.stringify({ success: true, delivery_status: "sent_fallback_text", messageId: textResult.messageId }),
@@ -114,22 +141,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Try text fallback with 9-digit
-    if (normalizedWith9 !== normalized) {
-      const textResult2 = await trySendTextMessage(normalizedWith9, textBody, instanceKey, MEGA_API_TOKEN);
-      if (textResult2.success) {
-        console.log(`Fallback text sent to ${normalizedWith9} (with 9) for lead ${leadId}. MsgId: ${textResult2.messageId}`);
-        await updateLeadStatus(sb, leadId, "sent_fallback_text", listResult.error, textResult2.messageId);
-        return new Response(
-          JSON.stringify({ success: true, delivery_status: "sent_fallback_text", messageId: textResult2.messageId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // All attempts failed
+    // All failed
     const finalError = `Interactive: ${listResult.error} | Text: ${textResult.error}`;
-    console.error(`All send attempts failed for lead ${leadId}, phone ${normalized}: ${finalError}`);
+    console.error(`All send attempts failed for lead ${leadId}, phone ${verifiedNumber}: ${finalError}`);
     await updateLeadStatus(sb, leadId, "failed", finalError, null);
 
     return new Response(
@@ -196,7 +210,7 @@ async function trySendListMessage(
       console.log(`List msg attempt ${attempt} to ${phoneNumber}: HTTP ${res.status}, body: ${JSON.stringify(resData).substring(0, 400)}`);
 
       if (res.ok && resData.error !== true && !resData.error) {
-        const msgId = resData?.key?.id || resData?.id || resData?.messageId || null;
+        const msgId = resData?.key?.id || resData?.messageData?.key?.id || resData?.id || resData?.messageId || null;
         return { success: true, messageId: msgId };
       }
 
@@ -247,7 +261,7 @@ async function trySendTextMessage(
     console.log(`Text msg to ${phoneNumber}: HTTP ${res.status}, body: ${JSON.stringify(resData).substring(0, 400)}`);
 
     if (res.ok && resData.error !== true && !resData.error) {
-      const msgId = resData?.key?.id || resData?.id || resData?.messageId || null;
+      const msgId = resData?.key?.id || resData?.messageData?.key?.id || resData?.id || resData?.messageId || null;
       return { success: true, messageId: msgId };
     }
 
