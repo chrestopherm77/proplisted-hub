@@ -82,6 +82,11 @@ export default function Calculadora() {
   const [desconto, setDesconto] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [diagnostics, setDiagnostics] = useState<{
+    upstreamStatus?: number;
+    upstreamBody?: unknown;
+    sentPayload?: Record<string, string>;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
