@@ -31,6 +31,7 @@ import Financing from "./pages/Financing";
 import MarketNews from "./pages/MarketNews";
 import NossaIA from "./pages/NossaIA";
 import BuyCredits from "./pages/BuyCredits";
+import Calculadora from "./pages/Calculadora";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,7 @@ const App = () => {
           <Route path="/giro-do-mercado" element={<MarketNews />} />
           <Route path="/nossa-ia" element={<NossaIA />} />
           <Route path="/comprar-creditos" element={<BuyCredits />} />
+          <Route path="/calculadora" element={<Calculadora />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
