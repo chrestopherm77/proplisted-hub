@@ -197,6 +197,15 @@ export default function MyLeads() {
                     {formatPrice(purchase.amount)}
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3 text-green-700 border-green-300 hover:bg-green-50"
+                  onClick={(e) => handleNoContact(e, purchase.lead.name)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Não consegui contato com o lead
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -216,6 +225,9 @@ export default function MyLeads() {
         purchase={selectedPurchase}
         open={modalOpen}
         onOpenChange={setModalOpen}
+        userName={userName}
+        userPhone={userPhone}
+      />
       />
     </Layout>
   );
