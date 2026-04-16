@@ -42,6 +42,7 @@ export default function MyLeads() {
       return;
     }
     fetchPurchases();
+    fetchProfile();
     
     // Poll for updates every 3 seconds to catch webhook updates
     const interval = setInterval(() => {
