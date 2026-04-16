@@ -1,9 +1,10 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Phone, Mail, Calendar, DollarSign } from "lucide-react";
+import { Phone, Mail, Calendar, DollarSign, MessageCircle } from "lucide-react";
 import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
 
 interface PurchasedLeadModalProps {
@@ -22,6 +23,8 @@ interface PurchasedLeadModalProps {
   } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userName?: string;
+  userPhone?: string;
 }
 
 // Normalize form_data that might be string or object
@@ -75,6 +78,8 @@ export function PurchasedLeadModal({
   purchase,
   open,
   onOpenChange,
+  userName,
+  userPhone,
 }: PurchasedLeadModalProps) {
   if (!purchase) return null;
 
@@ -204,7 +209,7 @@ export function PurchasedLeadModal({
           </ScrollArea>
         </div>
 
-        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t">
+        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t space-y-3">
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -216,6 +221,17 @@ export function PurchasedLeadModal({
               <span className="font-bold text-primary">{formatPrice(purchase.amount)}</span>
             </div>
           </div>
+          <Button
+            variant="outline"
+            className="w-full text-green-700 border-green-300 hover:bg-green-50"
+            onClick={() => {
+              const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}.`;
+              window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Não consegui contato com o lead
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

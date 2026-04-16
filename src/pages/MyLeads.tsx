@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Calendar, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Phone, Calendar, DollarSign, MessageCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PurchasedLeadModal } from '@/components/marketplace/PurchasedLeadModal';
@@ -28,6 +29,8 @@ export default function MyLeads() {
   const [loading, setLoading] = useState(true);
   const [selectedPurchase, setSelectedPurchase] = useState<PurchasedLead | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userPhone, setUserPhone] = useState('');
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -39,6 +42,7 @@ export default function MyLeads() {
       return;
     }
     fetchPurchases();
+    fetchProfile();
     
     // Poll for updates every 3 seconds to catch webhook updates
     const interval = setInterval(() => {
@@ -47,6 +51,19 @@ export default function MyLeads() {
     
     return () => clearInterval(interval);
   }, [user, authLoading]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', user.id)
+      .single();
+    if (data) {
+      setUserName(data.name || '');
+      setUserPhone(data.phone || '');
+    }
+  };
 
   const fetchPurchases = async () => {
     if (!user) return;
@@ -120,6 +137,12 @@ export default function MyLeads() {
     setModalOpen(true);
   };
 
+  const handleNoContact = (e: React.MouseEvent, leadName: string) => {
+    e.stopPropagation();
+    const msg = `Olá, sou o corretor ${userName} (${userPhone}) e não consegui contato com o Lead ${leadName}.`;
+    window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -174,6 +197,15 @@ export default function MyLeads() {
                     {formatPrice(purchase.amount)}
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3 text-green-700 border-green-300 hover:bg-green-50"
+                  onClick={(e) => handleNoContact(e, purchase.lead.name)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Não consegui contato com o lead
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -193,6 +225,8 @@ export default function MyLeads() {
         purchase={selectedPurchase}
         open={modalOpen}
         onOpenChange={setModalOpen}
+        userName={userName}
+        userPhone={userPhone}
       />
     </Layout>
   );
