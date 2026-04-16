@@ -247,11 +247,21 @@ export function LeadTracking() {
   async function handleResendConfirmation(lead: StandbyLead) {
     setResendingId(lead.id);
     try {
-      const { error } = await supabase.functions.invoke('send-lead-confirmation', {
+      const { data, error } = await supabase.functions.invoke('send-lead-confirmation', {
         body: { name: lead.name, phone: lead.phone, leadId: lead.id },
       });
       if (error) throw error;
-      toast({ title: 'Confirmação reenviada via WhatsApp!' });
+      
+      const status = data?.delivery_status;
+      if (status === 'sent_interactive') {
+        toast({ title: 'Confirmação reenviada via WhatsApp!', description: 'Mensagem interativa enviada com sucesso.' });
+      } else if (status === 'sent_fallback_text') {
+        toast({ title: 'Confirmação reenviada (texto simples)', description: 'A mensagem interativa falhou, mas o texto simples foi enviado.' });
+      } else if (status === 'failed') {
+        toast({ title: 'Falha no envio', description: data?.detail || 'Não foi possível enviar a mensagem.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Confirmação reenviada via WhatsApp!' });
+      }
     } catch (err: any) {
       toast({ title: 'Erro ao reenviar', description: err.message, variant: 'destructive' });
     }

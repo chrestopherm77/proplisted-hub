@@ -434,6 +434,10 @@ export type Database = {
       }
       leads: {
         Row: {
+          confirmation_whatsapp_error: string | null
+          confirmation_whatsapp_message_id: string | null
+          confirmation_whatsapp_sent_at: string | null
+          confirmation_whatsapp_status: string | null
           created_at: string | null
           description: string
           form_data: Json | null
@@ -451,6 +455,10 @@ export type Database = {
           whatsapp_confirmed: boolean | null
         }
         Insert: {
+          confirmation_whatsapp_error?: string | null
+          confirmation_whatsapp_message_id?: string | null
+          confirmation_whatsapp_sent_at?: string | null
+          confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description: string
           form_data?: Json | null
@@ -468,6 +476,10 @@ export type Database = {
           whatsapp_confirmed?: boolean | null
         }
         Update: {
+          confirmation_whatsapp_error?: string | null
+          confirmation_whatsapp_message_id?: string | null
+          confirmation_whatsapp_sent_at?: string | null
+          confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description?: string
           form_data?: Json | null
