@@ -730,16 +730,16 @@ export default function Calculadora() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="rounded-lg border border-border overflow-hidden">
+                <div className="rounded-lg border border-border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">Descrição</TableHead>
-                        <TableHead className="text-right font-semibold">Emolumento</TableHead>
-                        <TableHead className="text-right font-semibold">TJ - 10%</TableHead>
-                        <TableHead className="text-right font-semibold">Defensoria - 5%</TableHead>
-                        <TableHead className="text-right font-semibold">MP - 5%</TableHead>
-                        <TableHead className="text-right font-semibold">Procuradoria - 5%</TableHead>
+                        <TableHead className="font-semibold min-w-[220px]">Descrição</TableHead>
+                        {parsed.columnKeys.map((k) => (
+                          <TableHead key={k} className="text-right font-semibold whitespace-nowrap">
+                            {humanizeKey(k)}
+                          </TableHead>
+                        ))}
                         <TableHead className="text-right font-semibold">Subtotal</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -747,11 +747,11 @@ export default function Calculadora() {
                       {parsed.rows.map((row, idx) => (
                         <TableRow key={idx}>
                           <TableCell className="font-medium">{row.descricao}</TableCell>
-                          <TableCell className="text-right">{formatBRL(row.emolumento)}</TableCell>
-                          <TableCell className="text-right">{formatBRL(row.tj)}</TableCell>
-                          <TableCell className="text-right">{formatBRL(row.defensoria)}</TableCell>
-                          <TableCell className="text-right">{formatBRL(row.mp)}</TableCell>
-                          <TableCell className="text-right">{formatBRL(row.procuradoria)}</TableCell>
+                          {parsed.columnKeys.map((k) => (
+                            <TableCell key={k} className="text-right">
+                              {formatBRL(row.values[k] ?? 0)}
+                            </TableCell>
+                          ))}
                           <TableCell className="text-right font-semibold">
                             {formatBRL(row.subtotal)}
                           </TableCell>
@@ -760,34 +760,29 @@ export default function Calculadora() {
                       {parsed.rows.length > 1 && (
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell>SUBTOTAIS</TableCell>
-                          <TableCell className="text-right">
-                            {formatBRL(parsed.rows.reduce((s, r) => s + r.emolumento, 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatBRL(parsed.rows.reduce((s, r) => s + r.tj, 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatBRL(parsed.rows.reduce((s, r) => s + r.defensoria, 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatBRL(parsed.rows.reduce((s, r) => s + r.mp, 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatBRL(parsed.rows.reduce((s, r) => s + r.procuradoria, 0))}
-                          </TableCell>
+                          {parsed.columnKeys.map((k) => (
+                            <TableCell key={k} className="text-right">
+                              {formatBRL(
+                                parsed.rows.reduce((s, r) => s + (r.values[k] ?? 0), 0)
+                              )}
+                            </TableCell>
+                          ))}
                           <TableCell className="text-right">
                             {formatBRL(parsed.rows.reduce((s, r) => s + r.subtotal, 0))}
                           </TableCell>
                         </TableRow>
                       )}
-                      {parsed.iss > 0 && (
-                        <TableRow>
-                          <TableCell className="font-medium" colSpan={6}>
-                            ISS
+                      {parsed.extras.map((extra, idx) => (
+                        <TableRow key={`extra-${idx}`}>
+                          <TableCell
+                            className="font-medium"
+                            colSpan={parsed.columnKeys.length + 1}
+                          >
+                            {extra.descricao}
                           </TableCell>
-                          <TableCell className="text-right">{formatBRL(parsed.iss)}</TableCell>
+                          <TableCell className="text-right">{formatBRL(extra.valor)}</TableCell>
                         </TableRow>
-                      )}
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
@@ -800,6 +795,13 @@ export default function Calculadora() {
                     {formatBRL(parsed.total)}
                   </span>
                 </div>
+
+                {parsed.extraInformation && (
+                  <div
+                    className="rounded-lg bg-muted/40 border border-border p-4 text-sm text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:underline [&_b]:text-foreground"
+                    dangerouslySetInnerHTML={{ __html: parsed.extraInformation }}
+                  />
+                )}
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   * O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo. Esta é uma estimativa baseada nas tabelas vigentes do município selecionado.
