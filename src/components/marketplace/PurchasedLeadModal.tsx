@@ -209,7 +209,7 @@ export function PurchasedLeadModal({
           </ScrollArea>
         </div>
 
-        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t">
+        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t space-y-3">
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -221,6 +221,17 @@ export function PurchasedLeadModal({
               <span className="font-bold text-primary">{formatPrice(purchase.amount)}</span>
             </div>
           </div>
+          <Button
+            variant="outline"
+            className="w-full text-green-700 border-green-300 hover:bg-green-50"
+            onClick={() => {
+              const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}.`;
+              window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Não consegui contato com o lead
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
