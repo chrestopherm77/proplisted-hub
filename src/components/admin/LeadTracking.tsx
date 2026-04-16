@@ -19,6 +19,10 @@ interface StandbyLead {
   is_active: boolean | null;
   created_at: string | null;
   form_data: any;
+  confirmation_whatsapp_status: string | null;
+  confirmation_whatsapp_error: string | null;
+  confirmation_whatsapp_message_id: string | null;
+  confirmation_whatsapp_sent_at: string | null;
 }
 
 interface PageView {
@@ -193,7 +197,7 @@ export function LeadTracking() {
         .select('phone'),
       supabase
         .from('leads')
-        .select('id, name, phone, description, whatsapp_confirmed, is_active, created_at, form_data')
+        .select('id, name, phone, description, whatsapp_confirmed, is_active, created_at, form_data, confirmation_whatsapp_status, confirmation_whatsapp_error, confirmation_whatsapp_message_id, confirmation_whatsapp_sent_at')
         .eq('whatsapp_confirmed', false)
         .eq('is_active', false)
         .order('created_at', { ascending: false }),
@@ -366,21 +370,39 @@ export function LeadTracking() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>Cadastro</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Envio WhatsApp</TableHead>
+                    <TableHead>Erro</TableHead>
+                    <TableHead>Último Envio</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {standbyLeads.map((lead) => (
+                  {standbyLeads.map((lead) => {
+                    const wsStatus = lead.confirmation_whatsapp_status;
+                    const statusLabel = wsStatus === 'sent_interactive' ? 'Interativo ✅'
+                      : wsStatus === 'sent_fallback_text' ? 'Texto (fallback) ⚠️'
+                      : wsStatus === 'failed' ? 'Falhou ❌'
+                      : wsStatus ? wsStatus
+                      : 'Não registrado';
+                    const statusClass = wsStatus === 'sent_interactive' ? 'bg-green-50 text-green-700 border-green-200'
+                      : wsStatus === 'sent_fallback_text' ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                      : wsStatus === 'failed' ? 'bg-red-50 text-red-700 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                    return (
                     <TableRow key={lead.id}>
                       <TableCell className="font-medium">{lead.name}</TableCell>
                       <TableCell>{lead.phone}</TableCell>
                       <TableCell className="text-xs">{formatDate(lead.created_at)}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                          Aguardando
+                        <Badge variant="outline" className={statusClass}>
+                          {statusLabel}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate" title={lead.confirmation_whatsapp_error || ''}>
+                        {lead.confirmation_whatsapp_error || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs">{formatDate(lead.confirmation_whatsapp_sent_at)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           size="sm"
