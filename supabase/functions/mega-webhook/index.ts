@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
         if (MEGA_API_TOKEN) {
           const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
-          const GROUP_ID = "120363425145687461@g.us";
+          const GROUP_ID = "120363410244397205@g.us";
           await fetch(megaUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },

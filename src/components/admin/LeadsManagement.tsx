@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle, Megaphone } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 
@@ -462,6 +462,25 @@ export function LeadsManagement() {
                     title={lead.is_exhausted ? 'Reativar lead' : 'Esgotar lead'}
                   >
                     {lead.is_exhausted ? <RotateCcw className="h-3 w-3 md:h-4 md:w-4" /> : <Ban className="h-3 w-3 md:h-4 md:w-4" />}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const { data, error } = await supabase.functions.invoke('notify-lead-group', {
+                          body: { leadId: lead.id },
+                        });
+                        if (error) throw error;
+                        toast({ title: '✅ Notificação enviada ao grupo WhatsApp!' });
+                      } catch (err: any) {
+                        toast({ title: 'Erro ao disparar no grupo', description: err.message, variant: 'destructive' });
+                      }
+                    }}
+                    className="flex-1 sm:flex-none h-8"
+                    title="Disparar no grupo WhatsApp"
+                  >
+                    <Megaphone className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                   <Button
                     size="sm"
