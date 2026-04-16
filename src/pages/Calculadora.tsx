@@ -82,6 +82,11 @@ export default function Calculadora() {
   const [desconto, setDesconto] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [diagnostics, setDiagnostics] = useState<{
+    upstreamStatus?: number;
+    upstreamBody?: unknown;
+    sentPayload?: Record<string, string>;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -116,6 +121,7 @@ export default function Calculadora() {
 
     setLoading(true);
     setResult(null);
+    setDiagnostics(null);
     try {
       const body: Record<string, unknown> = {
         codigo_municipio: parseInt(municipioId, 10),
@@ -125,32 +131,48 @@ export default function Calculadora() {
       if (valorFinanciamento > 0) body.valor_financiamento = valorFinanciamento;
       if (desconto.trim()) body.desconto = desconto.trim();
 
-      const { data, error } = await supabase.functions.invoke("calculate-emoluments", {
-        body,
-      });
+      const { data: response, error } = await supabase.functions.invoke(
+        "calculate-emoluments",
+        { body }
+      );
 
       if (error) {
-        console.error(error);
+        console.error("invoke error:", error);
         toast({
-          title: "Erro ao calcular",
-          description: error.message ?? "Tente novamente.",
+          title: "Erro de conexão",
+          description: error.message ?? "Não foi possível chamar a Calculadora.",
           variant: "destructive",
         });
         return;
       }
 
-      if (data?.error) {
-        toast({
-          title: "Erro da Calculadora",
-          description:
-            typeof data.error === "string" ? data.error : JSON.stringify(data.error),
-          variant: "destructive",
+      // Novo formato: { ok, data?, error?, upstreamStatus?, upstreamBody?, sentPayload? }
+      if (response && typeof response === "object") {
+        setDiagnostics({
+          upstreamStatus: response.upstreamStatus,
+          upstreamBody: response.upstreamBody,
+          sentPayload: response.sentPayload,
         });
-        setResult(data);
-        return;
+
+        if (response.ok === false) {
+          toast({
+            title: "Não foi possível calcular",
+            description: response.error ?? "Tente novamente.",
+            variant: "destructive",
+          });
+          setResult(null);
+          return;
+        }
+
+        if (response.ok === true) {
+          setResult(response.data);
+          toast({ title: "Cálculo concluído" });
+          return;
+        }
       }
 
-      setResult(data);
+      // Fallback (formato antigo, não deveria mais acontecer)
+      setResult(response);
       toast({ title: "Cálculo concluído" });
     } catch (e: any) {
       toast({
@@ -362,6 +384,49 @@ export default function Calculadora() {
                     <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
                       {JSON.stringify(result, null, 2)}
                     </pre>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
+
+        {diagnostics && (diagnostics.upstreamStatus || diagnostics.upstreamBody || diagnostics.sentPayload) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
+              <CardDescription>
+                Detalhes da chamada à API externa (útil para entender erros).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible>
+                <AccordionItem value="diag">
+                  <AccordionTrigger>
+                    Ver payload enviado e resposta da API
+                    {diagnostics.upstreamStatus
+                      ? ` (HTTP ${diagnostics.upstreamStatus})`
+                      : ""}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      {diagnostics.sentPayload && (
+                        <div>
+                          <p className="text-xs font-medium mb-1">Payload enviado:</p>
+                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
+                            {JSON.stringify(diagnostics.sentPayload, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {diagnostics.upstreamBody !== undefined && (
+                        <div>
+                          <p className="text-xs font-medium mb-1">Resposta da API:</p>
+                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
+                            {JSON.stringify(diagnostics.upstreamBody, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

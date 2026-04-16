@@ -24,6 +24,22 @@ const BodySchema = z
     }
   );
 
+interface RespondPayload {
+  ok: boolean;
+  data?: unknown;
+  error?: string;
+  upstreamStatus?: number;
+  upstreamBody?: unknown;
+  sentPayload?: Record<string, string>;
+}
+
+function respond(payload: RespondPayload, httpStatus = 200) {
+  return new Response(JSON.stringify(payload), {
+    status: httpStatus,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,19 +48,20 @@ Deno.serve(async (req) => {
   try {
     const token = Deno.env.get("CALCULADORA_API_TOKEN");
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: "Token da Calculadora não configurado" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return respond({
+        ok: false,
+        error: "Token da Calculadora não configurado no servidor.",
+      });
     }
 
     const json = await req.json().catch(() => null);
     const parsed = BodySchema.safeParse(json);
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: "Parâmetros inválidos", details: parsed.error.flatten() }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return respond({
+        ok: false,
+        error: "Parâmetros inválidos.",
+        upstreamBody: parsed.error.flatten(),
+      });
     }
 
     const { codigo_municipio, consulta_id, valor_imovel, valor_financiamento, desconto } =
@@ -54,12 +71,18 @@ Deno.serve(async (req) => {
     formData.append("codigo_municipio", String(codigo_municipio));
     formData.append("consulta_id", String(consulta_id));
     formData.append("valor_imovel", valor_imovel.toFixed(2));
-    if (valor_financiamento !== undefined) {
+    if (valor_financiamento !== undefined && valor_financiamento > 0) {
       formData.append("valor_financiamento", valor_financiamento.toFixed(2));
     }
     if (desconto) {
       formData.append("desconto", desconto);
     }
+
+    const sentPayload: Record<string, string> = {};
+    formData.forEach((v, k) => {
+      sentPayload[k] = String(v);
+    });
+    console.log("[calculate-emoluments] Enviando para API:", sentPayload);
 
     const apiRes = await fetch(
       "https://calculadora.registrodeimoveis.org.br/api/calculate",
@@ -81,23 +104,46 @@ Deno.serve(async (req) => {
       data = { raw: text };
     }
 
+    console.log(
+      "[calculate-emoluments] Resposta API status:",
+      apiRes.status,
+      "body:",
+      data
+    );
+
     if (!apiRes.ok) {
-      console.error("Erro Calculadora API", apiRes.status, data);
-      return new Response(
-        JSON.stringify({ error: "Erro na API da Calculadora", status: apiRes.status, data }),
-        { status: apiRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      let friendly = "A Calculadora externa não conseguiu processar a requisição.";
+      if (apiRes.status === 500) {
+        friendly =
+          "A Calculadora externa retornou erro interno. Geralmente isso ocorre quando o município escolhido ainda não tem tabela de emolumentos cadastrada — tente outro município ou tipo de consulta.";
+      } else if (apiRes.status === 401 || apiRes.status === 403) {
+        friendly = "Token de acesso à Calculadora inválido ou expirado.";
+      } else if (apiRes.status === 422) {
+        friendly = "Parâmetros rejeitados pela Calculadora externa. Confira valor e tipo de consulta.";
+      } else if (apiRes.status === 404) {
+        friendly = "Município não encontrado na base da Calculadora.";
+      }
+
+      return respond({
+        ok: false,
+        error: friendly,
+        upstreamStatus: apiRes.status,
+        upstreamBody: data,
+        sentPayload,
+      });
     }
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return respond({
+      ok: true,
+      data,
+      upstreamStatus: apiRes.status,
+      sentPayload,
     });
   } catch (err) {
-    console.error("calculate-emoluments error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message ?? "Erro desconhecido" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("[calculate-emoluments] erro inesperado:", err);
+    return respond({
+      ok: false,
+      error: (err as Error).message ?? "Erro desconhecido no servidor.",
+    });
   }
 });
