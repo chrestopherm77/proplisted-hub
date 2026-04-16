@@ -78,6 +78,8 @@ export function PurchasedLeadModal({
   purchase,
   open,
   onOpenChange,
+  userName,
+  userPhone,
 }: PurchasedLeadModalProps) {
   if (!purchase) return null;
 
