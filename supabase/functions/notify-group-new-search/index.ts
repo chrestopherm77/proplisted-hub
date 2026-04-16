@@ -89,7 +89,7 @@ serve(async (req) => {
     message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
     message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.leadbay.com.br/property-searches`;
 
-    const GROUP_ID = "120363425145687461@g.us";
+    const GROUP_ID = "120363410244397205@g.us";
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
     const megaBody = {
       messageData: {
