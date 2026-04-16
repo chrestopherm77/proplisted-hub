@@ -1,23 +1,29 @@
 
 
-# Botão "Não consegui contato" nos Meus Leads
+# Alterar Grupo WhatsApp e Botão de Disparo Manual no Admin
 
 ## Resumo
-Adicionar um botão no card e no modal de cada lead comprado que, ao clicar, abre o WhatsApp Web/App com uma mensagem pré-preenchida para o número +55 31 9247-2750 informando que o corretor não conseguiu contato com o lead.
+1. Trocar o GROUP_ID de `120363425145687461@g.us` para `120363410244397205@g.us` em ambas as edge functions que disparam para grupo.
+2. Adicionar botão "Disparar no Grupo" no card de cada lead no Admin (LeadsManagement), que chama a Mega API via edge function para enviar a notificação do lead no grupo.
 
 ## Alterações
 
-### 1. `src/pages/MyLeads.tsx`
-- Buscar dados do perfil do usuário logado (name, phone) da tabela `profiles`
-- No card de cada lead, adicionar botão "Não consegui contato" com ícone de WhatsApp
-- O botão usa `window.open()` com link `https://wa.me/553192472750?text=...`
-- Mensagem: "Olá, sou o corretor {nome do corretor} ({telefone do corretor}) e não consegui contato com o Lead {nome do lead}."
-- `e.stopPropagation()` no botão para não abrir o modal ao clicar
+### 1. Trocar GROUP_ID nas edge functions
+- **`supabase/functions/notify-group-new-search/index.ts`** linha 92: trocar para `120363410244397205@g.us`
+- **`supabase/functions/mega-webhook/index.ts`** linha 184: trocar para `120363410244397205@g.us`
 
-### 2. `src/components/marketplace/PurchasedLeadModal.tsx`
-- Receber props extras: `userName` e `userPhone`
-- Adicionar o mesmo botão no footer do modal, ao lado das informações de compra
-- Mesma lógica de link WhatsApp
+### 2. Criar edge function `notify-lead-group`
+Nova function simples que recebe `leadId`, busca os dados do lead no banco, monta a mensagem e envia para o grupo via Mega API. Reutiliza o mesmo formato de mensagem do mega-webhook. Valida JWT de admin.
 
-Nenhuma alteração de backend necessária — é apenas um link `wa.me`.
+### 3. Adicionar botão no Admin LeadsManagement
+- No card de cada lead, adicionar um botão com ícone de "Send" (megafone ou similar) ao lado dos outros botões.
+- Ao clicar, chama `supabase.functions.invoke('notify-lead-group', { body: { leadId } })`.
+- Mostra toast de sucesso ou erro.
+- Título do botão: "Disparar no grupo WhatsApp".
+
+## Arquivos modificados
+1. `supabase/functions/notify-group-new-search/index.ts` — trocar GROUP_ID
+2. `supabase/functions/mega-webhook/index.ts` — trocar GROUP_ID
+3. `supabase/functions/notify-lead-group/index.ts` — nova edge function
+4. `src/components/admin/LeadsManagement.tsx` — botão de disparo manual
 
