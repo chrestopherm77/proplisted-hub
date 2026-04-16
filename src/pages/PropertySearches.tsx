@@ -208,9 +208,8 @@ const PropertySearches = () => {
   useEffect(() => {
     if (!authLoading) {
       if (!user) { navigate('/auth'); return; }
-      if (isAdmin === false) { navigate('/'); return; }
     }
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {

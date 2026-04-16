@@ -76,12 +76,9 @@ const Launches = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    if (isAdmin || isConstrutora) {
-      fetchLaunches();
-      fetchAlerts();
-    }
-  }, [user, authLoading, isAdmin]);
+    fetchLaunches();
+    fetchAlerts();
+  }, [user, authLoading]);
 
   const fetchLaunches = async () => {
     setLoading(true);
