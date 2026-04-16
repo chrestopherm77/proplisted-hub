@@ -148,106 +148,163 @@ function pick(obj: any, keys: string[]): unknown {
   return undefined;
 }
 
+// Transforma chave técnica em label legível: "tribunal_de_justica-34,30%" → "Tribunal de Justiça (34,30%)"
+function humanizeKey(key: string): string {
+  // Separa parte de porcentagem (ex: "tribunal_de_justica-34,30%")
+  const match = key.match(/^(.+?)[-_](\d+[,.]?\d*%?)$/);
+  let base = match ? match[1] : key;
+  const pct = match ? match[2] : "";
+
+  base = base.replace(/_/g, " ").trim();
+  // Capitaliza cada palavra, mantendo "de", "da", "do" minúsculos
+  const small = new Set(["de", "da", "do", "e", "dos", "das"]);
+  base = base
+    .split(" ")
+    .map((w, i) => {
+      const lower = w.toLowerCase();
+      if (i > 0 && small.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+
+  // Acentos comuns
+  base = base
+    .replace(/Tribunal De Justica/i, "Tribunal de Justiça")
+    .replace(/Justica/i, "Justiça")
+    .replace(/Defensoria Publica/i, "Defensoria Pública")
+    .replace(/Ministerio Publico/i, "Ministério Público")
+    .replace(/Procuradoria Geral/i, "Procuradoria Geral")
+    .replace(/Taxa De Fiscalizacao/i, "Taxa de Fiscalização")
+    .replace(/Registro Civil E Renda Minima/i, "Registro Civil e Renda Mínima")
+    .replace(/Registro Civil/i, "Registro Civil");
+
+  return pct ? `${base} (${pct})` : base;
+}
+
+// Identifica colunas que não devem virar "componente" (descrição/subtotal)
+const NON_COMPONENT_KEYS = new Set([
+  "descricao",
+  "description",
+  "ato",
+  "nome",
+  "name",
+  "servico",
+  "subtotal",
+  "total",
+  "valor_total",
+  "soma",
+]);
+
 interface ResultRow {
   descricao: string;
-  emolumento: number;
-  tj: number;
-  defensoria: number;
-  mp: number;
-  procuradoria: number;
+  values: Record<string, number>; // chave técnica → valor
   subtotal: number;
+}
+
+interface ExtraTax {
+  descricao: string;
+  valor: number;
 }
 
 interface ParsedResult {
   rows: ResultRow[];
-  iss: number;
+  columnKeys: string[]; // ordem das colunas a exibir
+  extras: ExtraTax[];
   total: number;
+  extraInformation: string | null;
 }
 
-function parseApiResult(data: any): ParsedResult {
-  const rows: ResultRow[] = [];
-  let iss = 0;
-  let total = 0;
+function parseApiResult(raw: any): ParsedResult {
+  const empty: ParsedResult = {
+    rows: [],
+    columnKeys: [],
+    extras: [],
+    total: 0,
+    extraInformation: null,
+  };
+  if (!raw || typeof raw !== "object") return empty;
 
-  if (!data || typeof data !== "object") {
-    return { rows, iss, total };
-  }
+  // A API real retorna { result: { total, atos, taxas_extras, extra_information } }
+  // Edge function pode envolver em { ok, data: { result: ... } }
+  const data: any =
+    raw.result ??
+    (raw.data && typeof raw.data === "object" ? raw.data.result ?? raw.data : raw);
 
-  // Procurar array de linhas
-  const possibleArrays = [
-    data.itens,
-    data.linhas,
-    data.servicos,
-    data.services,
-    data.items,
-    data.rows,
-    data.calculo,
-    data.calculos,
-    data.resultado,
-    data.resultados,
-    data.data,
-  ];
+  if (!data || typeof data !== "object") return empty;
 
-  let arr: any[] | undefined;
-  for (const candidate of possibleArrays) {
-    if (Array.isArray(candidate) && candidate.length > 0) {
-      arr = candidate;
-      break;
+  const atos: any[] = Array.isArray(data.atos)
+    ? data.atos
+    : Array.isArray(data.itens)
+    ? data.itens
+    : Array.isArray(data.servicos)
+    ? data.servicos
+    : Array.isArray(data.items)
+    ? data.items
+    : [];
+
+  // Coletar TODAS as chaves de componentes que aparecem em qualquer ato (preserva ordem)
+  const columnKeys: string[] = [];
+  const seen = new Set<string>();
+  for (const ato of atos) {
+    if (!ato || typeof ato !== "object") continue;
+    for (const k of Object.keys(ato)) {
+      if (NON_COMPONENT_KEYS.has(k.toLowerCase())) continue;
+      if (typeof ato[k] === "number" || typeof ato[k] === "string") {
+        if (!seen.has(k)) {
+          seen.add(k);
+          columnKeys.push(k);
+        }
+      }
     }
   }
 
-  // Se data tem chaves indicando ser um único item, tratar como array de 1
-  if (!arr && (pick(data, ["descricao", "description", "ato"]) !== undefined)) {
-    arr = [data];
-  }
-
-  if (arr) {
-    for (const item of arr) {
-      if (!item || typeof item !== "object") continue;
-      rows.push({
-        descricao: String(
-          pick(item, ["descricao", "description", "ato", "nome", "name", "servico"]) ?? "Serviço"
-        ),
-        emolumento: toNumber(
-          pick(item, ["emolumento", "emolumentos", "valor_emolumento", "valor"])
-        ),
-        tj: toNumber(
-          pick(item, ["tj", "tribunal_justica", "tribunal", "tribunal_de_justica", "valor_tj"])
-        ),
-        defensoria: toNumber(
-          pick(item, ["defensoria", "valor_defensoria", "defensoria_publica"])
-        ),
-        mp: toNumber(
-          pick(item, ["mp", "ministerio_publico", "valor_mp", "ministerio"])
-        ),
-        procuradoria: toNumber(
-          pick(item, ["procuradoria", "valor_procuradoria"])
-        ),
-        subtotal: toNumber(
-          pick(item, ["subtotal", "total", "valor_total", "soma"])
-        ),
-      });
+  const rows: ResultRow[] = atos.map((ato: any) => {
+    const values: Record<string, number> = {};
+    for (const k of columnKeys) {
+      values[k] = toNumber(ato?.[k]);
     }
-  }
+    let subtotal = toNumber(
+      pick(ato, ["subtotal", "total", "valor_total", "soma"])
+    );
+    if (!subtotal) {
+      subtotal = Object.values(values).reduce((s, n) => s + n, 0);
+    }
+    return {
+      descricao: String(
+        pick(ato, ["descricao", "description", "ato", "nome", "name", "servico"]) ?? "Serviço"
+      ),
+      values,
+      subtotal,
+    };
+  });
 
-  iss = toNumber(pick(data, ["iss", "valor_iss", "imposto_iss"]));
-  total = toNumber(
+  const extrasRaw: any[] = Array.isArray(data.taxas_extras)
+    ? data.taxas_extras
+    : Array.isArray(data.taxas)
+    ? data.taxas
+    : [];
+  const extras: ExtraTax[] = extrasRaw.map((t: any) => ({
+    descricao: String(
+      pick(t, ["descricao", "description", "nome", "name"]) ?? "Taxa"
+    ),
+    valor: toNumber(pick(t, ["valor", "value", "total"])),
+  }));
+
+  let total = toNumber(
     pick(data, ["total", "total_geral", "valor_total", "totalGeral", "grand_total"])
   );
-
-  // Calcular subtotais se não vierem
-  for (const row of rows) {
-    if (!row.subtotal) {
-      row.subtotal = row.emolumento + row.tj + row.defensoria + row.mp + row.procuradoria;
-    }
-  }
-
-  // Se total não veio, calcular a partir das linhas + ISS
   if (!total && rows.length > 0) {
-    total = rows.reduce((s, r) => s + r.subtotal, 0) + iss;
+    total =
+      rows.reduce((s, r) => s + r.subtotal, 0) +
+      extras.reduce((s, e) => s + e.valor, 0);
   }
 
-  return { rows, iss, total };
+  const extraInformation =
+    typeof data.extra_information === "string" && data.extra_information.trim()
+      ? data.extra_information
+      : null;
+
+  return { rows, columnKeys, extras, total, extraInformation };
 }
 
 type Step = "location" | "service" | "form" | "result";
