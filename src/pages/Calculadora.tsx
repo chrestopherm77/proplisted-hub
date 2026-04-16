@@ -390,6 +390,49 @@ export default function Calculadora() {
             </CardContent>
           </Card>
         )}
+
+        {diagnostics && (diagnostics.upstreamStatus || diagnostics.upstreamBody || diagnostics.sentPayload) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
+              <CardDescription>
+                Detalhes da chamada à API externa (útil para entender erros).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible>
+                <AccordionItem value="diag">
+                  <AccordionTrigger>
+                    Ver payload enviado e resposta da API
+                    {diagnostics.upstreamStatus
+                      ? ` (HTTP ${diagnostics.upstreamStatus})`
+                      : ""}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      {diagnostics.sentPayload && (
+                        <div>
+                          <p className="text-xs font-medium mb-1">Payload enviado:</p>
+                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
+                            {JSON.stringify(diagnostics.sentPayload, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {diagnostics.upstreamBody !== undefined && (
+                        <div>
+                          <p className="text-xs font-medium mb-1">Resposta da API:</p>
+                          <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-x-auto">
+                            {JSON.stringify(diagnostics.upstreamBody, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );
