@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.calculate-emoluments]
 verify_jwt = true
+
+[functions.daily-news-broadcast]
+verify_jwt = false
