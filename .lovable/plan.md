@@ -1,30 +1,44 @@
 
 
-## Ajustes na Calculadora de Emolumentos
+## Diagnóstico: erro 400 da Calculadora externa por estado
 
-### 1. Expandir área do resultado (largura)
-Hoje o container do resultado é `max-w-5xl` (1024px), o que faz a tabela com várias colunas de componentes (Tribunal de Justiça, Defensoria, etc.) rolar horizontalmente.
+### Causa raiz
+A API externa da Calculadora **rejeita os códigos de desconto dependendo do estado**. Logs de hoje (16:45):
 
-**Mudança:** Ampliar o container apenas na etapa `result` para `max-w-7xl` (1280px), dando ~256px a mais de espaço útil. O scroll horizontal interno (`overflow-x-auto`) continua como fallback de segurança em telas menores. As outras etapas (location, service, form) permanecem no `max-w-5xl` atual para não ficarem com formulário esticado demais.
+```
+status 400 — "Desconto MCMV não está disponível para o estado PR"
+status 400 — "Desconto SFH não está disponível para o estado PR"
+```
 
-### 2. Botão "Possui desconto?" → modal com cards de seleção
-Hoje o botão abre um collapsible com um `<Input>` livre onde o usuário precisa digitar o código manualmente.
+Ou seja: os códigos `SFH`, `MCMV` e `FAR` que estamos enviando estão **corretos e aceitos pela API**, mas cada estado define quais descontos aceita. O Paraná não aceita SFH nem MCMV — e provavelmente nem FAR.
 
-**Mudança:** Trocar o `Collapsible` por um `Dialog` (modal) que mostra 3 cards selecionáveis lado a lado, exatamente no padrão da segunda imagem:
+### Bugs que isso revelou no nosso código
 
-- **Card 1: 1ª Aquisição SFH** — texto longo com botão "mais" para expandir/recolher
-- **Card 2: Minha Casa Minha Vida** — texto curto, sem "mais"
-- **Card 3: FAR e FDS** — texto curto, sem "mais"
+1. **Mensagem de erro genérica esconde o motivo real.** Hoje, quando a API retorna 400, mostramos *"A Calculadora externa não conseguiu processar a requisição."* — o usuário não tem ideia que o problema é desconto x estado. A edge function nem trata o status 400 (só trata 500/401/403/422/404), então cai no fallback genérico.
 
-Cada card é clicável: ao clicar, marca como selecionado (borda azul mais grossa + bg sutil), preenche o `desconto` no estado e fecha o modal automaticamente. Um quarto botão "Sem desconto" no rodapé do modal limpa a seleção.
+2. **Não tratamos status 400.** Adicionar tratamento que extrai `errorMessage` do body upstream e devolve para o usuário.
 
-Após selecionar, o botão da tela do formulário muda de **"% Possui Desconto?"** para **"% Desconto: 1ª Aquisição SFH ✕"** (com X para limpar), confirmando visualmente a escolha — igual ao padrão visual da primeira imagem enviada.
+3. **UX do desconto é cega ao estado.** O usuário escolhe município de PR, depois seleciona "Minha Casa Minha Vida", calcula → erro genérico. Ele não sabe que precisa escolher outra opção (ou nenhuma).
 
-### 3. Códigos enviados à API (preciso confirmar com você)
-Você mencionou que enviaria "os textos e o código do desconto", mas só recebi os textos. A edge function `calculate-emoluments` envia `desconto` como string livre para a API externa. Antes de implementar preciso saber **qual string exata** corresponde a cada opção, pois é o que a API da calculadora vai interpretar.
+### Plano de correção
+
+#### A. Edge function `calculate-emoluments` — propagar mensagem de erro real
+Tratar status `400` extraindo `errorMessage` do body da API e devolvendo essa string ao front. Assim o usuário vê *"Desconto MCMV não está disponível para o estado PR"* em vez da genérica.
+
+#### B. Front (`src/pages/Calculadora.tsx`) — exibir o erro vindo do servidor
+O toast já mostra `data.error`. Vou garantir que ele use a mensagem real (que agora virá específica) e não apenas o fallback genérico. Também limpar o desconto automaticamente após erro 400 relacionado a desconto, para o usuário não ficar preso.
+
+#### C. Avisos visuais no modal de desconto (opcional, recomendado)
+Adicionar um aviso pequeno no rodapé do modal de seleção de desconto:
+> *"⚠️ Nem todos os descontos estão disponíveis em todos os estados. Se o cálculo falhar, tente sem desconto ou outra opção."*
+
+Isso evita frustração antes do erro acontecer.
+
+### O que NÃO vou fazer
+- **Não vou criar lista hardcoded de "estado x desconto permitido"** — a API externa pode mudar regras a qualquer momento. Melhor confiar na resposta dela e mostrar a mensagem real.
+- **Não vou alterar os códigos enviados** (`SFH`, `MCMV`, `FAR`) — eles estão corretos. Os logs confirmam que a API reconhece os códigos, ela só recusa por estado.
 
 ### Arquivos a editar
-- `src/pages/Calculadora.tsx` — trocar wrapper para `max-w-7xl` na etapa result; substituir `Collapsible` por `Dialog` com 3 cards de desconto; adicionar estado `descontoLabel` para mostrar nome amigável no botão.
-
-### Pergunta antes de implementar
+- `supabase/functions/calculate-emoluments/index.ts` — tratar 400 com `errorMessage` do upstream
+- `src/pages/Calculadora.tsx` — aviso no modal de desconto + garantir que mensagem detalhada apareça
 
