@@ -80,7 +80,7 @@ export function AppSidebar() {
   if (!user) return null;
 
   const navItems = [
-    { title: 'Meus Leads', url: '/my-leads', icon: ShoppingBag, show: true },
+    { title: 'Meus Lead - CRM', url: '/my-leads', icon: ShoppingBag, show: true },
     { title: 'Leads Disponíveis', url: '/leads', icon: Package, show: true },
     { title: 'Balcão de Parcerias', url: '/property-searches', icon: Search, show: !isPartnerSite },
     { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
@@ -96,9 +96,9 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <Link to="/" className="flex items-center">
           {isPartnerSite && partner?.logo_url ? (
-            <img src={partner.logo_url} alt={partner.name} className="h-8 max-w-[140px] object-contain" />
+            <img src={partner.logo_url} alt={partner.name} className="h-12 max-w-[180px] object-contain" />
           ) : (
-            <img src={leadbayLogo} alt="LeadBay" className={collapsed ? 'h-6' : 'h-8'} />
+            <img src={leadbayLogo} alt="LeadBay" className={collapsed ? 'h-10' : 'h-12'} />
           )}
         </Link>
       </SidebarHeader>
