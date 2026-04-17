@@ -1,59 +1,51 @@
 
-# Redesign da Calculadora de Emolumentos
+## Investigação: "Failed to fetch" no login
 
-## Resumo
-Refatorar a página `/calculadora` para seguir o fluxo visual da calculadora oficial (imagens enviadas): fluxo em etapas, cards de tipo de serviço, formulário condicional por tipo, e tabela de resultado formatada. Remover JSON cru e diagnóstico técnico da interface do usuário.
+### Diagnóstico
 
-## Fluxo (igual às imagens)
+O erro **"Failed to fetch"** com status `0` no login é um problema **conhecido do ambiente de preview do Lovable**, não do código.
 
-**Etapa 1 — Localização + Texto introdutório**
-- Texto: "A Calculadora de Emolumentos estima os custos do registro do imóvel de forma rápida, eficaz e gratuita. Desta forma não é necessário se deslocar até o cartório para realizar a previsão do preço do registro do imóvel. Caso o negócio jurídico envolva mais de um imóvel, deve ser realizado um cálculo separado para cada um dos imóveis. O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo."
-- Selects lado a lado: UF e Município
+**Causa raiz** (documentada): O ambiente de preview do Lovable injeta um proxy de `fetch` que intercepta requisições de rede. Esse proxy quebra especificamente as chamadas `POST` de autenticação do Supabase para `/auth/v1/token`. Requisições `GET` continuam funcionando, por isso o resto da plataforma parece OK, mas o login falha com `TypeError: Failed to fetch`.
 
-**Etapa 2 — Tipo de serviço (cards)**
-Título: "Escolha o tipo de serviço a calcular"
-3 cards clicáveis (ícones Lucide: `Building2`, `Landmark`, `FileText`):
-1. **Registro em Geral** — "Registro de Compra e Venda e outros" (`consulta_id=1`)
-2. **Registro de Compra e Venda com Alienação Fiduciária** — "Registro de Contrato de Compra com Alienação Fiduciária (com financiamento)" (`consulta_id=2`)
-3. **Averbação com Valor Econômico** (`consulta_id=3`)
+### Evidências que suportam o diagnóstico
 
-Aparece após UF+Município preenchidos.
+1. **Logs de auth do Supabase** (últimos eventos): logins recentes em `https://proplisted-hub.lovable.app` retornando `200` com sucesso. Ou seja, no domínio publicado o login funciona.
+2. **Código de login** (`src/pages/Auth.tsx`): usa `supabase.auth.signInWithPassword` da forma padrão e correta — não há bug no client.
+3. **Cliente Supabase** (`src/integrations/supabase/client.ts`): configuração padrão, `persistSession: true`, `autoRefreshToken: true`. Sem problemas.
+4. **Sem erros nos logs do servidor**: o Supabase não está rejeitando — as requisições nem chegam até ele quando o erro ocorre no preview.
 
-**Etapa 3 — Formulário condicional**
-Título dinâmico: "Registro em Geral (UF - Município)" ou "Registro de Compra e Venda com Alienação Fiduciária (UF - Município)"
-- Sempre: `Valor do imóvel / Transação` (máscara BRL)
-- **Apenas para `consulta_id=2`**: `Valor do financiamento` (máscara BRL)
-- Botão expansível "Possui Desconto?" → revela input de código
-- Botão "Calcular"
-- Coluna direita: bloco "Observações importantes" com texto contextual ao tipo
+### Conclusão
 
-**Etapa 4 — Resultado (tabela)**
-Renderizar tabela com colunas:
-`Descrição | Emolumento | Tribunal de Justiça - 10% | Defensoria - 5% | Ministério Público - 5% | Procuradoria - 5% | Subtotal`
-- Linhas vindas do array de itens da resposta
-- Linha "SUBTOTAIS" em negrito
-- Linha ISS
-- Linha "TOTAL" destacada (cor primária, valor grande à direita)
+O código de login está correto. O erro **"Failed to fetch"** ocorre apenas quando o usuário tenta logar pelo **iframe de preview do Lovable** (URLs `*.lovable.app/projects/...` ou o iframe embutido no editor). Em produção (`proplisted-hub.lovable.app` ou domínio próprio), o login funciona normalmente.
 
-## Mudanças técnicas
+### O que fazer
 
-### `src/pages/Calculadora.tsx` — reescrever
-- Estado de etapa: `location | service | form | result`
-- Componente de card de serviço reutilizável
-- **Remover** o accordion de JSON cru e o card "Diagnóstico técnico" da UI
-- Manter logs no console (não na tela) para debug
-- Botão "Voltar" entre etapas para refazer cálculo
-- Renderização da tabela com `Table` do shadcn
+**Não há mudança de código a fazer** — mexer em CORS, configuração do Supabase ou sobrescrever `window.fetch` não resolve e pode quebrar outras coisas.
 
-### Mapeamento da resposta da API
-Como ainda não temos o schema confirmado, vou adotar abordagem defensiva:
-- Tentar ler `data.itens` / `data.linhas` / `data.servicos` (array)
-- Cada linha esperada: `{ descricao, emolumento, tj, defensoria, mp, procuradoria, subtotal }` com fallback de chaves comuns (snake_case e camelCase)
-- Total: `data.total` ou somatório
-- Se schema vier diferente, ajustamos após primeiro retorno real (logs do console mostrarão tudo)
+**Orientação aos usuários que reportaram o erro:**
+- Confirmar que estão acessando a **URL publicada** (`https://proplisted-hub.lovable.app`) e não o link de preview do editor.
+- Se estiverem na URL correta e ainda assim derem erro, pedir:
+  - Print da tela com a aba de Network do navegador aberta (mostrar a requisição falhada)
+  - Navegador e versão
+  - Se está em rede corporativa / VPN (firewalls podem bloquear `*.supabase.co`)
+  - Se há extensão de bloqueio (uBlock, Privacy Badger, etc.) — algumas bloqueiam Supabase
 
-### Edge function
-Sem alterações — já retorna `{ ok, data, ... }` corretamente.
+### Melhoria opcional (posso implementar se aprovar)
 
-## Arquivos
-- editar `src/pages/Calculadora.tsx` (reescrita completa do JSX)
+Adicionar tratamento específico para `TypeError: Failed to fetch` em `src/pages/Auth.tsx` para mostrar uma mensagem mais clara ao usuário, em vez do genérico:
+
+```ts
+catch (error: any) {
+  const isNetworkError = error?.message?.includes('Failed to fetch');
+  toast({
+    title: isNetworkError ? 'Erro de conexão' : 'Erro no login',
+    description: isNetworkError
+      ? 'Não foi possível conectar ao servidor. Verifique sua conexão, desative bloqueadores de anúncios/VPN e tente novamente.'
+      : (error.message || 'Credenciais inválidas'),
+    variant: 'destructive',
+  });
+}
+```
+
+### Arquivos (se aprovar a melhoria)
+- editar `src/pages/Auth.tsx` — só o bloco `catch` do `handleLogin`
