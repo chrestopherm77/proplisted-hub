@@ -396,6 +396,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_crm_status: {
+        Row: {
+          id: string
+          lead_id: string
+          notes: string | null
+          purchase_id: string
+          stage: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          notes?: string | null
+          purchase_id: string
+          stage?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          purchase_id?: string
+          stage?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_submissions: {
         Row: {
           created_at: string | null
