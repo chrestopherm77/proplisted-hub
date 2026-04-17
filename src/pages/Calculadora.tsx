@@ -855,6 +855,99 @@ export default function Calculadora() {
             </Card>
           </div>
         )}
+
+        {/* Modal de seleção de desconto */}
+        <Dialog open={descontoOpen} onOpenChange={setDescontoOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Selecione o desconto aplicável</DialogTitle>
+              <DialogDescription>
+                Escolha a categoria que se aplica ao seu cálculo. O desconto será aplicado conforme a legislação vigente.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
+              {DISCOUNT_OPTIONS.map((opt) => {
+                const isSelected = desconto === opt.code;
+                const isExpanded = expandedDiscount === opt.code;
+                return (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    onClick={() => {
+                      setDesconto(opt.code);
+                      setDescontoOpen(false);
+                      setExpandedDiscount(null);
+                    }}
+                    className={`text-left rounded-lg border-2 p-4 transition-all bg-card hover:border-primary hover:shadow-md flex flex-col ${
+                      isSelected
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <h3 className="font-semibold text-sm leading-snug">{opt.label}</h3>
+                      {isSelected && (
+                        <div className="rounded-full bg-primary p-1 shrink-0">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {opt.shortText}
+                    </p>
+                    {opt.fullText && isExpanded && (
+                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line mt-2 pt-2 border-t border-border">
+                        {opt.fullText}
+                      </p>
+                    )}
+                    {opt.fullText && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedDiscount(isExpanded ? null : opt.code);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setExpandedDiscount(isExpanded ? null : opt.code);
+                          }
+                        }}
+                        className="text-xs text-primary font-medium mt-2 self-start hover:underline cursor-pointer"
+                      >
+                        {isExpanded ? "menos" : "mais"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <DialogFooter className="sm:justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setDesconto("");
+                  setDescontoOpen(false);
+                  setExpandedDiscount(null);
+                }}
+              >
+                Sem desconto
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDescontoOpen(false)}
+              >
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
