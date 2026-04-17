@@ -73,14 +73,14 @@ export default function MyLeads() {
       const crmByPurchase = new Map<string, any>();
       (crmRows || []).forEach((r: any) => crmByPurchase.set(r.purchase_id, r));
 
-      // 3) backfill: cria entrada NOVO para purchases sem crm
+      // 3) backfill: cria entrada ENTRADA para purchases sem crm
       const missing = validPurchases.filter((p: any) => !crmByPurchase.has(p.id));
       if (missing.length > 0) {
         const inserts = missing.map((p: any) => ({
           user_id: user.id,
           purchase_id: p.id,
           lead_id: p.lead_id,
-          stage: 'NOVO',
+          stage: 'ENTRADA',
         }));
         const { data: inserted, error: iErr } = await supabase
           .from('lead_crm_status')
