@@ -89,19 +89,24 @@ serve(async (req) => {
     message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
     message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.leadbay.com.br/property-searches`;
 
-    const GROUP_ID = "120363410244397205@g.us";
+    const WHATSAPP_GROUP_IDS = [
+      "120363407964054463@g.us",
+      "120363426047592689@g.us",
+    ];
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
-    const megaBody = {
-      messageData: {
-        to: GROUP_ID,
-        text: message,
-      },
-    };
 
-    console.log(`Sending group notification for new search in ${city}`);
-    const sent = await sendMegaMessage(megaUrl, MEGA_API_TOKEN, megaBody, 1);
+    console.log(`Sending group notification for new search in ${city} to ${WHATSAPP_GROUP_IDS.length} groups`);
+    const results: Record<string, boolean> = {};
+    for (const groupId of WHATSAPP_GROUP_IDS) {
+      const megaBody = { messageData: { to: groupId, text: message } };
+      const ok = await sendMegaMessage(megaUrl, MEGA_API_TOKEN, megaBody, 1);
+      results[groupId] = ok;
+      console.log(`Group ${groupId}: ${ok ? "OK" : "FAIL"}`);
+      // small delay between groups
+      await new Promise((r) => setTimeout(r, 600));
+    }
 
-    return new Response(JSON.stringify({ success: true, whatsapp_sent: sent }), {
+    return new Response(JSON.stringify({ success: true, results }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
