@@ -59,9 +59,15 @@ export default function Auth() {
       });
       navigate('/leads');
     } catch (error: any) {
+      const isNetworkError =
+        error?.message?.includes('Failed to fetch') ||
+        error?.name === 'TypeError' ||
+        error?.message?.toLowerCase?.().includes('network');
       toast({
-        title: 'Erro no login',
-        description: error.message || 'Credenciais inválidas',
+        title: isNetworkError ? 'Erro de conexão' : 'Erro no login',
+        description: isNetworkError
+          ? 'Não foi possível conectar ao servidor. Verifique sua internet, desative bloqueadores de anúncios/VPN ou tente outro navegador.'
+          : error.message || 'Credenciais inválidas',
         variant: 'destructive',
       });
     } finally {
