@@ -182,12 +182,36 @@ Deno.serve(async (req) => {
         if (MEGA_API_TOKEN) {
           const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
           const GROUP_ID = "120363410244397205@g.us";
-          await fetch(megaUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
-            body: JSON.stringify({ messageData: { to: GROUP_ID, text: groupMsg } }),
-          });
-          console.log(`Group notification sent for lead ${leadId}`);
+          const megaBody = { messageData: { to: GROUP_ID, text: groupMsg } };
+
+          let groupSent = false;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              const groupRes = await fetch(megaUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
+                body: JSON.stringify(megaBody),
+              });
+              const groupBody = await groupRes.text();
+              console.log(`Group notification attempt ${attempt} for lead ${leadId}: ${groupRes.status} - ${groupBody.substring(0, 300)}`);
+
+              let parsed: { error?: boolean } = {};
+              try { parsed = JSON.parse(groupBody); } catch { /* non-json */ }
+
+              if (groupRes.ok && !parsed.error) {
+                groupSent = true;
+                console.log(`Group notification sent for lead ${leadId}`);
+                break;
+              }
+              if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+            } catch (fetchErr) {
+              console.error(`Group notification fetch error attempt ${attempt}:`, fetchErr);
+              if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+            }
+          }
+          if (!groupSent) {
+            console.error(`Group notification FAILED for lead ${leadId} after 3 attempts (Mega API instability)`);
+          }
         }
       }
     } catch (groupErr) {

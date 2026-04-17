@@ -471,10 +471,21 @@ export function LeadsManagement() {
                         const { data, error } = await supabase.functions.invoke('notify-lead-group', {
                           body: { leadId: lead.id },
                         });
-                        if (error) throw error;
+                        if (error || (data && (data as any).error)) {
+                          const msg = (data as any)?.error || error?.message || 'Erro desconhecido';
+                          throw new Error(msg);
+                        }
                         toast({ title: '✅ Notificação enviada ao grupo WhatsApp!' });
                       } catch (err: any) {
-                        toast({ title: 'Erro ao disparar no grupo', description: err.message, variant: 'destructive' });
+                        const msg: string = err?.message || '';
+                        const isMegaDown = msg.includes('tentativas') || msg.includes('instável') || msg.includes('WhatsApp');
+                        toast({
+                          title: 'Falha ao disparar no grupo',
+                          description: isMegaDown
+                            ? 'A API do WhatsApp está retornando erro. Tente novamente em alguns minutos.'
+                            : (msg || 'Erro desconhecido'),
+                          variant: 'destructive',
+                        });
                       }
                     }}
                     className="flex-1 sm:flex-none h-8"
