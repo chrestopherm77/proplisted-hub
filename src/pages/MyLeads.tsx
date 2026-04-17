@@ -73,14 +73,14 @@ export default function MyLeads() {
       const crmByPurchase = new Map<string, any>();
       (crmRows || []).forEach((r: any) => crmByPurchase.set(r.purchase_id, r));
 
-      // 3) backfill: cria entrada NOVO para purchases sem crm
+      // 3) backfill: cria entrada ENTRADA para purchases sem crm
       const missing = validPurchases.filter((p: any) => !crmByPurchase.has(p.id));
       if (missing.length > 0) {
         const inserts = missing.map((p: any) => ({
           user_id: user.id,
           purchase_id: p.id,
           lead_id: p.lead_id,
-          stage: 'NOVO',
+          stage: 'ENTRADA',
         }));
         const { data: inserted, error: iErr } = await supabase
           .from('lead_crm_status')
@@ -98,7 +98,7 @@ export default function MyLeads() {
         const crm = crmByPurchase.get(p.id);
         return {
           crmId: crm?.id || '',
-          stage: (crm?.stage || 'NOVO') as CrmStage,
+          stage: (crm?.stage || 'ENTRADA') as CrmStage,
           notes: crm?.notes || null,
           purchaseId: p.id,
           amount: Number(p.amount),
@@ -122,7 +122,7 @@ export default function MyLeads() {
 
   const grouped = useMemo(() => {
     const g: Record<CrmStage, CrmLead[]> = {
-      NOVO: [], EM_CONVERSA: [], AGENDADO: [], VENDIDO: [], PERDIDO: [],
+      ENTRADA: [], EM_ATENDIMENTO: [], VISITA: [], NEGOCIACAO: [], ASSINATURA: [], GANHO: [], PERDIDO: [],
     };
     leads.forEach((l) => g[l.stage].push(l));
     return g;
@@ -181,8 +181,8 @@ export default function MyLeads() {
           </div>
         ) : isMobile ? (
           // Mobile: Tabs
-          <Tabs defaultValue="NOVO" className="w-full">
-            <TabsList className="w-full grid grid-cols-5 h-auto">
+          <Tabs defaultValue="ENTRADA" className="w-full">
+            <TabsList className="w-full flex overflow-x-auto h-auto scrollbar-hide">
               {STAGES.map((s) => (
                 <TabsTrigger key={s.key} value={s.key} className="flex-col gap-0.5 py-2 text-[10px]">
                   <span className="leading-tight">{s.label}</span>
@@ -205,7 +205,7 @@ export default function MyLeads() {
         ) : (
           // Desktop: Kanban com drag & drop
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 min-w-max">
               {STAGES.map((s) => (
                 <LeadKanbanColumn
                   key={s.key}

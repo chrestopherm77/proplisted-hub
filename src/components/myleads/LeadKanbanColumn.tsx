@@ -15,7 +15,7 @@ export function LeadKanbanColumn({ stage, leads, onCardClick }: Props) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col rounded-lg border-2 transition-colors ${meta.accent} ${
+      className={`flex flex-col rounded-lg border-2 transition-colors w-[260px] min-w-[260px] ${meta.accent} ${
         isOver ? 'ring-2 ring-primary ring-offset-2' : ''
       }`}
     >
