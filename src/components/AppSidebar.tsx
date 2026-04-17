@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   User,
   LogOut,
-  ShoppingCart,
   Bot,
   Coins,
   Calculator,
@@ -154,14 +153,6 @@ export function AppSidebar() {
               <Link to="/comprar-creditos">
                 <Coins className="h-4 w-4" />
                 <span>Comprar Créditos</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Carrinho">
-              <Link to="/cart">
-                <ShoppingCart className="h-4 w-4" />
-                <span>Carrinho</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

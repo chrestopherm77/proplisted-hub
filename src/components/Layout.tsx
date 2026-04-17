@@ -1,15 +1,12 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import { MobileMenu } from '@/components/MobileMenu';
-import { FloatingCart } from '@/components/FloatingCart';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,49 +16,6 @@ export const Layout = ({ children }: LayoutProps) => {
   const { user, isAdmin, isConstrutora, signOut } = useAuth();
   const { partner, isPartnerSite } = usePartner();
   const navigate = useNavigate();
-  const [cartCount, setCartCount] = useState(0);
-
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      if (!user) {
-        setCartCount(0);
-        return;
-      }
-      try {
-        const { count, error } = await supabase
-          .from('shopping_cart')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        if (!error && count !== null) {
-          setCartCount(count);
-        }
-      } catch (err) {
-        console.error('Error fetching cart count:', err);
-      }
-    };
-
-    fetchCartCount();
-
-    if (user) {
-      const channel = supabase
-        .channel('cart-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'shopping_cart',
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => fetchCartCount()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -111,13 +65,6 @@ export const Layout = ({ children }: LayoutProps) => {
               <MobileMenu isAdmin={isAdmin ?? false} isConstrutora={isConstrutora} onSignOut={handleSignOut} />
               <SidebarTrigger className="hidden md:flex" />
             </div>
-            <div className="flex items-center gap-2">
-              <Link to="/cart">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <ShoppingCart className="h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
           </header>
 
           <main className="flex-1 container mx-auto px-4 py-4 md:py-8">{children}</main>
@@ -129,8 +76,6 @@ export const Layout = ({ children }: LayoutProps) => {
           </footer>
         </div>
       </div>
-
-      {user && <FloatingCart itemCount={cartCount} />}
     </SidebarProvider>
   );
 };

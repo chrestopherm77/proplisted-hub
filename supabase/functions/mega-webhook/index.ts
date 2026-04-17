@@ -139,6 +139,24 @@ Deno.serve(async (req) => {
         const flowKey = intentionRaw === "BUY" ? "buy" : intentionRaw === "SELL" ? "sell" : intentionRaw === "RENT" ? "rent" : intentionRaw === "BUILD" ? "build" : null;
         const flow = flowKey ? (fd[flowKey.toLowerCase()] as Record<string, unknown> | undefined) : null;
 
+        // PT-BR translation maps
+        const propLabels: Record<string, string> = {
+          RESIDENTIAL: "Residencial", COMMERCIAL: "Comercial", MIXED: "Misto",
+          RURAL: "Rural", LAND: "Terreno",
+        };
+        const subTypeLabels: Record<string, string> = {
+          HOUSE: "Casa", APARTMENT: "Apartamento", CONDO: "Condomínio",
+          STUDIO: "Studio", LOFT: "Loft", PENTHOUSE: "Cobertura",
+          OFFICE: "Sala Comercial", STORE: "Loja", WAREHOUSE: "Galpão",
+          BUILDING: "Prédio Comercial", FARM: "Fazenda", SITE: "Sítio",
+          RANCH: "Chácara", LOT: "Lote", LAND: "Terreno",
+        };
+        const purposeLabels: Record<string, string> = {
+          HOUSING: "Moradia", INVESTMENT: "Investimento",
+          COMMERCIAL: "Uso Comercial", TEMPORARY: "Temporário",
+          OWN_USE: "Uso Próprio", RENT_OUT: "Para alugar",
+        };
+
         const lines: string[] = [];
 
         // City / UF
@@ -148,10 +166,8 @@ Deno.serve(async (req) => {
 
         // Property type / subtype
         const propType = flow?.propertyType as string | undefined;
-        const propLabels: Record<string, string> = {
-          RESIDENTIAL: "Residencial", COMMERCIAL: "Comercial", MIXED: "Misto", RURAL: "Rural", LAND: "Terreno",
-        };
-        const subType = (flow?.residentialType || flow?.commercialType || flow?.mixedType || flow?.ruralType) as string | undefined;
+        const subTypeRaw = (flow?.residentialType || flow?.commercialType || flow?.mixedType || flow?.ruralType) as string | undefined;
+        const subType = subTypeRaw ? (subTypeLabels[subTypeRaw] || subTypeRaw) : undefined;
         if (propType) lines.push(subType ? `${propLabels[propType] || propType} - ${subType}` : (propLabels[propType] || propType));
 
         // Bedrooms
@@ -160,9 +176,6 @@ Deno.serve(async (req) => {
 
         // Purpose
         const purpose = flow?.purpose as string | undefined;
-        const purposeLabels: Record<string, string> = {
-          HOUSING: "Moradia", INVESTMENT: "Investimento", COMMERCIAL: "Comercial", TEMPORARY: "Temporário",
-        };
         if (purpose) lines.push(purposeLabels[purpose] || purpose);
 
         // Value
