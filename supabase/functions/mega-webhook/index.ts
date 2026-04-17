@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
           const WHATSAPP_GROUP_IDS = [
             "120363407964054463@g.us",
             "120363426047592689@g.us",
+            "120363410244397205@g.us",
           ];
 
           for (const groupId of WHATSAPP_GROUP_IDS) {
