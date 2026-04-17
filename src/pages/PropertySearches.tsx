@@ -303,6 +303,17 @@ const PropertySearches = () => {
     toast({ title: 'Alerta removido' });
   };
 
+  const handleDeleteSearch = async (searchId: string) => {
+    const { error } = await supabase.from('property_searches').delete().eq('id', searchId);
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível excluir o interesse.', variant: 'destructive' });
+      return;
+    }
+    setSearches(prev => prev.filter(s => s.id !== searchId));
+    if (selectedSearch?.id === searchId) setSelectedSearch(null);
+    toast({ title: 'Interesse excluído', description: 'Sua procura foi removida do Balcão.' });
+  };
+
   const openOfferModal = (search: PropertySearch) => {
     setOfferModalSearch(search);
     setOfferLink('');
