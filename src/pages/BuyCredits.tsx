@@ -276,7 +276,6 @@ export default function BuyCredits() {
                   </div>
                 )}
                 <CardHeader className="text-center pb-2 pt-6">
-                  <CardTitle className="text-lg">{pkg.name}</CardTitle>
                   <p className="text-3xl font-bold text-primary mt-2">{formatPrice(pkg.price)}</p>
                 </CardHeader>
                 <CardContent className="flex-grow text-center space-y-3">
