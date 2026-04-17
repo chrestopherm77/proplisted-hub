@@ -1,44 +1,48 @@
 
+## Trocar grupos de WhatsApp e corrigir disparos
 
-## Diagnóstico: erro 400 da Calculadora externa por estado
+### 1. Trocar IDs dos grupos
+Hoje há um único grupo hardcoded em 3 edge functions: `120363410244397205@g.us`.
 
-### Causa raiz
-A API externa da Calculadora **rejeita os códigos de desconto dependendo do estado**. Logs de hoje (16:45):
+Vou substituir por **2 grupos**:
+- `120363407964054463@g.us`
+- `120363426047592689@g.us`
 
+Cada notificação será enviada para os 2 grupos (loop), com retry independente. Se um falhar, o outro ainda recebe.
+
+**Arquivos:**
+- `supabase/functions/mega-webhook/index.ts` — disparo automático após confirmação WhatsApp do lead
+- `supabase/functions/notify-lead-group/index.ts` — disparo manual via "megafone" no admin
+- `supabase/functions/notify-group-new-search/index.ts` — disparo de nova procura no Balcão
+
+### 2. Investigar por que o disparo não funciona
+
+Pelos logs e código atual, vejo dois problemas prováveis:
+
+**a) Retry insuficiente no `mega-webhook`** — quando o lead é ativado via WhatsApp, o disparo de grupo é "fire-and-forget" com 3 tentativas mas sem visibilidade no front. Se a Mega API retornar `{ error: true }` no body com HTTP 200, marcamos como falha e abandonamos sem alertar ninguém.
+
+**b) Megafone (`notify-lead-group`)** — atualmente devolve 502 ao admin se as 3 tentativas falharem, mas pode estar falhando porque o ID do grupo antigo (`120363410244397205`) não existe mais ou o bot saiu dele. Trocar para os 2 novos IDs deve resolver.
+
+**Plano de diagnóstico + correção:**
+1. Deploy das 3 funções com os 2 novos IDs
+2. Você dispara o megafone em 1 lead de teste
+3. Eu leio os logs de `notify-lead-group` em tempo real (`edge_function_logs`) e confirmo se a Mega API aceitou para os 2 grupos
+4. Se ainda falhar, o log da Mega vai mostrar o motivo exato (grupo inexistente, bot não é membro, token inválido, etc.) e ajustamos
+
+### 3. Refatoração leve (centralizar IDs)
+Para não ficar 3 lugares com IDs duplicados, vou criar uma constante no topo de cada função:
+```ts
+const WHATSAPP_GROUP_IDS = [
+  "120363407964054463@g.us",
+  "120363426047592689@g.us",
+];
 ```
-status 400 — "Desconto MCMV não está disponível para o estado PR"
-status 400 — "Desconto SFH não está disponível para o estado PR"
-```
+E loopar nessa lista ao enviar. Mantém local (sem secret novo) e fácil de editar depois.
 
-Ou seja: os códigos `SFH`, `MCMV` e `FAR` que estamos enviando estão **corretos e aceitos pela API**, mas cada estado define quais descontos aceita. O Paraná não aceita SFH nem MCMV — e provavelmente nem FAR.
+### Arquivos editados
+- `supabase/functions/mega-webhook/index.ts`
+- `supabase/functions/notify-lead-group/index.ts`
+- `supabase/functions/notify-group-new-search/index.ts`
 
-### Bugs que isso revelou no nosso código
-
-1. **Mensagem de erro genérica esconde o motivo real.** Hoje, quando a API retorna 400, mostramos *"A Calculadora externa não conseguiu processar a requisição."* — o usuário não tem ideia que o problema é desconto x estado. A edge function nem trata o status 400 (só trata 500/401/403/422/404), então cai no fallback genérico.
-
-2. **Não tratamos status 400.** Adicionar tratamento que extrai `errorMessage` do body upstream e devolve para o usuário.
-
-3. **UX do desconto é cega ao estado.** O usuário escolhe município de PR, depois seleciona "Minha Casa Minha Vida", calcula → erro genérico. Ele não sabe que precisa escolher outra opção (ou nenhuma).
-
-### Plano de correção
-
-#### A. Edge function `calculate-emoluments` — propagar mensagem de erro real
-Tratar status `400` extraindo `errorMessage` do body da API e devolvendo essa string ao front. Assim o usuário vê *"Desconto MCMV não está disponível para o estado PR"* em vez da genérica.
-
-#### B. Front (`src/pages/Calculadora.tsx`) — exibir o erro vindo do servidor
-O toast já mostra `data.error`. Vou garantir que ele use a mensagem real (que agora virá específica) e não apenas o fallback genérico. Também limpar o desconto automaticamente após erro 400 relacionado a desconto, para o usuário não ficar preso.
-
-#### C. Avisos visuais no modal de desconto (opcional, recomendado)
-Adicionar um aviso pequeno no rodapé do modal de seleção de desconto:
-> *"⚠️ Nem todos os descontos estão disponíveis em todos os estados. Se o cálculo falhar, tente sem desconto ou outra opção."*
-
-Isso evita frustração antes do erro acontecer.
-
-### O que NÃO vou fazer
-- **Não vou criar lista hardcoded de "estado x desconto permitido"** — a API externa pode mudar regras a qualquer momento. Melhor confiar na resposta dela e mostrar a mensagem real.
-- **Não vou alterar os códigos enviados** (`SFH`, `MCMV`, `FAR`) — eles estão corretos. Os logs confirmam que a API reconhece os códigos, ela só recusa por estado.
-
-### Arquivos a editar
-- `supabase/functions/calculate-emoluments/index.ts` — tratar 400 com `errorMessage` do upstream
-- `src/pages/Calculadora.tsx` — aviso no modal de desconto + garantir que mensagem detalhada apareça
-
+### Próximo passo após implementação
+Após deploy, peço que você dispare o megafone em 1 lead — eu leio os logs e confirmo se chegou nos 2 grupos. Se a Mega rejeitar, mostro o motivo exato.
