@@ -182,7 +182,7 @@ export default function MyLeads() {
         ) : isMobile ? (
           // Mobile: Tabs
           <Tabs defaultValue="ENTRADA" className="w-full">
-            <TabsList className="w-full grid grid-cols-5 h-auto">
+            <TabsList className="w-full flex overflow-x-auto h-auto scrollbar-hide">
               {STAGES.map((s) => (
                 <TabsTrigger key={s.key} value={s.key} className="flex-col gap-0.5 py-2 text-[10px]">
                   <span className="leading-tight">{s.label}</span>
@@ -205,7 +205,7 @@ export default function MyLeads() {
         ) : (
           // Desktop: Kanban com drag & drop
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 min-w-max">
               {STAGES.map((s) => (
                 <LeadKanbanColumn
                   key={s.key}
