@@ -124,7 +124,16 @@ export default function MyLeads() {
     const g: Record<CrmStage, CrmLead[]> = {
       ENTRADA: [], EM_ATENDIMENTO: [], VISITA: [], NEGOCIACAO: [], ASSINATURA: [], GANHO: [], PERDIDO: [],
     };
-    leads.forEach((l) => g[l.stage].push(l));
+    const validStages = new Set(STAGES.map((s) => s.key));
+    leads.forEach((l) => {
+      const stage = (l?.stage as CrmStage) || 'ENTRADA';
+      if (validStages.has(stage)) {
+        g[stage].push(l);
+      } else {
+        console.warn('[MyLeads] Stage inválido, jogando em ENTRADA:', l?.stage, l);
+        g.ENTRADA.push({ ...l, stage: 'ENTRADA' });
+      }
+    });
     return g;
   }, [leads]);
 
