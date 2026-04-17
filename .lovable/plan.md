@@ -1,37 +1,49 @@
 
-## Corrigir tradução do tipo de imóvel + Excluir interesse no Balcão
+## Disparo diário de notícias nos grupos do WhatsApp (07:00)
 
-### Problema 1 — "APARTMENT" e "R$ R$" no WhatsApp
+### O que vai acontecer
+Todo dia às **07:00 (horário de Brasília)** será enviada automaticamente uma mensagem nos 3 grupos do WhatsApp com uma chamada para o "Giro do Mercado".
 
-O fluxo **Comprar** (`BuyPropertyTypeStep`) salva os valores como `propertyType = HOUSE | APARTMENT | KITNET | COMMERCIAL | LAND | RURAL`.
+### Mensagem (copy)
+```
+☀️ *Bom dia, time Leadbay!*
 
-Já as funções `mega-webhook` e `notify-lead-group` só traduzem `propertyType` quando ele é `RESIDENTIAL/COMMERCIAL/MIXED/RURAL/LAND` (esquema antigo do fluxo Sell/Rent). Resultado: `APARTMENT`, `HOUSE`, `KITNET` aparecem crus.
+📰 *Giro do Mercado Imobiliário*
 
-Bônus: `budgetMax` é salvo já formatado como `"R$ 270.000,00"`, então ao fazer `R$ ${value}` vira **"R$ R$ 270.000,00"**.
+Confira as notícias que estão movimentando o mercado imobiliário hoje e saia na frente da concorrência:
 
-**Correção** (em `mega-webhook/index.ts` e `notify-lead-group/index.ts`):
-1. Expandir o `propLabels` para incluir os valores do fluxo Comprar:
-   ```ts
-   HOUSE: "Casa", APARTMENT: "Apartamento", KITNET: "Kitnet/Studio",
-   COMMERCIAL: "Comercial", LAND: "Terreno", RURAL: "Rural",
-   RESIDENTIAL: "Residencial", MIXED: "Misto",
-   ```
-2. Limpar prefixo `R$` duplicado antes de imprimir o valor:
-   ```ts
-   const cleanValue = String(value).replace(/^R\$\s*/i, "").trim();
-   if (cleanValue) lines.push(`R$ ${cleanValue}`);
-   ```
+✅ Tendências de preços
+✅ Novidades em financiamento
+✅ Lançamentos e oportunidades
+✅ Mudanças regulatórias
 
-### Problema 2 — Excluir interesse no Balcão de Parcerias
+Informação é a base de toda boa negociação. 💼
 
-Hoje em `/property-searches` (Balcão), os cards **não têm** botão de excluir o próprio interesse. Só alertas têm.
+👉 Acesse agora: https://www.leadbay.com.br/giro-do-mercado
 
-**Correção** em `src/pages/PropertySearches.tsx`:
-- Criar `handleDeleteSearch(id)` que confirma e faz `supabase.from('property_searches').delete().eq('id', id).eq('user_id', user.id)` (RLS já garante isolamento), removendo do estado local `searches`.
-- Adicionar botão **Excluir** (ícone `Trash2`, variant ghost, vermelho) no rodapé de cada card, **somente quando** `s.user_id === user.id` (lado do dono). Admin (`isAdmin`) também pode excluir qualquer um.
-- Usar `AlertDialog` (shadcn) para confirmação antes de deletar.
+Bons negócios! 🚀
+```
 
-### Arquivos editados
-- `supabase/functions/mega-webhook/index.ts` — propLabels expandido + clean R$
-- `supabase/functions/notify-lead-group/index.ts` — propLabels expandido + clean R$
-- `src/pages/PropertySearches.tsx` — botão de excluir nos cards próprios + admin
+### Implementação técnica
+
+**1. Nova edge function `daily-news-broadcast`** (`supabase/functions/daily-news-broadcast/index.ts`)
+- Valida header `Authorization: Bearer ${CRON_SECRET}` (segurança)
+- Loop nos 3 grupos do WhatsApp (`120363407964054463`, `120363426047592689`, `120363410244397205`)
+- Para cada grupo: 3 tentativas com backoff (mesmo padrão de `mega-webhook`)
+- Delay de 700ms entre grupos
+- Retorna JSON com status de cada grupo
+
+**2. Cron job no Postgres (pg_cron + pg_net)**
+- Agendado para `0 10 * * *` UTC = **07:00 horário de Brasília** (UTC-3)
+- Faz `net.http_post` para a edge function passando `CRON_SECRET` no header
+- Será criado via SQL insert (não migration, pois contém dados específicos do projeto)
+
+### Arquivos
+- **Novo:** `supabase/functions/daily-news-broadcast/index.ts`
+- **SQL via insert:** registrar cron job `daily-news-broadcast-7am`
+
+### Observações
+- Reuso do secret `CRON_SECRET` que já existe — sem necessidade de adicionar novos.
+- Reuso do secret `MEGA_API_TOKEN` que já está configurado.
+- IDs dos grupos hardcoded na função (consistente com as outras 3 funções de broadcast).
+- Se quiser pausar no futuro, basta `SELECT cron.unschedule('daily-news-broadcast-7am')`.
