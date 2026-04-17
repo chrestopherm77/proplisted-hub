@@ -20,10 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Calculator as CalculatorIcon,
   Loader2,
@@ -31,8 +34,10 @@ import {
   Landmark,
   FileText,
   ArrowLeft,
-  ChevronDown,
   Info,
+  Percent,
+  X,
+  Check,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIBGELocation } from "@/hooks/useIBGELocation";
@@ -98,6 +103,36 @@ const SERVICES: ServiceOption[] = [
 
 const INTRO_TEXT =
   "A Calculadora de Emolumentos estima os custos do registro do imóvel de forma rápida, eficaz e gratuita. Desta forma não é necessário se deslocar até o cartório para realizar a previsão do preço do registro do imóvel. Caso o negócio jurídico envolva mais de um imóvel, deve ser realizado um cálculo separado para cada um dos imóveis. O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo.";
+
+interface DiscountOption {
+  code: string;
+  label: string;
+  shortText: string;
+  fullText?: string;
+}
+
+const DISCOUNT_OPTIONS: DiscountOption[] = [
+  {
+    code: "SFH",
+    label: "1ª Aquisição SFH",
+    shortText:
+      "Lei 6.015/73, Art. 290 — Os emolumentos devidos pelos atos relacionados com a primeira aquisição imobiliária para fins residenciais, financiada pelo Sistema Financeiro da Habitação, serão reduzidos em 50%.",
+    fullText:
+      "Lei 3350/99 RJ, Art. 44 — São isentos do pagamento do acréscimo de 20% (vinte por cento) instituído pela Lei nº 713/1983, com a redação da Lei nº 723/1984, e das taxas previstas nas Leis nº 489/1981 e nº 590/1987, os atos notariais e de registro que comprovadamente se referirem à primeira aquisição da casa própria ou praticados com a interveniência de Cooperativas Habitacionais quando destinados a residência do adquirente.\n\n§ 3º — O notário ou registrador, para o cumprimento do disposto no caput, exigirá certidões dos Ofícios de Distribuição competentes.",
+  },
+  {
+    code: "MCMV",
+    label: "Minha Casa Minha Vida",
+    shortText:
+      "Lei nº 11.977/09, Art. 42, II — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 50% para os atos relacionados aos demais empreendimentos do PMCMV.",
+  },
+  {
+    code: "FAR",
+    label: "FAR e FDS",
+    shortText:
+      "Lei nº 11.977/09, Art. 42, I — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 75% para os empreendimentos do FAR e do FDS.",
+  },
+];
 
 function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", {
@@ -325,6 +360,7 @@ export default function Calculadora() {
   const [valorFinanciamentoStr, setValorFinanciamentoStr] = useState("");
   const [desconto, setDesconto] = useState("");
   const [descontoOpen, setDescontoOpen] = useState(false);
+  const [expandedDiscount, setExpandedDiscount] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
@@ -462,7 +498,7 @@ export default function Calculadora() {
 
   return (
     <Layout>
-      <div className="container max-w-5xl py-6 space-y-6">
+      <div className={`container ${step === "result" ? "max-w-7xl" : "max-w-5xl"} py-6 space-y-6`}>
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary/10 p-2">
             <CalculatorIcon className="h-6 w-6 text-primary" />
@@ -638,27 +674,36 @@ export default function Calculadora() {
                     </div>
                   )}
 
-                  <Collapsible open={descontoOpen} onOpenChange={setDescontoOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        Possui desconto?
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${descontoOpen ? "rotate-180" : ""}`}
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-3">
-                      <div className="space-y-2">
-                        <Label>Código de desconto</Label>
-                        <Input
-                          placeholder="Ex: MCMV"
-                          value={desconto}
-                          onChange={(e) => setDesconto(e.target.value)}
-                          maxLength={50}
-                        />
+                  {(() => {
+                    const selected = DISCOUNT_OPTIONS.find((d) => d.code === desconto);
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant={selected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDescontoOpen(true)}
+                          className="gap-2"
+                        >
+                          <Percent className="h-4 w-4" />
+                          {selected ? `Desconto: ${selected.label}` : "Possui desconto?"}
+                        </Button>
+                        {selected && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDesconto("")}
+                            className="gap-1 text-muted-foreground hover:text-foreground"
+                            aria-label="Remover desconto"
+                          >
+                            <X className="h-4 w-4" />
+                            Limpar
+                          </Button>
+                        )}
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    );
+                  })()}
 
                   <Button
                     onClick={handleCalcular}
@@ -810,6 +855,99 @@ export default function Calculadora() {
             </Card>
           </div>
         )}
+
+        {/* Modal de seleção de desconto */}
+        <Dialog open={descontoOpen} onOpenChange={setDescontoOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Selecione o desconto aplicável</DialogTitle>
+              <DialogDescription>
+                Escolha a categoria que se aplica ao seu cálculo. O desconto será aplicado conforme a legislação vigente.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
+              {DISCOUNT_OPTIONS.map((opt) => {
+                const isSelected = desconto === opt.code;
+                const isExpanded = expandedDiscount === opt.code;
+                return (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    onClick={() => {
+                      setDesconto(opt.code);
+                      setDescontoOpen(false);
+                      setExpandedDiscount(null);
+                    }}
+                    className={`text-left rounded-lg border-2 p-4 transition-all bg-card hover:border-primary hover:shadow-md flex flex-col ${
+                      isSelected
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <h3 className="font-semibold text-sm leading-snug">{opt.label}</h3>
+                      {isSelected && (
+                        <div className="rounded-full bg-primary p-1 shrink-0">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {opt.shortText}
+                    </p>
+                    {opt.fullText && isExpanded && (
+                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line mt-2 pt-2 border-t border-border">
+                        {opt.fullText}
+                      </p>
+                    )}
+                    {opt.fullText && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedDiscount(isExpanded ? null : opt.code);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setExpandedDiscount(isExpanded ? null : opt.code);
+                          }
+                        }}
+                        className="text-xs text-primary font-medium mt-2 self-start hover:underline cursor-pointer"
+                      >
+                        {isExpanded ? "menos" : "mais"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <DialogFooter className="sm:justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setDesconto("");
+                  setDescontoOpen(false);
+                  setExpandedDiscount(null);
+                }}
+              >
+                Sem desconto
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDescontoOpen(false)}
+              >
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
