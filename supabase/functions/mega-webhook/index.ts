@@ -143,13 +143,14 @@ Deno.serve(async (req) => {
         const propLabels: Record<string, string> = {
           RESIDENTIAL: "Residencial", COMMERCIAL: "Comercial", MIXED: "Misto",
           RURAL: "Rural", LAND: "Terreno",
+          HOUSE: "Casa", APARTMENT: "Apartamento", KITNET: "Kitnet/Studio",
         };
         const subTypeLabels: Record<string, string> = {
           HOUSE: "Casa", APARTMENT: "Apartamento", CONDO: "Condomínio",
           STUDIO: "Studio", LOFT: "Loft", PENTHOUSE: "Cobertura",
           OFFICE: "Sala Comercial", STORE: "Loja", WAREHOUSE: "Galpão",
           BUILDING: "Prédio Comercial", FARM: "Fazenda", SITE: "Sítio",
-          RANCH: "Chácara", LOT: "Lote", LAND: "Terreno",
+          RANCH: "Chácara", LOT: "Lote", LAND: "Terreno", KITNET: "Kitnet/Studio",
         };
         const purposeLabels: Record<string, string> = {
           HOUSING: "Moradia", INVESTMENT: "Investimento",
@@ -180,7 +181,10 @@ Deno.serve(async (req) => {
 
         // Value
         const value = (flow?.expectedValue || flow?.budgetMax || flow?.maxRent || flow?.budget) as string | undefined;
-        if (value) lines.push(`R$ ${value}`);
+        if (value) {
+          const cleanValue = String(value).replace(/^R\$\s*/i, "").trim();
+          if (cleanValue) lines.push(`R$ ${cleanValue}`);
+        }
 
         const details = lines.join("\n");
 
