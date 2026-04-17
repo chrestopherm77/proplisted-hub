@@ -56,7 +56,7 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
   const [stage, setStage] = useState<CrmStage>('NOVO');
   const [savingNotes, setSavingNotes] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialNotesRef = useRef('');
 
   useEffect(() => {
