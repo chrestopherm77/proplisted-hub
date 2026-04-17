@@ -1,7 +1,11 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Play, Bot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 import crmImg from '@/assets/nossa-ia-crm.png';
 import dashboardImg from '@/assets/nossa-ia-dashboard.png';
