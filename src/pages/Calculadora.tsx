@@ -360,6 +360,7 @@ export default function Calculadora() {
   const [valorFinanciamentoStr, setValorFinanciamentoStr] = useState("");
   const [desconto, setDesconto] = useState("");
   const [descontoOpen, setDescontoOpen] = useState(false);
+  const [expandedDiscount, setExpandedDiscount] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
@@ -497,7 +498,7 @@ export default function Calculadora() {
 
   return (
     <Layout>
-      <div className="container max-w-5xl py-6 space-y-6">
+      <div className={`container ${step === "result" ? "max-w-7xl" : "max-w-5xl"} py-6 space-y-6`}>
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary/10 p-2">
             <CalculatorIcon className="h-6 w-6 text-primary" />
@@ -673,27 +674,36 @@ export default function Calculadora() {
                     </div>
                   )}
 
-                  <Collapsible open={descontoOpen} onOpenChange={setDescontoOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        Possui desconto?
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${descontoOpen ? "rotate-180" : ""}`}
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-3">
-                      <div className="space-y-2">
-                        <Label>Código de desconto</Label>
-                        <Input
-                          placeholder="Ex: MCMV"
-                          value={desconto}
-                          onChange={(e) => setDesconto(e.target.value)}
-                          maxLength={50}
-                        />
+                  {(() => {
+                    const selected = DISCOUNT_OPTIONS.find((d) => d.code === desconto);
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant={selected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDescontoOpen(true)}
+                          className="gap-2"
+                        >
+                          <Percent className="h-4 w-4" />
+                          {selected ? `Desconto: ${selected.label}` : "Possui desconto?"}
+                        </Button>
+                        {selected && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDesconto("")}
+                            className="gap-1 text-muted-foreground hover:text-foreground"
+                            aria-label="Remover desconto"
+                          >
+                            <X className="h-4 w-4" />
+                            Limpar
+                          </Button>
+                        )}
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    );
+                  })()}
 
                   <Button
                     onClick={handleCalcular}
