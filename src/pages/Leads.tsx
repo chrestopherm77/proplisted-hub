@@ -482,7 +482,6 @@ export default function Leads() {
           <div className="flex items-center gap-3">
             <Coins className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             <div>
-              <p className="text-sm text-muted-foreground">Seu saldo</p>
               <p className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{creditBalance.toLocaleString('pt-BR')} créditos</p>
             </div>
           </div>

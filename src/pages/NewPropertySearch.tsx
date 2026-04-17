@@ -382,7 +382,19 @@ const NewPropertySearch = () => {
               {config.hasBedrooms && (
                 <div className="space-y-2">
                   <Label>Quartos</Label>
-                  <Input value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} />
+                  <div className="grid grid-cols-4 gap-2">
+                    {['1', '2', '3', '4+'].map((opt) => (
+                      <Button
+                        key={opt}
+                        type="button"
+                        variant={bedrooms === opt ? 'default' : 'outline'}
+                        onClick={() => setBedrooms(opt)}
+                        className="h-10"
+                      >
+                        {opt}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -410,7 +422,19 @@ const NewPropertySearch = () => {
             {config.hasParking && (
               <div className="space-y-2">
                 <Label>Vagas de Garagem</Label>
-                <Input value={parkingSpots} onChange={(e) => setParkingSpots(e.target.value)} />
+                <div className="grid grid-cols-4 gap-2 max-w-xs">
+                  {['1', '2', '3', '4+'].map((opt) => (
+                    <Button
+                      key={opt}
+                      type="button"
+                      variant={parkingSpots === opt ? 'default' : 'outline'}
+                      onClick={() => setParkingSpots(opt)}
+                      className="h-10"
+                    >
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
 
