@@ -441,7 +441,7 @@ export default function Calculadora() {
       if (selectedService.needsFinancing && valorFinanciamento > 0) {
         body.valor_financiamento = valorFinanciamento;
       }
-      if (desconto.trim()) body.desconto = desconto.trim();
+      if (desconto.trim()) body.desconto = `${desconto.trim()}/${uf}`;
 
       const { data: response, error } = await supabase.functions.invoke(
         "calculate-emoluments",
@@ -881,7 +881,7 @@ export default function Calculadora() {
               </div>
             </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 py-2">
               {DISCOUNT_OPTIONS.map((opt) => {
                 const isSelected = desconto === opt.code;
                 const isExpanded = expandedDiscount === opt.code;
