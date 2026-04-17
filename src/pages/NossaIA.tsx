@@ -1,7 +1,11 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Play, Bot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 import crmImg from '@/assets/nossa-ia-crm.png';
 import dashboardImg from '@/assets/nossa-ia-dashboard.png';
@@ -36,6 +40,34 @@ const sections = [
 ];
 
 const NossaIA = () => {
+  const { user, loading, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (loading || isAdmin === null) return;
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    if (isAdmin === false) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Você não tem permissão para acessar esta área',
+        variant: 'destructive',
+      });
+      navigate('/leads');
+    }
+  }, [user, loading, isAdmin, navigate, toast]);
+
+  if (loading || isAdmin !== true) {
+    return (
+      <Layout>
+        <div className="text-center py-12">Carregando...</div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-12">
