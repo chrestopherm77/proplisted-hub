@@ -104,6 +104,36 @@ const SERVICES: ServiceOption[] = [
 const INTRO_TEXT =
   "A Calculadora de Emolumentos estima os custos do registro do imóvel de forma rápida, eficaz e gratuita. Desta forma não é necessário se deslocar até o cartório para realizar a previsão do preço do registro do imóvel. Caso o negócio jurídico envolva mais de um imóvel, deve ser realizado um cálculo separado para cada um dos imóveis. O valor definitivo será calculado pelo respectivo Registro de Imóveis após o protocolo.";
 
+interface DiscountOption {
+  code: string;
+  label: string;
+  shortText: string;
+  fullText?: string;
+}
+
+const DISCOUNT_OPTIONS: DiscountOption[] = [
+  {
+    code: "SFH",
+    label: "1ª Aquisição SFH",
+    shortText:
+      "Lei 6.015/73, Art. 290 — Os emolumentos devidos pelos atos relacionados com a primeira aquisição imobiliária para fins residenciais, financiada pelo Sistema Financeiro da Habitação, serão reduzidos em 50%.",
+    fullText:
+      "Lei 3350/99 RJ, Art. 44 — São isentos do pagamento do acréscimo de 20% (vinte por cento) instituído pela Lei nº 713/1983, com a redação da Lei nº 723/1984, e das taxas previstas nas Leis nº 489/1981 e nº 590/1987, os atos notariais e de registro que comprovadamente se referirem à primeira aquisição da casa própria ou praticados com a interveniência de Cooperativas Habitacionais quando destinados a residência do adquirente.\n\n§ 3º — O notário ou registrador, para o cumprimento do disposto no caput, exigirá certidões dos Ofícios de Distribuição competentes.",
+  },
+  {
+    code: "MCMV",
+    label: "Minha Casa Minha Vida",
+    shortText:
+      "Lei nº 11.977/09, Art. 42, II — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 50% para os atos relacionados aos demais empreendimentos do PMCMV.",
+  },
+  {
+    code: "FAR",
+    label: "FAR e FDS",
+    shortText:
+      "Lei nº 11.977/09, Art. 42, I — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 75% para os empreendimentos do FAR e do FDS.",
+  },
+];
+
 function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", {
     style: "currency",
