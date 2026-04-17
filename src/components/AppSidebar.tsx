@@ -63,8 +63,9 @@ export function AppSidebar() {
         table: 'profiles',
         filter: `id=eq.${user.id}`,
       }, (payload: any) => {
-        if (payload.new?.credit_balance !== undefined) {
-          setCreditBalance(payload.new.credit_balance);
+        const next = payload?.new?.credit_balance;
+        if (typeof next === 'number') {
+          setCreditBalance(next);
         }
       })
       .subscribe();
@@ -96,9 +97,19 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <Link to="/" className="flex items-center">
           {isPartnerSite && partner?.logo_url ? (
-            <img src={partner.logo_url} alt={partner.name} className="h-12 max-w-[180px] object-contain" />
+            <img
+              src={partner.logo_url}
+              alt={partner.name || 'Parceiro'}
+              className="h-12 max-w-[180px] object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = leadbayLogo; }}
+            />
           ) : (
-            <img src={leadbayLogo} alt="LeadBay" className={collapsed ? 'h-10' : 'h-12'} />
+            <img
+              src={leadbayLogo}
+              alt="LeadBay"
+              className={collapsed ? 'h-10' : 'h-12'}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
           )}
         </Link>
       </SidebarHeader>
@@ -114,7 +125,7 @@ export function AppSidebar() {
             <div className="flex flex-col min-w-0">
               <span className="text-xs text-muted-foreground">Créditos</span>
               <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300 truncate">
-                {creditBalance.toLocaleString('pt-BR')}
+                {(creditBalance ?? 0).toLocaleString('pt-BR')}
               </span>
             </div>
           )}
