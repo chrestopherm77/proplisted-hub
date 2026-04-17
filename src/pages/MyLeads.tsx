@@ -122,7 +122,7 @@ export default function MyLeads() {
 
   const grouped = useMemo(() => {
     const g: Record<CrmStage, CrmLead[]> = {
-      NOVO: [], EM_CONVERSA: [], AGENDADO: [], VENDIDO: [], PERDIDO: [],
+      ENTRADA: [], EM_ATENDIMENTO: [], VISITA: [], NEGOCIACAO: [], ASSINATURA: [], GANHO: [], PERDIDO: [],
     };
     leads.forEach((l) => g[l.stage].push(l));
     return g;
