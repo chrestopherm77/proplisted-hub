@@ -20,10 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Calculator as CalculatorIcon,
   Loader2,
@@ -31,8 +34,10 @@ import {
   Landmark,
   FileText,
   ArrowLeft,
-  ChevronDown,
   Info,
+  Percent,
+  X,
+  Check,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIBGELocation } from "@/hooks/useIBGELocation";
