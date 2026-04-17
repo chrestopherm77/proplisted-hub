@@ -1,83 +1,44 @@
 
-## CRM Kanban em "Meus Leads"
+## Estabilizar carregamento e melhorar diagnóstico de erros
 
-Transformar `/my-leads` num kanban arrastável com 5 colunas, anotações por lead e botão WhatsApp direto.
+A tela "Algo deu errado" é o `ErrorBoundary` em `main.tsx` capturando um erro de runtime, mas hoje ele:
+- Não mostra qual foi o erro
+- Não se recupera quando o usuário navega
+- Não loga em algum lugar útil pra debug
 
-### Etapas (colunas)
-`NOVO` → `EM_CONVERSA` → `AGENDADO` → `VENDIDO` → `PERDIDO`
+Sem o erro real, não dá pra apontar a causa raiz. Vou então **endurecer o app contra erros transitórios** e **melhorar o ErrorBoundary** pra que (a) ele se recupere sozinho na navegação, (b) mostre a mensagem real em modo dev, e (c) ofereça "Voltar pro início" além de "Recarregar".
 
-Todo lead comprado entra automaticamente em **NOVO**. O usuário arrasta entre colunas (drag & drop) ou move via dropdown no card (fallback mobile).
+### Mudanças
 
-### Mudanças no banco
+**1. `src/main.tsx` — ErrorBoundary mais inteligente**
+- Mostra `error.message` (útil pra você reportar próximo erro)
+- Mostra stack só em desenvolvimento
+- Botão "Voltar para o início" que limpa o erro e vai pra `/`
+- Reseta automaticamente se a URL mudar (evita ficar travado eternamente em uma tela de erro depois que a rota muda)
+- Loga o erro com mais detalhe no console (já estava, mas melhorando o formato)
 
-**Nova tabela `lead_crm_status`** — um registro por (user_id, purchase_id):
-- `id` uuid pk
-- `user_id` uuid (RLS: dono apenas)
-- `purchase_id` uuid (referência lógica à purchases.id)
-- `lead_id` uuid
-- `stage` text default `'NOVO'` (check: NOVO/EM_CONVERSA/AGENDADO/VENDIDO/PERDIDO)
-- `notes` text nullable
-- `updated_at` timestamptz
-- unique (user_id, purchase_id)
+**2. `src/pages/MyLeads.tsx` — proteção contra dados quebrados**
+- Try/catch adicional no `grouped` (caso uma `stage` retornada do banco não exista no enum, hoje quebraria com `Cannot read property 'push' of undefined`)
+- Filtrar leads cujo `stage` não está em `STAGES` antes de agrupar
+- Validar que `lead.phone` existe antes de chamar `buildWaLink`
 
-RLS: `auth.uid() = user_id` para SELECT/INSERT/UPDATE/DELETE. Admin via `has_role`.
+**3. `src/lib/whatsapp.ts` — não quebrar com input vazio**
+- Garantir que `buildWaLink(undefined | null | '')` retorna string segura sem throw
 
-**Backfill:** inserir um registro `NOVO` para cada `purchase` PAID existente do usuário ao abrir a página (upsert idempotente client-side, simples e barato dado o volume baixo).
+**4. `src/components/AppSidebar.tsx` — defensive**
+- Garantir que `creditBalance.toLocaleString` não quebra se vier `null`
+- Validar `partner.logo_url` (já é nullable, ok) e adicionar `onError` no `<img>` da logo pra cair no fallback
 
-### UI (`src/pages/MyLeads.tsx` reescrita)
-
-```text
-┌─ NOVO ──┬─ EM CONVERSA ─┬─ AGENDADO ─┬─ VENDIDO ─┬─ PERDIDO ─┐
-│ [card]  │ [card]        │ [card]     │ [card]    │ [card]    │
-│ [card]  │ [card]        │            │           │           │
-└─────────┴───────────────┴────────────┴───────────┴───────────┘
-```
-
-**Card** (compacto):
-- Nome do lead
-- Telefone + ícone WhatsApp clicável (abre `https://wa.me/55XXXXXXXXXXX` direto)
-- Badge da etapa atual
-- Indicador 📝 se tiver anotação
-- Click no card → abre Dialog de detalhes/anotações
-
-**Dialog de detalhes** (substitui ou estende o `PurchasedLeadModal` atual):
-- Mostra todos os dados do lead (igual hoje)
-- Campo `Textarea` de anotações (autosave com debounce 800ms ou botão Salvar)
-- Select para mover de etapa (alternativa ao drag)
-- Botão WhatsApp grande
-- Mantém o "Não consegui contato" existente
-
-**Drag & drop:** usar `@dnd-kit/core` + `@dnd-kit/sortable` (já é o padrão do ecossistema React e leve). Em mobile, o Select dentro do card serve como fallback acessível.
-
-### Fluxo de dados
-1. Carrega `purchases` PAID do usuário (já existe).
-2. Carrega `lead_crm_status` do usuário.
-3. Para purchases sem status → upsert NOVO em batch.
-4. Merge client-side: agrupa por `stage`.
-5. Drag/move → `update lead_crm_status set stage=... where id=...`, otimista (UI atualiza antes da resposta).
-6. Anotação → update `notes`.
-
-### Botão WhatsApp
-Helper que normaliza o telefone (já há padrão 12 dígitos no projeto):
-```ts
-const wa = `https://wa.me/${normalizePhoneToWa(lead.phone)}`;
-```
-Click: `window.open(wa, '_blank')` + `e.stopPropagation()` pra não abrir o modal.
-
-### Mobile (viewport 925px e abaixo)
-- Em telas <768px, kanban vira **abas horizontais** (`Tabs` shadcn) com uma coluna por aba — drag & drop funciona mal em mobile mesmo. O Select no card permite mover.
-- Em telas ≥768px, grid de 5 colunas com scroll horizontal se necessário.
+### O que isso resolve
+- Próxima vez que aparecer "Algo deu errado", você vai ver **a mensagem do erro real** e pode me passar — fica trivial corrigir.
+- Erros pontuais não vão mais "prender" o app: navegar resolve.
+- As 4 áreas mais propensas a quebra (logo, sidebar, kanban, whatsapp) ficam blindadas.
 
 ### Arquivos
-- **Migration nova:** criar tabela `lead_crm_status` + RLS + index `(user_id, stage)`
-- **Editar:** `src/pages/MyLeads.tsx` (reescrita completa pra kanban)
-- **Novo:** `src/components/myleads/LeadKanbanCard.tsx`
-- **Novo:** `src/components/myleads/LeadKanbanColumn.tsx`
-- **Novo:** `src/components/myleads/LeadCrmDialog.tsx` (detalhes + anotações + mover)
-- **Novo:** `src/lib/whatsapp.ts` (helper `normalizePhoneToWa` se ainda não existir centralizado)
-- **Dependência:** adicionar `@dnd-kit/core` e `@dnd-kit/sortable`
+- `src/main.tsx` (editar — ErrorBoundary melhorado)
+- `src/pages/MyLeads.tsx` (editar — defensivo no `grouped` e fetch)
+- `src/lib/whatsapp.ts` (editar — input safety)
+- `src/components/AppSidebar.tsx` (editar — onError na logo + null safety)
 
-### Observações
-- Sem realtime (overhead desnecessário pra uso pessoal); poll de 10s mantido pra pegar novas compras.
-- Anotações privadas — só o dono vê (RLS garante).
-- Etapa `VENDIDO` e `PERDIDO` ficam com visual diferenciado (verde/cinza) pra dar fechamento visual.
+### Observação
+Se o erro acontecer de novo depois disso, a nova tela vai mostrar exatamente qual foi — me manda o print que eu corrijo na hora.
