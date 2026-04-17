@@ -1,25 +1,30 @@
 
-## Ajustes solicitados
 
-### 1. Painel de créditos em `/leads` — remover o título "Seu saldo"
-Em `src/pages/Leads.tsx` (linhas 484-487) o painel amarelo tem:
-- "Seu saldo" (título)
-- "{N} créditos" (valor)
+## Ajustes na Calculadora de Emolumentos
 
-Vou remover apenas o `<p>Seu saldo</p>`, mantendo o ícone, o valor e a palavra "créditos" como está.
+### 1. Expandir área do resultado (largura)
+Hoje o container do resultado é `max-w-5xl` (1024px), o que faz a tabela com várias colunas de componentes (Tribunal de Justiça, Defensoria, etc.) rolar horizontalmente.
 
-### 2. Header da página `Balcão de Parcerias` (`src/pages/PropertySearches.tsx` linhas 533-538)
-Trocar:
-- Título: `Mural de Demandas` → **`Central de Demandas`**
-- Subtítulo: `Encontre compradores com o perfil exato...` → **`Conecte-se com quem tem o imóvel ideal. Compartilhe o que o seu cliente busca e deixe que os parceiros tragam as oportunidades até você.`**
-- Botão: `Interesse do Comprador` → **`Interesse do Cliente`**
+**Mudança:** Ampliar o container apenas na etapa `result` para `max-w-7xl` (1280px), dando ~256px a mais de espaço útil. O scroll horizontal interno (`overflow-x-auto`) continua como fallback de segurança em telas menores. As outras etapas (location, service, form) permanecem no `max-w-5xl` atual para não ficarem com formulário esticado demais.
 
-### 3. Formulário de novo interesse (`src/pages/NewPropertySearch.tsx`) — Quartos e Vagas como botões 1, 2, 3, 4+
-Hoje os campos `bedrooms` e `parkingSpots` são `<Input>` livres. Vou trocar por uma grid de 4 botões (estilo "chip selecionável") com as opções `1`, `2`, `3`, `4+`, usando `Button` com variante condicional (`default` quando selecionado, `outline` caso contrário). Mantém o estado como string ("1", "2", "3", "4+") — compatível com o que já é gravado no banco como `text`.
+### 2. Botão "Possui desconto?" → modal com cards de seleção
+Hoje o botão abre um collapsible com um `<Input>` livre onde o usuário precisa digitar o código manualmente.
 
-Aplicado apenas para os tipos que possuem esses campos (controlado pelo `fieldConfigs.hasBedrooms` e `hasParking` que já existe).
+**Mudança:** Trocar o `Collapsible` por um `Dialog` (modal) que mostra 3 cards selecionáveis lado a lado, exatamente no padrão da segunda imagem:
 
-### Arquivos
-- editar `src/pages/Leads.tsx` (remover linha do "Seu saldo")
-- editar `src/pages/PropertySearches.tsx` (header: título, subtítulo, label do botão)
-- editar `src/pages/NewPropertySearch.tsx` (trocar inputs de quartos/vagas por seleção de chips 1/2/3/4+)
+- **Card 1: 1ª Aquisição SFH** — texto longo com botão "mais" para expandir/recolher
+- **Card 2: Minha Casa Minha Vida** — texto curto, sem "mais"
+- **Card 3: FAR e FDS** — texto curto, sem "mais"
+
+Cada card é clicável: ao clicar, marca como selecionado (borda azul mais grossa + bg sutil), preenche o `desconto` no estado e fecha o modal automaticamente. Um quarto botão "Sem desconto" no rodapé do modal limpa a seleção.
+
+Após selecionar, o botão da tela do formulário muda de **"% Possui Desconto?"** para **"% Desconto: 1ª Aquisição SFH ✕"** (com X para limpar), confirmando visualmente a escolha — igual ao padrão visual da primeira imagem enviada.
+
+### 3. Códigos enviados à API (preciso confirmar com você)
+Você mencionou que enviaria "os textos e o código do desconto", mas só recebi os textos. A edge function `calculate-emoluments` envia `desconto` como string livre para a API externa. Antes de implementar preciso saber **qual string exata** corresponde a cada opção, pois é o que a API da calculadora vai interpretar.
+
+### Arquivos a editar
+- `src/pages/Calculadora.tsx` — trocar wrapper para `max-w-7xl` na etapa result; substituir `Collapsible` por `Dialog` com 3 cards de desconto; adicionar estado `descontoLabel` para mostrar nome amigável no botão.
+
+### Pergunta antes de implementar
+
