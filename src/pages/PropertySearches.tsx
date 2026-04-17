@@ -35,6 +35,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -290,6 +301,17 @@ const PropertySearches = () => {
     await supabase.from('property_search_alerts').delete().eq('id', alertId);
     setSavedAlerts(prev => prev.filter(a => a.id !== alertId));
     toast({ title: 'Alerta removido' });
+  };
+
+  const handleDeleteSearch = async (searchId: string) => {
+    const { error } = await supabase.from('property_searches').delete().eq('id', searchId);
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível excluir o interesse.', variant: 'destructive' });
+      return;
+    }
+    setSearches(prev => prev.filter(s => s.id !== searchId));
+    if (selectedSearch?.id === searchId) setSelectedSearch(null);
+    toast({ title: 'Interesse excluído', description: 'Sua procura foi removida do Balcão.' });
   };
 
   const openOfferModal = (search: PropertySearch) => {
@@ -737,6 +759,36 @@ const PropertySearches = () => {
                             >
                               <MessageCircle className="h-4 w-4" /> Enviar Oferta
                             </Button>
+                          )}
+                          {(s.user_id === user!.id || isAdmin) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Excluir
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir este interesse?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. A procura será removida permanentemente do Balcão de Parcerias.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => handleDeleteSearch(s.id)}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </CardContent>
