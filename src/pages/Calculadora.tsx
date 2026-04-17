@@ -121,16 +121,22 @@ const DISCOUNT_OPTIONS: DiscountOption[] = [
       "Lei 3350/99 RJ, Art. 44 — São isentos do pagamento do acréscimo de 20% (vinte por cento) instituído pela Lei nº 713/1983, com a redação da Lei nº 723/1984, e das taxas previstas nas Leis nº 489/1981 e nº 590/1987, os atos notariais e de registro que comprovadamente se referirem à primeira aquisição da casa própria ou praticados com a interveniência de Cooperativas Habitacionais quando destinados a residência do adquirente.\n\n§ 3º — O notário ou registrador, para o cumprimento do disposto no caput, exigirá certidões dos Ofícios de Distribuição competentes.",
   },
   {
-    code: "MCMV",
+    code: "PCVA_MCMV",
     label: "Minha Casa Minha Vida",
     shortText:
       "Lei nº 11.977/09, Art. 42, II — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 50% para os atos relacionados aos demais empreendimentos do PMCMV.",
   },
   {
-    code: "FAR",
+    code: "FAR_FDS",
     label: "FAR e FDS",
     shortText:
       "Lei nº 11.977/09, Art. 42, I — Os emolumentos devidos pelos atos de abertura de matrícula, registro de incorporação, parcelamento do solo, averbação de construção, instituição de condomínio, averbação da carta de “habite-se” e demais atos referentes à construção de empreendimentos no âmbito do PMCMV serão reduzidos em 75% para os empreendimentos do FAR e do FDS.",
+  },
+  {
+    code: "HAP",
+    label: "Habitação Popular",
+    shortText:
+      "Lei 2.751/2002 — Todos os atos dos ofícios notariais e de registro para habitação popular terão redução de metade das custas a pagar, desde a aquisição do terreno até a averbação ou registro da habitação construída.",
   },
 ];
 
