@@ -106,19 +106,44 @@ Deno.serve(async (req) => {
 
     const GROUP_ID = "120363410244397205@g.us";
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const megaBody = { messageData: { to: GROUP_ID, text: groupMsg } };
 
-    const res = await fetch(megaUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
-      body: JSON.stringify({ messageData: { to: GROUP_ID, text: groupMsg } }),
-    });
+    // Retry up to 3 times with backoff. Mega API may return HTTP 200 with { error: true } body.
+    let lastDetails = "";
+    let success = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(megaUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
+          body: JSON.stringify(megaBody),
+        });
+        const resBody = await res.text();
+        console.log(`Mega API attempt ${attempt}: ${res.status} - ${resBody.substring(0, 300)}`);
+        lastDetails = resBody.substring(0, 300);
 
-    const resBody = await res.text();
-    console.log(`Mega API response: ${res.status} - ${resBody.substring(0, 300)}`);
+        let parsed: { error?: boolean } = {};
+        try { parsed = JSON.parse(resBody); } catch { /* non-json body */ }
 
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: "Falha ao enviar para o grupo", details: resBody.substring(0, 200) }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        if (res.ok && !parsed.error) {
+          success = true;
+          break;
+        }
+        // Retry on 5xx or body-level error
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+      } catch (fetchErr) {
+        console.error(`Mega API fetch error attempt ${attempt}:`, fetchErr);
+        lastDetails = String(fetchErr);
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+      }
+    }
+
+    if (!success) {
+      return new Response(JSON.stringify({
+        error: "Falha ao enviar para o grupo após 3 tentativas. A API do WhatsApp pode estar instável.",
+        details: lastDetails,
+      }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
