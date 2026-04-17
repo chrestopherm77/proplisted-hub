@@ -458,11 +458,17 @@ export default function Calculadora() {
 
       if (response && typeof response === "object") {
         if (response.ok === false) {
+          const errMsg: string = response.error ?? "Tente novamente.";
           toast({
             title: "Não foi possível calcular",
-            description: response.error ?? "Tente novamente.",
+            description: errMsg,
             variant: "destructive",
           });
+          // Se o erro veio por causa do desconto incompatível com o estado,
+          // limpa a seleção para o usuário tentar de novo sem ficar preso.
+          if (/desconto/i.test(errMsg) && desconto) {
+            setDesconto("");
+          }
           return;
         }
         const result = parseApiResult(response.ok === true ? response.data : response);
@@ -864,6 +870,9 @@ export default function Calculadora() {
               <DialogDescription>
                 Escolha a categoria que se aplica ao seu cálculo. O desconto será aplicado conforme a legislação vigente.
               </DialogDescription>
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                ⚠️ Nem todos os descontos estão disponíveis em todos os estados. Se o cálculo falhar, tente sem desconto ou outra opção.
+              </div>
             </DialogHeader>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">

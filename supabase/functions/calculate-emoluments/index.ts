@@ -113,13 +113,28 @@ Deno.serve(async (req) => {
 
     if (!apiRes.ok) {
       let friendly = "A Calculadora externa não conseguiu processar a requisição.";
-      if (apiRes.status === 500) {
+
+      // Tenta extrair errorMessage do body upstream (formato padrão da API)
+      const upstreamMsg =
+        data && typeof data === "object" && data !== null
+          ? (data as Record<string, unknown>).errorMessage
+          : undefined;
+
+      if (apiRes.status === 400) {
+        friendly =
+          typeof upstreamMsg === "string" && upstreamMsg.trim().length > 0
+            ? upstreamMsg
+            : "Parâmetros rejeitados pela Calculadora externa. Verifique município, valor e desconto selecionado.";
+      } else if (apiRes.status === 500) {
         friendly =
           "A Calculadora externa retornou erro interno. Geralmente isso ocorre quando o município escolhido ainda não tem tabela de emolumentos cadastrada — tente outro município ou tipo de consulta.";
       } else if (apiRes.status === 401 || apiRes.status === 403) {
         friendly = "Token de acesso à Calculadora inválido ou expirado.";
       } else if (apiRes.status === 422) {
-        friendly = "Parâmetros rejeitados pela Calculadora externa. Confira valor e tipo de consulta.";
+        friendly =
+          typeof upstreamMsg === "string" && upstreamMsg.trim().length > 0
+            ? upstreamMsg
+            : "Parâmetros rejeitados pela Calculadora externa. Confira valor e tipo de consulta.";
       } else if (apiRes.status === 404) {
         friendly = "Município não encontrado na base da Calculadora.";
       }
