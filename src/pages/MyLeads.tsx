@@ -98,7 +98,7 @@ export default function MyLeads() {
         const crm = crmByPurchase.get(p.id);
         return {
           crmId: crm?.id || '',
-          stage: (crm?.stage || 'NOVO') as CrmStage,
+          stage: (crm?.stage || 'ENTRADA') as CrmStage,
           notes: crm?.notes || null,
           purchaseId: p.id,
           amount: Number(p.amount),
@@ -181,7 +181,7 @@ export default function MyLeads() {
           </div>
         ) : isMobile ? (
           // Mobile: Tabs
-          <Tabs defaultValue="NOVO" className="w-full">
+          <Tabs defaultValue="ENTRADA" className="w-full">
             <TabsList className="w-full grid grid-cols-5 h-auto">
               {STAGES.map((s) => (
                 <TabsTrigger key={s.key} value={s.key} className="flex-col gap-0.5 py-2 text-[10px]">
