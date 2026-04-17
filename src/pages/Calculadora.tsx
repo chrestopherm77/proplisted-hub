@@ -870,7 +870,7 @@ export default function Calculadora() {
               <DialogDescription>
                 Escolha a categoria que se aplica ao seu cálculo. O desconto será aplicado conforme a legislação vigente.
               </DialogDescription>
-              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+              <div className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
                 ⚠️ Nem todos os descontos estão disponíveis em todos os estados. Se o cálculo falhar, tente sem desconto ou outra opção.
               </div>
             </DialogHeader>
