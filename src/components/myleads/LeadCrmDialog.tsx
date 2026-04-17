@@ -53,7 +53,7 @@ function inferIntention(formData: any, description: string): string {
 
 export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, userPhone }: Props) {
   const [notes, setNotes] = useState('');
-  const [stage, setStage] = useState<CrmStage>('NOVO');
+  const [stage, setStage] = useState<CrmStage>('ENTRADA');
   const [savingNotes, setSavingNotes] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
