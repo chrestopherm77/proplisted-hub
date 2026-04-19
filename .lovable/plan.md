@@ -1,44 +1,49 @@
 
-## Estabilizar carregamento e melhorar diagnóstico de erros
 
-A tela "Algo deu errado" é o `ErrorBoundary` em `main.tsx` capturando um erro de runtime, mas hoje ele:
-- Não mostra qual foi o erro
-- Não se recupera quando o usuário navega
-- Não loga em algum lugar útil pra debug
+## Problema
 
-Sem o erro real, não dá pra apontar a causa raiz. Vou então **endurecer o app contra erros transitórios** e **melhorar o ErrorBoundary** pra que (a) ele se recupere sozinho na navegação, (b) mostre a mensagem real em modo dev, e (c) ofereça "Voltar pro início" além de "Recarregar".
+O cron das 7h (10:00 UTC) do `daily-news-broadcast` rodou ontem (18/04) e hoje (19/04) com `status: succeeded` no `pg_cron` — **mas a chamada HTTP retornou 401 Unauthorized**, então a função abortou antes de mandar a mensagem nos grupos.
 
-### Mudanças
+### Causa raiz
+O job está montando o Authorization a partir do **Vault**:
+```sql
+'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'CRON_SECRET' LIMIT 1)
+```
+Mas a `vault.secrets` está **vazia** (`SELECT name FROM vault.secrets` retorna 0 linhas). O `CRON_SECRET` existe como secret de Edge Function, **não no Vault do Postgres**. Resultado: a subquery retorna `NULL`, o header vira literalmente `"Bearer "` (sem token), a função recebe e responde 401.
 
-**1. `src/main.tsx` — ErrorBoundary mais inteligente**
-- Mostra `error.message` (útil pra você reportar próximo erro)
-- Mostra stack só em desenvolvimento
-- Botão "Voltar para o início" que limpa o erro e vai pra `/`
-- Reseta automaticamente se a URL mudar (evita ficar travado eternamente em uma tela de erro depois que a rota muda)
-- Loga o erro com mais detalhe no console (já estava, mas melhorando o formato)
+Confirmado pelos logs do `net._http_response`: **toda chamada** ao `daily-news-broadcast` está vindo com `{"error":"Unauthorized"}` (inclusive a das 10:00 UTC de hoje).
 
-**2. `src/pages/MyLeads.tsx` — proteção contra dados quebrados**
-- Try/catch adicional no `grouped` (caso uma `stage` retornada do banco não exista no enum, hoje quebraria com `Cannot read property 'push' of undefined`)
-- Filtrar leads cujo `stage` não está em `STAGES` antes de agrupar
-- Validar que `lead.phone` existe antes de chamar `buildWaLink`
+Detalhe extra: existe outro chamador anônimo batendo na função a cada 10 min (origem ainda a investigar — pode ser um job antigo num outro lugar ou monitoramento), também levando 401. Isso não impede o conserto, mas vou checar.
 
-**3. `src/lib/whatsapp.ts` — não quebrar com input vazio**
-- Garantir que `buildWaLink(undefined | null | '')` retorna string segura sem throw
+## Correção
 
-**4. `src/components/AppSidebar.tsx` — defensive**
-- Garantir que `creditBalance.toLocaleString` não quebra se vier `null`
-- Validar `partner.logo_url` (já é nullable, ok) e adicionar `onError` no `<img>` da logo pra cair no fallback
+### 1. Recriar o cron job sem depender do Vault
+Recriar `daily-news-broadcast-7am` colocando o `CRON_SECRET` **embutido literal** no comando (mesmo padrão dos outros 2 jobs que usam o anon key embutido e funcionam).
 
-### O que isso resolve
-- Próxima vez que aparecer "Algo deu errado", você vai ver **a mensagem do erro real** e pode me passar — fica trivial corrigir.
-- Erros pontuais não vão mais "prender" o app: navegar resolve.
-- As 4 áreas mais propensas a quebra (logo, sidebar, kanban, whatsapp) ficam blindadas.
+```sql
+SELECT cron.unschedule('daily-news-broadcast-7am');
+SELECT cron.schedule(
+  'daily-news-broadcast-7am',
+  '0 10 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/daily-news-broadcast',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer <CRON_SECRET>"}'::jsonb,
+    body := jsonb_build_object('triggered_at', now())
+  );
+  $$
+);
+```
 
-### Arquivos
-- `src/main.tsx` (editar — ErrorBoundary melhorado)
-- `src/pages/MyLeads.tsx` (editar — defensivo no `grouped` e fetch)
-- `src/lib/whatsapp.ts` (editar — input safety)
-- `src/components/AppSidebar.tsx` (editar — onError na logo + null safety)
+Como `CRON_SECRET` é dado sensível específico do projeto, vou rodar isso pela ferramenta de **insert SQL** (não migration), seguindo a regra do sistema sobre cron jobs.
 
-### Observação
-Se o erro acontecer de novo depois disso, a nova tela vai mostrar exatamente qual foi — me manda o print que eu corrijo na hora.
+### 2. Investigar o chamador a cada 10 min
+Olhar se há outro scheduler (UptimeRobot, GitHub Actions, etc.) batendo nessa URL. Se for ruído externo, sem ação. Se for outro cron órfão, removo.
+
+### 3. Disparo manual hoje
+Depois de corrigir o job, **disparar a função manualmente uma vez** pra mandar o "Bom dia" do dia de hoje (já que perdeu o horário).
+
+## Arquivo
+- Cron job no Postgres (via insert SQL) — sem mudanças de código no repo.
+- Sem alteração em `supabase/functions/daily-news-broadcast/index.ts` (a função está correta).
+
