@@ -34,6 +34,29 @@ interface NewsComment {
   profile_name?: string;
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+const renderContentWithLinks = (text: string) => {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) => {
+    if (part.match(/^https?:\/\//)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:opacity-80 break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
+
 const MarketNews = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -337,8 +360,8 @@ const MarketNews = () => {
                   )}
                   {/* Content */}
                   <div>
-                    <p className={`text-foreground whitespace-pre-wrap ${!expandedContent[post.id] ? 'line-clamp-3' : ''}`}>
-                      {post.content}
+                    <p className={`text-foreground whitespace-pre-wrap break-words ${!expandedContent[post.id] ? 'line-clamp-3' : ''}`}>
+                      {renderContentWithLinks(post.content)}
                     </p>
                     {post.content.length > 200 && (
                       <button
