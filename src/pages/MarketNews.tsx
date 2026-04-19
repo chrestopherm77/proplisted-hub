@@ -337,8 +337,8 @@ const MarketNews = () => {
                   )}
                   {/* Content */}
                   <div>
-                    <p className={`text-foreground whitespace-pre-wrap ${!expandedContent[post.id] ? 'line-clamp-3' : ''}`}>
-                      {post.content}
+                    <p className={`text-foreground whitespace-pre-wrap break-words ${!expandedContent[post.id] ? 'line-clamp-3' : ''}`}>
+                      {renderContentWithLinks(post.content)}
                     </p>
                     {post.content.length > 200 && (
                       <button
