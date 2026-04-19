@@ -9,11 +9,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate CRON_SECRET
+    // Validate auth: accept CRON_SECRET or SUPABASE_ANON_KEY
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "").trim();
     const cronSecret = Deno.env.get("CRON_SECRET");
-    if (!cronSecret || token !== cronSecret) {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const isAuthorized =
+      (cronSecret && token === cronSecret) ||
+      (anonKey && token === anonKey);
+    if (!isAuthorized) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
