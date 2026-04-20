@@ -31,6 +31,9 @@ export function CreativeStylesManagement() {
     setLoading(false);
   };
 
+  const general = styles.find((s) => s.slug === '__general__');
+  const regularStyles = styles.filter((s) => s.slug !== '__general__');
+
   useEffect(() => { load(); }, []);
 
   const updateField = (id: string, field: keyof Style, value: any) => {
