@@ -112,15 +112,17 @@ Deno.serve(async (req) => {
     const formatHint = FORMAT_HINTS[creative.format] || FORMAT_HINTS.POST;
     const infoText = (creative.info_text || "").trim();
 
+    const styleName = style?.name?.trim() || creative.style_slug;
     const promptParts = [
       generalPrompt && `[INSTRUÇÕES GERAIS]\n${generalPrompt}`,
-      `[ESTILO ESCOLHIDO]\n${stylePrompt}`,
-      `[IMÓVEL]\n${infoText}`,
-      `[FORMATO]\n${formatHint}`,
-      `Use a imagem de referência fornecida como base do imóvel. Mantenha a identidade visual do estilo. Texto na imagem em português, mínimo e legível. Sem watermarks.`,
+      `[ESTILO ESCOLHIDO: ${styleName}]\n${stylePrompt}`,
+      infoText && `[DESCRIÇÃO DO IMÓVEL (preenchida pelo cliente)]\n${infoText}`,
+      `[FORMATO DE SAÍDA]\n${formatHint}`,
+      `Use a imagem de referência fornecida como base visual do imóvel. Mantenha a identidade visual do estilo "${styleName}" e o formato "${creative.format}". Texto na imagem em português brasileiro, mínimo e legível. Sem watermarks.`,
     ].filter(Boolean);
 
     const finalPrompt = promptParts.join("\n\n");
+    console.log("[generate-creative-image] prompt:", finalPrompt.slice(0, 500));
 
     // Convert reference image to data URL
     const refDataUrl = await imageUrlToDataUrl(creative.main_image_url);
