@@ -31,6 +31,9 @@ export function CreativeStylesManagement() {
     setLoading(false);
   };
 
+  const general = styles.find((s) => s.slug === '__general__');
+  const regularStyles = styles.filter((s) => s.slug !== '__general__');
+
   useEffect(() => { load(); }, []);
 
   const updateField = (id: string, field: keyof Style, value: any) => {
@@ -60,7 +63,38 @@ export function CreativeStylesManagement() {
         <p className="text-sm text-muted-foreground">Edite os prompts usados pela IA para cada estilo.</p>
       </div>
 
-      {styles.map((s) => (
+      {general && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className="inline-flex items-center rounded-md bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                Global
+              </span>
+              {general.name}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Este prompt é <strong>sempre concatenado antes</strong> do prompt do estilo escolhido pelo cliente. Não aparece para o usuário final.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>Prompt Geral (base de toda geração)</Label>
+              <Textarea
+                rows={8}
+                value={general.prompt}
+                onChange={(e) => updateField(general.id, 'prompt', e.target.value)}
+                placeholder="Instruções globais aplicadas a toda geração de criativo..."
+              />
+            </div>
+            <Button onClick={() => handleSave(general)} disabled={savingId === general.id}>
+              {savingId === general.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar Prompt Geral
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {regularStyles.map((s) => (
         <Card key={s.id}>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <CardTitle className="text-base">{s.name}</CardTitle>

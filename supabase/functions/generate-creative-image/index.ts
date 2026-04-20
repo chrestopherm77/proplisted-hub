@@ -100,19 +100,27 @@ Deno.serve(async (req) => {
       .update({ status: "PENDING", error_message: null })
       .eq("id", creativeId);
 
-    // Load style prompt
-    const { data: style } = await admin
-      .from("creative_styles")
-      .select("prompt, name")
-      .eq("slug", creative.style_slug)
-      .maybeSingle();
+    // Load general prompt + style prompt in parallel
+    const [{ data: generalRow }, { data: style }] = await Promise.all([
+      admin.from("creative_styles").select("prompt").eq("slug", "__general__").maybeSingle(),
+      admin.from("creative_styles").select("prompt, name").eq("slug", creative.style_slug).maybeSingle(),
+    ]);
 
+    const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
       style?.prompt?.trim() || "Anúncio imobiliário profissional, alta qualidade, fotorrealista";
     const formatHint = FORMAT_HINTS[creative.format] || FORMAT_HINTS.POST;
     const infoText = (creative.info_text || "").trim();
 
-    const finalPrompt = `${stylePrompt}\n\nImóvel: ${infoText}\n\nFormato: ${formatHint}\n\nUse a imagem de referência fornecida como base do imóvel. Mantenha a identidade visual do estilo. Texto na imagem em português, mínimo e legível. Sem watermarks.`;
+    const promptParts = [
+      generalPrompt && `[INSTRUÇÕES GERAIS]\n${generalPrompt}`,
+      `[ESTILO ESCOLHIDO]\n${stylePrompt}`,
+      `[IMÓVEL]\n${infoText}`,
+      `[FORMATO]\n${formatHint}`,
+      `Use a imagem de referência fornecida como base do imóvel. Mantenha a identidade visual do estilo. Texto na imagem em português, mínimo e legível. Sem watermarks.`,
+    ].filter(Boolean);
+
+    const finalPrompt = promptParts.join("\n\n");
 
     // Convert reference image to data URL
     const refDataUrl = await imageUrlToDataUrl(creative.main_image_url);
