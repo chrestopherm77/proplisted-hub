@@ -112,6 +112,75 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_styles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          prompt: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          prompt?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          prompt?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creatives: {
+        Row: {
+          created_at: string
+          format: string
+          id: string
+          info_text: string | null
+          main_image_url: string | null
+          mockup_images: Json
+          status: string
+          style_slug: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          format: string
+          id?: string
+          info_text?: string | null
+          main_image_url?: string | null
+          mockup_images?: Json
+          status?: string
+          style_slug: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          format?: string
+          id?: string
+          info_text?: string | null
+          main_image_url?: string | null
+          mockup_images?: Json
+          status?: string
+          style_slug?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_packages: {
         Row: {
           created_at: string | null
@@ -1134,6 +1203,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_brands: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
