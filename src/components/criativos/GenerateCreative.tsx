@@ -24,6 +24,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const [info, setInfo] = useState('');
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [creativeId, setCreativeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -46,7 +47,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       .filter((s) => !!s.url)
       .map((s) => ({ image_url: s.url, logo_position: s.position }));
 
-    const { error } = await supabase.from('creatives').insert({
+    const { data: created, error } = await supabase.from('creatives').insert({
       user_id: user.id,
       style_slug: styleSlug!,
       format: format!,
@@ -54,11 +55,25 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       main_image_url: principal?.url || null,
       mockup_images: mockups,
       status: 'PENDING',
-    });
+    }).select('id').single();
     setSaving(false);
-    if (error) return toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    toast({ title: 'Criativo gerado!', description: 'A imagem principal será produzida pela IA em breve.' });
+    if (error || !created) return toast({ title: 'Erro', description: error?.message || 'Falha ao criar criativo', variant: 'destructive' });
+
+    setCreativeId(created.id);
     setStep(4);
+
+    if (principal?.url) {
+      // Trigger AI generation in background
+      supabase.functions.invoke('generate-creative-image', { body: { creative_id: created.id } })
+        .then(({ error: fnErr }) => {
+          if (fnErr) {
+            toast({ title: 'Erro na geração com IA', description: fnErr.message, variant: 'destructive' });
+          }
+        });
+      toast({ title: 'Criativo enviado!', description: 'A imagem principal está sendo gerada pela IA.' });
+    } else {
+      toast({ title: 'Criativo salvo!', description: 'Mockups prontos.' });
+    }
   };
 
   return (
@@ -78,7 +93,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
           {step === 1 && <StepImages slots={slots} setSlots={setSlots} brandLogo={brandLogo} />}
           {step === 2 && <StepStyleFormat styleSlug={styleSlug} format={format} setStyleSlug={setStyleSlug} setFormat={setFormat} />}
           {step === 3 && <StepInfo info={info} setInfo={setInfo} />}
-          {step === 4 && <StepResult slots={slots} brandLogo={brandLogo} />}
+          {step === 4 && <StepResult slots={slots} brandLogo={brandLogo} creativeId={creativeId} />}
         </CardContent>
       </Card>
 

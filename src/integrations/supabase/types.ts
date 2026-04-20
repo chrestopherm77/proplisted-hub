@@ -148,6 +148,7 @@ export type Database = {
       creatives: {
         Row: {
           created_at: string
+          error_message: string | null
           format: string
           id: string
           info_text: string | null
@@ -159,6 +160,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
           format: string
           id?: string
           info_text?: string | null
@@ -170,6 +172,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          error_message?: string | null
           format?: string
           id?: string
           info_text?: string | null

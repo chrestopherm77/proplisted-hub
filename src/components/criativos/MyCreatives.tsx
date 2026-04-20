@@ -16,6 +16,7 @@ interface Creative {
   main_image_url: string | null;
   mockup_images: any;
   status: string;
+  error_message?: string | null;
   created_at: string;
 }
 
@@ -41,6 +42,18 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
   };
 
   useEffect(() => { load(); }, [user]);
+
+  // Realtime: refresh when any creative of this user changes
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`my-creatives-${user.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'creatives', filter: `user_id=eq.${user.id}`,
+      }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este criativo?')) return;
@@ -97,7 +110,17 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
                 </div>
               </div>
               <CardContent className="p-3 space-y-1">
-                <Badge variant="outline" className="text-xs">{FORMAT_LABEL[c.format] || c.format}</Badge>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <Badge variant="outline" className="text-xs">{FORMAT_LABEL[c.format] || c.format}</Badge>
+                  {c.status === 'PENDING' && (
+                    <Badge variant="secondary" className="text-xs gap-1">
+                      <Sparkles className="h-3 w-3 animate-pulse" />Gerando…
+                    </Badge>
+                  )}
+                  {c.status === 'FAILED' && (
+                    <Badge variant="destructive" className="text-xs">Falhou</Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground capitalize">{c.style_slug}</p>
                 <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
               </CardContent>
