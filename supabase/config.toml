@@ -74,3 +74,6 @@ verify_jwt = true
 
 [functions.daily-news-broadcast]
 verify_jwt = false
+
+[functions.generate-creative-image]
+verify_jwt = true
