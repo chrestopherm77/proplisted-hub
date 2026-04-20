@@ -1,110 +1,105 @@
 
 
-## Aba "Criativos" — Geração de criativos imobiliários com IA
+## Integração de IA — Geração da imagem principal com Nano Banana Pro
 
-Nova área no sistema com 3 sub-abas: **Meus Criativos**, **Minha Marca**, **Gerar Criativo**. Toda a base será criada agora; a chamada real à API (Nano Banana / Gemini) fica para a próxima fase.
+Vou plugar a geração da imagem **Principal** do criativo na API de imagens do Gemini (`google/gemini-3-pro-image-preview`, alias "Nano Banana Pro") via **Lovable AI Gateway** — sem precisar de chave de API: a `LOVABLE_API_KEY` já está disponível no projeto automaticamente.
 
-### Estrutura de navegação
+### Sobre a chave de API
 
-- Item novo no `AppSidebar`: **"Criativos"** (ícone `Sparkles`), apontando para `/criativos`.
-- A rota `/criativos` carrega uma página com `Tabs` shadcn:
-  - `Meus Criativos`
-  - `Minha Marca`
-  - `Gerar Criativo`
+Você não precisa fornecer chave. O Lovable Cloud já injeta `LOVABLE_API_KEY` nas Edge Functions e isso dá acesso aos modelos Gemini (incluindo o Nano Banana Pro de imagem). Único custo: créditos de uso do Lovable AI (gratuito até o limite mensal, depois recarga em Workspace → Usage).
 
-### Aba 1 — Meus Criativos
-Galeria em grid dos criativos já gerados pelo usuário (filtrados por `user_id`).
-- Cada card mostra: thumbnail, formato (Post/Stories/Tráfego), estilo, data.
-- Ações: visualizar em modal, baixar imagem, excluir.
-- Estado vazio amigável com CTA "Gerar primeiro criativo".
+### Fluxo
 
-### Aba 2 — Minha Marca
-Formulário simples com:
-- Upload da **logo** (preview redondo + botão trocar/remover).
-- Cor primária da marca (color picker — opcional, já preparando para a fase de mockup).
-- Salvar.
-A logo é guardada no Storage e o registro fica na tabela `user_brands`.
+```text
+Usuário clica "Gerar criativos"
+        │
+        ▼
+Insert em creatives (status=PENDING) ──► retorna creative_id
+        │
+        ▼
+Frontend chama edge function generate-creative-image
+        │
+        ▼
+Edge function:
+  1. Busca creative + style.prompt + main_image (URL pública)
+  2. Monta prompt = style.prompt + info_text + format hint (1:1 / 9:16 / 1.91:1)
+  3. POST ai.gateway.lovable.dev/v1/chat/completions
+     model: google/gemini-3-pro-image-preview
+     content: [texto, image_url da principal]
+     modalities: ["image","text"]
+  4. Recebe base64 → faz upload para bucket "creatives"
+  5. UPDATE creatives SET main_image_url=<novaURL>, status=READY
+        │
+        ▼
+Frontend faz polling/refresh e mostra a imagem gerada em "Meus Criativos" e na tela de resultado
+```
 
-### Aba 3 — Gerar Criativo (wizard de 3 passos)
+### O que muda
 
-**Passo 1 — Imagens (1 principal + 7 secundárias)**
-- Grade com 8 slots de upload.
-- Slot 1 marcado como **"Principal"** (a única que iria para a API quando ela for plugada).
-- Slots 2–8 são **mockups**: para cada uma, o usuário escolhe a posição da logo (4 opções: superior-esq, superior-dir, inferior-esq, inferior-dir) via overlay clicável na própria imagem.
-- Preview em tempo real do mockup com a logo do usuário sobreposta (canvas) — sem chamada externa.
+**Nova edge function: `supabase/functions/generate-creative-image/index.ts`**
+- Auth: valida JWT do usuário (`getClaims`).
+- Input: `{ creative_id }`.
+- Lê `creatives` (confirma `user_id` = caller), `creative_styles` (pega `prompt`).
+- Baixa a imagem principal da URL pública e converte para base64 data URL.
+- Monta o prompt final juntando: `style.prompt` + `info_text` + instrução de formato (`POST → quadrado 1:1`, `STORIES → vertical 9:16`, `TRAFEGO → horizontal 1.91:1`).
+- Chama o gateway com `model: "google/gemini-3-pro-image-preview"`, `modalities: ["image","text"]`, passando texto + imagem de referência.
+- Trata 429 (rate limit) e 402 (créditos esgotados) retornando mensagens claras.
+- Sobe a imagem retornada (base64) no bucket `creatives` em `<user_id>/ai-<creative_id>.png`.
+- Atualiza `creatives` com `main_image_url`, `status=READY`. Em erro, `status=FAILED` + `error_message`.
 
-**Passo 2 — Estilo e Formato**
-- **Estilo** (cards selecionáveis): Praia, Campo / Chácara, Comercial, Centro / Urbano, Imóvel de Luxo, Lançamento, Vendas de lotes.
-- **Formato** (cards selecionáveis):
-  - Post — 1080×1080
-  - Stories — 1080×1920
-  - Tráfego — 1200×628
+**Migration leve: adicionar `error_message TEXT` em `creatives`** (para mostrar falha no card).
 
-**Passo 3 — Informações do imóvel**
-- Textarea livre (nome, local, características, preço, etc.).
-- Botão **"Gerar"**.
+**Frontend — `GenerateCreative.tsx` / `StepResult.tsx`**
+- Após `INSERT` em `creatives` (já existe), chamar `supabase.functions.invoke('generate-creative-image', { body: { creative_id } })` em background.
+- `StepResult` recebe `creativeId` e faz **polling** (a cada 3s, max 90s) em `creatives` até `status=READY` ou `FAILED`.
+- Estados visíveis no card "Principal":
+  - **PENDING**: skeleton + "Gerando com IA…" com `Loader2`.
+  - **READY**: mostra `main_image_url`.
+  - **FAILED**: ícone de erro + mensagem + botão "Tentar novamente" (re-invoca a function).
 
-**Resultado**
-- Tela com os 8 criativos: o "Principal" aparece como placeholder ("Será gerado pela IA — em breve") e os 7 mockups aparecem renderizados localmente com a logo nas posições escolhidas.
-- Cada criativo é salvo em `creatives` para listar em "Meus Criativos".
+**Frontend — `MyCreatives.tsx`**
+- Card mostra o status (badge "Gerando…" se `PENDING`, "Falhou" se `FAILED`).
+- Auto-refresh: assinar `postgres_changes` em `creatives` filtrado por `user_id` para refletir a conclusão sem F5.
 
-### Painel ADMIN — gerenciar prompts dos estilos
+### Detalhes técnicos do prompt
 
-Nova aba no `Admin.tsx`: **"Criativos"** (`CreativeStylesManagement`).
-- Lista os 7 estilos pré-cadastrados.
-- Para cada estilo, o admin edita:
-  - Nome (display)
-  - Slug interno
-  - **Prompt** (textarea longa) — é o texto que será usado quando a integração com a API for ligada.
-  - Ativo/inativo.
-- Os prompts ficam em `creative_styles` (tabela nova) e são apenas armazenados — **nenhuma chamada à API ainda**.
+Estrutura enviada ao modelo:
+```text
+{style.prompt}
 
-### Banco de dados (novas tabelas)
+Imóvel: {info_text}
 
-**`creative_styles`** (gerenciada pelo admin)
-- `id`, `slug` (unique: `praia`, `campo`, `comercial`, `centro`, `luxo`, `lancamento`, `lotes`), `name`, `description`, `prompt` (text), `is_active`, `created_at`, `updated_at`.
-- RLS: SELECT para todos autenticados (ler nome/descrição); ALL apenas para `MASTER_ADMIN`.
-- Seed inicial com os 7 estilos e prompts vazios (admin preenche depois).
+Formato: {POST=square 1:1 1080x1080 | STORIES=vertical 9:16 1080x1920 | TRAFEGO=landscape 1.91:1 1200x628}
 
-**`user_brands`**
-- `id`, `user_id` (unique), `logo_url`, `primary_color`, `created_at`, `updated_at`.
-- RLS: usuário gerencia o próprio (`auth.uid() = user_id`); admins veem todos.
+Use a imagem de referência fornecida como base do imóvel. Mantenha a identidade visual do estilo. Texto na imagem em português, mínimo e legível. Sem watermarks.
+```
 
-**`creatives`**
-- `id`, `user_id`, `style_slug`, `format` (`POST` | `STORIES` | `TRAFEGO`), `info_text`, `main_image_url` (nullable — será preenchido quando a API rodar), `mockup_images` (jsonb: array com `{image_url, logo_position}`), `status` (`PENDING` | `READY` | `FAILED`), `created_at`.
-- RLS: usuário gerencia os próprios; admins veem todos.
+Imagem de referência vai como segundo `content` item:
+```json
+{ "type": "image_url", "image_url": { "url": "https://.../upload-xxx.jpg" } }
+```
 
-### Storage
+### Tratamento de erros
 
-Dois buckets públicos novos:
-- `brand-logos` — logos dos usuários.
-- `creatives` — imagens enviadas pelo usuário e mockups gerados.
+- **402 (créditos)**: toast "Créditos de IA esgotados. Adicione créditos em Workspace → Usage." + status FAILED.
+- **429 (rate limit)**: toast "Muitas gerações em sequência. Tente novamente em alguns segundos." + auto-retry uma vez após 5s.
+- **Sem `main_image_url` selecionada**: pular a geração, status já fica vazio (mockups continuam funcionando).
+- **Estilo sem prompt cadastrado**: fallback para prompt genérico "anúncio imobiliário profissional".
 
-RLS de Storage: usuário só pode inserir/atualizar/deletar dentro de pastas com seu próprio `user_id`.
-
-### Arquivos novos / alterados
+### Arquivos
 
 **Novos**
-- `src/pages/Criativos.tsx` — página com as 3 tabs.
-- `src/components/criativos/MyCreatives.tsx`
-- `src/components/criativos/MyBrand.tsx`
-- `src/components/criativos/GenerateCreative.tsx` — orquestra o wizard.
-- `src/components/criativos/wizard/StepImages.tsx`
-- `src/components/criativos/wizard/StepStyleFormat.tsx`
-- `src/components/criativos/wizard/StepInfo.tsx`
-- `src/components/criativos/wizard/StepResult.tsx`
-- `src/components/criativos/LogoPositionPicker.tsx` — overlay com 4 posições.
-- `src/components/criativos/MockupPreview.tsx` — render canvas da imagem + logo sobreposta.
-- `src/components/admin/CreativeStylesManagement.tsx` — CRUD de prompts.
-- Migration: cria as 3 tabelas, RLS, seed dos 7 estilos, e os 2 buckets.
+- `supabase/functions/generate-creative-image/index.ts`
 
 **Alterados**
-- `src/components/AppSidebar.tsx` — item "Criativos".
-- `src/App.tsx` — rota `/criativos`.
-- `src/pages/Admin.tsx` — nova aba "Criativos" (passa de 8 para 9 colunas no `TabsList`).
+- `src/components/criativos/GenerateCreative.tsx` (invoca a function após o insert, passa `creative_id` para o StepResult)
+- `src/components/criativos/wizard/StepResult.tsx` (polling + estados PENDING/READY/FAILED + retry)
+- `src/components/criativos/MyCreatives.tsx` (badge de status + realtime subscribe)
+- Migration: `ALTER TABLE creatives ADD COLUMN error_message TEXT;` + `ALTER PUBLICATION supabase_realtime ADD TABLE public.creatives;`
 
 ### Observações
-- Tudo em português (`pt-BR`), seguindo o padrão do app.
-- Sem chamada à API do Gemini/Nano Banana neste passo — o "Principal" fica como placeholder até plugarmos. Toda a base (estilos, prompts no admin, formatos, fluxo, persistência) já estará pronta.
-- Mockups dos 7 secundários são 100% client-side (canvas), portanto funcionam de imediato.
+
+- Modelo **Nano Banana Pro** (`google/gemini-3-pro-image-preview`) é o de maior qualidade da família — mais lento e mais caro, mas é o que você pediu na documentação.
+- Os 7 mockups continuam 100% client-side (canvas com a logo) — sem mudança lá.
+- Os prompts editados pelo admin em "Estilos de Criativos" passam a ser **efetivamente usados** na geração.
 
