@@ -50,7 +50,41 @@ serve(async (req) => {
           processed: false,
           error_message: 'Unauthorized webhook attempt - invalid access token',
         });
-      
+
+      // Check if we have multiple unauthorized attempts in last 10 min → raise admin alert
+      try {
+        const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        const { count } = await supabaseClient
+          .from('asaas_webhook_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'UNAUTHORIZED_ATTEMPT')
+          .gte('received_at', tenMinAgo);
+
+        if ((count ?? 0) >= 3) {
+          // Avoid spamming: only alert if no unread alert of same type in last hour
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { data: existingAlert } = await supabaseClient
+            .from('admin_alerts')
+            .select('id')
+            .eq('type', 'ASAAS_WEBHOOK_UNAUTHORIZED')
+            .is('read_at', null)
+            .gte('created_at', oneHourAgo)
+            .limit(1)
+            .maybeSingle();
+
+          if (!existingAlert) {
+            await supabaseClient.from('admin_alerts').insert({
+              type: 'ASAAS_WEBHOOK_UNAUTHORIZED',
+              severity: 'CRITICAL',
+              message: `Webhook do Asaas está sendo bloqueado por token inválido (${count} tentativas em 10 min). Pagamentos não estão sendo confirmados automaticamente. Verifique o token configurado no painel do Asaas.`,
+              payload: { count, last_attempt_ip: clientIPEarly },
+            });
+          }
+        }
+      } catch (alertErr) {
+        console.error('Failed to evaluate admin alert:', alertErr);
+      }
+
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
