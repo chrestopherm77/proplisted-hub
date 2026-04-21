@@ -11,8 +11,9 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AI_MODELS = [
-  { value: 'google/gemini-3-flash-image-preview', label: 'Gemini Flash (rápido / barato — ~$0,04/img)' },
-  { value: 'google/gemini-3-pro-image-preview', label: 'Gemini Pro (premium / caro — ~$0,14/img)' },
+  { value: 'google/gemini-2.5-flash-image', label: 'Nano Banana / Flash (rápido / barato — ~$0,04/img)' },
+  { value: 'google/gemini-3.1-flash-image-preview', label: 'Nano Banana 2 / Flash novo (qualidade pro, rápido)' },
+  { value: 'google/gemini-3-pro-image-preview', label: 'Nano Banana Pro (premium / caro — ~$0,14/img)' },
 ];
 
 interface Style {

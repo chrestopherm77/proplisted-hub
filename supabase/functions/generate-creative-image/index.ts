@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
       style?.prompt?.trim() || "Anúncio imobiliário profissional, alta qualidade, fotorrealista";
-    const aiModel = style?.ai_model || generalRow?.ai_model || "google/gemini-3-flash-image-preview";
+    const aiModel = style?.ai_model || generalRow?.ai_model || "google/gemini-2.5-flash-image";
     console.log("[generate-creative-image] using model:", aiModel);
     const formatHint = FORMAT_HINTS[creative.format] || FORMAT_HINTS.POST;
     const infoText = (creative.info_text || "").trim();
