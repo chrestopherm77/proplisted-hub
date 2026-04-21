@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
       style?.prompt?.trim() || "Anúncio imobiliário profissional, alta qualidade, fotorrealista";
-    const rawModel = style?.ai_model || generalRow?.ai_model || "google/gemini-3.1-flash-image-preview";
+    const rawModel = style?.ai_model || generalRow?.ai_model || "google/gemini-3-pro-image-preview";
     const geminiModel = resolveGeminiModel(rawModel);
     console.log("[generate-creative-image] raw model:", rawModel, "-> gemini:", geminiModel);
 
