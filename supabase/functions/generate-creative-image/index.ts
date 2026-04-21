@@ -14,8 +14,8 @@ const FORMAT_HINTS: Record<string, string> = {
 // Mapa: nomes "amigáveis" usados no admin -> nomes reais da Google Gemini API
 const MODEL_MAP: Record<string, string> = {
   "google/gemini-2.5-flash-image": "gemini-2.5-flash-image",
-  "google/gemini-3.1-flash-image-preview": "gemini-3.0-flash-image-preview",
-  "google/gemini-3-pro-image-preview": "gemini-3.0-pro-image-preview",
+  "google/gemini-3.1-flash-image-preview": "gemini-3.1-flash-image-preview",
+  "google/gemini-3-pro-image-preview": "gemini-3-pro-image-preview",
 };
 
 function resolveGeminiModel(input: string): string {
