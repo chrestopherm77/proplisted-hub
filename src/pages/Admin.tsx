@@ -14,6 +14,7 @@ import { VouchersManagement } from '@/components/admin/VouchersManagement';
 import { AccessHistory } from '@/components/admin/AccessHistory';
 import { PartnersManagement } from '@/components/admin/PartnersManagement';
 import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManagement';
+import { PendingPaymentsManagement } from '@/components/admin/PendingPaymentsManagement';
 
 export default function Admin() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -61,10 +62,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-9 mb-6 md:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-10 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
             <TabsTrigger value="purchases">Compras</TabsTrigger>
+            <TabsTrigger value="pending">Pendentes</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="access">Acessos</TabsTrigger>
             <TabsTrigger value="tracking">Rastreamento</TabsTrigger>
@@ -83,6 +85,10 @@ export default function Admin() {
 
           <TabsContent value="purchases">
             <PurchasesOverview />
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <PendingPaymentsManagement />
           </TabsContent>
 
           <TabsContent value="users">

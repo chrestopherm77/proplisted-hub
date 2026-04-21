@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.generate-creative-image]
 verify_jwt = true
+
+[functions.reconcile-asaas-payments]
+verify_jwt = false
+
+[functions.admin-adjust-credits]
+verify_jwt = false
