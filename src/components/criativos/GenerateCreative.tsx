@@ -63,8 +63,10 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
     setStep(4);
 
     if (principal?.url) {
-      // Trigger AI generation in background
-      supabase.functions.invoke('generate-creative-image', { body: { creative_id: created.id } })
+      // Trigger AI generation in background, passing logo position from main slot
+      supabase.functions.invoke('generate-creative-image', {
+        body: { creative_id: created.id, logo_position: principal.position || 'bottom-right' },
+      })
         .then(({ error: fnErr }) => {
           if (fnErr) {
             toast({ title: 'Erro na geração com IA', description: fnErr.message, variant: 'destructive' });

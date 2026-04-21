@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +11,6 @@ export function MyBrand() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [primaryColor, setPrimaryColor] = useState('#1e40af');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,10 +19,9 @@ export function MyBrand() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase.from('user_brands').select('*').eq('user_id', user.id).maybeSingle();
+    const { data } = await supabase.from('user_brands').select('logo_url').eq('user_id', user.id).maybeSingle();
     if (data) {
       setLogoUrl(data.logo_url);
-      setPrimaryColor(data.primary_color || '#1e40af');
     }
     setLoading(false);
   };
@@ -59,7 +56,6 @@ export function MyBrand() {
     const { error } = await supabase.from('user_brands').upsert({
       user_id: user.id,
       logo_url: logoUrl,
-      primary_color: primaryColor,
     }, { onConflict: 'user_id' });
     setSaving(false);
     if (error) return toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -98,14 +94,6 @@ export function MyBrand() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">PNG transparente recomendado. Máx 5MB.</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="color">Cor primária da marca</Label>
-          <div className="flex items-center gap-3">
-            <Input id="color" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-20 h-10 p-1 cursor-pointer" />
-            <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="max-w-[160px] font-mono" />
-          </div>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
