@@ -11,25 +11,34 @@ const FORMAT_HINTS: Record<string, string> = {
   TRAFEGO: "horizontal 1.91:1, 1200x628 pixels (anúncio de tráfego pago)",
 };
 
-async function imageUrlToDataUrl(url: string): Promise<string> {
+// Mapa: nomes "amigáveis" usados no admin -> nomes reais da Google Gemini API
+const MODEL_MAP: Record<string, string> = {
+  "google/gemini-2.5-flash-image": "gemini-2.5-flash-image",
+  "google/gemini-3.1-flash-image-preview": "gemini-3.0-flash-image-preview",
+  "google/gemini-3-pro-image-preview": "gemini-3.0-pro-image-preview",
+};
+
+function resolveGeminiModel(input: string): string {
+  if (MODEL_MAP[input]) return MODEL_MAP[input];
+  // remove prefixo "google/" se vier
+  return input.replace(/^google\//, "");
+}
+
+async function imageUrlToBase64(url: string): Promise<{ data: string; mimeType: string }> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Falha ao baixar imagem de referência: ${res.status}`);
-  const contentType = res.headers.get("content-type") || "image/jpeg";
+  const mimeType = res.headers.get("content-type") || "image/jpeg";
   const buf = new Uint8Array(await res.arrayBuffer());
   let binary = "";
   for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
-  const b64 = btoa(binary);
-  return `data:${contentType};base64,${b64}`;
+  return { data: btoa(binary), mimeType };
 }
 
-function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; contentType: string } {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) throw new Error("Formato base64 inválido na resposta da IA");
-  const contentType = match[1];
-  const binary = atob(match[2]);
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return { bytes, contentType };
+  return bytes;
 }
 
 Deno.serve(async (req) => {
@@ -38,7 +47,7 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -61,8 +70,8 @@ Deno.serve(async (req) => {
   }
   const userId = userData.user.id;
 
-  if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
+  if (!GEMINI_API_KEY) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY não configurada" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -87,7 +96,6 @@ Deno.serve(async (req) => {
     if (creative.user_id !== userId) throw new Error("Acesso negado");
 
     if (!creative.main_image_url) {
-      // Nothing to generate
       await admin.from("creatives").update({ status: "READY" }).eq("id", creativeId);
       return new Response(JSON.stringify({ skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -109,8 +117,10 @@ Deno.serve(async (req) => {
     const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
       style?.prompt?.trim() || "Anúncio imobiliário profissional, alta qualidade, fotorrealista";
-    const aiModel = style?.ai_model || generalRow?.ai_model || "google/gemini-2.5-flash-image";
-    console.log("[generate-creative-image] using model:", aiModel);
+    const rawModel = style?.ai_model || generalRow?.ai_model || "google/gemini-2.5-flash-image";
+    const geminiModel = resolveGeminiModel(rawModel);
+    console.log("[generate-creative-image] raw model:", rawModel, "-> gemini:", geminiModel);
+
     const formatHint = FORMAT_HINTS[creative.format] || FORMAT_HINTS.POST;
     const infoText = (creative.info_text || "").trim();
 
@@ -126,37 +136,37 @@ Deno.serve(async (req) => {
     const finalPrompt = promptParts.join("\n\n");
     console.log("[generate-creative-image] prompt:", finalPrompt.slice(0, 500));
 
-    // Convert reference image to data URL
-    const refDataUrl = await imageUrlToDataUrl(creative.main_image_url);
+    // Reference image
+    const ref = await imageUrlToBase64(creative.main_image_url);
 
-    // Call Lovable AI Gateway
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call Google Gemini API directly
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`;
+    const aiRes = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: aiModel,
-        messages: [
+        contents: [
           {
             role: "user",
-            content: [
-              { type: "text", text: finalPrompt },
-              { type: "image_url", image_url: { url: refDataUrl } },
+            parts: [
+              { text: finalPrompt },
+              { inline_data: { mime_type: ref.mimeType, data: ref.data } },
             ],
           },
         ],
-        modalities: ["image", "text"],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+        },
       }),
     });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
-      console.error("AI gateway error:", aiRes.status, errText);
+      console.error("Gemini API error:", aiRes.status, errText);
       let userMessage = "Falha ao gerar imagem com IA";
       if (aiRes.status === 429) userMessage = "Muitas gerações em sequência. Tente novamente em alguns segundos.";
-      else if (aiRes.status === 402) userMessage = "Créditos de IA esgotados. Adicione créditos em Workspace → Usage.";
+      else if (aiRes.status === 400) userMessage = `Erro na requisição: ${errText.slice(0, 200)}`;
+      else if (aiRes.status === 403) userMessage = "Chave da API Gemini inválida ou sem permissão.";
 
       await admin
         .from("creatives")
@@ -170,12 +180,18 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    const generatedDataUrl = aiData?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!generatedDataUrl) {
+    // Find first inline_data part with image
+    const parts = aiData?.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find((p: any) => p?.inline_data?.data || p?.inlineData?.data);
+    const inline = imagePart?.inline_data || imagePart?.inlineData;
+
+    if (!inline?.data) {
+      console.error("Gemini response had no image:", JSON.stringify(aiData).slice(0, 500));
       throw new Error("IA não retornou imagem");
     }
 
-    const { bytes, contentType } = dataUrlToBytes(generatedDataUrl);
+    const contentType = inline.mime_type || inline.mimeType || "image/png";
+    const bytes = base64ToBytes(inline.data);
     const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
     const path = `${userId}/ai-${creativeId}.${ext}`;
 
