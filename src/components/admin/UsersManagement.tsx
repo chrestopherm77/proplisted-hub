@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { AdjustCreditsDialog } from './AdjustCreditsDialog';
 
 interface Profile {
   id: string;
@@ -28,6 +29,7 @@ interface Profile {
   address_neighborhood: string | null;
   is_active: boolean;
   created_at: string | null;
+  credit_balance: number;
 }
 
 const professionLabels: Record<string, string> = {
@@ -42,6 +44,7 @@ export function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [adjustingProfile, setAdjustingProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export function UsersManagement() {
     const [profilesRes, emailsRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, name, phone, person_type, cpf, cnpj, company_name, profession, creci, creci_uf, cau, cau_uf, crea, crea_uf, address_uf, address_city, address_neighborhood, is_active, created_at')
+        .select('id, name, phone, person_type, cpf, cnpj, company_name, profession, creci, creci_uf, cau, cau_uf, crea, crea_uf, address_uf, address_city, address_neighborhood, is_active, created_at, credit_balance')
         .order('created_at', { ascending: false }),
       supabase.functions.invoke('list-users'),
     ]);
@@ -172,6 +175,7 @@ export function UsersManagement() {
               <TableHead>Registro</TableHead>
               <TableHead>UF/Cidade</TableHead>
               <TableHead>Bairro</TableHead>
+              <TableHead className="min-w-[160px]">Créditos</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -192,6 +196,22 @@ export function UsersManagement() {
                 <TableCell>{p.address_neighborhood || '-'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 font-semibold text-yellow-600 dark:text-yellow-500">
+                      <Coins className="h-3.5 w-3.5" />
+                      {p.credit_balance ?? 0}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setAdjustingProfile(p)}
+                    >
+                      Ajustar
+                    </Button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
                     <Switch
                       checked={p.is_active}
                       onCheckedChange={() => toggleActive(p)}
@@ -206,7 +226,7 @@ export function UsersManagement() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
@@ -214,6 +234,21 @@ export function UsersManagement() {
           </TableBody>
         </Table>
       </div>
+
+      {adjustingProfile && (
+        <AdjustCreditsDialog
+          open={!!adjustingProfile}
+          onOpenChange={(open) => !open && setAdjustingProfile(null)}
+          userId={adjustingProfile.id}
+          userName={adjustingProfile.company_name || adjustingProfile.name}
+          currentBalance={adjustingProfile.credit_balance ?? 0}
+          onSuccess={(newBalance) => {
+            setProfiles((prev) =>
+              prev.map((p) => (p.id === adjustingProfile.id ? { ...p, credit_balance: newBalance } : p)),
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
