@@ -1,0 +1,1 @@
+ALTER TABLE public.creative_styles ADD COLUMN IF NOT EXISTS ai_model text NOT NULL DEFAULT 'google/gemini-3-flash-image-preview';

@@ -114,6 +114,7 @@ export type Database = {
       }
       creative_styles: {
         Row: {
+          ai_model: string
           created_at: string
           description: string | null
           id: string
@@ -124,6 +125,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_model?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -134,6 +136,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_model?: string
           created_at?: string
           description?: string | null
           id?: string
