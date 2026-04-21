@@ -6,8 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+const AI_MODELS = [
+  { value: 'google/gemini-3-flash-image-preview', label: 'Gemini Flash (rápido / barato — ~$0,04/img)' },
+  { value: 'google/gemini-3-pro-image-preview', label: 'Gemini Pro (premium / caro — ~$0,14/img)' },
+];
 
 interface Style {
   id: string;
@@ -16,6 +22,7 @@ interface Style {
   description: string | null;
   prompt: string;
   is_active: boolean;
+  ai_model: string;
 }
 
 export function CreativeStylesManagement() {
@@ -48,6 +55,7 @@ export function CreativeStylesManagement() {
       description: s.description,
       prompt: s.prompt,
       is_active: s.is_active,
+      ai_model: s.ai_model,
     }).eq('id', s.id);
     setSavingId(null);
     if (error) return toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -85,6 +93,20 @@ export function CreativeStylesManagement() {
                 onChange={(e) => updateField(general.id, 'prompt', e.target.value)}
                 placeholder="Instruções globais aplicadas a toda geração de criativo..."
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Modelo de IA padrão (usado quando o estilo não define um próprio)</Label>
+              <Select value={general.ai_model} onValueChange={(v) => updateField(general.id, 'ai_model', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Flash custa ~3,5× menos que Pro. Use Pro só para estilos premium.
+              </p>
             </div>
             <Button onClick={() => handleSave(general)} disabled={savingId === general.id}>
               {savingId === general.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -126,6 +148,17 @@ export function CreativeStylesManagement() {
                 onChange={(e) => updateField(s.id, 'prompt', e.target.value)}
                 placeholder="Descreva o estilo visual, paleta de cores, mood, elementos gráficos..."
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Modelo de IA para este estilo</Label>
+              <Select value={s.ai_model} onValueChange={(v) => updateField(s.id, 'ai_model', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={() => handleSave(s)} disabled={savingId === s.id}>
               {savingId === s.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}

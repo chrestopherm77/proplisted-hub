@@ -102,13 +102,15 @@ Deno.serve(async (req) => {
 
     // Load general prompt + style prompt in parallel
     const [{ data: generalRow }, { data: style }] = await Promise.all([
-      admin.from("creative_styles").select("prompt").eq("slug", "__general__").maybeSingle(),
-      admin.from("creative_styles").select("prompt, name").eq("slug", creative.style_slug).maybeSingle(),
+      admin.from("creative_styles").select("prompt, ai_model").eq("slug", "__general__").maybeSingle(),
+      admin.from("creative_styles").select("prompt, name, ai_model").eq("slug", creative.style_slug).maybeSingle(),
     ]);
 
     const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
       style?.prompt?.trim() || "Anúncio imobiliário profissional, alta qualidade, fotorrealista";
+    const aiModel = style?.ai_model || generalRow?.ai_model || "google/gemini-3-flash-image-preview";
+    console.log("[generate-creative-image] using model:", aiModel);
     const formatHint = FORMAT_HINTS[creative.format] || FORMAT_HINTS.POST;
     const infoText = (creative.info_text || "").trim();
 
@@ -135,7 +137,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
+        model: aiModel,
         messages: [
           {
             role: "user",
