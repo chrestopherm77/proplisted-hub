@@ -27,10 +27,12 @@ serve(async (req) => {
       );
     }
 
+  const clientIPEarly = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+
   if (incomingToken !== ASAAS_WEBHOOK_SECRET) {
     console.error('❌ Invalid webhook token received');
     console.error('Token validation failed - check ASAAS_WEBHOOK_SECRET configuration');
-    console.error('Request IP:', req.headers.get('x-forwarded-for') || 'unknown');
+    console.error('Request IP:', clientIPEarly);
     // Note: Never log actual secret or token values
       
       // Log unauthorized attempt
