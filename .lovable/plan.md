@@ -1,34 +1,61 @@
 
-## Incluir logo na geração com IA + remover cor da marca
+
+## Adicionar gestão manual de créditos no Admin → Usuários
+
+Adicionar coluna "Créditos" na tabela de usuários do admin com o saldo atual e botão para ajustar manualmente (adicionar/remover créditos).
 
 ### O que será feito
 
-**1. Edge function `generate-creative-image/index.ts` — enviar a logo para a IA**
+**1. Coluna "Créditos" na tabela (`UsersManagement.tsx`)**
 
-- Buscar `logo_url` da tabela `user_brands` do dono do criativo.
-- Se houver logo, baixar e converter para base64 (já existe a função `imageUrlToBase64`).
-- Enviar **duas** imagens no `parts` da chamada Gemini:
-  1. Imagem principal do imóvel (já enviada hoje).
-  2. Logo da marca do usuário (nova).
-- Atualizar o prompt final para informar explicitamente:
-  - Que a primeira imagem é o imóvel de referência.
-  - Que a segunda imagem é a logo da imobiliária/corretor e que ela **deve aparecer no criativo final**, posicionada na `logo_position` do registro principal (canto inferior direito por padrão), em tamanho discreto e legível, sem distorcer a logo.
-  - Caso não exista logo, manter o prompt atual sem menção a logo.
+- Incluir `credit_balance` no `select` do `profiles`.
+- Adicionar nova coluna na tabela exibindo o saldo atual em amarelo (consistente com o ícone de créditos do app).
+- Adicionar botão "Ajustar" ao lado do saldo, abrindo um modal.
 
-**2. Componente `MyBrand.tsx` — remover seleção de cor**
+**2. Modal "Ajustar Créditos"**
 
-- Remover o bloco "Cor primária da marca" (Label + 2 inputs de cor).
-- Remover o `useState` de `primaryColor` e a leitura/escrita de `primary_color` no `load()` e `handleSave()`.
-- Salvar apenas `logo_url` no upsert de `user_brands`.
-- Manter a coluna `primary_color` no banco (não precisa migration; só deixa de ser editada/usada na UI). Isso evita risco em qualquer outro lugar que ainda leia o campo.
+- Mostra: nome do usuário + saldo atual.
+- Campos:
+  - Tipo de operação: **Adicionar** ou **Remover** (toggle/radio).
+  - Quantidade (input numérico, mínimo 1).
+  - Motivo/observação (textarea opcional).
+- Botão "Confirmar" e "Cancelar".
+- Mostra prévia do novo saldo antes de confirmar.
+- Bloqueia remoção se for deixar saldo negativo.
+
+**3. Edge function nova: `admin-adjust-credits`**
+
+Necessária porque a tabela `profiles` só permite `UPDATE` pelo próprio dono (RLS). Admin precisa de service role.
+
+- Valida JWT + checa `MASTER_ADMIN` via `user_roles` (mesmo padrão do `list-users`).
+- Recebe: `user_id`, `amount` (int positivo), `operation` ('ADD' | 'REMOVE'), `reason` (opcional).
+- Valida com Zod.
+- Usa service role para:
+  - Ler `credit_balance` atual.
+  - Calcular novo saldo (bloqueia se ficar < 0).
+  - Atualizar `profiles.credit_balance`.
+  - Inserir registro em `credit_transactions` com:
+    - `type`: `'ADMIN_ADD'` ou `'ADMIN_REMOVE'`.
+    - `credits_used`: o `amount` (positivo nos dois casos; o tipo identifica direção).
+    - `lead_id`: null.
+- Retorna novo saldo.
+- CORS restrito (mesma lista de origens do `list-users`).
+
+**4. Atualização da UI após ajuste**
+
+- Ao confirmar, atualiza o `profiles` localmente com o novo saldo (sem refetch completo).
+- Toast de sucesso: "Saldo atualizado: X créditos".
 
 ### Detalhes técnicos
 
-- O `logo_position` virá do registro principal em `creatives.mockup_images[0]` não existe — a posição da logo do criativo principal hoje está em `slots[0].position` do wizard mas **não é persistida** para o `main_image_url`. Vou persistir também em uma nova chave do JSON existente, OU simplesmente passar `logo_position` direto na chamada da edge function via `body` do `invoke`. Abordagem escolhida: ler de `slots[0].position` no `GenerateCreative.tsx` e enviar como campo extra ao salvar — adicionar `logo_position` no insert do `creatives` apenas se a coluna existir; se não existir, passamos via `body` do `functions.invoke` e a edge function lê do payload (sem alterar schema).
-- Fallback de posição se vier vazio: `bottom-right`.
-- Não alterar `MODEL_MAP`, fluxo de status, storage ou autenticação.
+- `credit_transactions.type` hoje aceita texto livre (default `'LEAD_PURCHASE'`); novos tipos `'ADMIN_ADD'` / `'ADMIN_REMOVE'` não exigem migration.
+- Sem alteração de schema — apenas nova edge function + UI.
+- `supabase/config.toml` não precisa entrada nova (verify_jwt fica false por padrão; validação acontece no código).
+- Histórico fica rastreável em `credit_transactions` (admin pode auditar depois quem ganhou/perdeu créditos).
 
 ### Resultado
 
-- A IA recebe a logo junto com a foto do imóvel e é instruída a inseri-la no criativo final, na posição escolhida.
-- A tela "Minha Marca" passa a ter apenas upload/remoção de logo, sem campo de cor.
+- Admin abre **Painel → Usuários**, vê o saldo de créditos de cada corretor.
+- Clica em "Ajustar", escolhe adicionar ou remover X créditos com motivo, confirma.
+- Saldo é atualizado em tempo real e o usuário vê na sidebar dele (já há realtime no `AppSidebar`).
+
