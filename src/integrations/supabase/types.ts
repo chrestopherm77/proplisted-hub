@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          payload: Json | null
+          read_at: string | null
+          severity: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          payload?: Json | null
+          read_at?: string | null
+          severity?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          payload?: Json | null
+          read_at?: string | null
+          severity?: string
+          type?: string
+        }
+        Relationships: []
+      }
       asaas_webhook_events: {
         Row: {
           asaas_event_id: string | null
