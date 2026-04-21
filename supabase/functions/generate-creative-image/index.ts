@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     creativeId = body.creative_id;
+    const logoPosition: string = body.logo_position || "bottom-right";
     if (!creativeId) throw new Error("creative_id é obrigatório");
 
     // Load creative
@@ -108,11 +109,13 @@ Deno.serve(async (req) => {
       .update({ status: "PENDING", error_message: null })
       .eq("id", creativeId);
 
-    // Load general prompt + style prompt in parallel
-    const [{ data: generalRow }, { data: style }] = await Promise.all([
+    // Load general prompt + style prompt + user brand in parallel
+    const [{ data: generalRow }, { data: style }, { data: brand }] = await Promise.all([
       admin.from("creative_styles").select("prompt, ai_model").eq("slug", "__general__").maybeSingle(),
       admin.from("creative_styles").select("prompt, name, ai_model").eq("slug", creative.style_slug).maybeSingle(),
+      admin.from("user_brands").select("logo_url").eq("user_id", creative.user_id).maybeSingle(),
     ]);
+    const brandLogoUrl: string | null = brand?.logo_url || null;
 
     const generalPrompt = (generalRow?.prompt || "").trim();
     const stylePrompt =
@@ -125,19 +128,53 @@ Deno.serve(async (req) => {
     const infoText = (creative.info_text || "").trim();
 
     const styleName = style?.name?.trim() || creative.style_slug;
+
+    // Try to load brand logo (optional)
+    let logoRef: { data: string; mimeType: string } | null = null;
+    if (brandLogoUrl) {
+      try {
+        logoRef = await imageUrlToBase64(brandLogoUrl);
+      } catch (e) {
+        console.warn("[generate-creative-image] falha ao baixar logo, seguindo sem ela:", (e as Error).message);
+      }
+    }
+
+    const POS_LABELS: Record<string, string> = {
+      "top-left": "canto superior esquerdo",
+      "top-right": "canto superior direito",
+      "bottom-left": "canto inferior esquerdo",
+      "bottom-right": "canto inferior direito",
+    };
+    const positionLabel = POS_LABELS[logoPosition] || POS_LABELS["bottom-right"];
+
+    const imageDescription = logoRef
+      ? `Foram enviadas DUAS imagens de referência:\n- IMAGEM 1: foto do imóvel (use como base visual principal do criativo).\n- IMAGEM 2: logo da imobiliária/corretor. Esta logo DEVE aparecer no criativo final, posicionada no ${positionLabel}, em tamanho discreto e legível, com boa margem da borda, sem distorcer, sem cortar e sem alterar suas cores. Trate-a como marca d'água oficial do anúncio.`
+      : `Use a imagem de referência fornecida como base visual do imóvel. Sem watermarks adicionais.`;
+
     const promptParts = [
       generalPrompt && `[INSTRUÇÕES GERAIS]\n${generalPrompt}`,
       `[ESTILO ESCOLHIDO: ${styleName}]\n${stylePrompt}`,
       infoText && `[DESCRIÇÃO DO IMÓVEL (preenchida pelo cliente)]\n${infoText}`,
       `[FORMATO DE SAÍDA]\n${formatHint}`,
-      `Use a imagem de referência fornecida como base visual do imóvel. Mantenha a identidade visual do estilo "${styleName}" e o formato "${creative.format}". Texto na imagem em português brasileiro, mínimo e legível. Sem watermarks.`,
+      `[IMAGENS DE REFERÊNCIA]\n${imageDescription}`,
+      `Mantenha a identidade visual do estilo "${styleName}" e o formato "${creative.format}". Texto na imagem em português brasileiro, mínimo e legível.`,
     ].filter(Boolean);
 
     const finalPrompt = promptParts.join("\n\n");
     console.log("[generate-creative-image] prompt:", finalPrompt.slice(0, 500));
+    console.log("[generate-creative-image] logo incluída:", !!logoRef, "posição:", logoPosition);
 
-    // Reference image
+    // Reference image (property)
     const ref = await imageUrlToBase64(creative.main_image_url);
+
+    // Build parts: text + property image + (optional) logo image
+    const parts: any[] = [
+      { text: finalPrompt },
+      { inline_data: { mime_type: ref.mimeType, data: ref.data } },
+    ];
+    if (logoRef) {
+      parts.push({ inline_data: { mime_type: logoRef.mimeType, data: logoRef.data } });
+    }
 
     // Call Google Gemini API directly
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`;
@@ -145,15 +182,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: finalPrompt },
-              { inline_data: { mime_type: ref.mimeType, data: ref.data } },
-            ],
-          },
-        ],
+        contents: [{ role: "user", parts }],
         generationConfig: {
           responseModalities: ["IMAGE", "TEXT"],
         },
