@@ -82,7 +82,7 @@ export function AppSidebar() {
   if (!user) return null;
 
   const navItems = [
-    { title: 'Meus Lead - CRM', url: '/my-leads', icon: ShoppingBag, show: true },
+    { title: 'Meus Leads - CRM', url: '/my-leads', icon: ShoppingBag, show: true },
     { title: 'Leads Disponíveis', url: '/leads', icon: Package, show: true },
     { title: 'Balcão de Parcerias', url: '/property-searches', icon: Search, show: !isPartnerSite },
     { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
