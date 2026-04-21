@@ -6,24 +6,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MyCreatives } from '@/components/criativos/MyCreatives';
 import { MyBrand } from '@/components/criativos/MyBrand';
 import { GenerateCreative } from '@/components/criativos/GenerateCreative';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Criativos() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'meus';
   const [tab, setTab] = useState(initialTab);
 
   useEffect(() => {
-    if (!loading && !user) navigate('/auth');
-  }, [user, loading, navigate]);
+    if (loading || isAdmin === null) return;
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    if (isAdmin === false) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Você não tem permissão para acessar esta área',
+        variant: 'destructive',
+      });
+      navigate('/leads');
+    }
+  }, [user, loading, isAdmin, navigate, toast]);
 
   const handleTabChange = (v: string) => {
     setTab(v);
     setSearchParams({ tab: v });
   };
 
-  if (loading) {
+  if (loading || isAdmin !== true) {
     return <Layout><div className="text-center py-12">Carregando...</div></Layout>;
   }
 
