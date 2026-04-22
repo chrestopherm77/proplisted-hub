@@ -7,6 +7,7 @@ import leadbayLogo from '@/assets/leadbay-logo.png';
 import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { ReferralPopup } from '@/components/referral/ReferralPopup';
 
 interface LayoutProps {
   children: ReactNode;
@@ -68,6 +69,8 @@ export const Layout = ({ children }: LayoutProps) => {
           </header>
 
           <main className="flex-1 container mx-auto px-4 py-4 md:py-8">{children}</main>
+
+          {user && <ReferralPopup userId={user.id} />}
 
           <footer className="bg-white border-t border-border mt-auto">
             <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
