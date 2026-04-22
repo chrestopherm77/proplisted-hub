@@ -48,6 +48,9 @@ export interface SignupFormData {
   acceptedContract: boolean;      // Contrato de Parceria Comercial
   acceptedDPA: boolean;           // Acordo de Tratamento de Dados (DPA)
   acceptedTermsOfUse: boolean;    // Termo de Uso + Política de Privacidade
+
+  // Indicação
+  referralCode: string;
 }
 
 export const initialFormData: SignupFormData = {
@@ -85,6 +88,7 @@ export const initialFormData: SignupFormData = {
   acceptedContract: false,
   acceptedDPA: false,
   acceptedTermsOfUse: false,
+  referralCode: '',
 };
 
 export const UF_OPTIONS = [

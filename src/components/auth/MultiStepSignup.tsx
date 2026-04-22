@@ -381,6 +381,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         accepted_contract: formData.acceptedContract,
         accepted_dpa: formData.acceptedDPA,
         accepted_terms_of_use: formData.acceptedTermsOfUse,
+        referral_code: (formData.referralCode || '').toUpperCase().trim(),
       };
 
       if (formData.personType === 'PF') {
@@ -418,7 +419,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         }
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -434,6 +435,25 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
           toast.error(error.message);
         }
         return;
+      }
+
+      // Try to redeem referral code if provided
+      const code = (formData.referralCode || '').toUpperCase().trim();
+      const newUserId = signUpData?.user?.id;
+      if (code && newUserId) {
+        try {
+          const { data: refResult, error: refError } = await supabase.rpc('redeem_referral', {
+            p_user_id: newUserId,
+            p_referral_code: code,
+          });
+          if (refError) {
+            console.warn('[referral] erro:', refError);
+          } else if (refResult && typeof refResult === 'object' && 'error' in refResult) {
+            toast.warning(`Código de indicação: ${(refResult as any).error}`);
+          }
+        } catch (e) {
+          console.warn('[referral] falha ao resgatar:', e);
+        }
       }
 
       toast.success("Cadastro realizado com sucesso! Você já pode acessar o sistema.");

@@ -928,6 +928,9 @@ export type Database = {
           person_type: string | null
           phone: string
           profession: string | null
+          referral_code: string | null
+          referral_credits_granted: boolean
+          referred_by: string | null
           rt_cau: string | null
           rt_cau_uf: string | null
           rt_cpf: string | null
@@ -966,6 +969,9 @@ export type Database = {
           person_type?: string | null
           phone: string
           profession?: string | null
+          referral_code?: string | null
+          referral_credits_granted?: boolean
+          referred_by?: string | null
           rt_cau?: string | null
           rt_cau_uf?: string | null
           rt_cpf?: string | null
@@ -1004,6 +1010,9 @@ export type Database = {
           person_type?: string | null
           phone?: string
           profession?: string | null
+          referral_code?: string | null
+          referral_credits_granted?: boolean
+          referred_by?: string | null
           rt_cau?: string | null
           rt_cau_uf?: string | null
           rt_cpf?: string | null
@@ -1012,7 +1021,15 @@ export type Database = {
           rt_name?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -1542,6 +1559,7 @@ export type Database = {
     }
     Functions: {
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
+      generate_referral_code: { Args: never; Returns: string }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
       has_role: {
@@ -1565,6 +1583,10 @@ export type Database = {
       }
       purchase_lead_with_credits: {
         Args: { p_lead_id: string; p_user_id: string }
+        Returns: Json
+      }
+      redeem_referral: {
+        Args: { p_referral_code: string; p_user_id: string }
         Returns: Json
       }
       redeem_voucher_atomic: {
