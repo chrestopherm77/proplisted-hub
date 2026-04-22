@@ -18,6 +18,7 @@ import {
   Coins,
   Calculator,
   Sparkles,
+  Building2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -85,6 +86,7 @@ export function AppSidebar() {
     { title: 'Meus Leads - CRM', url: '/my-leads', icon: ShoppingBag, show: true },
     { title: 'Leads Disponíveis', url: '/leads', icon: Package, show: true },
     { title: 'Balcão de Parcerias', url: '/property-searches', icon: Search, show: !isPartnerSite },
+    { title: 'Portal de Imóveis', url: '/portal-imoveis', icon: Building2, show: !isPartnerSite },
     { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },

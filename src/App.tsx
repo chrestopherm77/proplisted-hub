@@ -33,6 +33,10 @@ import NossaIA from "./pages/NossaIA";
 import BuyCredits from "./pages/BuyCredits";
 import Calculadora from "./pages/Calculadora";
 import Criativos from "./pages/Criativos";
+import PortalImoveis from "./pages/PortalImoveis";
+import NewProperty from "./pages/NewProperty";
+import PropertyDetail from "./pages/PropertyDetail";
+import PublicPropertyLP from "./pages/PublicPropertyLP";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -90,6 +94,10 @@ const App = () => {
           <Route path="/comprar-creditos" element={<BuyCredits />} />
           <Route path="/calculadora" element={<Calculadora />} />
           <Route path="/criativos" element={<Criativos />} />
+          <Route path="/portal-imoveis" element={<PortalImoveis />} />
+          <Route path="/portal-imoveis/novo" element={<NewProperty />} />
+          <Route path="/portal-imoveis/:id" element={<PropertyDetail />} />
+          <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
