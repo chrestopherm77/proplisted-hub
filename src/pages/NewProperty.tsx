@@ -327,13 +327,18 @@ const NewProperty = () => {
                         }
                       >
                         <CommandInput
-                          placeholder="Buscar bairro..."
+                          placeholder={loadingNeighborhoods ? 'Carregando bairros...' : 'Buscar bairro...'}
                           value={neighborhoodSearch}
                           onValueChange={setNeighborhoodSearch}
                         />
                         <CommandList>
                           <CommandEmpty>
-                            {neighborhoodSearch.trim() ? (
+                            {loadingNeighborhoods ? (
+                              <span className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Carregando bairros...
+                              </span>
+                            ) : neighborhoodSearch.trim() ? (
                               <button
                                 type="button"
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-sm"
@@ -352,7 +357,7 @@ const NewProperty = () => {
                               </button>
                             ) : (
                               <span className="block py-3 text-center text-sm text-muted-foreground">
-                                Nenhum bairro cadastrado
+                                Nenhum bairro encontrado
                               </span>
                             )}
                           </CommandEmpty>
