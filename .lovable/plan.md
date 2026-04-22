@@ -1,56 +1,73 @@
 
 
-## Corrigir geocoding de imóveis novos + backfill automático
+## Garantir geocoding de 100% dos imóveis publicados
 
-### Problema
+### Diagnóstico
 
-O imóvel A0003 (Betim/Alvorada/Rua Santo Antônio) foi cadastrado mas ficou com `latitude/longitude = NULL`, então não pinga no mapa. Causa: o `geocodeAndSaveProperty` é chamado **no client** logo antes de o usuário ser redirecionado pra outra página — o fetch ao Nominatim é cancelado pelo browser, ou o Nominatim recusa requests vindas direto do navegador (sem `User-Agent` controlado).
+O imóvel A0004 (Betim / Capelinha / Rua caratinga) ficou sem coordenadas. Os logs da edge function `geocode-properties` mostram apenas boot/shutdown — a função **nunca foi executada** para esse imóvel.
 
-### Solução
+Causa raiz: em `NewProperty.tsx` o fluxo é:
+```
+insert → toast → supabase.functions.invoke(...).catch(...) → navigate(...)
+```
+O `navigate` desmonta a página antes do `fetch` da invoke sair do browser. Como o request é cancelado no client, a função nunca recebe a chamada (por isso não há log nem 401).
 
-**Mover o geocoding para o servidor** (edge function), garantindo que ele rode até o fim e respeite o rate limit do Nominatim.
+Além disso, o backfill atual só pega imóveis com `is_active = true`, e a lógica progressiva já existe mas não é acionada.
 
-#### 1. Refatorar edge function `geocode-properties`
+### Solução em 3 camadas (defense in depth)
 
-Hoje ela só faz backfill em lote. Vou aceitar 2 modos:
+#### 1. Garantir que a invoke de cadastro chegue ao servidor
 
-- **Modo single** (`POST { property_id }`): geocodifica 1 imóvel específico imediatamente. Chamado pelo `NewProperty.tsx` após salvar/editar.
-- **Modo backfill** (sem body, ou `{ backfill: true }`): comportamento atual — pega até 50 imóveis com lat NULL e geocodifica em lote (1 req/s).
-- Ambos validam JWT do usuário; modo single permite o **dono do imóvel** ou admin; modo backfill segue só admin.
+Em `src/pages/NewProperty.tsx`:
+- **Aguardar** a invoke antes de navegar (com `await` + timeout curto de ~8s para não travar o usuário). Se passar do timeout, segue a navegação — o disparo HTTP já saiu.
+- Como fallback, usar `navigator.sendBeacon` ou `fetch(..., { keepalive: true })` direto na URL da edge function, que sobrevive à navegação.
 
-#### 2. Atualizar `NewProperty.tsx`
+Resultado: edge function é executada de fato logo após o cadastro.
 
-Trocar a chamada client-side `geocodeAndSaveProperty(...)` por `supabase.functions.invoke('geocode-properties', { body: { property_id: data.id } })`. Continua em background (`.then().catch()`), sem bloquear navegação.
+#### 2. Trigger no banco como rede de segurança
 
-#### 3. Backfill imediato dos imóveis já cadastrados sem coordenadas
+Criar trigger `AFTER INSERT OR UPDATE OF address, neighborhood, city, state ON properties` que:
+- Quando `latitude IS NULL`, insere uma linha em uma fila `pending_geocodes` (tabela nova: `id`, `property_id`, `created_at`, `attempts`, `last_error`).
+- Não chama HTTP do banco (evita extensão `pg_net`); apenas marca para processar.
 
-Após o deploy da função, rodar a edge function em modo backfill (admin chama 1 vez). Resultado esperado: o A0003 e qualquer outro pendente ganham lat/lng. Vou indicar a chamada via `supabase--curl_edge_functions` durante a implementação.
+#### 3. Cron para drenar a fila
 
-#### 4. Melhorar fallback de geocoding
+Adicionar cron job (Supabase scheduled function, a cada 5 min) que chama `geocode-properties` em modo backfill com service role:
+- Buscar até 30 imóveis da fila `pending_geocodes` com `attempts < 5`.
+- Geocodificar usando o **fallback progressivo já existente**: `endereço completo → bairro+cidade → cidade+UF`.
+- Em caso de sucesso: atualizar `latitude/longitude` e remover da fila.
+- Em caso de falha: incrementar `attempts`, gravar `last_error`. Após 5 tentativas, deixa parado para inspeção admin.
+- Garantia: **enquanto houver cidade+UF**, sempre cai no centro da cidade — nenhum imóvel fica fora do mapa.
 
-Se Nominatim não achar o endereço completo (`rua, bairro, cidade, estado`), tentar progressivamente:
-1. `endereço, bairro, cidade, UF, Brasil`
-2. `bairro, cidade, UF, Brasil`
-3. `cidade, UF, Brasil`
+#### 4. Ajustes na edge function
 
-Assim mesmo endereços inexistentes no OSM caem no centro do bairro/cidade — pelo menos aparecem no mapa.
+Em `supabase/functions/geocode-properties/index.ts`:
+- Aceitar autenticação via `CRON_SECRET` (header `x-cron-secret`) além de JWT, para o cron rodar sem usuário.
+- Modo backfill passa a ler da tabela `pending_geocodes` em vez de varrer `properties` direto.
+- Adicionar log explícito: `[geocode] property A0004: tried "Rua caratinga, Capelinha, Betim, MG" → fallback "Capelinha, Betim, MG" → success (lat,lng)`.
 
-#### 5. (Opcional) Manter `geocodeProperty.ts` client-side
+#### 5. Backfill imediato
 
-Deixar o arquivo, mas não é mais usado por `NewProperty.tsx`. Pode ser removido depois.
+Após deploy, rodar a função 1x manualmente para resolver o A0004 e qualquer outro pendente.
 
 ### Arquivos alterados
 
-- `supabase/functions/geocode-properties/index.ts` — aceitar modo single + fallback progressivo.
-- `src/pages/NewProperty.tsx` — trocar chamada direta por `supabase.functions.invoke`.
+- `src/pages/NewProperty.tsx` — invoke com `keepalive` + await curto antes do navigate.
+- `supabase/functions/geocode-properties/index.ts` — aceitar `CRON_SECRET`, ler de `pending_geocodes`, log detalhado.
+- **Nova migração**:
+  - Tabela `pending_geocodes` (RLS: só admin lê/edita; serviço usa service role).
+  - Trigger `properties_enqueue_geocode` que insere na fila quando `latitude IS NULL`.
+  - Cron job `*/5 * * * *` chamando a edge function com `CRON_SECRET`.
 
 ### O que NÃO muda
 
-- Tabela `properties`, `PropertyMap.tsx`, RLS, fluxo do Portal, toggle Lista/Mapa.
+- `PropertyMap.tsx`, `PortalImoveis.tsx`, fluxo do usuário, RLS de `properties`.
+- Nominatim continua sendo o provider (gratuito, 1 req/s respeitado).
 
-### Resultado
+### Resultado garantido
 
-- Imóvel novo cai no mapa em poucos segundos após cadastro.
-- A0003 (Betim/Alvorada) e quaisquer outros pendentes recebem coordenadas no backfill imediato.
-- Endereços que o Nominatim não acha ainda aparecem no centro do bairro/cidade.
+- Imóvel novo: geocodificado em segundos via invoke + cron de backup em 5 min.
+- Endereço errado/inexistente (ex.: "Rua caratinga"): cai no centro do bairro Capelinha; se o bairro também falhar, cai no centro de Betim/MG.
+- A0004 e quaisquer outros pendentes recebem coordenadas no backfill imediato.
+- Nenhum imóvel ativo fica sem aparecer no mapa.
 
