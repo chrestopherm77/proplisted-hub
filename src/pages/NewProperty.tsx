@@ -215,13 +215,10 @@ const NewProperty = () => {
 
     toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
 
-    // Geocode em background — não bloqueia navegação
-    geocodeAndSaveProperty(data.id, {
-      address,
-      neighborhood,
-      city,
-      state: stateUf,
-    }).catch(() => {});
+    // Geocode em background via edge function — roda no servidor, não cancela com navegação
+    supabase.functions
+      .invoke('geocode-properties', { body: { property_id: data.id } })
+      .catch((e) => console.warn('[geocode] invoke failed', e));
 
     navigate(`/portal-imoveis/${data.id}`);
   };
