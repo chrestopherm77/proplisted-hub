@@ -241,10 +241,8 @@ const PropertyDetail = () => {
             <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="bg-background/80 backdrop-blur-sm">
               <ArrowLeft className="h-4 w-4" /> Voltar
             </Button>
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Button>
-          <Badge variant="secondary" className="text-sm">Ref: {property.reference_code}</Badge>
-        </div>
+            <Badge variant="secondary" className="text-sm bg-background/80 backdrop-blur-sm">Ref: {property.reference_code}</Badge>
+          </div>
 
         <PropertyGallery photos={photos} />
 
@@ -358,6 +356,7 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
         </div>
       </div>
     </Layout>
