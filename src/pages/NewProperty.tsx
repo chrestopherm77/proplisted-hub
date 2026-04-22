@@ -61,10 +61,11 @@ const NewProperty = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [acceptAffiliation, setAcceptAffiliation] = useState(true);
 
-  // Bairros sugeridos a partir das propriedades já cadastradas na cidade
+  // Bairros da cidade (OpenStreetMap via Overpass) + fallback com já cadastrados
   const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
   const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
+  const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
