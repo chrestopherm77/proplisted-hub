@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Coins, Loader2, X } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
+import { LeadPreferencesView } from "./LeadPreferencesView";
 
 interface Lead {
   id: string;
@@ -79,8 +80,6 @@ export function LeadDetailsModal({
 
   const normalizedFormData = normalizeFormData(lead.form_data);
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
-  const intention = inferIntention(normalizedFormData, lead.description);
-  const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
   const leadCredits = Math.round(lead.price);
   const canAfford = creditBalance >= leadCredits;
 
