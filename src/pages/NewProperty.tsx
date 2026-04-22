@@ -112,7 +112,7 @@ const NewProperty = () => {
       is_active: true,
     };
 
-    const { data, error } = await supabase.from('properties').insert(payload).select('id').single();
+    const { data, error } = await supabase.from('properties').insert(payload as any).select('id').single();
     setSaving(false);
 
     if (error) {
