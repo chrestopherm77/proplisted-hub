@@ -61,6 +61,11 @@ const NewProperty = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [acceptAffiliation, setAcceptAffiliation] = useState(true);
 
+  // Bairros sugeridos a partir das propriedades já cadastradas na cidade
+  const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
+  const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
+  const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) navigate('/auth');
@@ -69,6 +74,35 @@ const NewProperty = () => {
   useEffect(() => {
     if (stateUf) fetchCities(stateUf);
   }, [stateUf, fetchCities]);
+
+  // Buscar bairros distintos da cidade selecionada
+  useEffect(() => {
+    if (!city) {
+      setNeighborhoodOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const query = supabase
+        .from('properties')
+        .select('neighborhood')
+        .eq('city', city)
+        .not('neighborhood', 'is', null)
+        .limit(500);
+      if (stateUf) query.eq('state', stateUf);
+      const { data } = await query;
+      if (cancelled) return;
+      const unique = Array.from(
+        new Set(
+          (data || [])
+            .map((r: any) => (r.neighborhood || '').trim())
+            .filter((n: string) => n.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      setNeighborhoodOptions(unique);
+    })();
+    return () => { cancelled = true; };
+  }, [city, stateUf]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
