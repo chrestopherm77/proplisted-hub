@@ -61,10 +61,11 @@ const NewProperty = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [acceptAffiliation, setAcceptAffiliation] = useState(true);
 
-  // Bairros sugeridos a partir das propriedades já cadastradas na cidade
+  // Bairros da cidade (OpenStreetMap via Overpass) + fallback com já cadastrados
   const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
   const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
+  const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -75,33 +76,83 @@ const NewProperty = () => {
     if (stateUf) fetchCities(stateUf);
   }, [stateUf, fetchCities]);
 
-  // Buscar bairros distintos da cidade selecionada
+  // Buscar bairros da cidade via Overpass API (OpenStreetMap)
+  // Combina com bairros já cadastrados como fallback/complemento
   useEffect(() => {
     if (!city) {
       setNeighborhoodOptions([]);
       return;
     }
     let cancelled = false;
+    setLoadingNeighborhoods(true);
+
     (async () => {
-      const query = supabase
-        .from('properties')
-        .select('neighborhood')
-        .eq('city', city)
-        .not('neighborhood', 'is', null)
-        .limit(500);
-      if (stateUf) query.eq('state', stateUf);
-      const { data } = await query;
+      const collected = new Set<string>();
+
+      // 1) Buscar bairros já cadastrados nesta cidade (fallback rápido e local)
+      try {
+        const query = supabase
+          .from('properties')
+          .select('neighborhood')
+          .eq('city', city)
+          .not('neighborhood', 'is', null)
+          .limit(500);
+        if (stateUf) query.eq('state', stateUf);
+        const { data } = await query;
+        (data || []).forEach((r: any) => {
+          const n = (r.neighborhood || '').trim();
+          if (n) collected.add(n);
+        });
+      } catch {
+        /* ignora */
+      }
+
+      // 2) Buscar bairros via Overpass API (OpenStreetMap)
+      // place=suburb / neighbourhood / quarter dentro do município
+      try {
+        const cityEsc = city.replace(/"/g, '\\"');
+        const stateFilter = stateUf
+          ? `["ISO3166-2"="BR-${stateUf}"]`
+          : `["admin_level"="4"]["name"~"Brasil|Brazil",i]`;
+        const overpassQuery = `
+          [out:json][timeout:25];
+          area${stateFilter}->.state;
+          area["admin_level"="8"]["name"="${cityEsc}"](area.state)->.city;
+          (
+            node["place"~"^(suburb|neighbourhood|quarter|borough)$"](area.city);
+            way["place"~"^(suburb|neighbourhood|quarter|borough)$"](area.city);
+            relation["place"~"^(suburb|neighbourhood|quarter|borough)$"](area.city);
+          );
+          out tags;
+        `.trim();
+
+        const res = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(overpassQuery),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          (json.elements || []).forEach((el: any) => {
+            const n = (el.tags?.name || '').trim();
+            if (n) collected.add(n);
+          });
+        }
+      } catch {
+        /* ignora — usa apenas o fallback local */
+      }
+
       if (cancelled) return;
-      const unique = Array.from(
-        new Set(
-          (data || [])
-            .map((r: any) => (r.neighborhood || '').trim())
-            .filter((n: string) => n.length > 0)
-        )
-      ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const unique = Array.from(collected).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR')
+      );
       setNeighborhoodOptions(unique);
+      setLoadingNeighborhoods(false);
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, [city, stateUf]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -276,13 +327,18 @@ const NewProperty = () => {
                         }
                       >
                         <CommandInput
-                          placeholder="Buscar bairro..."
+                          placeholder={loadingNeighborhoods ? 'Carregando bairros...' : 'Buscar bairro...'}
                           value={neighborhoodSearch}
                           onValueChange={setNeighborhoodSearch}
                         />
                         <CommandList>
                           <CommandEmpty>
-                            {neighborhoodSearch.trim() ? (
+                            {loadingNeighborhoods ? (
+                              <span className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Carregando bairros...
+                              </span>
+                            ) : neighborhoodSearch.trim() ? (
                               <button
                                 type="button"
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-sm"
@@ -301,7 +357,7 @@ const NewProperty = () => {
                               </button>
                             ) : (
                               <span className="block py-3 text-center text-sm text-muted-foreground">
-                                Nenhum bairro cadastrado
+                                Nenhum bairro encontrado
                               </span>
                             )}
                           </CommandEmpty>
