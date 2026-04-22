@@ -1047,6 +1047,8 @@ export type Database = {
           id: string
           iptu: number | null
           is_active: boolean
+          latitude: number | null
+          longitude: number | null
           neighborhood: string | null
           operation_type: string
           parking_spots: number | null
@@ -1078,6 +1080,8 @@ export type Database = {
           id?: string
           iptu?: number | null
           is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
           neighborhood?: string | null
           operation_type?: string
           parking_spots?: number | null
@@ -1109,6 +1113,8 @@ export type Database = {
           id?: string
           iptu?: number | null
           is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
           neighborhood?: string | null
           operation_type?: string
           parking_spots?: number | null

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PropertyPhotosUpload } from '@/components/portal/PropertyPhotosUpload';
 import { AmenitiesPicker } from '@/components/portal/AmenitiesPicker';
+import { geocodeAndSaveProperty } from '@/lib/geocodeProperty';
 import {
   PROPERTY_TYPES,
   OPERATION_TYPES,
@@ -125,6 +126,15 @@ const NewProperty = () => {
     }
 
     toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
+
+    // Geocode em background — não bloqueia navegação
+    geocodeAndSaveProperty(data.id, {
+      address,
+      neighborhood,
+      city,
+      state: stateUf,
+    }).catch(() => {});
+
     navigate(`/portal-imoveis/${data.id}`);
   };
 

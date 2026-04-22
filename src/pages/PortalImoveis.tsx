@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Loader2, Building2 } from 'lucide-react';
+import { Search, Plus, Loader2, Building2, List, Map as MapIcon } from 'lucide-react';
 import { PropertyCard } from '@/components/portal/PropertyCard';
+import { PropertyMap } from '@/components/portal/PropertyMap';
 import { PROPERTY_TYPES, OPERATION_TYPES } from '@/lib/propertyUtils';
 
 interface Property {
@@ -21,6 +22,7 @@ interface Property {
   city: string;
   state: string | null;
   neighborhood: string | null;
+  zone?: string | null;
   bedrooms: number | null;
   parking_spots: number | null;
   area_useful: number | null;
@@ -28,6 +30,8 @@ interface Property {
   price_rent: number | null;
   photos: unknown;
   is_active: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const PortalImoveis = () => {
@@ -39,6 +43,7 @@ const PortalImoveis = () => {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [opFilter, setOpFilter] = useState('ALL');
   const [tab, setTab] = useState<'all' | 'mine'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     if (authLoading) return;
@@ -87,10 +92,34 @@ const PortalImoveis = () => {
               Publique seus imóveis e veja anúncios de outros corretores para revender
             </p>
           </div>
-          <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
-            <Plus className="h-4 w-4" />
-            Novo Anúncio
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border bg-background p-0.5">
+              <Button
+                type="button"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-9"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+                Lista
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === 'map' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-9"
+                onClick={() => setViewMode('map')}
+              >
+                <MapIcon className="h-4 w-4" />
+                Mapa
+              </Button>
+            </div>
+            <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
+              <Plus className="h-4 w-4" />
+              Novo Anúncio
+            </Button>
+          </div>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'all' | 'mine')} className="mb-4">
@@ -134,6 +163,8 @@ const PortalImoveis = () => {
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : viewMode === 'map' ? (
+          <PropertyMap properties={filtered} />
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Building2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
