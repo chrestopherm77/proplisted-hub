@@ -222,7 +222,7 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Estado</Label>
-                  <Select value={stateUf} onValueChange={(v) => { setStateUf(v); setCity(''); }}>
+                  <Select value={stateUf} onValueChange={(v) => { setStateUf(v); setCity(''); setNeighborhood(''); }}>
                     <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                     <SelectContent>
                       {states.map((s) => (
