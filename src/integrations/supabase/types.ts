@@ -1014,6 +1014,131 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          accept_affiliation: boolean
+          additional_info: string | null
+          address: string | null
+          amenities: Json
+          area_total: number | null
+          area_useful: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          condo_fee: number | null
+          created_at: string
+          id: string
+          iptu: number | null
+          is_active: boolean
+          neighborhood: string | null
+          operation_type: string
+          parking_spots: number | null
+          photos: Json
+          price_rent: number | null
+          price_sale: number | null
+          property_type: string
+          reference_code: string
+          state: string | null
+          status: string | null
+          suites: number | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accept_affiliation?: boolean
+          additional_info?: string | null
+          address?: string | null
+          amenities?: Json
+          area_total?: number | null
+          area_useful?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          condo_fee?: number | null
+          created_at?: string
+          id?: string
+          iptu?: number | null
+          is_active?: boolean
+          neighborhood?: string | null
+          operation_type?: string
+          parking_spots?: number | null
+          photos?: Json
+          price_rent?: number | null
+          price_sale?: number | null
+          property_type: string
+          reference_code: string
+          state?: string | null
+          status?: string | null
+          suites?: number | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accept_affiliation?: boolean
+          additional_info?: string | null
+          address?: string | null
+          amenities?: Json
+          area_total?: number | null
+          area_useful?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          condo_fee?: number | null
+          created_at?: string
+          id?: string
+          iptu?: number | null
+          is_active?: boolean
+          neighborhood?: string | null
+          operation_type?: string
+          parking_spots?: number | null
+          photos?: Json
+          price_rent?: number | null
+          price_sale?: number | null
+          property_type?: string
+          reference_code?: string
+          state?: string | null
+          status?: string | null
+          suites?: number | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      property_affiliates: {
+        Row: {
+          affiliate_user_id: string
+          created_at: string
+          id: string
+          property_id: string
+          token: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          created_at?: string
+          id?: string
+          property_id: string
+          token: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          created_at?: string
+          id?: string
+          property_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_affiliates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_search_alerts: {
         Row: {
           created_at: string | null
@@ -1145,6 +1270,27 @@ export type Database = {
           value_max?: string | null
           value_min?: string | null
           zone?: string | null
+        }
+        Relationships: []
+      }
+      property_views: {
+        Row: {
+          affiliate_id: string | null
+          id: string
+          property_id: string
+          viewed_at: string
+        }
+        Insert: {
+          affiliate_id?: string | null
+          id?: string
+          property_id: string
+          viewed_at?: string
+        }
+        Update: {
+          affiliate_id?: string | null
+          id?: string
+          property_id?: string
+          viewed_at?: string
         }
         Relationships: []
       }
@@ -1388,6 +1534,7 @@ export type Database = {
     Functions: {
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
+      get_public_property: { Args: { p_slug: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
