@@ -1,62 +1,73 @@
 
 
-## Sistema de Indicação — 280 créditos por amigo
+## Mapa de Imóveis no Portal — botão "Ver mapa" com clusters interativos
 
-### 1. Banco de dados
+### 1. Geocoding dos imóveis (lat/lng)
 
-Nova migração:
+A tabela `properties` hoje só tem cidade/bairro/endereço — sem coordenadas. Para mostrar pinos no mapa precisamos de lat/lng.
 
-- Coluna `referral_code TEXT UNIQUE` em `profiles` (gerada automaticamente no signup, ex: `LB7K9X2A`).
-- Coluna `referred_by UUID REFERENCES profiles(id)` em `profiles` para guardar quem indicou.
-- Coluna `referral_credits_granted BOOLEAN DEFAULT false` em `profiles` para evitar premiar duas vezes.
-- Atualizar `handle_new_user()` para gerar `referral_code` único e gravar `referred_by` quando vier `referral_code` no `raw_user_meta_data`.
-- Função `redeem_referral(p_user_id, p_referral_code)` (SECURITY DEFINER):
-  - Valida que o código existe e pertence a outro usuário.
-  - Bloqueia se o usuário já usou (campo `referred_by` já preenchido) ou se já foi premiado.
-  - Marca `referred_by` no novo usuário e dá +280 créditos pro indicador (`UPDATE profiles SET credit_balance = credit_balance + 280 ... ; INSERT credit_transactions type='REFERRAL_BONUS'`).
-  - Retorna `jsonb` com sucesso/erro.
+**Migração SQL**:
+- Adicionar colunas `latitude DOUBLE PRECISION` e `longitude DOUBLE PRECISION` em `properties`.
+- Atualizar `get_public_property` pra retornar essas colunas (uso futuro).
 
-### 2. Pop-up pós-login
+**Geocoding automático**:
+- Usar **Nominatim (OpenStreetMap)** — gratuito, sem API key, mesmo serviço já usado em `LeadFormWizard.tsx`.
+- Quando o imóvel for criado/editado em `NewProperty.tsx`, após salvar, fazer fetch:
+  `https://nominatim.openstreetmap.org/search?q={endereço, bairro, cidade, estado}&format=json&limit=1&countrycodes=br`
+- Pegar `lat`/`lon` da resposta e atualizar a linha. Se falhar, segue sem coordenadas (mapa só não exibe esse pino).
+- Backfill: edge function manual (chamada uma vez pelo admin) ou rodar geocode preguiçoso quando o admin abrir o mapa pela primeira vez. Opção mais simples: **edge function `geocode-properties`** que pega todos `is_active = true AND latitude IS NULL` em lotes de 20 com `setTimeout` 1s entre chamadas (Nominatim limita 1 req/s) e gravar lat/lng. Acionada manualmente uma vez agora + automaticamente no `NewProperty` daqui pra frente.
 
-Componente novo `src/components/referral/ReferralPopup.tsx`:
-- Aparece **uma vez por sessão** após login (controle via `sessionStorage` chave `referral_popup_shown`).
-- Carregado via `Layout.tsx` quando `user` existe.
-- Conteúdo:
-  - Título: **"Indique um corretor e ganhe 280 créditos"**
-  - Texto explicando: amigo se cadastra usando seu código → você ganha 280 créditos.
-  - Caixa com **código de indicação do usuário** (lido de `profiles.referral_code`) + botão "Copiar código".
-  - Mensagem pronta pré-formatada com botão "Copiar mensagem" e botão "Compartilhar no WhatsApp" (`https://wa.me/?text=...`):
-    > Olá! 👋 Tô usando a LeadBay pra comprar leads de imóveis. Se você se cadastrar usando meu código de indicação **{CODE}**, eu ganho créditos e você entra numa plataforma top. Cadastra aqui: https://leadbay.com.br/auth
-  - Botão **X** no canto e botão "Fechar" no rodapé.
-- Dialog padrão (`@/components/ui/dialog`) — fácil fechar clicando fora ou no X.
+### 2. Biblioteca do mapa
 
-### 3. Campo "Foi indicado?" no cadastro
+**Leaflet + react-leaflet + leaflet.markercluster** (gratuito, sem API key, igual o visual da imagem).
+- `leaflet`, `react-leaflet`, `leaflet.markercluster`, `react-leaflet-cluster` via npm.
+- Tiles: OpenStreetMap (`https://{s}.tile.openstreetmap.org/...`).
+- Clustering nativo: bolinha vermelha com número, expande conforme dá zoom — exatamente como nas imagens enviadas.
 
-`src/components/auth/steps/CredentialsStep.tsx`:
-- Antes do bloco de termos, novo campo opcional: **"Foi indicado? Coloque o código aqui"** com `Input` em maiúsculas (auto-uppercase + trim).
-- Adicionar `referralCode: string` em `SignupFormData` (`src/types/signup.ts`) e em `initialFormData`.
-- `MultiStepSignup.handleSubmit`: incluir `referral_code: formData.referralCode` no `metadata` enviado ao `signUp`.
-- Se preenchido, após `signUp` bem-sucedido chamar `supabase.rpc('redeem_referral', { p_user_id: <novoUserId>, p_referral_code: ... })`. Se a RPC der erro (código inválido), mostra toast mas **não bloqueia** o cadastro.
-- Validação leve: 6-12 chars alfanuméricos. Sem código = ignora.
+### 3. Toggle "Lista / Mapa" no Portal
 
-### 4. Detalhes técnicos
+`src/pages/PortalImoveis.tsx`:
+- Adicionar dois botões topo direito (ao lado de "Novo Anúncio") tipo abas: **Lista** (atual) e **Mapa**.
+- State `viewMode: 'list' | 'map'` controla qual renderiza.
+- Filtros (busca, tipo, operação, abas todos/meus) continuam aplicáveis aos dois modos.
 
-- Geração do `referral_code`: dentro do trigger `handle_new_user`, loop com `substring(md5(random()::text || NEW.id::text) for 8)` em uppercase, garantindo unicidade.
-- Backfill: gerar códigos pra usuários já existentes na mesma migração.
-- `credit_transactions.type` aceita string livre — usar `'REFERRAL_BONUS'` com `credits_used = 280` e `lead_id = NULL` (precisa permitir null; já é `Nullable: Yes`).
-- O bônus é dado **uma única vez por novo usuário** (constraint via `referral_credits_granted` e checagem na RPC).
-- Self-referral bloqueado (código próprio rejeitado).
+### 4. Componente `PropertyMap.tsx`
 
-### 5. O que NÃO muda
+Novo `src/components/portal/PropertyMap.tsx`:
+- Recebe `properties: Property[]` (já filtradas pelo Portal).
+- Filtra só os que têm `latitude && longitude`.
+- Renderiza `<MapContainer>` ocupando ~70vh.
+- `<MarkerClusterGroup>` envolvendo um `<Marker>` por imóvel.
+- Centro inicial: média das coordenadas dos imóveis filtrados (ou Brasil `[-15, -55]` zoom 4 se vazio).
+- Cada `<Marker>` tem um `<Popup>` com:
+  - Foto de capa (mini)
+  - Título (`{tipo} em {cidade}`)
+  - Bairro · Zona
+  - Preço
+  - Botão "Ver detalhes" → `/portal-imoveis/{id}`
+- **Filtro por viewport** (igual segunda imagem): listener no evento `moveend`/`zoomend` do mapa filtra só os pinos visíveis no bounds atual; opcionalmente exibe um contador "X imóveis nesta área" no topo do mapa.
 
-- Fluxo de signup, login, RLS atual.
-- Tabelas `purchases`, `leads`, `properties`.
-- Outros componentes do Layout/menu.
+### 5. CSS do Leaflet
+
+Importar `leaflet/dist/leaflet.css` e `leaflet.markercluster/dist/MarkerCluster.css` no `main.tsx` ou no próprio componente.
+- Customizar cor do cluster pra vermelho/primary do projeto via CSS override (`.marker-cluster-small`, `.marker-cluster-medium`, `.marker-cluster-large`) — bem parecido com as imagens.
+
+### 6. Detalhes técnicos
+
+- Sem API key: Leaflet + OSM tiles + Nominatim são totalmente gratuitos.
+- Imóveis sem geocode aparecem normalmente na lista, só não pingam no mapa.
+- Edge function `geocode-properties` respeita rate limit de 1 req/s do Nominatim e usa `User-Agent: LeadBay/1.0` (exigido pela política deles).
+- Performance: clustering aguenta milhares de pinos sem travar.
+
+### 7. O que NÃO muda
+
+- Card da lista, fluxo de cadastro, sistema de afiliação, match WhatsApp, pop-up de indicação.
+- RLS, tabelas existentes (só ganha 2 colunas).
 
 ### Resultado
 
-- Usuário loga → vê pop-up com seu código + mensagem pronta + botão WhatsApp/copiar/fechar.
-- Compartilha o código com outro corretor.
-- Outro corretor se cadastra preenchendo o campo "Foi indicado?" → indicador recebe 280 créditos automaticamente.
-- Pop-up some pelo resto da sessão (volta a aparecer no próximo login).
+- No Portal, usuário escolhe entre **Lista** e **Mapa**.
+- No mapa, vê bolinhas vermelhas com número agrupando imóveis por região; ao dar zoom, os clusters se abrem e viram pinos individuais.
+- Movimentar/zoom no mapa filtra automaticamente os imóveis visíveis na área (estilo Zap/QuintoAndar).
+- Clica num pino → popup com foto, info principal e botão pra ver detalhe.
 
