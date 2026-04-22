@@ -255,7 +255,101 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Bairro</Label>
-                  <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+                  <Popover open={neighborhoodOpen} onOpenChange={setNeighborhoodOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={neighborhoodOpen}
+                        disabled={!city}
+                        className={cn('w-full justify-between font-normal', !neighborhood && 'text-muted-foreground')}
+                      >
+                        {neighborhood || (city ? 'Selecione ou digite o bairro' : 'Selecione a cidade primeiro')}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                      <Command
+                        filter={(value, search) =>
+                          value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                        }
+                      >
+                        <CommandInput
+                          placeholder="Buscar bairro..."
+                          value={neighborhoodSearch}
+                          onValueChange={setNeighborhoodSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {neighborhoodSearch.trim() ? (
+                              <button
+                                type="button"
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-sm"
+                                onClick={() => {
+                                  const v = neighborhoodSearch.trim();
+                                  setNeighborhood(v);
+                                  setNeighborhoodOptions((prev) =>
+                                    prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                                  );
+                                  setNeighborhoodOpen(false);
+                                  setNeighborhoodSearch('');
+                                }}
+                              >
+                                <Plus className="h-4 w-4" />
+                                Adicionar "{neighborhoodSearch.trim()}"
+                              </button>
+                            ) : (
+                              <span className="block py-3 text-center text-sm text-muted-foreground">
+                                Nenhum bairro cadastrado
+                              </span>
+                            )}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {neighborhoodOptions.map((n) => (
+                              <CommandItem
+                                key={n}
+                                value={n}
+                                onSelect={() => {
+                                  setNeighborhood(n);
+                                  setNeighborhoodOpen(false);
+                                  setNeighborhoodSearch('');
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    neighborhood === n ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                {n}
+                              </CommandItem>
+                            ))}
+                            {neighborhoodSearch.trim() &&
+                              !neighborhoodOptions.some(
+                                (n) => n.toLowerCase() === neighborhoodSearch.trim().toLowerCase()
+                              ) && (
+                                <CommandItem
+                                  value={`__add__${neighborhoodSearch}`}
+                                  onSelect={() => {
+                                    const v = neighborhoodSearch.trim();
+                                    setNeighborhood(v);
+                                    setNeighborhoodOptions((prev) =>
+                                      prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                                    );
+                                    setNeighborhoodOpen(false);
+                                    setNeighborhoodSearch('');
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Adicionar "{neighborhoodSearch.trim()}"
+                                </CommandItem>
+                              )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Endereço (opcional)</Label>
