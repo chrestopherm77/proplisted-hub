@@ -31,6 +31,7 @@ interface Property {
   state: string | null;
   city: string;
   neighborhood: string | null;
+  zone: string | null;
   address: string | null;
   bedrooms: number | null;
   suites: number | null;
@@ -255,7 +256,7 @@ const PropertyDetail = () => {
                     <h1 className="text-2xl font-bold">{property.title}</h1>
                     <p className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
                       <MapPin className="h-4 w-4" />
-                      {[property.address, property.neighborhood, property.city].filter(Boolean).join(', ')}
+                      {[property.address, property.neighborhood, property.zone ? `Zona ${property.zone}` : null, property.city].filter(Boolean).join(', ')}
                       {property.state ? `/${property.state}` : ''}
                     </p>
                   </div>

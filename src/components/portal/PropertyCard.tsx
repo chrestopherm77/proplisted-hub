@@ -20,6 +20,7 @@ interface PropertyCardProps {
     city: string;
     state: string | null;
     neighborhood: string | null;
+    zone?: string | null;
     bedrooms: number | null;
     parking_spots: number | null;
     area_useful: number | null;
@@ -68,6 +69,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <MapPin className="h-3 w-3 shrink-0" />
             <span className="truncate">
               {property.neighborhood ? `${property.neighborhood}, ` : ''}
+              {property.zone ? `Zona ${property.zone}, ` : ''}
               {property.city}
               {property.state ? `/${property.state}` : ''}
             </span>

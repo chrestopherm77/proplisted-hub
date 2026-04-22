@@ -16,6 +16,8 @@ export const OPERATION_TYPES = [
   { value: 'BOTH', label: 'Venda e Aluguel' },
 ];
 
+export const ZONE_OPTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'] as const;
+
 export const PROPERTY_STATUS = [
   { value: 'PRONTO', label: 'Pronto pra morar' },
   { value: 'EM_CONSTRUCAO', label: 'Em construção' },

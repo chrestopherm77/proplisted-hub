@@ -1044,6 +1044,7 @@ export type Database = {
           title: string | null
           updated_at: string
           user_id: string
+          zone: string | null
         }
         Insert: {
           accept_affiliation?: boolean
@@ -1074,6 +1075,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id: string
+          zone?: string | null
         }
         Update: {
           accept_affiliation?: boolean
@@ -1104,6 +1106,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+          zone?: string | null
         }
         Relationships: []
       }
