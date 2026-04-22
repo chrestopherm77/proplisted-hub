@@ -234,7 +234,14 @@ const flowSteps: StepDefinition[] = [
     id: 'buy-location-budget', 
     component: BuyLocationBudgetStep, 
     isVisible: (data) => data.intention === 'BUY',
-    validate: (data) => !!data.buy?.region,
+    validate: (data) => {
+      if (!data.buy?.region) return false;
+      const min = parseInt((data.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
+      const max = parseInt((data.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
+      // Se ambos preenchidos, max precisa ser >= min
+      if (min > 0 && max > 0 && max < min) return false;
+      return true;
+    },
   },
   { 
     id: 'buy-payment-method', 
