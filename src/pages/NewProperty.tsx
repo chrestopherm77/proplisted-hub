@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { ArrowLeft, Loader2, Save, ChevronsUpDown, Check, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PropertyPhotosUpload } from '@/components/portal/PropertyPhotosUpload';
@@ -58,6 +61,11 @@ const NewProperty = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [acceptAffiliation, setAcceptAffiliation] = useState(true);
 
+  // Bairros sugeridos a partir das propriedades já cadastradas na cidade
+  const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
+  const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
+  const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) navigate('/auth');
@@ -66,6 +74,35 @@ const NewProperty = () => {
   useEffect(() => {
     if (stateUf) fetchCities(stateUf);
   }, [stateUf, fetchCities]);
+
+  // Buscar bairros distintos da cidade selecionada
+  useEffect(() => {
+    if (!city) {
+      setNeighborhoodOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const query = supabase
+        .from('properties')
+        .select('neighborhood')
+        .eq('city', city)
+        .not('neighborhood', 'is', null)
+        .limit(500);
+      if (stateUf) query.eq('state', stateUf);
+      const { data } = await query;
+      if (cancelled) return;
+      const unique = Array.from(
+        new Set(
+          (data || [])
+            .map((r: any) => (r.neighborhood || '').trim())
+            .filter((n: string) => n.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      setNeighborhoodOptions(unique);
+    })();
+    return () => { cancelled = true; };
+  }, [city, stateUf]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,7 +222,7 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Estado</Label>
-                  <Select value={stateUf} onValueChange={(v) => { setStateUf(v); setCity(''); }}>
+                  <Select value={stateUf} onValueChange={(v) => { setStateUf(v); setCity(''); setNeighborhood(''); }}>
                     <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                     <SelectContent>
                       {states.map((s) => (
@@ -196,7 +233,7 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Cidade *</Label>
-                  <Select value={city} onValueChange={setCity} disabled={!stateUf || loadingCities}>
+                  <Select value={city} onValueChange={(v) => { setCity(v); setNeighborhood(''); }} disabled={!stateUf || loadingCities}>
                     <SelectTrigger><SelectValue placeholder={stateUf ? 'Selecione a cidade' : 'Selecione um estado'} /></SelectTrigger>
                     <SelectContent>
                       {cities.map((c) => (
@@ -218,7 +255,101 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Bairro</Label>
-                  <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+                  <Popover open={neighborhoodOpen} onOpenChange={setNeighborhoodOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={neighborhoodOpen}
+                        disabled={!city}
+                        className={cn('w-full justify-between font-normal', !neighborhood && 'text-muted-foreground')}
+                      >
+                        {neighborhood || (city ? 'Selecione ou digite o bairro' : 'Selecione a cidade primeiro')}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                      <Command
+                        filter={(value, search) =>
+                          value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                        }
+                      >
+                        <CommandInput
+                          placeholder="Buscar bairro..."
+                          value={neighborhoodSearch}
+                          onValueChange={setNeighborhoodSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {neighborhoodSearch.trim() ? (
+                              <button
+                                type="button"
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-sm"
+                                onClick={() => {
+                                  const v = neighborhoodSearch.trim();
+                                  setNeighborhood(v);
+                                  setNeighborhoodOptions((prev) =>
+                                    prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                                  );
+                                  setNeighborhoodOpen(false);
+                                  setNeighborhoodSearch('');
+                                }}
+                              >
+                                <Plus className="h-4 w-4" />
+                                Adicionar "{neighborhoodSearch.trim()}"
+                              </button>
+                            ) : (
+                              <span className="block py-3 text-center text-sm text-muted-foreground">
+                                Nenhum bairro cadastrado
+                              </span>
+                            )}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {neighborhoodOptions.map((n) => (
+                              <CommandItem
+                                key={n}
+                                value={n}
+                                onSelect={() => {
+                                  setNeighborhood(n);
+                                  setNeighborhoodOpen(false);
+                                  setNeighborhoodSearch('');
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    neighborhood === n ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                {n}
+                              </CommandItem>
+                            ))}
+                            {neighborhoodSearch.trim() &&
+                              !neighborhoodOptions.some(
+                                (n) => n.toLowerCase() === neighborhoodSearch.trim().toLowerCase()
+                              ) && (
+                                <CommandItem
+                                  value={`__add__${neighborhoodSearch}`}
+                                  onSelect={() => {
+                                    const v = neighborhoodSearch.trim();
+                                    setNeighborhood(v);
+                                    setNeighborhoodOptions((prev) =>
+                                      prev.includes(v) ? prev : [...prev, v].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+                                    );
+                                    setNeighborhoodOpen(false);
+                                    setNeighborhoodSearch('');
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Adicionar "{neighborhoodSearch.trim()}"
+                                </CommandItem>
+                              )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Endereço (opcional)</Label>
