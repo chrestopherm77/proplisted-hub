@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Phone, Mail, Calendar, DollarSign, MessageCircle } from "lucide-react";
 import { formatFormDataToSections, intentionLabelsExport } from "@/lib/formatFormData";
+import { LeadPreferencesView } from "./LeadPreferencesView";
 
 interface PurchasedLeadModalProps {
   purchase: {
@@ -85,11 +86,9 @@ export function PurchasedLeadModal({
 
   const { lead } = purchase;
   
-  // Normalize and process form_data
+  // Normalize form_data
   const normalizedFormData = normalizeFormData(lead.form_data);
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
-  const intention = inferIntention(normalizedFormData, lead.description);
-  const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -165,38 +164,10 @@ export function PurchasedLeadModal({
             <div className="px-6">
               {hasFormData ? (
                 <div className="py-4 space-y-6">
-                  {sections.length > 0 && (
-                    <>
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                      </div>
-                      
-                      {sections.map((section, idx) => (
-                        <div key={idx} className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            <span>{section.icon}</span>
-                            {section.title}
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
-                            {section.fields.map((field, fieldIdx) => (
-                              <div key={fieldIdx} className="text-sm">
-                                <span className="text-muted-foreground">{field.label}:</span>{' '}
-                                <span className="font-medium text-foreground">{field.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {sections.length === 0 && (
-                    <div className="py-4">
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma informação adicional do formulário foi fornecida.
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
+                  </div>
+                  <LeadPreferencesView formData={normalizedFormData} />
                 </div>
               ) : (
                 <div className="py-4">
