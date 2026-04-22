@@ -215,10 +215,30 @@ const NewProperty = () => {
 
     toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
 
-    // Geocode em background via edge function — roda no servidor, não cancela com navegação
-    supabase.functions
-      .invoke('geocode-properties', { body: { property_id: data.id } })
-      .catch((e) => console.warn('[geocode] invoke failed', e));
+    // Geocode em background via fetch + keepalive — sobrevive ao navigate.
+    // Trigger no banco já enfileirou em pending_geocodes como rede de segurança;
+    // este disparo apenas tenta resolver imediato.
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      if (accessToken && supabaseUrl) {
+        // Fire-and-forget com keepalive: o request continua mesmo após navigate
+        fetch(`${supabaseUrl}/functions/v1/geocode-properties`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+            apikey: anonKey,
+          },
+          body: JSON.stringify({ property_id: data.id }),
+        }).catch((e) => console.warn('[geocode] fetch failed', e));
+      }
+    } catch (e) {
+      console.warn('[geocode] dispatch error', e);
+    }
 
     navigate(`/portal-imoveis/${data.id}`);
   };
