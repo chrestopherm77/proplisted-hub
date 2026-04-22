@@ -897,6 +897,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_geocodes: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          property_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          property_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          property_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_terms: boolean | null
