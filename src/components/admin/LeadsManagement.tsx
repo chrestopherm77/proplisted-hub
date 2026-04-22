@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle, Megaphone } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
+import { LeadEditDialog } from './LeadEditDialog';
 
 interface Lead {
   id: string;
@@ -25,12 +26,14 @@ interface Lead {
   is_exhausted: boolean;
   whatsapp_confirmed: boolean;
   created_at: string | null;
+  form_data?: any;
 }
 
 export function LeadsManagement() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [periodFilter, setPeriodFilter] = useState('all');
   const { toast } = useToast();
@@ -215,14 +218,7 @@ export function LeadsManagement() {
 
   const openEditDialog = (lead: Lead) => {
     setEditingLead(lead);
-    setFormData({
-      name: lead.name,
-      phone: lead.phone,
-      description: lead.description,
-      price: lead.price.toString(),
-      max_purchases: lead.max_purchases.toString(),
-    });
-    setIsDialogOpen(true);
+    setIsEditOpen(true);
   };
 
   const formatCredits = (price: number) => {

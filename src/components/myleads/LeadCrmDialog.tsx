@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Phone, Mail, Calendar, DollarSign, MessageCircle, Loader2, Check } from 'lucide-react';
 import { formatFormDataToSections } from '@/lib/formatFormData';
+import { LeadPreferencesView } from '@/components/marketplace/LeadPreferencesView';
 import { buildWaLink } from '@/lib/whatsapp';
 import { CrmLead, CrmStage, STAGES, STAGE_LABEL } from './types';
 
@@ -104,8 +105,6 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
 
   const normalizedFormData = normalizeFormData(lead.formData);
   const hasFormData = normalizedFormData && Object.keys(normalizedFormData).length > 0;
-  const intention = inferIntention(normalizedFormData, lead.description);
-  const sections = hasFormData ? formatFormDataToSections(intention, normalizedFormData) : [];
 
   const parseDescription = (description: string) =>
     description.split('\n').map(l => l.trim()).filter(Boolean).map((line, idx) => {
@@ -192,26 +191,12 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
               </div>
 
               {/* Form data details */}
-              {hasFormData && sections.length > 0 && (
+              {hasFormData && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 pb-2 border-b">
                     <span className="text-base font-semibold">📋 Detalhes do Lead</span>
                   </div>
-                  {sections.map((section, idx) => (
-                    <div key={idx} className="space-y-2">
-                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <span>{section.icon}</span>{section.title}
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
-                        {section.fields.map((f, i) => (
-                          <div key={i} className="text-sm">
-                            <span className="text-muted-foreground">{f.label}:</span>{' '}
-                            <span className="font-medium text-foreground">{f.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                  <LeadPreferencesView formData={normalizedFormData} />
                 </div>
               )}
             </div>
