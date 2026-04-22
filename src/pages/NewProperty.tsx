@@ -19,6 +19,7 @@ import {
   PROPERTY_TYPES,
   OPERATION_TYPES,
   PROPERTY_STATUS,
+  ZONE_OPTIONS,
   formatCurrencyInput,
   parseCurrencyInput,
   type PropertyPhoto,
@@ -39,6 +40,7 @@ const NewProperty = () => {
   const [status, setStatus] = useState('');
   const [stateUf, setStateUf] = useState('');
   const [city, setCity] = useState('');
+  const [zone, setZone] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [address, setAddress] = useState('');
   const [bedrooms, setBedrooms] = useState('');
@@ -93,6 +95,7 @@ const NewProperty = () => {
       status: status || null,
       state: stateUf || null,
       city,
+      zone: zone || null,
       neighborhood: neighborhood || null,
       address: address || null,
       bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,

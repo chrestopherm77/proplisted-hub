@@ -120,6 +120,45 @@ Deno.serve(async (req) => {
       console.error("Failed to send notify-new-lead (non-blocking):", notifyErr);
     }
 
+    // Notify property owners whose listings match the lead (fire-and-forget)
+    try {
+      const { data: leadForMatch } = await supabase
+        .from("leads")
+        .select("form_data")
+        .eq("id", leadId)
+        .single();
+
+      if (leadForMatch?.form_data) {
+        const fd = leadForMatch.form_data as Record<string, unknown>;
+        const intentionRaw = (fd.intention as string) || "";
+        const flowKey = intentionRaw.toLowerCase();
+        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const matchCity = flow?.city as string | undefined;
+        const matchUf = flow?.uf as string | undefined;
+
+        if (matchCity && (intentionRaw === "BUY" || intentionRaw === "RENT")) {
+          const matchUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-property-match`;
+          await fetch(matchUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              leadId,
+              city: matchCity,
+              uf: matchUf,
+              intention: intentionRaw,
+              formData: fd,
+            }),
+          });
+          console.log(`notify-property-match sent for lead ${leadId}`);
+        }
+      }
+    } catch (matchErr) {
+      console.error("Failed to send notify-property-match (non-blocking):", matchErr);
+    }
+
     // Send group WhatsApp notification (fire-and-forget)
     try {
       const { data: leadForGroup } = await supabase
