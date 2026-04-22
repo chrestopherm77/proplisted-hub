@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignupFormData } from "@/types/signup";
-import { Lock, Eye, EyeOff, FileText } from "lucide-react";
+import { Lock, Eye, EyeOff, FileText, Gift } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,6 +148,26 @@ export function CredentialsStep({ formData, onChange, errors }: CredentialsStepP
             </Button>
           </div>
           {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+        </div>
+
+        {/* Referral Code (optional) */}
+        <div className="space-y-2 pt-4 border-t">
+          <Label htmlFor="referralCode" className="flex items-center gap-2">
+            <Gift className="w-4 h-4 text-primary" />
+            Foi indicado? Coloque o código aqui
+          </Label>
+          <Input
+            id="referralCode"
+            type="text"
+            placeholder="Ex: LB7K9X2A"
+            maxLength={12}
+            value={formData.referralCode}
+            onChange={(e) => onChange('referralCode', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').trim())}
+            className="font-mono tracking-widest uppercase"
+          />
+          <p className="text-xs text-muted-foreground">
+            Opcional — se um amigo te indicou, ele ganha 280 créditos quando você se cadastrar.
+          </p>
         </div>
 
         {/* Three Terms Checkboxes */}
