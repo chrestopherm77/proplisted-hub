@@ -196,6 +196,17 @@ const NewProperty = () => {
                   </Select>
                 </div>
                 <div>
+                  <Label>Zona</Label>
+                  <Select value={zone} onValueChange={setZone}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a zona" /></SelectTrigger>
+                    <SelectContent>
+                      {ZONE_OPTIONS.map((z) => (
+                        <SelectItem key={z} value={z}>{z}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label>Bairro</Label>
                   <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
                 </div>
