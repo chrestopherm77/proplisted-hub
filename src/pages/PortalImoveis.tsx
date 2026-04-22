@@ -92,42 +92,43 @@ const PortalImoveis = () => {
               Publique seus imóveis e veja anúncios de outros corretores para revender
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-md border bg-background p-0.5">
-              <Button
-                type="button"
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-9"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-                Lista
-              </Button>
-              <Button
-                type="button"
-                variant={viewMode === 'map' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-9"
-                onClick={() => setViewMode('map')}
-              >
-                <MapIcon className="h-4 w-4" />
-                Mapa
-              </Button>
-            </div>
-            <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
-              <Plus className="h-4 w-4" />
-              Novo Anúncio
+          <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
+            <Plus className="h-4 w-4" />
+            Novo Anúncio
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'all' | 'mine')}>
+            <TabsList>
+              <TabsTrigger value="all">Todos anúncios</TabsTrigger>
+              <TabsTrigger value="mine">Meus anúncios</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="inline-flex rounded-md border bg-background p-0.5">
+            <Button
+              type="button"
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+              Lista
+            </Button>
+            <Button
+              type="button"
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => setViewMode('map')}
+            >
+              <MapIcon className="h-4 w-4" />
+              Mapa
             </Button>
           </div>
         </div>
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as 'all' | 'mine')} className="mb-4">
-          <TabsList>
-            <TabsTrigger value="all">Todos anúncios</TabsTrigger>
-            <TabsTrigger value="mine">Meus anúncios</TabsTrigger>
-          </TabsList>
-        </Tabs>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <div className="relative sm:col-span-2">
