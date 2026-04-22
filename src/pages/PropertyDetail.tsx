@@ -232,9 +232,15 @@ const PropertyDetail = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={() => navigate('/portal-imoveis')}>
+      <div
+        className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/images/portal-bg.jpg)' }}
+      >
+        <div className="container mx-auto px-4 py-6 max-w-5xl">
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="bg-background/80 backdrop-blur-sm">
+              <ArrowLeft className="h-4 w-4" /> Voltar
+            </Button>
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
           <Badge variant="secondary" className="text-sm">Ref: {property.reference_code}</Badge>
