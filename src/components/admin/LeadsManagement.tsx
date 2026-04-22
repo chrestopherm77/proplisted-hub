@@ -525,6 +525,20 @@ export function LeadsManagement() {
           <p className="text-sm md:text-base text-muted-foreground">Nenhum lead cadastrado</p>
         </div>
       )}
+
+      <LeadEditDialog
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open);
+          if (!open) setEditingLead(null);
+        }}
+        lead={editingLead}
+        onSaved={() => {
+          setIsEditOpen(false);
+          setEditingLead(null);
+          fetchLeads();
+        }}
+      />
     </div>
   );
 }
