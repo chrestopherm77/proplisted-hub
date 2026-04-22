@@ -1,75 +1,62 @@
 
 
-## Portal de Imóveis: Zona + Match automático com Leads
+## Sistema de Indicação — 280 créditos por amigo
 
-### 1. Campo "Zona" no formulário de publicação
+### 1. Banco de dados
 
-`src/pages/NewProperty.tsx` + tabela `properties`:
-- Migração: adicionar coluna `zone TEXT` em `properties`.
-- Atualizar a função `get_public_property` para retornar `zone` também.
-- Form: novo `<Select>` "Zona" no card "Informações principais" com as opções padrão do projeto: **Norte / Sul / Leste / Oeste / Centro / Rural** (mesmas usadas em `Launches.tsx` e `PropertySearches.tsx`).
-- Exibir a zona nos cards (`PropertyCard.tsx`) e no detalhe (`PropertyDetail.tsx` / `PublicPropertyLP.tsx`) ao lado do bairro.
+Nova migração:
 
-### 2. Match Lead → Imóvel publicado (notificação WhatsApp)
+- Coluna `referral_code TEXT UNIQUE` em `profiles` (gerada automaticamente no signup, ex: `LB7K9X2A`).
+- Coluna `referred_by UUID REFERENCES profiles(id)` em `profiles` para guardar quem indicou.
+- Coluna `referral_credits_granted BOOLEAN DEFAULT false` em `profiles` para evitar premiar duas vezes.
+- Atualizar `handle_new_user()` para gerar `referral_code` único e gravar `referred_by` quando vier `referral_code` no `raw_user_meta_data`.
+- Função `redeem_referral(p_user_id, p_referral_code)` (SECURITY DEFINER):
+  - Valida que o código existe e pertence a outro usuário.
+  - Bloqueia se o usuário já usou (campo `referred_by` já preenchido) ou se já foi premiado.
+  - Marca `referred_by` no novo usuário e dá +280 créditos pro indicador (`UPDATE profiles SET credit_balance = credit_balance + 280 ... ; INSERT credit_transactions type='REFERRAL_BONUS'`).
+  - Retorna `jsonb` com sucesso/erro.
 
-**Quando dispara**: sempre que um lead é confirmado e ativado no `mega-webhook` (mesmo ponto onde já chama `notify-new-lead`).
+### 2. Pop-up pós-login
 
-**Como funciona**:
-1. Após ativar o lead, o webhook chama uma nova edge function `notify-property-match` (fire-and-forget, igual o padrão atual).
-2. A função recebe `leadId` + `formData` + `city` + `uf`.
-3. Extrai do `form_data` do lead:
-   - **Cidade** (já vem)
-   - **Faixa de orçamento**: `buy.budgetMin` / `buy.budgetMax` (BUY), `rent.maxRent` (RENT), `build.budget` (BUILD), `sell.expectedValue` (SELL — dispara para corretores que tenham imóvel parecido para oferecer permuta? **vamos focar só em BUY e RENT** que faz match direto com publicação).
-   - **Tipo de imóvel** (opcional, se vier no flow).
-4. Busca em `properties` todos os anúncios `is_active = true` na **mesma cidade**, e filtra os que se encaixam:
-   - **Lead BUY** → bate com `properties` que tenham `operation_type IN ('SALE','BOTH')` E `price_sale BETWEEN budgetMin AND budgetMax` (se faltar min/max, usa só o lado preenchido).
-   - **Lead RENT** → bate com `properties` que tenham `operation_type IN ('RENT','BOTH')` E `price_rent <= maxRent`.
-5. Para cada imóvel que bater, busca o telefone do dono (`properties.user_id` → `profiles.phone`) e o telefone do **dono original NÃO** — apenas o dono do anúncio. (Afiliados não recebem nesse momento; só o publicador original.)
-6. Envia WhatsApp via **MegaAPI** (mesmo padrão de `notify-alert-match`):
-   ```text
-   🎯 Novo lead com perfil pro seu imóvel!
-   
-   Imóvel: {title} (Ref: {reference_code})
-   Cidade: {city}
-   
-   Acabou de chegar um lead em {city} interessado em {COMPRAR/ALUGAR}
-   na faixa de {budget}.
-   
-   Acesse o Marketplace pra ver os detalhes:
-   https://leadbay.com.br/leads/{leadId}
-   ```
-7. Deduplicação: limita 1 mensagem por usuário por lead (se o mesmo corretor tem 3 imóveis que batem, manda só 1 mensagem listando o primeiro/mais recente — evita spam).
+Componente novo `src/components/referral/ReferralPopup.tsx`:
+- Aparece **uma vez por sessão** após login (controle via `sessionStorage` chave `referral_popup_shown`).
+- Carregado via `Layout.tsx` quando `user` existe.
+- Conteúdo:
+  - Título: **"Indique um corretor e ganhe 280 créditos"**
+  - Texto explicando: amigo se cadastra usando seu código → você ganha 280 créditos.
+  - Caixa com **código de indicação do usuário** (lido de `profiles.referral_code`) + botão "Copiar código".
+  - Mensagem pronta pré-formatada com botão "Copiar mensagem" e botão "Compartilhar no WhatsApp" (`https://wa.me/?text=...`):
+    > Olá! 👋 Tô usando a LeadBay pra comprar leads de imóveis. Se você se cadastrar usando meu código de indicação **{CODE}**, eu ganho créditos e você entra numa plataforma top. Cadastra aqui: https://leadbay.com.br/auth
+  - Botão **X** no canto e botão "Fechar" no rodapé.
+- Dialog padrão (`@/components/ui/dialog`) — fácil fechar clicando fora ou no X.
 
-**Edge function nova**: `supabase/functions/notify-property-match/index.ts`
-- Recebe POST com `{ leadId, city, uf, intention, formData }`.
-- Reutiliza helpers `normalizeWhatsAppPhone` e `sendMegaMessage` (copiados do `notify-alert-match`).
-- Valida com Zod.
-- Loga matches encontrados e mensagens enviadas.
+### 3. Campo "Foi indicado?" no cadastro
 
-**Chamada**: adicionar bloco fire-and-forget em `mega-webhook/index.ts` logo depois do `notify-new-lead` (linhas ~99-121), com a mesma estrutura.
+`src/components/auth/steps/CredentialsStep.tsx`:
+- Antes do bloco de termos, novo campo opcional: **"Foi indicado? Coloque o código aqui"** com `Input` em maiúsculas (auto-uppercase + trim).
+- Adicionar `referralCode: string` em `SignupFormData` (`src/types/signup.ts`) e em `initialFormData`.
+- `MultiStepSignup.handleSubmit`: incluir `referral_code: formData.referralCode` no `metadata` enviado ao `signUp`.
+- Se preenchido, após `signUp` bem-sucedido chamar `supabase.rpc('redeem_referral', { p_user_id: <novoUserId>, p_referral_code: ... })`. Se a RPC der erro (código inválido), mostra toast mas **não bloqueia** o cadastro.
+- Validação leve: 6-12 chars alfanuméricos. Sem código = ignora.
 
-### 3. Detalhes técnicos
+### 4. Detalhes técnicos
 
-- **Migração SQL**:
-  ```sql
-  ALTER TABLE public.properties ADD COLUMN zone TEXT;
-  -- + atualizar função get_public_property para incluir zone no jsonb
-  ```
-- Atualizar `src/integrations/supabase/types.ts` é automático.
-- Form validação: `zone` é opcional (igual bairro hoje).
-- `propertyUtils.ts`: exportar `ZONE_OPTIONS = ['Norte','Sul','Leste','Oeste','Centro','Rural']` para reuso.
-- A nova edge function precisa ser declarada como pública em `supabase/config.toml` se quisermos `verify_jwt = false` (vamos manter o padrão Lovable e validar via service role no body).
+- Geração do `referral_code`: dentro do trigger `handle_new_user`, loop com `substring(md5(random()::text || NEW.id::text) for 8)` em uppercase, garantindo unicidade.
+- Backfill: gerar códigos pra usuários já existentes na mesma migração.
+- `credit_transactions.type` aceita string livre — usar `'REFERRAL_BONUS'` com `credits_used = 280` e `lead_id = NULL` (precisa permitir null; já é `Nullable: Yes`).
+- O bônus é dado **uma única vez por novo usuário** (constraint via `referral_credits_granted` e checagem na RPC).
+- Self-referral bloqueado (código próprio rejeitado).
 
-### 4. O que NÃO muda
+### 5. O que NÃO muda
 
-- Sistema de afiliação, download de fotos, copiar link, marca pessoal.
-- Notificação por e-mail para todos (`notify-new-lead`) continua igual — o WhatsApp por match é **adicional**.
-- Tabela `leads` não é alterada.
-- LP pública/detalhe interno só ganham a exibição da zona; resto inalterado.
+- Fluxo de signup, login, RLS atual.
+- Tabelas `purchases`, `leads`, `properties`.
+- Outros componentes do Layout/menu.
 
 ### Resultado
 
-- Ao publicar um imóvel, o corretor seleciona a Zona (Norte/Sul/Leste/Oeste/Centro/Rural).
-- Quando um lead novo entra (e é confirmado no WhatsApp), o sistema confere se a cidade + faixa de preço dele bate com algum imóvel publicado no Portal.
-- O corretor dono do imóvel recebe automaticamente uma mensagem no WhatsApp avisando que tem um lead compatível esperando no Marketplace.
+- Usuário loga → vê pop-up com seu código + mensagem pronta + botão WhatsApp/copiar/fechar.
+- Compartilha o código com outro corretor.
+- Outro corretor se cadastra preenchendo o campo "Foi indicado?" → indicador recebe 280 créditos automaticamente.
+- Pop-up some pelo resto da sessão (volta a aparecer no próximo login).
 
