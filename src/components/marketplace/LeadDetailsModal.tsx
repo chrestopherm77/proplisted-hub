@@ -122,34 +122,14 @@ export function LeadDetailsModal({
             <div className="px-6">
               {hasFormData ? (
                 <div className="py-3 space-y-5">
-                  {sections.length > 0 && (
-                    <>
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                      </div>
-                      {sections.map((section, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
-                            <span>{section.icon}</span>
-                            {section.title}
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
-                            {section.fields.map((field, fieldIdx) => (
-                              <div key={fieldIdx} className="text-base">
-                                <span className="text-muted-foreground">{field.label}:</span>{' '}
-                                <span className="font-medium text-foreground">{field.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {sections.length === 0 && (
-                    <div className="py-3">
-                      <p className="text-base text-muted-foreground">Nenhuma informação do formulário foi fornecida.</p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
+                  </div>
+                  <LeadPreferencesView
+                    formData={normalizedFormData}
+                    fieldTextClass="text-base"
+                    sectionTitleClass="text-base"
+                  />
                 </div>
               ) : (
                 <div className="py-3">
