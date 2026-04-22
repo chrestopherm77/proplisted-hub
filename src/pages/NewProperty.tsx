@@ -1,0 +1,298 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
+import { PropertyPhotosUpload } from '@/components/portal/PropertyPhotosUpload';
+import { AmenitiesPicker } from '@/components/portal/AmenitiesPicker';
+import {
+  PROPERTY_TYPES,
+  OPERATION_TYPES,
+  PROPERTY_STATUS,
+  formatCurrencyInput,
+  parseCurrencyInput,
+  type PropertyPhoto,
+} from '@/lib/propertyUtils';
+
+const NewProperty = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { states, cities, fetchCities, loadingCities } = useIBGELocation();
+
+  const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
+
+  // Form fields
+  const [propertyType, setPropertyType] = useState('');
+  const [operationType, setOperationType] = useState('SALE');
+  const [status, setStatus] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [address, setAddress] = useState('');
+  const [bedrooms, setBedrooms] = useState('');
+  const [suites, setSuites] = useState('');
+  const [bathrooms, setBathrooms] = useState('');
+  const [parkingSpots, setParkingSpots] = useState('');
+  const [areaUseful, setAreaUseful] = useState('');
+  const [areaTotal, setAreaTotal] = useState('');
+  const [priceSale, setPriceSale] = useState('');
+  const [priceRent, setPriceRent] = useState('');
+  const [condoFee, setCondoFee] = useState('');
+  const [iptu, setIptu] = useState('');
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [acceptAffiliation, setAcceptAffiliation] = useState(true);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) navigate('/auth');
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (stateUf) fetchCities(stateUf);
+  }, [stateUf, fetchCities]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (!propertyType) {
+      toast({ title: 'Selecione o tipo do imóvel', variant: 'destructive' });
+      return;
+    }
+    if (!city) {
+      toast({ title: 'Informe a cidade', variant: 'destructive' });
+      return;
+    }
+    if (operationType === 'SALE' && !priceSale) {
+      toast({ title: 'Informe o preço de venda', variant: 'destructive' });
+      return;
+    }
+    if (operationType === 'RENT' && !priceRent) {
+      toast({ title: 'Informe o valor do aluguel', variant: 'destructive' });
+      return;
+    }
+
+    setSaving(true);
+    const payload = {
+      user_id: user.id,
+      property_type: propertyType,
+      operation_type: operationType,
+      status: status || null,
+      state: stateUf || null,
+      city,
+      neighborhood: neighborhood || null,
+      address: address || null,
+      bedrooms: bedrooms ? parseInt(bedrooms, 10) : null,
+      suites: suites ? parseInt(suites, 10) : null,
+      bathrooms: bathrooms ? parseInt(bathrooms, 10) : null,
+      parking_spots: parkingSpots ? parseInt(parkingSpots, 10) : null,
+      area_useful: areaUseful ? parseFloat(areaUseful) : null,
+      area_total: areaTotal ? parseFloat(areaTotal) : null,
+      price_sale: parseCurrencyInput(priceSale),
+      price_rent: parseCurrencyInput(priceRent),
+      condo_fee: parseCurrencyInput(condoFee),
+      iptu: parseCurrencyInput(iptu),
+      amenities,
+      additional_info: additionalInfo || null,
+      photos: photos as any,
+      accept_affiliation: acceptAffiliation,
+      is_active: true,
+    };
+
+    const { data, error } = await supabase.from('properties').insert(payload).select('id').single();
+    setSaving(false);
+
+    if (error) {
+      console.error(error);
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
+    navigate(`/portal-imoveis/${data.id}`);
+  };
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="mb-4">
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </Button>
+
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Publicar Imóvel</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Fotos</CardTitle></CardHeader>
+            <CardContent>
+              {user && (
+                <PropertyPhotosUpload userId={user.id} photos={photos} onChange={setPhotos} max={20} />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Informações principais</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Tipo do imóvel *</Label>
+                  <Select value={propertyType} onValueChange={setPropertyType}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {PROPERTY_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Operação *</Label>
+                  <Select value={operationType} onValueChange={setOperationType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {OPERATION_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Estado</Label>
+                  <Select value={stateUf} onValueChange={(v) => { setStateUf(v); setCity(''); }}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>
+                      {states.map((s) => (
+                        <SelectItem key={s.sigla} value={s.sigla}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Cidade *</Label>
+                  <Select value={city} onValueChange={setCity} disabled={!stateUf || loadingCities}>
+                    <SelectTrigger><SelectValue placeholder={stateUf ? 'Selecione a cidade' : 'Selecione um estado'} /></SelectTrigger>
+                    <SelectContent>
+                      {cities.map((c) => (
+                        <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Bairro</Label>
+                  <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Endereço (opcional)</Label>
+                  <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Status do imóvel</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {PROPERTY_STATUS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Características</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div><Label>Quartos</Label><Input type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} /></div>
+                <div><Label>Suítes</Label><Input type="number" min="0" value={suites} onChange={(e) => setSuites(e.target.value)} /></div>
+                <div><Label>Banheiros</Label><Input type="number" min="0" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} /></div>
+                <div><Label>Vagas garagem</Label><Input type="number" min="0" value={parkingSpots} onChange={(e) => setParkingSpots(e.target.value)} /></div>
+                <div><Label>Área útil (m²)</Label><Input type="number" min="0" step="0.01" value={areaUseful} onChange={(e) => setAreaUseful(e.target.value)} /></div>
+                <div><Label>Área total (m²)</Label><Input type="number" min="0" step="0.01" value={areaTotal} onChange={(e) => setAreaTotal(e.target.value)} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Valores</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Preço de venda</Label>
+                  <Input value={priceSale} onChange={(e) => setPriceSale(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                </div>
+                <div>
+                  <Label>Valor do aluguel</Label>
+                  <Input value={priceRent} onChange={(e) => setPriceRent(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                </div>
+                <div>
+                  <Label>Condomínio</Label>
+                  <Input value={condoFee} onChange={(e) => setCondoFee(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                </div>
+                <div>
+                  <Label>IPTU</Label>
+                  <Input value={iptu} onChange={(e) => setIptu(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Comodidades</CardTitle></CardHeader>
+            <CardContent>
+              <AmenitiesPicker value={amenities} onChange={setAmenities} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Informações adicionais</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                placeholder="Detalhes do imóvel, diferenciais, condições especiais..."
+                rows={5}
+              />
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <Label className="text-base">Aceitar afiliação</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Permite que outros corretores anunciem este imóvel com uma LP própria
+                  </p>
+                </div>
+                <Switch checked={acceptAffiliation} onCheckedChange={setAcceptAffiliation} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => navigate('/portal-imoveis')}>Cancelar</Button>
+            <Button type="submit" disabled={saving} size="lg">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Publicar imóvel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </Layout>
+  );
+};
+
+export default NewProperty;
