@@ -45,19 +45,26 @@ export function MyBrandCard() {
       toast({ title: 'Imagem muito grande (máx 5MB)', variant: 'destructive' });
       return;
     }
+
     setUploading(true);
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `brands/${user.id}/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('properties').upload(path, file, { upsert: true });
-    if (error) {
+
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${user.id}/logo-${Date.now()}.${ext}`;
+      const bucket = supabase.storage.from('brand-logos');
+
+      const { error } = await bucket.upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      const { data } = bucket.getPublicUrl(path);
+      setLogoUrl(data.publicUrl);
+      toast({ title: 'Logo enviado!' });
+    } catch (error: any) {
       toast({ title: 'Erro no upload', description: error.message, variant: 'destructive' });
+    } finally {
       setUploading(false);
-      return;
+      e.target.value = '';
     }
-    const { data } = supabase.storage.from('properties').getPublicUrl(path);
-    setLogoUrl(data.publicUrl);
-    setUploading(false);
-    toast({ title: 'Logo enviado!' });
   };
 
   const handleSave = async () => {
