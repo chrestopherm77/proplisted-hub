@@ -1,61 +1,75 @@
 
 
-## Ajustes Portal de Imóveis + Minha Marca
+## Portal de Imóveis: Zona + Match automático com Leads
 
-### 1. Form: esconder campo de valor conforme operação
+### 1. Campo "Zona" no formulário de publicação
 
-`src/pages/NewProperty.tsx` — card "Valores":
-- **Venda**: mostra Preço de venda + Condomínio + IPTU
-- **Aluguel**: mostra Valor do aluguel + Condomínio + IPTU
-- **Venda e Aluguel**: mostra todos
-- Validação ajustada: só exige `priceSale` se operação inclui venda; só exige `priceRent` se inclui aluguel.
+`src/pages/NewProperty.tsx` + tabela `properties`:
+- Migração: adicionar coluna `zone TEXT` em `properties`.
+- Atualizar a função `get_public_property` para retornar `zone` também.
+- Form: novo `<Select>` "Zona" no card "Informações principais" com as opções padrão do projeto: **Norte / Sul / Leste / Oeste / Centro / Rural** (mesmas usadas em `Launches.tsx` e `PropertySearches.tsx`).
+- Exibir a zona nos cards (`PropertyCard.tsx`) e no detalhe (`PropertyDetail.tsx` / `PublicPropertyLP.tsx`) ao lado do bairro.
 
-### 2. Galeria mobile: lightbox com swipe
+### 2. Match Lead → Imóvel publicado (notificação WhatsApp)
 
-`src/components/portal/PropertyGallery.tsx`:
-- Adicionar `Dialog` em fullscreen ao clicar na foto principal ou thumbnail.
-- Imagem com `object-contain` (sem cortar).
-- Navegação: botões ← →, suporte a teclado (Arrow keys), e **swipe** via `onTouchStart`/`onTouchEnd` (threshold 50px).
-- Contador "X / Y" no topo, botão de fechar.
+**Quando dispara**: sempre que um lead é confirmado e ativado no `mega-webhook` (mesmo ponto onde já chama `notify-new-lead`).
 
-### 3. Background da imagem enviada
+**Como funciona**:
+1. Após ativar o lead, o webhook chama uma nova edge function `notify-property-match` (fire-and-forget, igual o padrão atual).
+2. A função recebe `leadId` + `formData` + `city` + `uf`.
+3. Extrai do `form_data` do lead:
+   - **Cidade** (já vem)
+   - **Faixa de orçamento**: `buy.budgetMin` / `buy.budgetMax` (BUY), `rent.maxRent` (RENT), `build.budget` (BUILD), `sell.expectedValue` (SELL — dispara para corretores que tenham imóvel parecido para oferecer permuta? **vamos focar só em BUY e RENT** que faz match direto com publicação).
+   - **Tipo de imóvel** (opcional, se vier no flow).
+4. Busca em `properties` todos os anúncios `is_active = true` na **mesma cidade**, e filtra os que se encaixam:
+   - **Lead BUY** → bate com `properties` que tenham `operation_type IN ('SALE','BOTH')` E `price_sale BETWEEN budgetMin AND budgetMax` (se faltar min/max, usa só o lado preenchido).
+   - **Lead RENT** → bate com `properties` que tenham `operation_type IN ('RENT','BOTH')` E `price_rent <= maxRent`.
+5. Para cada imóvel que bater, busca o telefone do dono (`properties.user_id` → `profiles.phone`) e o telefone do **dono original NÃO** — apenas o dono do anúncio. (Afiliados não recebem nesse momento; só o publicador original.)
+6. Envia WhatsApp via **MegaAPI** (mesmo padrão de `notify-alert-match`):
+   ```text
+   🎯 Novo lead com perfil pro seu imóvel!
+   
+   Imóvel: {title} (Ref: {reference_code})
+   Cidade: {city}
+   
+   Acabou de chegar um lead em {city} interessado em {COMPRAR/ALUGAR}
+   na faixa de {budget}.
+   
+   Acesse o Marketplace pra ver os detalhes:
+   https://leadbay.com.br/leads/{leadId}
+   ```
+7. Deduplicação: limita 1 mensagem por usuário por lead (se o mesmo corretor tem 3 imóveis que batem, manda só 1 mensagem listando o primeiro/mais recente — evita spam).
 
-- Copiar `user-uploads://ChatGPT_Image_10_de_abr._de_2026_11_36_30-3.png` para `public/images/portal-bg.jpg`.
-- Aplicar como background fixo (cobrindo toda viewport, `bg-cover bg-center bg-no-repeat`) em:
-  - `src/pages/PropertyDetail.tsx` (tela "Anunciar Imóvel" / detalhe interno)
-  - `src/pages/PublicPropertyLP.tsx` (LP pública compartilhada)
-- Cards/conteúdo ficam em cima com leve `bg-background/80 backdrop-blur-sm` pra manter legibilidade.
+**Edge function nova**: `supabase/functions/notify-property-match/index.ts`
+- Recebe POST com `{ leadId, city, uf, intention, formData }`.
+- Reutiliza helpers `normalizeWhatsAppPhone` e `sendMegaMessage` (copiados do `notify-alert-match`).
+- Valida com Zod.
+- Loga matches encontrados e mensagens enviadas.
 
-### 4. "Minha Marca" no menu de perfil
+**Chamada**: adicionar bloco fire-and-forget em `mega-webhook/index.ts` logo depois do `notify-new-lead` (linhas ~99-121), com a mesma estrutura.
 
-**Banco** — nova tabela `user_brands`:
-- `id`, `user_id` (unique), `company_name`, `logo_url`, `primary_color` (hex), `secondary_color` (hex), `created_at`, `updated_at`
-- RLS: dono lê/escreve a própria; SELECT público via RPC `get_public_property` (já vai retornar a marca junto).
-- Bucket reutilizado: pasta `brands/{user_id}/logo.png` no bucket `properties` (já público).
+### 3. Detalhes técnicos
 
-**UI** — novo card em `src/pages/Profile.tsx`:
-- Componente `src/components/profile/MyBrandCard.tsx`
-- Campos: upload de logo (preview), nome da imobiliária, color picker primário, color picker secundário.
-- Botão Salvar grava em `user_brands` (upsert por `user_id`).
+- **Migração SQL**:
+  ```sql
+  ALTER TABLE public.properties ADD COLUMN zone TEXT;
+  -- + atualizar função get_public_property para incluir zone no jsonb
+  ```
+- Atualizar `src/integrations/supabase/types.ts` é automático.
+- Form validação: `zone` é opcional (igual bairro hoje).
+- `propertyUtils.ts`: exportar `ZONE_OPTIONS = ['Norte','Sul','Leste','Oeste','Centro','Rural']` para reuso.
+- A nova edge function precisa ser declarada como pública em `supabase/config.toml` se quisermos `verify_jwt = false` (vamos manter o padrão Lovable e validar via service role no body).
 
-**Aplicação na LP pública** — `src/pages/PublicPropertyLP.tsx`:
-- RPC `get_public_property` atualizada para fazer `LEFT JOIN user_brands` no `contact_user_id` (dono OU afiliado conforme token) e devolver `brand_logo`, `brand_name`, `brand_primary_color`, `brand_secondary_color`.
-- Detalhes leves usando as cores:
-  - Borda do card de contato com a cor primária
-  - Badge do preço com bg da cor primária
-  - Botão WhatsApp com bg da cor secundária (fallback: verde padrão)
-  - Logo + nome da imobiliária acima do bloco "Anunciado por" (se existir)
-- Sem cores → mantém visual padrão.
+### 4. O que NÃO muda
 
-### 5. Detalhes técnicos
+- Sistema de afiliação, download de fotos, copiar link, marca pessoal.
+- Notificação por e-mail para todos (`notify-new-lead`) continua igual — o WhatsApp por match é **adicional**.
+- Tabela `leads` não é alterada.
+- LP pública/detalhe interno só ganham a exibição da zona; resto inalterado.
 
-- Migração SQL: criar `user_brands` + atualizar a função `get_public_property` para retornar campos da marca.
-- `src/integrations/supabase/types.ts` será regenerado automaticamente.
-- Sem mudança no fluxo de afiliação — só a aparência da LP muda conforme quem está mostrando o imóvel.
+### Resultado
 
-### O que NÃO muda
-
-- Estrutura das tabelas `properties` / `property_affiliates`.
-- Rotas existentes.
-- Sistema de download de fotos (.zip), copiar link, anunciar.
+- Ao publicar um imóvel, o corretor seleciona a Zona (Norte/Sul/Leste/Oeste/Centro/Rural).
+- Quando um lead novo entra (e é confirmado no WhatsApp), o sistema confere se a cidade + faixa de preço dele bate com algum imóvel publicado no Portal.
+- O corretor dono do imóvel recebe automaticamente uma mensagem no WhatsApp avisando que tem um lead compatível esperando no Marketplace.
 
