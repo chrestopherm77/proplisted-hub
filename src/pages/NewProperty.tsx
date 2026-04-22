@@ -233,7 +233,7 @@ const NewProperty = () => {
                 </div>
                 <div>
                   <Label>Cidade *</Label>
-                  <Select value={city} onValueChange={setCity} disabled={!stateUf || loadingCities}>
+                  <Select value={city} onValueChange={(v) => { setCity(v); setNeighborhood(''); }} disabled={!stateUf || loadingCities}>
                     <SelectTrigger><SelectValue placeholder={stateUf ? 'Selecione a cidade' : 'Selecione um estado'} /></SelectTrigger>
                     <SelectContent>
                       {cities.map((c) => (
