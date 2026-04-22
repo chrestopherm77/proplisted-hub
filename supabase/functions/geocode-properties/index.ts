@@ -1,13 +1,13 @@
 // Edge function: geocode properties via Nominatim (OSM)
-// Two modes:
-//  - single: POST { property_id } -> geocodes one property (owner or admin)
-//  - backfill: POST {} or { backfill: true } -> geocodes up to 50 properties (admin only)
-// Respects 1 req/s rate limit on backfill. Uses progressive fallback.
+// Modes:
+//  - single: POST { property_id } -> geocodes one property (owner or admin via JWT)
+//  - backfill: POST {} or { backfill: true } -> drains pending_geocodes queue
+//      Auth: admin JWT OR x-cron-secret header matching CRON_SECRET
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -41,30 +41,37 @@ async function geocodeQuery(query: string): Promise<{ lat: number; lng: number }
   }
 }
 
-// Progressive fallback: tries full address, then neighborhood-level, then city-level.
-async function geocodeProgressive(parts: PropertyParts): Promise<{ lat: number; lng: number } | null> {
+// Progressive fallback: full → neighborhood+city → city+UF.
+// Returns the result + which variant succeeded for logging.
+async function geocodeProgressive(
+  parts: PropertyParts,
+  refLabel = '',
+): Promise<{ lat: number; lng: number; matchedVariant: string } | null> {
   const variants: string[] = [];
   const join = (segs: (string | null | undefined)[]) =>
     segs.filter((p) => p && String(p).trim().length > 0).join(', ');
 
-  // 1) Full address
   const full = join([parts.address, parts.neighborhood, parts.city, parts.state, 'Brasil']);
   if (full) variants.push(full);
 
-  // 2) Neighborhood + city
   if (parts.neighborhood) {
     const nb = join([parts.neighborhood, parts.city, parts.state, 'Brasil']);
     if (nb && nb !== full) variants.push(nb);
   }
 
-  // 3) City only
   const cityOnly = join([parts.city, parts.state, 'Brasil']);
   if (cityOnly && !variants.includes(cityOnly)) variants.push(cityOnly);
 
   for (let i = 0; i < variants.length; i++) {
-    const result = await geocodeQuery(variants[i]);
-    if (result) return result;
-    if (i < variants.length - 1) await sleep(1100); // respect rate limit between fallbacks
+    const variant = variants[i];
+    const result = await geocodeQuery(variant);
+    if (result) {
+      console.log(`[geocode] ${refLabel} matched on variant ${i + 1}/${variants.length}: "${variant}" → (${result.lat}, ${result.lng})`);
+      return { ...result, matchedVariant: variant };
+    } else {
+      console.log(`[geocode] ${refLabel} miss on variant ${i + 1}/${variants.length}: "${variant}"`);
+    }
+    if (i < variants.length - 1) await sleep(1100);
   }
   return null;
 }
@@ -75,40 +82,9 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const cronSecret = Deno.env.get('CRON_SECRET') ?? '';
 
-    // Validate caller (must be authenticated)
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: userRes, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userRes.user) {
-      return new Response(JSON.stringify({ error: 'Sessão inválida' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // Check admin role (used for backfill or to bypass ownership)
-    const { data: roleData } = await admin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userRes.user.id)
-      .eq('role', 'MASTER_ADMIN')
-      .maybeSingle();
-    const isAdmin = !!roleData;
-
-    // Parse body (optional)
+    // Parse body first
     let body: { property_id?: string; backfill?: boolean } = {};
     try {
       const text = await req.text();
@@ -117,11 +93,50 @@ Deno.serve(async (req) => {
       body = {};
     }
 
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // Cron auth path: x-cron-secret header
+    const incomingSecret = req.headers.get('x-cron-secret') ?? '';
+    const isCron = !!cronSecret && incomingSecret === cronSecret;
+
+    let userId: string | null = null;
+    let isAdmin = false;
+
+    if (!isCron) {
+      // JWT auth path
+      const authHeader = req.headers.get('Authorization') ?? '';
+      const token = authHeader.replace('Bearer ', '').trim();
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: userRes, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userRes.user) {
+        return new Response(JSON.stringify({ error: 'Sessão inválida' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      userId = userRes.user.id;
+      const { data: roleData } = await admin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'MASTER_ADMIN')
+        .maybeSingle();
+      isAdmin = !!roleData;
+    }
+
     // ---------- SINGLE MODE ----------
     if (body.property_id) {
       const { data: prop, error: propErr } = await admin
         .from('properties')
-        .select('id, user_id, address, neighborhood, city, state, latitude, longitude')
+        .select('id, reference_code, user_id, address, neighborhood, city, state')
         .eq('id', body.property_id)
         .maybeSingle();
 
@@ -132,22 +147,32 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Owner or admin only
-      if (prop.user_id !== userRes.user.id && !isAdmin) {
+      // Owner, admin or cron only
+      if (!isCron && prop.user_id !== userId && !isAdmin) {
         return new Response(JSON.stringify({ error: 'Sem permissão' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      const result = await geocodeProgressive({
-        address: prop.address,
-        neighborhood: prop.neighborhood,
-        city: prop.city,
-        state: prop.state,
-      });
+      const result = await geocodeProgressive(
+        {
+          address: prop.address,
+          neighborhood: prop.neighborhood,
+          city: prop.city,
+          state: prop.state,
+        },
+        `property ${prop.reference_code}`,
+      );
 
       if (!result) {
+        // Mark queue with error so cron can retry later
+        await admin
+          .from('pending_geocodes')
+          .upsert(
+            { property_id: prop.id, last_error: 'Endereço não localizado em nenhuma variante' },
+            { onConflict: 'property_id' },
+          );
         return new Response(JSON.stringify({ success: false, message: 'Endereço não localizado' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -158,51 +183,91 @@ Deno.serve(async (req) => {
         .update({ latitude: result.lat, longitude: result.lng })
         .eq('id', prop.id);
 
+      // Trigger removes from queue when latitude becomes non-null
+
       return new Response(
-        JSON.stringify({ success: true, latitude: result.lat, longitude: result.lng }),
+        JSON.stringify({
+          success: true,
+          latitude: result.lat,
+          longitude: result.lng,
+          matched: result.matchedVariant,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // ---------- BACKFILL MODE (admin only) ----------
-    if (!isAdmin) {
+    // ---------- BACKFILL MODE ----------
+    // admin or cron required
+    if (!isCron && !isAdmin) {
       return new Response(JSON.stringify({ error: 'Acesso restrito a administradores' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: rows, error } = await admin
-      .from('properties')
-      .select('id, address, neighborhood, city, state')
-      .eq('is_active', true)
-      .is('latitude', null)
-      .limit(50);
+    // Drain queue: up to 30 with attempts < 5
+    const { data: queue, error: qErr } = await admin
+      .from('pending_geocodes')
+      .select('id, property_id, attempts')
+      .lt('attempts', 5)
+      .order('attempts', { ascending: true })
+      .order('created_at', { ascending: true })
+      .limit(30);
 
-    if (error) throw error;
-    if (!rows || rows.length === 0) {
-      return new Response(JSON.stringify({ processed: 0, message: 'Nada para geocodificar' }), {
+    if (qErr) throw qErr;
+    if (!queue || queue.length === 0) {
+      return new Response(JSON.stringify({ processed: 0, message: 'Fila vazia' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Fetch properties for queued ids
+    const propIds = queue.map((q) => q.property_id);
+    const { data: props, error: pErr } = await admin
+      .from('properties')
+      .select('id, reference_code, address, neighborhood, city, state')
+      .in('id', propIds);
+    if (pErr) throw pErr;
+
+    const propMap = new Map((props ?? []).map((p) => [p.id, p]));
+
     let success = 0;
     let failed = 0;
 
-    for (const row of rows) {
-      const result = await geocodeProgressive({
-        address: row.address,
-        neighborhood: row.neighborhood,
-        city: row.city,
-        state: row.state,
-      });
+    for (const item of queue) {
+      const prop = propMap.get(item.property_id);
+      if (!prop) {
+        // Property gone — clear queue row
+        await admin.from('pending_geocodes').delete().eq('id', item.id);
+        continue;
+      }
+
+      const result = await geocodeProgressive(
+        {
+          address: prop.address,
+          neighborhood: prop.neighborhood,
+          city: prop.city,
+          state: prop.state,
+        },
+        `property ${prop.reference_code}`,
+      );
+
       if (result) {
         await admin
           .from('properties')
           .update({ latitude: result.lat, longitude: result.lng })
-          .eq('id', row.id);
+          .eq('id', prop.id);
+        // Trigger removes queue row automatically
         success++;
       } else {
+        await admin
+          .from('pending_geocodes')
+          .update({
+            attempts: (item.attempts ?? 0) + 1,
+            last_error: 'Nenhuma variante (endereço/bairro/cidade) encontrada no Nominatim',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', item.id);
         failed++;
       }
       await sleep(1100); // Nominatim 1 req/s
@@ -210,10 +275,10 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        processed: rows.length,
+        processed: queue.length,
         success,
         failed,
-        message: `Geocodificados ${success} de ${rows.length} imóveis`,
+        message: `Geocodificados ${success} de ${queue.length} imóveis`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
