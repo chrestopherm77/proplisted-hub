@@ -14,6 +14,7 @@ import { ProfilePersonalCard } from '@/components/profile/ProfilePersonalCard';
 import { ProfileLocationCard } from '@/components/profile/ProfileLocationCard';
 import { ProfileProfessionalCard } from '@/components/profile/ProfileProfessionalCard';
 import { ProfilePasswordCard } from '@/components/profile/ProfilePasswordCard';
+import { MyBrandCard } from '@/components/profile/MyBrandCard';
 
 interface ProfileState {
   person_type: string;
@@ -219,6 +220,9 @@ const Profile = () => {
         <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
           {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar Alterações'}
         </Button>
+
+        {/* Minha Marca */}
+        <MyBrandCard />
 
         {/* Alterar Senha */}
         <ProfilePasswordCard />

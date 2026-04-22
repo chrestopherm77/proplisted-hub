@@ -76,11 +76,11 @@ const NewProperty = () => {
       toast({ title: 'Informe a cidade', variant: 'destructive' });
       return;
     }
-    if (operationType === 'SALE' && !priceSale) {
+    if ((operationType === 'SALE' || operationType === 'BOTH') && !priceSale) {
       toast({ title: 'Informe o preço de venda', variant: 'destructive' });
       return;
     }
-    if (operationType === 'RENT' && !priceRent) {
+    if ((operationType === 'RENT' || operationType === 'BOTH') && !priceRent) {
       toast({ title: 'Informe o valor do aluguel', variant: 'destructive' });
       return;
     }
@@ -233,14 +233,18 @@ const NewProperty = () => {
             <CardHeader><CardTitle className="text-lg">Valores</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Preço de venda</Label>
-                  <Input value={priceSale} onChange={(e) => setPriceSale(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
-                </div>
-                <div>
-                  <Label>Valor do aluguel</Label>
-                  <Input value={priceRent} onChange={(e) => setPriceRent(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
-                </div>
+                {(operationType === 'SALE' || operationType === 'BOTH') && (
+                  <div>
+                    <Label>Preço de venda {operationType === 'SALE' && '*'}</Label>
+                    <Input value={priceSale} onChange={(e) => setPriceSale(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                  </div>
+                )}
+                {(operationType === 'RENT' || operationType === 'BOTH') && (
+                  <div>
+                    <Label>Valor do aluguel {operationType === 'RENT' && '*'}</Label>
+                    <Input value={priceRent} onChange={(e) => setPriceRent(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
+                  </div>
+                )}
                 <div>
                   <Label>Condomínio</Label>
                   <Input value={condoFee} onChange={(e) => setCondoFee(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
