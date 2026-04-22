@@ -136,3 +136,26 @@ All colors MUST be HSL.
     @apply outline-2 outline-offset-2 outline-primary;
   }
 }
+
+/* Leaflet marker cluster — branded with primary color */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: hsl(var(--primary) / 0.25) !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 700;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+}
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+.leaflet-container {
+  font-family: inherit;
+}
