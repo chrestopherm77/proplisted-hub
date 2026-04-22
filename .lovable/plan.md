@@ -1,39 +1,56 @@
 
 
-## Corrigir erro do mapa — `render2 is not a function`
+## Corrigir geocoding de imóveis novos + backfill automático
 
-### Causa raiz
+### Problema
 
-O projeto está em **React 18.3.1**, mas instalamos **`react-leaflet@^5.0.0`**, que exige **React 19**. Por isso o mapa quebra com `render2 is not a function` no preview e em produção (a tela de "Algo deu errado" intercepta antes de qualquer pixel aparecer no Portal).
+O imóvel A0003 (Betim/Alvorada/Rua Santo Antônio) foi cadastrado mas ficou com `latitude/longitude = NULL`, então não pinga no mapa. Causa: o `geocodeAndSaveProperty` é chamado **no client** logo antes de o usuário ser redirecionado pra outra página — o fetch ao Nominatim é cancelado pelo browser, ou o Nominatim recusa requests vindas direto do navegador (sem `User-Agent` controlado).
 
-### Correção
+### Solução
 
-1. **Downgrade do react-leaflet** para a versão compatível com React 18:
-   - `react-leaflet`: `^5.0.0` → `^4.2.1`
-   - `leaflet` continua em `^1.9.4` (compatível).
-   - `leaflet.markercluster` e `@types/*` continuam iguais.
+**Mover o geocoding para o servidor** (edge function), garantindo que ele rode até o fim e respeite o rate limit do Nominatim.
 
-2. **Sem mudanças de código** no `PropertyMap.tsx` — a API que usamos (`MapContainer`, `TileLayer`, `useMap`) é idêntica entre v4 e v5.
+#### 1. Refatorar edge function `geocode-properties`
 
-3. **Garantir que o container do mapa tem altura definida** já está OK (`height: 70vh, minHeight: 480`).
+Hoje ela só faz backfill em lote. Vou aceitar 2 modos:
 
-### Por que aparecia "Algo deu errado" e não aparecia em produção
+- **Modo single** (`POST { property_id }`): geocodifica 1 imóvel específico imediatamente. Chamado pelo `NewProperty.tsx` após salvar/editar.
+- **Modo backfill** (sem body, ou `{ backfill: true }`): comportamento atual — pega até 50 imóveis com lat NULL e geocodifica em lote (1 req/s).
+- Ambos validam JWT do usuário; modo single permite o **dono do imóvel** ou admin; modo backfill segue só admin.
 
-- Em desenvolvimento o erro de runtime do react-leaflet 5 derruba a árvore React inteira → ErrorBoundary mostra "Algo deu errado".
-- Em produção o build até gera, mas no momento de montar o `<MapContainer>` o mesmo erro acontece, mostrando a mesma tela.
-- A correção é a mesma para os dois ambientes — basta usar a versão compatível.
+#### 2. Atualizar `NewProperty.tsx`
+
+Trocar a chamada client-side `geocodeAndSaveProperty(...)` por `supabase.functions.invoke('geocode-properties', { body: { property_id: data.id } })`. Continua em background (`.then().catch()`), sem bloquear navegação.
+
+#### 3. Backfill imediato dos imóveis já cadastrados sem coordenadas
+
+Após o deploy da função, rodar a edge function em modo backfill (admin chama 1 vez). Resultado esperado: o A0003 e qualquer outro pendente ganham lat/lng. Vou indicar a chamada via `supabase--curl_edge_functions` durante a implementação.
+
+#### 4. Melhorar fallback de geocoding
+
+Se Nominatim não achar o endereço completo (`rua, bairro, cidade, estado`), tentar progressivamente:
+1. `endereço, bairro, cidade, UF, Brasil`
+2. `bairro, cidade, UF, Brasil`
+3. `cidade, UF, Brasil`
+
+Assim mesmo endereços inexistentes no OSM caem no centro do bairro/cidade — pelo menos aparecem no mapa.
+
+#### 5. (Opcional) Manter `geocodeProperty.ts` client-side
+
+Deixar o arquivo, mas não é mais usado por `NewProperty.tsx`. Pode ser removido depois.
 
 ### Arquivos alterados
 
-- `package.json` — ajustar versão do `react-leaflet` para `^4.2.1`.
+- `supabase/functions/geocode-properties/index.ts` — aceitar modo single + fallback progressivo.
+- `src/pages/NewProperty.tsx` — trocar chamada direta por `supabase.functions.invoke`.
 
 ### O que NÃO muda
 
-- `PropertyMap.tsx`, `PortalImoveis.tsx`, geocoding, edge function, migrações.
-- Nenhum impacto em outras telas.
+- Tabela `properties`, `PropertyMap.tsx`, RLS, fluxo do Portal, toggle Lista/Mapa.
 
 ### Resultado
 
-- Botão **Mapa** abre o mapa normalmente, sem tela de erro.
-- Funciona idêntico em preview e produção.
+- Imóvel novo cai no mapa em poucos segundos após cadastro.
+- A0003 (Betim/Alvorada) e quaisquer outros pendentes recebem coordenadas no backfill imediato.
+- Endereços que o Nominatim não acha ainda aparecem no centro do bairro/cidade.
 
