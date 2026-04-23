@@ -18,21 +18,24 @@ interface PlanCardProps {
   isCurrent?: boolean;
   isPopular?: boolean;
   loading?: boolean;
+  pendingInvoiceUrl?: string | null;
   onSelect: (plan: PlanCardData) => void;
 }
 
-export const PlanCard = ({ plan, isCurrent, isPopular, loading, onSelect }: PlanCardProps) => {
+export const PlanCard = ({ plan, isCurrent, isPopular, loading, pendingInvoiceUrl, onSelect }: PlanCardProps) => {
   const isFree = Number(plan.price) === 0;
+  const isPending = !!pendingInvoiceUrl;
 
   return (
     <Card
       className={cn(
         'relative flex flex-col h-full transition-all',
         isPopular && 'border-primary border-2 shadow-lg shadow-primary/10 scale-[1.02]',
-        isCurrent && 'border-emerald-500 border-2'
+        isCurrent && 'border-emerald-500 border-2',
+        isPending && !isCurrent && 'border-amber-500 border-2'
       )}
     >
-      {isPopular && (
+      {isPopular && !isPending && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge className="bg-primary text-primary-foreground gap-1">
             <Sparkles className="h-3 w-3" />
@@ -43,6 +46,11 @@ export const PlanCard = ({ plan, isCurrent, isPopular, loading, onSelect }: Plan
       {isCurrent && (
         <div className="absolute -top-3 right-4">
           <Badge className="bg-emerald-500 text-white">Plano Atual</Badge>
+        </div>
+      )}
+      {isPending && !isCurrent && (
+        <div className="absolute -top-3 right-4">
+          <Badge className="bg-amber-500 text-white">Aguardando pagamento</Badge>
         </div>
       )}
 
@@ -76,22 +84,33 @@ export const PlanCard = ({ plan, isCurrent, isPopular, loading, onSelect }: Plan
           ))}
         </ul>
 
-        <Button
-          className="w-full mt-6"
-          variant={isPopular ? 'default' : isCurrent ? 'outline' : 'default'}
-          disabled={isCurrent || loading}
-          onClick={() => onSelect(plan)}
-        >
-          {loading ? (
-            <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</>
-          ) : isCurrent ? (
-            'Plano Atual'
-          ) : isFree ? (
-            'Ativar Plano Grátis'
-          ) : (
-            'Assinar Plano'
-          )}
-        </Button>
+        {isPending && !isCurrent ? (
+          <Button
+            asChild
+            className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white"
+          >
+            <a href={pendingInvoiceUrl!} target="_blank" rel="noopener noreferrer">
+              Concluir pagamento
+            </a>
+          </Button>
+        ) : (
+          <Button
+            className="w-full mt-6"
+            variant={isPopular ? 'default' : isCurrent ? 'outline' : 'default'}
+            disabled={isCurrent || loading}
+            onClick={() => onSelect(plan)}
+          >
+            {loading ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</>
+            ) : isCurrent ? (
+              'Plano Atual'
+            ) : isFree ? (
+              'Ativar Plano Grátis'
+            ) : (
+              'Assinar Plano'
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

@@ -13,7 +13,9 @@ export default function Planos() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [plans, setPlans] = useState<PlanCardData[]>([]);
-  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
+  const [pendingInvoiceUrl, setPendingInvoiceUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
   const [dialogPlan, setDialogPlan] = useState<PlanCardData | null>(null);
@@ -27,10 +29,22 @@ export default function Planos() {
     if (user) loadData();
   }, [user, authLoading, navigate]);
 
+  // Refresca quando usuário volta para a aba (ex.: após pagar no Asaas)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && user) {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [{ data: plansData }, { data: subData }] = await Promise.all([
+      const [{ data: plansData }, { data: subsData }] = await Promise.all([
         supabase
           .from('subscription_plans')
           .select('*')
@@ -38,13 +52,19 @@ export default function Planos() {
           .order('display_order', { ascending: true }),
         supabase
           .from('user_subscriptions')
-          .select('plan_id, status')
+          .select('plan_id, status, invoice_url, created_at')
           .eq('user_id', user!.id)
           .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
-          .maybeSingle(),
+          .order('created_at', { ascending: false }),
       ]);
       setPlans((plansData ?? []) as any);
-      setCurrentPlanId(subData?.plan_id ?? null);
+
+      const subs = (subsData ?? []) as any[];
+      const active = subs.find((s) => s.status === 'ACTIVE' || s.status === 'OVERDUE');
+      const pending = subs.find((s) => s.status === 'PENDING');
+      setActivePlanId(active?.plan_id ?? null);
+      setPendingPlanId(pending?.plan_id ?? null);
+      setPendingInvoiceUrl(pending?.invoice_url ?? null);
     } catch (err: any) {
       toast({ title: 'Erro ao carregar planos', description: err.message, variant: 'destructive' });
     } finally {
@@ -100,9 +120,10 @@ export default function Planos() {
             <PlanCard
               key={plan.id}
               plan={plan}
-              isCurrent={currentPlanId === plan.id}
+              isCurrent={activePlanId === plan.id}
               isPopular={plan.slug === 'performance'}
               loading={submittingPlanId === plan.id}
+              pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
               onSelect={handleSelect}
             />
           ))}
