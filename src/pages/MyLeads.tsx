@@ -67,15 +67,15 @@ export default function MyLeads() {
 
       const validPurchases = (purchases || []).filter((p: any) => p.leads);
 
-      // 2) crm status existentes
+      // 2) crm status existentes (incluindo manuais)
       const { data: crmRows, error: cErr } = await supabase
         .from('lead_crm_status')
-        .select('id, purchase_id, lead_id, stage, notes')
+        .select('id, purchase_id, lead_id, stage, notes, is_manual, manual_name, manual_phone, manual_email, manual_description, updated_at')
         .eq('user_id', user.id);
       if (cErr) throw cErr;
 
       const crmByPurchase = new Map<string, any>();
-      (crmRows || []).forEach((r: any) => crmByPurchase.set(r.purchase_id, r));
+      (crmRows || []).forEach((r: any) => { if (r.purchase_id) crmByPurchase.set(r.purchase_id, r); });
 
       // 3) backfill: cria entrada ENTRADA para purchases sem crm
       const missing = validPurchases.filter((p: any) => !crmByPurchase.has(p.id));
@@ -89,21 +89,22 @@ export default function MyLeads() {
         const { data: inserted, error: iErr } = await supabase
           .from('lead_crm_status')
           .insert(inserts)
-          .select('id, purchase_id, lead_id, stage, notes');
+          .select('id, purchase_id, lead_id, stage, notes, is_manual, manual_name, manual_phone, manual_email, manual_description');
         if (iErr) {
           console.error('Backfill error:', iErr);
         } else {
-          (inserted || []).forEach((r: any) => crmByPurchase.set(r.purchase_id, r));
+          (inserted || []).forEach((r: any) => { if (r.purchase_id) crmByPurchase.set(r.purchase_id, r); });
         }
       }
 
-      // 4) merge
-      const merged: CrmLead[] = validPurchases.map((p: any) => {
+      // 4) merge purchase-based
+      const fromPurchases: CrmLead[] = validPurchases.map((p: any) => {
         const crm = crmByPurchase.get(p.id);
         return {
           crmId: crm?.id || '',
           stage: (crm?.stage || 'ENTRADA') as CrmStage,
           notes: crm?.notes || null,
+          isManual: false,
           purchaseId: p.id,
           amount: Number(p.amount),
           purchasedAt: p.purchased_at,
@@ -115,7 +116,26 @@ export default function MyLeads() {
         };
       }).filter((l) => l.crmId);
 
-      setLeads(merged);
+      // 5) manual contacts
+      const fromManual: CrmLead[] = (crmRows || [])
+        .filter((r: any) => r.is_manual)
+        .map((r: any) => ({
+          crmId: r.id,
+          stage: (r.stage || 'ENTRADA') as CrmStage,
+          notes: r.notes || null,
+          isManual: true,
+          purchaseId: '',
+          amount: 0,
+          purchasedAt: r.updated_at,
+          leadId: '',
+          name: r.manual_name || 'Contato',
+          phone: r.manual_phone || '',
+          email: r.manual_email || undefined,
+          description: r.manual_description || 'Contato adicionado manualmente',
+          formData: null,
+        }));
+
+      setLeads([...fromManual, ...fromPurchases]);
     } catch (e) {
       console.error('Error fetching CRM:', e);
       toast({ title: 'Erro ao carregar leads', variant: 'destructive' });
