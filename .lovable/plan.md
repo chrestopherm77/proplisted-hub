@@ -1,124 +1,109 @@
 
 
-## Sistema de Assinaturas (Asaas) com 4 planos + limites por plano
+## Limites por plano (Etapa 2) + ajustes
 
-### Etapa 1 — Fundação de assinaturas (esta entrega)
-Criar a estrutura completa de planos, checkout, webhook e tela de planos. **A enforcement de limites por plano (bloqueios de "máx X imóveis", "máx X criativos", etc.) fica para a Etapa 2** após essa base estar funcionando.
+### 1. Custo de criativo: 10 créditos cada
 
----
+A geração de criativo passa a debitar **10 créditos por imagem** (não conta no limite mensal — esses são dois gates separados):
 
-### 1. Banco de dados
+- O usuário precisa ter ≥10 créditos disponíveis OU não ter atingido a cota do plano para gerar.
+- **Função RPC `consume_credits_for_creative(p_user_id, p_creative_id, p_amount)`** valida saldo, debita `credit_balance`, registra em `credit_transactions` (novo `type = 'CREATIVE_GENERATION'`).
+- Chamada no `generate-creative-image` antes de invocar a Gemini. Se falhar → marca criativo como `FAILED` com mensagem "Créditos insuficientes" e devolve erro para o front.
+- No card do criativo (StepResult / GenerateCreative) e na aba "Gerar criativo" mostra: "Cada criativo custa **10 créditos**. Saldo atual: X."
 
-**Nova tabela `subscription_plans`** (gerenciada via admin, não no painel Asaas):
-- `id`, `slug` (`conexao` | `essencial` | `performance` | `elite`), `name`, `price` (numeric), `monthly_credits` (int), `display_order` (int), `is_active` (bool)
-- `features` (jsonb) — para os limites: `partnership_requests`, `partnership_offers`, `portal_properties`, `creatives_per_month`, `leads_included`, `hot_seat_per_month`, `training_level` (`basic` | `intermediate` | `advanced`). Valor `-1` = ilimitado, `0` = não tem.
-- `feature_list` (jsonb array de strings) — bullets exibidos no card
+### 2. Helper central de plano + limites
 
-**Nova `user_subscriptions`**:
-- `id`, `user_id`, `plan_id`, `asaas_subscription_id` (text), `asaas_customer_id` (text)
-- `status`: `PENDING` | `ACTIVE` | `OVERDUE` | `CANCELED` | `EXPIRED`
-- `current_period_start`, `current_period_end` (timestamptz)
-- `next_due_date` (date), `created_at`, `canceled_at`
-- Único: um `ACTIVE` por `user_id`
+**Hook `useSubscriptionLimits()`** (`src/hooks/useSubscriptionLimits.ts`):
+- Carrega assinatura ativa do usuário + features do plano + saldo de créditos.
+- Calcula uso atual:
+  - `properties_used` = `properties` ativos do usuário
+  - `creatives_used_month` = `creatives` do mês corrente (`created_at >= date_trunc('month', now())`)
+  - `partnership_requests_used` = `property_searches` ativos do usuário
+  - `partnership_offers_used_month` = `property_search_offers` do mês corrente
+- Retorna `{ plan, features, usage, can(resource): { allowed, reason, limit, used, isUnlimited } }`.
+- Sem assinatura ativa → fallback para plano `CONEXÃO` (free).
 
-**Nova `subscription_payments`** (histórico mensal):
-- `id`, `subscription_id`, `user_id`, `asaas_payment_id`, `amount`, `status`, `paid_at`, `due_date`, `payment_method`, `invoice_url`
+### 3. Aplicar bloqueios
 
-**RLS**: `subscription_plans` leitura pública/auth; `user_subscriptions` e `subscription_payments` o usuário vê o próprio, admin vê tudo.
+**Imóveis no portal** — `src/pages/NewProperty.tsx`:
+- No `useEffect` inicial, checa `can('portal_properties')`. Se atingiu o limite, mostra modal/tela "Limite de imóveis atingido — faça upgrade" com CTA para `/planos`. Bloqueia o botão Salvar.
 
-**Seed dos 4 planos** (já com features e bullets exatos que você passou):
+**Solicitação de parceria (criar procura no Balcão)** — `src/pages/NewPropertySearch.tsx`:
+- Mesmo padrão: ao montar, valida `can('partnership_requests')`. Bloqueia salvar se atingido.
 
+**Envio de oferta no Balcão** — `src/pages/PropertySearches.tsx` + `PropertySearchDetail.tsx`:
+- Antes de cada `handleWhatsAppOffer` / `handleSendLink`, chama `can('partnership_offers')`. Se atingiu, toast "Limite de ofertas mensais atingido. Faça upgrade." e abre modal com CTA `/planos`.
+- Botão "Enviar Oferta" mostra tooltip com "X de Y ofertas usadas no mês" quando próximo do limite.
+
+**Geração de criativo** — `src/components/criativos/GenerateCreative.tsx`:
+- Antes de chamar `handleGenerate`, valida dois gates:
+  1. `can('creatives_per_month')` — limite mensal do plano.
+  2. `credit_balance >= 10` — saldo de créditos.
+- Se algum falha, mostra dialog específico com motivo e CTA (planos ou comprar créditos).
+
+**Componente reutilizável** `src/components/plans/PlanLimitDialog.tsx`:
+- Dialog padronizado mostrando "Você atingiu o limite do plano X (Y de Y usados). Faça upgrade para continuar." + botão para `/planos`.
+
+### 4. Indicadores de uso
+
+**Card "Minha Assinatura"** (`MySubscriptionCard.tsx`) ganha barras de progresso por recurso:
+- Imóveis no portal: 2/3
+- Criativos no mês: 1/1
+- Solicitações de parceria: 0/1
+- Ofertas de parceria no mês: 3/5
+- Itens com `-1` (ilimitado) mostram "Ilimitado" ao invés de barra.
+
+### 5. Ajustes solicitados nos cards de plano
+
+**ESSENCIAL** já está com `training_level: intermediate` no banco — apenas ajustar a bullet do `feature_list` se necessário (já está "Básicos e Intermediários" ✅).
+
+**ELITE** atualmente está com `training_level: basic` e bullet "Acesso a treinamentos Básicos". Trocar para:
+- `features.training_level = 'intermediate'`
+- `feature_list` substituir "Acesso a treinamentos Básicos" por "Acesso a treinamentos Básicos e Intermediários".
+
+**PERFORMANCE**: bullet permanece "Acesso a treinamentos Básicos" (sem mudança).
+
+Update via `UPDATE subscription_plans` (operação de dados, sem migration).
+
+### 6. Edge function nova: `consume_credits_for_creative` (RPC SQL)
+
+Migration cria função SECURITY DEFINER:
 ```text
-CONEXÃO  — R$ 0,00    — 10 créditos/mês
-ESSENCIAL — R$ 39,90  — 30 créditos/mês
-PERFORMANCE — R$ 79,90 — 430 créditos/mês
-ELITE — R$ 149,90 — 1000 créditos/mês
+input: p_user_id uuid, p_creative_id uuid, p_amount int (default 10)
+- lock profile FOR UPDATE
+- if credit_balance < amount → return {error:'Créditos insuficientes', balance}
+- decrement credit_balance
+- insert credit_transactions (type='CREATIVE_GENERATION', credits_used=amount, lead_id=null)
+- return {success:true, new_balance}
 ```
 
-Limites já configurados em `features` conforme sua especificação (1/5/3 imóveis para Conexão, 5/10/10 para Essencial, ilimitado para Performance/Elite, criativos 1/3/15/30, leads inclusos 0/0/2/5, hot seat 0/0/2/2, treinamento basic / basic+inter / basic / basic).
+`generate-creative-image` chama essa RPC com service role logo após validar creative; se falhar, marca FAILED e retorna 402.
 
----
+### 7. Arquivos afetados
 
-### 2. Edge Functions
+**Migration**:
+- Nova função `consume_credits_for_creative`
+- `UPDATE subscription_plans` para o ELITE (training intermediário)
 
-**`create-subscription`** (verify_jwt = true):
-- Recebe `{ planId, paymentMethod (PIX|CREDIT_CARD), customerData }`.
-- Plano `CONEXÃO` (preço 0): cria `user_subscriptions` ACTIVE direto, credita 10 créditos, sem ir ao Asaas.
-- Planos pagos:
-  1. Cria/busca cliente no Asaas (`POST /customers`).
-  2. Chama `POST /subscriptions` com `cycle: MONTHLY`, `value`, `nextDueDate`, `externalReference: sub_<uuid>`, billing type escolhido.
-  3. Salva `user_subscriptions` com status PENDING + `asaas_subscription_id`.
-  4. Retorna `invoiceUrl` do primeiro `payment` (link para pagar a 1ª mensalidade).
-
-**`cancel-subscription`** (verify_jwt = true):
-- `DELETE /subscriptions/{id}` no Asaas → marca `status: CANCELED`, `canceled_at: now()`. Mantém acesso até `current_period_end`.
-
-**Update em `asaas-webhook`** (já tem a base):
-- Detectar evento de assinatura via `payload.payment.subscription` ou `externalReference: sub_*`.
-- `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` em pagamento de assinatura:
-  - Insere em `subscription_payments`.
-  - Atualiza `user_subscriptions`: status ACTIVE, `current_period_start = now()`, `current_period_end = now() + 1 month`, `next_due_date` do Asaas.
-  - **Credita `plan.monthly_credits`** em `profiles.credit_balance` (idempotente via `asaas_payment_id` único).
-- `PAYMENT_OVERDUE`: status OVERDUE.
-- `SUBSCRIPTION_DELETED`: status CANCELED.
-
-Tudo idempotente checando `asaas_webhook_events.processed`.
-
----
-
-### 3. Frontend
-
-**Nova página `/planos`** (`src/pages/Planos.tsx`):
-- 4 cards lado a lado (responsivo: stack em mobile, 2x2 em tablet, 4 em desktop).
-- Card destaca: nome, preço/mês, créditos/mês, lista de bullets do `feature_list`, botão "Assinar" (ou "Plano Atual" / "Fazer Upgrade").
-- Plano PERFORMANCE marcado como "Mais Popular" visualmente.
-- Ao clicar "Assinar":
-  - Conexão (free) → confirma e ativa direto.
-  - Pagos → modal pedindo CPF/CNPJ + escolha PIX/Cartão → chama `create-subscription` → redireciona para `invoiceUrl` do Asaas.
-
-**Card "Minha Assinatura" no Profile** (`src/components/profile/MySubscriptionCard.tsx`):
-- Mostra plano atual, status, próxima cobrança, créditos do mês, botão "Trocar plano" (vai para `/planos`) e "Cancelar".
-
-**Aba "Assinaturas" no Admin** (`src/components/admin/SubscriptionsManagement.tsx`):
-- Lista todas as `user_subscriptions` com filtro por status, mostra MRR (soma dos planos ativos), permite ver histórico de pagamentos.
-
-**Link no menu** para `/planos` (sidebar e mobile menu).
-
----
-
-### 4. Configuração do Asaas
-
-Esta entrega NÃO requer criar nada manualmente no painel do Asaas. Os planos vivem no nosso banco; o Asaas só recebe `POST /subscriptions` quando o usuário assina. Webhook já está configurado.
-
----
-
-### Arquivos afetados/criados
-
-**Migration**: `supabase/migrations/<ts>_subscriptions.sql` (3 tabelas + RLS + seed dos 4 planos)
-
-**Edge Functions (novas)**:
-- `supabase/functions/create-subscription/index.ts`
-- `supabase/functions/cancel-subscription/index.ts`
-
-**Edge Functions (editar)**:
-- `supabase/functions/asaas-webhook/index.ts` — adicionar handler de subscription
-- `supabase/config.toml` — `verify_jwt = true` para as 2 novas
+**Backend**:
+- `supabase/functions/generate-creative-image/index.ts` — debitar créditos antes da geração
 
 **Frontend (novos)**:
-- `src/pages/Planos.tsx`
-- `src/components/profile/MySubscriptionCard.tsx`
-- `src/components/admin/SubscriptionsManagement.tsx`
-- `src/components/plans/PlanCard.tsx`
-- `src/components/plans/SubscribeDialog.tsx`
+- `src/hooks/useSubscriptionLimits.ts`
+- `src/components/plans/PlanLimitDialog.tsx`
 
 **Frontend (editar)**:
-- `src/App.tsx` — rota `/planos`
-- `src/components/AppSidebar.tsx` + `MobileMenu.tsx` — item "Planos"
-- `src/pages/Profile.tsx` — incluir `MySubscriptionCard`
-- `src/pages/Admin.tsx` — nova aba "Assinaturas"
+- `src/pages/NewProperty.tsx` — gate de imóveis
+- `src/pages/NewPropertySearch.tsx` — gate de solicitação de parceria
+- `src/pages/PropertySearches.tsx` + `src/pages/PropertySearchDetail.tsx` — gate de envio de oferta
+- `src/components/criativos/GenerateCreative.tsx` — gate de criativo + aviso "10 créditos"
+- `src/components/profile/MySubscriptionCard.tsx` — barras de uso
+- `src/integrations/supabase/types.ts` — auto-regen após migration
 
-### O que NÃO entra agora (Etapa 2)
+### O que NÃO entra agora
 
-- Bloqueio efetivo de funcionalidades por plano (ex.: bloquear cadastrar 4º imóvel no plano Conexão, limitar criativos do mês, contagem de hot seats, gating de treinamentos). Essa lógica usa `features` já gravado nos planos — implemento em seguida, com toasts e CTAs de upgrade.
-- Pró-rata em upgrade/downgrade no meio do mês. Por enquanto: troca de plano cancela o atual e cria novo (cobra próximo ciclo cheio).
+- **Hot Seat** (`hot_seat_per_month`) — não existe módulo de hot seat ainda. Limite fica gravado no plano para uso futuro.
+- **Leads inclusos** (`leads_included`) — atualmente lead é comprado avulso com créditos. A entrega de "2 leads grátis no Performance / 5 no Elite" exige fluxo de seleção próprio, fica para próxima etapa.
+- **Treinamentos** (`training_level`) — não há módulo de cursos no app ainda; gating apenas exibido no card.
+- **Pró-rata** em mudança de plano (já documentado na Etapa 1).
 
