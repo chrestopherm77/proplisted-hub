@@ -38,6 +38,7 @@ import {
 export function AppSidebar() {
   const { user, isAdmin, isConstrutora, signOut } = useAuth();
   const { partner, isPartnerSite } = usePartner();
+  const { plan } = useSubscriptionLimits();
   const location = useLocation();
   const navigate = useNavigate();
   const { state } = useSidebar();
