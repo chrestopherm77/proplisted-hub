@@ -5,13 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const CREATIVE_COST = 10;
+
 const FORMAT_HINTS: Record<string, string> = {
   POST: "quadrado 1:1, 1080x1080 pixels (post de feed Instagram)",
   STORIES: "vertical 9:16, 1080x1920 pixels (stories Instagram)",
   TRAFEGO: "horizontal 1.91:1, 1200x628 pixels (anúncio de tráfego pago)",
 };
 
-// Mapa: nomes "amigáveis" usados no admin -> nomes reais da Google Gemini API
 const MODEL_MAP: Record<string, string> = {
   "google/gemini-2.5-flash-image": "gemini-2.5-flash-image",
   "google/gemini-3.1-flash-image-preview": "gemini-3.1-flash-image-preview",
@@ -20,7 +21,6 @@ const MODEL_MAP: Record<string, string> = {
 
 function resolveGeminiModel(input: string): string {
   if (MODEL_MAP[input]) return MODEL_MAP[input];
-  // remove prefixo "google/" se vier
   return input.replace(/^google\//, "");
 }
 
@@ -103,6 +103,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Debit credits BEFORE invoking Gemini (atomic via RPC)
+    const { data: debit, error: debitErr } = await admin.rpc("consume_credits_for_creative", {
+      p_user_id: userId,
+      p_creative_id: creativeId,
+      p_amount: CREATIVE_COST,
+    });
+    if (debitErr) {
+      console.error("[generate-creative-image] debit error:", debitErr);
+      await admin
+        .from("creatives")
+        .update({ status: "FAILED", error_message: "Falha ao debitar créditos" })
+        .eq("id", creativeId);
+      return new Response(JSON.stringify({ error: "Falha ao debitar créditos" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (debit && (debit as any).error) {
+      const msg = (debit as any).error as string;
+      await admin
+        .from("creatives")
+        .update({ status: "FAILED", error_message: msg })
+        .eq("id", creativeId);
+      return new Response(JSON.stringify({ error: msg, balance: (debit as any).balance }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Mark as PENDING
     await admin
       .from("creatives")
@@ -129,13 +158,12 @@ Deno.serve(async (req) => {
 
     const styleName = style?.name?.trim() || creative.style_slug;
 
-    // Try to load brand logo (optional)
     let logoRef: { data: string; mimeType: string } | null = null;
     if (brandLogoUrl) {
       try {
         logoRef = await imageUrlToBase64(brandLogoUrl);
       } catch (e) {
-        console.warn("[generate-creative-image] falha ao baixar logo, seguindo sem ela:", (e as Error).message);
+        console.warn("[generate-creative-image] falha ao baixar logo:", (e as Error).message);
       }
     }
 
@@ -164,25 +192,22 @@ Deno.serve(async (req) => {
     console.log("[generate-creative-image] prompt:", finalPrompt.slice(0, 500));
     console.log("[generate-creative-image] logo incluída:", !!logoRef, "posição:", logoPosition);
 
-    // Reference image (property)
     const ref = await imageUrlToBase64(creative.main_image_url);
 
-    // Build parts: text + property image + (optional) logo image
-    const parts: any[] = [
+    const requestParts: any[] = [
       { text: finalPrompt },
       { inline_data: { mime_type: ref.mimeType, data: ref.data } },
     ];
     if (logoRef) {
-      parts.push({ inline_data: { mime_type: logoRef.mimeType, data: logoRef.data } });
+      requestParts.push({ inline_data: { mime_type: logoRef.mimeType, data: logoRef.data } });
     }
 
-    // Call Google Gemini API directly
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`;
     const aiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts }],
+        contents: [{ role: "user", parts: requestParts }],
         generationConfig: {
           responseModalities: ["IMAGE", "TEXT"],
         },
@@ -209,9 +234,8 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    // Find first inline_data part with image
-    const parts = aiData?.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((p: any) => p?.inline_data?.data || p?.inlineData?.data);
+    const responseParts = aiData?.candidates?.[0]?.content?.parts || [];
+    const imagePart = responseParts.find((p: any) => p?.inline_data?.data || p?.inlineData?.data);
     const inline = imagePart?.inline_data || imagePart?.inlineData;
 
     if (!inline?.data) {
