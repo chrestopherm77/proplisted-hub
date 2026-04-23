@@ -86,7 +86,7 @@ export function LeadDetailsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-5 pb-3">
+        <DialogHeader className="flex-shrink-0 px-6 pt-5 pb-2">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               {lead.is_promotion && (
@@ -110,10 +110,6 @@ export function LeadDetailsModal({
                 ? 'Esgotado'
                 : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disponíveis`}
             </Badge>
-          </div>
-          
-          <div className="pt-1 text-muted-foreground text-base space-y-1">
-            {parseDescriptionToDisplay(lead.description)}
           </div>
         </DialogHeader>
 
@@ -188,20 +184,4 @@ function parseIntentionFromDescription(description: string): string {
   if (lower.includes('construir')) return 'BUILD';
   if (lower.includes('alugar')) return 'RENT';
   return '';
-}
-
-function parseDescriptionToDisplay(description: string) {
-  const lines = description.split('\n').map(line => line.trim()).filter(Boolean);
-  return lines.map((line, idx) => {
-    const [label, ...valueParts] = line.split(':');
-    const value = valueParts.join(':').trim();
-    if (value) {
-      return (
-        <p key={idx}>
-          <span className="font-medium text-foreground">{label}:</span> {value}
-        </p>
-      );
-    }
-    return <p key={idx}>{line}</p>;
-  });
 }
