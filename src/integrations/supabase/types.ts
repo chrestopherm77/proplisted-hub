@@ -1609,7 +1609,9 @@ export type Database = {
           invoice_url: string | null
           next_due_date: string | null
           payment_method: string | null
+          pending_downgrade_to_plan_id: string | null
           plan_id: string
+          scheduled_change_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -1625,7 +1627,9 @@ export type Database = {
           invoice_url?: string | null
           next_due_date?: string | null
           payment_method?: string | null
+          pending_downgrade_to_plan_id?: string | null
           plan_id: string
+          scheduled_change_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -1641,12 +1645,21 @@ export type Database = {
           invoice_url?: string | null
           next_due_date?: string | null
           payment_method?: string | null
+          pending_downgrade_to_plan_id?: string | null
           plan_id?: string
+          scheduled_change_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_pending_downgrade_to_plan_id_fkey"
+            columns: ["pending_downgrade_to_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_subscriptions_plan_id_fkey"
             columns: ["plan_id"]

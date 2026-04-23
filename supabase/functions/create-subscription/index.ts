@@ -34,7 +34,7 @@ serve(async (req) => {
     const { planId, paymentMethod, customerData } = await req.json();
     if (!planId) throw new Error('planId é obrigatório');
 
-    // Fetch plan
+    // Fetch desired plan
     const { data: plan, error: planError } = await supabaseClient
       .from('subscription_plans')
       .select('*')
@@ -43,26 +43,99 @@ serve(async (req) => {
       .single();
     if (planError || !plan) throw new Error('Plano não encontrado ou inativo');
 
-    // Check existing active subscription
-    const { data: existing } = await supabaseClient
+    const isFreePlan = Number(plan.price) === 0;
+
+    // Fetch ALL relevant subscriptions of user (ordered, newest first)
+    const { data: allSubs } = await supabaseClient
       .from('user_subscriptions')
-      .select('id, plan_id, status, asaas_subscription_id')
+      .select('id, plan_id, status, asaas_subscription_id, current_period_end, created_at, plan:subscription_plans(price, name)')
       .eq('user_id', user.id)
       .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
-    if (existing && existing.plan_id === planId) {
-      throw new Error('Você já possui este plano ativo');
+    const activeSub = (allSubs ?? []).find((s: any) => s.status === 'ACTIVE' || s.status === 'OVERDUE') as any;
+    const pendingSub = (allSubs ?? []).find((s: any) => s.status === 'PENDING') as any;
+    const activeIsPaid = activeSub && Number(activeSub.plan?.price ?? 0) > 0;
+    const pendingIsPaid = pendingSub && Number(pendingSub.plan?.price ?? 0) > 0;
+
+    // ============ GUARDAS ANTI-FRAUDE ============
+
+    // Guarda 1: bloquear ativação de mesmo plano grátis se já está ativo
+    if (isFreePlan && activeSub && activeSub.plan_id === planId) {
+      return new Response(
+        JSON.stringify({
+          error: `Você já está no plano ${plan.name}. Não é possível reativar o mesmo plano.`,
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // === FREE PLAN: ativa direto ===
-    if (Number(plan.price) === 0) {
-      // Cancela qualquer assinatura ativa anterior
-      if (existing) {
-        await supabaseClient
-          .from('user_subscriptions')
-          .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
-          .eq('id', existing.id);
+    // Guarda 2: bloquear ativação de plano grátis se há PENDING pago aguardando
+    if (isFreePlan && pendingSub && pendingIsPaid) {
+      return new Response(
+        JSON.stringify({
+          error: 'Você tem uma assinatura aguardando pagamento. Conclua ou cancele para trocar de plano.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Guarda 3: bloquear reativação de grátis recente (últimos 30 dias) — anti-clique-infinito
+    if (isFreePlan) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const { data: recentSameFree } = await supabaseClient
+        .from('user_subscriptions')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('plan_id', planId)
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (recentSameFree) {
+        return new Response(
+          JSON.stringify({
+            error: 'Você já ativou este plano nos últimos 30 dias. Aguarde o término do ciclo para reativar.',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Guarda 4: se já tem ACTIVE pago e pediu o mesmo plano → bloquear
+    if (activeSub && activeSub.plan_id === planId) {
+      return new Response(
+        JSON.stringify({ error: 'Você já está neste plano.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ============ FREE PLAN: ativar (com guarda de duplicidade) ============
+    if (isFreePlan) {
+      // Cancela todas ACTIVE/PENDING/OVERDUE anteriores do user (ex.: estava em pago e desistiu)
+      if (allSubs && allSubs.length > 0) {
+        for (const old of allSubs) {
+          await supabaseClient
+            .from('user_subscriptions')
+            .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
+            .eq('id', (old as any).id);
+
+          // Se a anterior tinha asaas_subscription_id (era paga), tenta cancelar no Asaas
+          const oldAny = old as any;
+          if (oldAny.asaas_subscription_id) {
+            try {
+              const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
+              const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
+              const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+              await fetch(`${ASAAS_BASE_URL}/subscriptions/${oldAny.asaas_subscription_id}`, {
+                method: 'DELETE',
+                headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-System' },
+              });
+            } catch (e) {
+              console.error('Falha ao cancelar Asaas subscription:', e);
+            }
+          }
+        }
       }
 
       const now = new Date();
@@ -83,7 +156,7 @@ serve(async (req) => {
         .single();
       if (subError) throw subError;
 
-      // Credita os créditos do plano
+      // Credita os créditos (apenas para essa nova ativação)
       if (plan.monthly_credits > 0) {
         const { data: profile } = await supabaseClient
           .from('profiles')
@@ -109,9 +182,31 @@ serve(async (req) => {
       );
     }
 
-    // === PAID PLAN: vai para Asaas ===
+    // ============ PAID PLAN ============
     if (!customerData?.name || !customerData?.cpfCnpj || !customerData?.email) {
       throw new Error('Dados do cliente incompletos (nome, CPF/CNPJ, e-mail)');
+    }
+
+    // Se há PENDING pago anterior (de outro plano), cancela ele para criar novo
+    if (pendingSub && pendingSub.plan_id !== planId) {
+      const pAny = pendingSub as any;
+      if (pAny.asaas_subscription_id) {
+        try {
+          const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
+          const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
+          const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+          await fetch(`${ASAAS_BASE_URL}/subscriptions/${pAny.asaas_subscription_id}`, {
+            method: 'DELETE',
+            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-System' },
+          });
+        } catch (e) {
+          console.error('Falha ao cancelar PENDING anterior no Asaas:', e);
+        }
+      }
+      await supabaseClient
+        .from('user_subscriptions')
+        .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
+        .eq('id', pAny.id);
     }
 
     const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
@@ -152,17 +247,27 @@ serve(async (req) => {
       customerId = created.id;
     }
 
-    // 2. Criar subscription
+    // 2. Definir nextDueDate baseado em troca agendada
+    // Se já tem ACTIVE pago, agenda nova cobrança para o vencimento atual (não cobra duas vezes)
     const externalRef = `sub_${crypto.randomUUID()}`;
     const nextDueDate = new Date();
-    nextDueDate.setDate(nextDueDate.getDate() + 1); // amanhã
+    if (activeIsPaid && activeSub.current_period_end) {
+      const periodEnd = new Date(activeSub.current_period_end);
+      if (periodEnd > nextDueDate) {
+        nextDueDate.setTime(periodEnd.getTime());
+      } else {
+        nextDueDate.setDate(nextDueDate.getDate() + 1);
+      }
+    } else {
+      nextDueDate.setDate(nextDueDate.getDate() + 1);
+    }
     const nextDueStr = nextDueDate.toISOString().slice(0, 10);
 
     const billingType = paymentMethod === 'CREDIT_CARD' ? 'CREDIT_CARD' : 'PIX';
 
     const subPayload: any = {
       customer: customerId,
-      billingType: 'UNDEFINED', // permite o cliente escolher na fatura
+      billingType: 'UNDEFINED',
       value: Number(plan.price),
       nextDueDate: nextDueStr,
       cycle: 'MONTHLY',
@@ -200,14 +305,8 @@ serve(async (req) => {
       console.error('Erro ao buscar invoice:', e);
     }
 
-    // 4. Salvar no banco. Se já existia uma anterior PENDING/OVERDUE, marca como CANCELED
-    if (existing) {
-      await supabaseClient
-        .from('user_subscriptions')
-        .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
-        .eq('id', existing.id);
-    }
-
+    // 4. NÃO cancelar a ACTIVE atual — webhook fará isso ao confirmar pagamento
+    // Apenas insere a nova como PENDING
     const { data: newSub, error: subInsertError } = await supabaseClient
       .from('user_subscriptions')
       .insert({
@@ -230,6 +329,7 @@ serve(async (req) => {
         subscriptionId: newSub.id,
         asaasSubscriptionId: subData.id,
         invoiceUrl,
+        scheduledChange: !!activeIsPaid,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

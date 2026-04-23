@@ -663,6 +663,39 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
     })
     .eq('id', sub.id);
 
+  // === Expirar outras assinaturas ativas do mesmo usuário (troca de plano confirmada) ===
+  const { data: otherActive } = await supabaseClient
+    .from('user_subscriptions')
+    .select('id, plan_id, asaas_subscription_id')
+    .eq('user_id', sub.user_id)
+    .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
+    .neq('id', sub.id);
+
+  if (otherActive && otherActive.length > 0) {
+    console.log(`🔄 Expirando ${otherActive.length} assinatura(s) anterior(es) do user ${sub.user_id}`);
+    for (const other of otherActive) {
+      await supabaseClient
+        .from('user_subscriptions')
+        .update({ status: 'EXPIRED', canceled_at: new Date().toISOString() })
+        .eq('id', other.id);
+
+      // Tenta cancelar no Asaas se tinha id remoto
+      if (other.asaas_subscription_id) {
+        try {
+          const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
+          const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
+          const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+          await fetch(`${ASAAS_BASE_URL}/subscriptions/${other.asaas_subscription_id}`, {
+            method: 'DELETE',
+            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-Webhook' },
+          });
+        } catch (e) {
+          console.error('Falha ao cancelar assinatura antiga no Asaas:', e);
+        }
+      }
+    }
+  }
+
   // Credit monthly credits to user
   const monthly = sub.plan?.monthly_credits ?? 0;
   if (monthly > 0) {

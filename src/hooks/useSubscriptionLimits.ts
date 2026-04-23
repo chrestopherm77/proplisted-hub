@@ -89,23 +89,30 @@ export function useSubscriptionLimits() {
     monthStart.setHours(0, 0, 0, 0);
     const monthIso = monthStart.toISOString();
 
-    const [subRes, freePlanRes, profileRes, propsRes, searchesRes, offersRes, creativesRes] = await Promise.all([
-      supabase
-        .from('user_subscriptions')
-        .select('plan:subscription_plans(id, slug, name, price, monthly_credits, features, feature_list)')
-        .eq('user_id', user.id)
-        .in('status', ['ACTIVE'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+    // 1) Busca assinatura ATIVA (com period_start para definir ciclo)
+    const subRes = await supabase
+      .from('user_subscriptions')
+      .select('current_period_start, plan:subscription_plans(id, slug, name, price, monthly_credits, features, feature_list)')
+      .eq('user_id', user.id)
+      .in('status', ['ACTIVE'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Ciclo de cobrança do plano (para contagem persistente de imóveis e parcerias)
+    const cycleStart = (subRes.data as any)?.current_period_start ?? monthIso;
+
+    const [freePlanRes, profileRes, propsRes, searchesRes, offersRes, creativesRes] = await Promise.all([
       supabase
         .from('subscription_plans')
         .select('id, slug, name, price, monthly_credits, features, feature_list')
         .eq('slug', 'conexao')
         .maybeSingle(),
       supabase.from('profiles').select('credit_balance').eq('id', user.id).maybeSingle(),
-      supabase.from('properties').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true),
-      supabase.from('property_searches').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true),
+      // Imóveis: conta tudo criado no ciclo, ATIVO OU NÃO (slot fica reservado mesmo após exclusão)
+      supabase.from('properties').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', cycleStart),
+      // Parcerias (solicitações): mesma regra
+      supabase.from('property_searches').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', cycleStart),
       supabase.from('property_search_offers').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', monthIso),
       supabase.from('creatives').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', monthIso),
     ]);
