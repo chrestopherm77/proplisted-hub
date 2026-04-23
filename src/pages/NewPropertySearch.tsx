@@ -71,7 +71,7 @@ const formatCurrency = (raw: string): string => {
 };
 
 const NewPropertySearch = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
@@ -98,11 +98,10 @@ const NewPropertySearch = () => {
   const [observation, setObservation] = useState('');
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) { navigate('/auth'); return; }
-      if (isAdmin === false) { navigate('/'); return; }
+    if (!authLoading && !user) {
+      navigate('/auth');
     }
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleStateChange = (uf: string) => {
     setState(uf);
