@@ -151,7 +151,7 @@ export function PropertyMap({ properties }: PropertyMapProps) {
   const missing = properties.length - geocoded.length;
 
   return (
-    <div className="relative">
+    <div className="relative z-0">
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-1 pointer-events-none">
         <Badge className="bg-background/95 text-foreground border shadow-md pointer-events-auto">
           <MapPin className="h-3.5 w-3.5 mr-1 text-primary" />
