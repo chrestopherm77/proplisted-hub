@@ -37,6 +37,7 @@ import PortalImoveis from "./pages/PortalImoveis";
 import NewProperty from "./pages/NewProperty";
 import PropertyDetail from "./pages/PropertyDetail";
 import PublicPropertyLP from "./pages/PublicPropertyLP";
+import Planos from "./pages/Planos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,7 @@ const App = () => {
           <Route path="/portal-imoveis/novo" element={<NewProperty />} />
           <Route path="/portal-imoveis/:id" element={<PropertyDetail />} />
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
+          <Route path="/planos" element={<Planos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

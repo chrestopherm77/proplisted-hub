@@ -1454,6 +1454,98 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount: number
+          asaas_payment_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_url: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string
+          subscription_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asaas_payment_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_url?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          subscription_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asaas_payment_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_url?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          subscription_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          display_order: number
+          feature_list: Json
+          features: Json
+          id: string
+          is_active: boolean
+          monthly_credits: number
+          name: string
+          price: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          feature_list?: Json
+          features?: Json
+          id?: string
+          is_active?: boolean
+          monthly_credits?: number
+          name: string
+          price?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          feature_list?: Json
+          features?: Json
+          id?: string
+          is_active?: boolean
+          monthly_credits?: number
+          name?: string
+          price?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_brands: {
         Row: {
           company_name: string | null
@@ -1504,6 +1596,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          invoice_url: string | null
+          next_due_date: string | null
+          payment_method: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          invoice_url?: string | null
+          next_due_date?: string | null
+          payment_method?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          invoice_url?: string | null
+          next_due_date?: string | null
+          payment_method?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       voucher_redemptions: {
         Row: {
