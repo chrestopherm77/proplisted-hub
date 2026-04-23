@@ -142,8 +142,9 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
         open={limitDialog.open}
         onOpenChange={(open) => setLimitDialog((s) => ({ ...s, open }))}
         title="Não foi possível gerar o criativo"
-        reason={limitDialog.reason}
-        secondary={limitDialog.secondary}
+        description={limitDialog.reason}
+        secondaryCtaLabel={limitDialog.secondary?.label}
+        secondaryCtaPath={limitDialog.secondary?.path}
       />
 
       <Card>
