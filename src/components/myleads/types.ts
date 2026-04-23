@@ -5,6 +5,7 @@ export interface CrmLead {
   crmId: string;
   stage: CrmStage;
   notes: string | null;
+  isManual?: boolean;
   // purchase
   purchaseId: string;
   amount: number;
