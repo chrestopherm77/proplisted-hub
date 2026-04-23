@@ -504,27 +504,42 @@ export type Database = {
       lead_crm_status: {
         Row: {
           id: string
-          lead_id: string
+          is_manual: boolean
+          lead_id: string | null
+          manual_description: string | null
+          manual_email: string | null
+          manual_name: string | null
+          manual_phone: string | null
           notes: string | null
-          purchase_id: string
+          purchase_id: string | null
           stage: string
           updated_at: string
           user_id: string
         }
         Insert: {
           id?: string
-          lead_id: string
+          is_manual?: boolean
+          lead_id?: string | null
+          manual_description?: string | null
+          manual_email?: string | null
+          manual_name?: string | null
+          manual_phone?: string | null
           notes?: string | null
-          purchase_id: string
+          purchase_id?: string | null
           stage?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           id?: string
-          lead_id?: string
+          is_manual?: boolean
+          lead_id?: string | null
+          manual_description?: string | null
+          manual_email?: string | null
+          manual_name?: string | null
+          manual_phone?: string | null
           notes?: string | null
-          purchase_id?: string
+          purchase_id?: string | null
           stage?: string
           updated_at?: string
           user_id?: string
