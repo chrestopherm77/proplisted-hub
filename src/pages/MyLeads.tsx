@@ -200,17 +200,29 @@ export default function MyLeads() {
   return (
     <Layout>
       <div className="max-w-[1600px] mx-auto">
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">Meus Leads — CRM</h1>
-          <p className="text-sm text-muted-foreground">
-            Arraste os cards entre as etapas, anote o andamento e fale direto via WhatsApp.
-          </p>
+        <div className="mb-4 md:mb-6 flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">Meus Leads — CRM</h1>
+            <p className="text-sm text-muted-foreground">
+              Arraste os cards entre as etapas, anote o andamento e fale direto via WhatsApp.
+            </p>
+          </div>
+          <Button onClick={() => setNewContactOpen(true)} className="flex-shrink-0">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Novo Contato
+          </Button>
         </div>
 
         {leads.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">Você ainda não comprou nenhum lead</p>
-            <Link to="/leads" className="text-primary hover:underline">Explorar Marketplace</Link>
+            <p className="text-muted-foreground mb-4">Você ainda não tem nenhum lead ou contato</p>
+            <div className="flex items-center justify-center gap-3">
+              <Link to="/leads" className="text-primary hover:underline">Explorar Marketplace</Link>
+              <span className="text-muted-foreground">·</span>
+              <button onClick={() => setNewContactOpen(true)} className="text-primary hover:underline">
+                Adicionar contato manual
+              </button>
+            </div>
           </div>
         ) : isMobile ? (
           // Mobile: Tabs
