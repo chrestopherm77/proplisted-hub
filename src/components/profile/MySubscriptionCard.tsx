@@ -132,6 +132,48 @@ export const MySubscriptionCard = () => {
               </p>
             )}
 
+            {/* Saldo de créditos */}
+            <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Saldo de créditos</span>
+              </div>
+              <span className="text-sm font-bold">{creditBalance}</span>
+            </div>
+
+            {/* Uso do plano */}
+            {!limitsLoading && plan && (
+              <div className="space-y-3 pt-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Uso do plano este mês
+                </p>
+                {usageItems.map(({ key, label, icon: Icon }) => {
+                  const r = can(key);
+                  const pct = r.isUnlimited || r.limit <= 0 ? 0 : Math.min(100, (r.used / r.limit) * 100);
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <Icon className="h-3.5 w-3.5" />
+                          {label}
+                        </span>
+                        <span className="font-medium">
+                          {r.isUnlimited
+                            ? 'Ilimitado'
+                            : r.limit <= 0
+                              ? 'Não incluso'
+                              : `${r.used}/${r.limit}`}
+                        </span>
+                      </div>
+                      {!r.isUnlimited && r.limit > 0 && (
+                        <Progress value={pct} className="h-1.5" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2 pt-2">
               {sub.status === 'PENDING' && sub.invoice_url && (
                 <Button size="sm" asChild>
