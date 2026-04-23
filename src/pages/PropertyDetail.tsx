@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyGallery } from '@/components/portal/PropertyGallery';
+import { AmenitiesDisplay } from '@/components/portal/AmenitiesDisplay';
 import {
   getPropertyTypeLabel, getOperationLabel, getStatusLabel, formatPrice,
-  generateAffiliateToken, sortPhotos, type PropertyPhoto,
+  generateAffiliateToken, sortPhotos, normalizeAmenities, type PropertyPhoto,
 } from '@/lib/propertyUtils';
 import { buildWaLink } from '@/lib/whatsapp';
 import JSZip from 'jszip';
@@ -100,7 +101,11 @@ const PropertyDetail = () => {
 
   const isOwner = property?.user_id === user?.id;
   const photos: PropertyPhoto[] = Array.isArray(property?.photos) ? (property!.photos as PropertyPhoto[]) : [];
-  const amenities: string[] = Array.isArray(property?.amenities) ? (property!.amenities as string[]) : [];
+  const amenitiesNorm = normalizeAmenities(property?.amenities);
+  const hasAmenities =
+    !!amenitiesNorm.legacy?.length ||
+    !!(amenitiesNorm.condo && Object.keys(amenitiesNorm.condo).length) ||
+    !!(amenitiesNorm.property && Object.keys(amenitiesNorm.property).length);
 
   const handleDownloadPhotos = async () => {
     if (photos.length === 0) {
@@ -290,13 +295,11 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
 
-            {amenities.length > 0 && (
+            {hasAmenities && (
               <Card>
-                <CardHeader><CardTitle className="text-lg">Comodidades</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">Comodidades e Características</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {amenities.map((a) => <Badge key={a} variant="secondary">{a}</Badge>)}
-                  </div>
+                  <AmenitiesDisplay value={property.amenities} />
                 </CardContent>
               </Card>
             )}

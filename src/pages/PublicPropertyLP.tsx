@@ -9,9 +9,10 @@ import {
   MapPin, Loader2, MessageCircle, BedDouble, Bath, Car, Ruler, Home, Building2,
 } from 'lucide-react';
 import { PropertyGallery } from '@/components/portal/PropertyGallery';
+import { AmenitiesDisplay } from '@/components/portal/AmenitiesDisplay';
 import {
   getPropertyTypeLabel, getOperationLabel, getStatusLabel, formatPrice,
-  type PropertyPhoto,
+  normalizeAmenities, type PropertyPhoto,
 } from '@/lib/propertyUtils';
 import { buildWaLink } from '@/lib/whatsapp';
 
@@ -103,7 +104,11 @@ const PublicPropertyLP = () => {
   }
 
   const photos: PropertyPhoto[] = Array.isArray(property.photos) ? (property.photos as PropertyPhoto[]) : [];
-  const amenities: string[] = Array.isArray(property.amenities) ? (property.amenities as string[]) : [];
+  const amenitiesNorm = normalizeAmenities(property.amenities);
+  const hasAmenities =
+    !!amenitiesNorm.legacy?.length ||
+    !!(amenitiesNorm.condo && Object.keys(amenitiesNorm.condo).length) ||
+    !!(amenitiesNorm.property && Object.keys(amenitiesNorm.property).length);
   const price = property.operation_type === 'RENT' ? property.price_rent : property.price_sale;
   const waMessage = `Olá! Tenho interesse no imóvel Ref: ${property.reference_code}`;
 
@@ -184,13 +189,11 @@ const PublicPropertyLP = () => {
               </CardContent>
             </Card>
 
-            {amenities.length > 0 && (
+            {hasAmenities && (
               <Card className="bg-card/95 backdrop-blur-sm">
-                <CardHeader><CardTitle className="text-lg">Comodidades</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">Comodidades e Características</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {amenities.map((a) => <Badge key={a} variant="secondary">{a}</Badge>)}
-                  </div>
+                  <AmenitiesDisplay value={property.amenities} />
                 </CardContent>
               </Card>
             )}
