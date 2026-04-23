@@ -82,19 +82,46 @@ export default function Planos() {
         const { data, error } = await supabase.functions.invoke('create-subscription', {
           body: { planId: plan.id },
         });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+
+        // Extrai mensagem real do backend mesmo quando retorna não-2xx
+        let backendMsg = '';
+        try {
+          if (error && (error as any).context?.body) {
+            const body = (error as any).context.body;
+            const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+            backendMsg = parsed?.error || '';
+          }
+        } catch { /* ignore */ }
+        if (!backendMsg && data?.error) backendMsg = data.error;
+        if (!backendMsg && error) backendMsg = (error as any).message || '';
+
+        const isAlreadyOnPlan =
+          /j[áa]\s+est[áa]\s+(no|neste)\s+plano/i.test(backendMsg) ||
+          /n[ãa]o\s+[ée]\s+poss[íi]vel\s+reativar/i.test(backendMsg) ||
+          /j[áa]\s+ativou\s+este\s+plano/i.test(backendMsg) ||
+          /already\s+(on|in)\s+plan/i.test(backendMsg);
+
+        if (isAlreadyOnPlan) {
+          toast({
+            title: 'Você já está neste plano',
+            description: 'Sua assinatura do plano grátis já está ativa. Aguarde o término do ciclo para renovar ou escolha um plano superior.',
+          });
+          await loadData();
+          return;
+        }
+
+        if (error || data?.error) {
+          throw new Error(backendMsg || 'Não foi possível ativar o plano. Tente novamente.');
+        }
+
         toast({ title: 'Plano ativado!', description: `${plan.monthly_credits} créditos foram adicionados.` });
         await loadData();
       } catch (err: any) {
-        const msg = String(err?.message ?? '');
-        const isAlreadyOnPlan = /j[áa]\s+est[áa]\s+no\s+plano/i.test(msg) || /already\s+(on|in)\s+plan/i.test(msg);
-        if (isAlreadyOnPlan) {
-          toast({ title: 'Plano já ativo', description: msg });
-          await loadData();
-        } else {
-          toast({ title: 'Erro', description: msg, variant: 'destructive' });
-        }
+        toast({
+          title: 'Erro ao ativar plano',
+          description: err?.message || 'Tente novamente em instantes.',
+          variant: 'destructive',
+        });
       } finally {
         setSubmittingPlanId(null);
       }
