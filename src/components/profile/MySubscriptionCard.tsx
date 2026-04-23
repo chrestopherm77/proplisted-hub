@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Crown, Loader2, ExternalLink, Coins, Building2, Handshake, Send, Sparkles } from 'lucide-react';
+import { Crown, Loader2, ExternalLink, Coins, Building2, Handshake, Send, Sparkles, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -37,10 +37,11 @@ export const MySubscriptionCard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { plan, can, creditBalance, loading: limitsLoading } = useSubscriptionLimits();
-  const [sub, setSub] = useState<SubData | null>(null);
+  const { plan, can, creditBalance, loading: limitsLoading, refresh } = useSubscriptionLimits();
+  const [activeSub, setActiveSub] = useState<SubData | null>(null);
+  const [pendingSub, setPendingSub] = useState<SubData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [canceling, setCanceling] = useState(false);
+  const [canceling, setCanceling] = useState<string | null>(null);
 
   const usageItems: Array<{ key: LimitResource; label: string; icon: typeof Building2 }> = [
     { key: 'portal_properties', label: 'Imóveis no portal', icon: Building2 },
@@ -49,42 +50,60 @@ export const MySubscriptionCard = () => {
     { key: 'creatives_per_month', label: 'Criativos (mês)', icon: Sparkles },
   ];
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    load();
-  }, [user]);
-
-  const load = async () => {
     setLoading(true);
     const { data } = await supabase
       .from('user_subscriptions')
       .select('id, status, current_period_end, next_due_date, invoice_url, payment_method, plan:subscription_plans(name, price, monthly_credits, slug)')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setSub(data as any);
-    setLoading(false);
-  };
+      .order('created_at', { ascending: false });
 
-  const handleCancel = async () => {
-    if (!sub) return;
-    setCanceling(true);
+    const list = (data ?? []) as any[] as SubData[];
+    setActiveSub(list.find((s) => s.status === 'ACTIVE' || s.status === 'OVERDUE') ?? null);
+    setPendingSub(list.find((s) => s.status === 'PENDING') ?? null);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Refresca quando o usuário volta para a aba (ex.: após pagar no Asaas)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        load();
+        refresh?.();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [load, refresh]);
+
+  const handleCancel = async (subscriptionId: string) => {
+    setCanceling(subscriptionId);
     try {
       const { data, error } = await supabase.functions.invoke('cancel-subscription', {
-        body: { subscriptionId: sub.id },
+        body: { subscriptionId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({ title: 'Assinatura cancelada', description: 'Você manterá o acesso até o fim do período pago.' });
       await load();
+      refresh?.();
     } catch (err: any) {
       toast({ title: 'Erro ao cancelar', description: err.message, variant: 'destructive' });
     } finally {
-      setCanceling(false);
+      setCanceling(null);
     }
   };
+
+  // Plano realmente em uso (vem do hook, que faz fallback para CONEXÃO se não há ACTIVE)
+  const currentPlanName = plan?.name ?? 'Conexão';
+  const currentPlanPrice = plan?.price ?? 0;
+  const currentPlanCredits = plan?.monthly_credits ?? 10;
 
   return (
     <Card>
@@ -95,41 +114,88 @@ export const MySubscriptionCard = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {loading || limitsLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ) : !sub ? (
-          <div className="text-center py-4 space-y-3">
-            <p className="text-sm text-muted-foreground">Você ainda não possui um plano ativo.</p>
-            <Button onClick={() => navigate('/planos')}>Ver planos disponíveis</Button>
-          </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-lg">{sub.plan.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {Number(sub.plan.price) === 0
-                    ? 'Grátis'
-                    : `R$ ${Number(sub.plan.price).toFixed(2).replace('.', ',')}/mês`}
-                  {' · '}{sub.plan.monthly_credits} créditos/mês
-                </p>
+          <div className="space-y-4">
+            {/* Bloco 1: Plano em uso real */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Plano atual</p>
+                  <p className="font-bold text-lg">{currentPlanName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {Number(currentPlanPrice) === 0
+                      ? 'Grátis'
+                      : `R$ ${Number(currentPlanPrice).toFixed(2).replace('.', ',')}/mês`}
+                    {' · '}{currentPlanCredits} créditos/mês
+                  </p>
+                </div>
+                <Badge variant="default">Ativo</Badge>
               </div>
-              <Badge variant={statusLabel[sub.status]?.variant ?? 'outline'}>
-                {statusLabel[sub.status]?.label ?? sub.status}
-              </Badge>
+
+              {activeSub?.status === 'ACTIVE' && activeSub.current_period_end && (
+                <p className="text-sm text-muted-foreground">
+                  Próxima renovação: {new Date(activeSub.current_period_end).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+              {activeSub?.status === 'OVERDUE' && (
+                <p className="text-sm text-destructive">
+                  Seu pagamento está em atraso. Regularize para manter o plano.
+                </p>
+              )}
             </div>
 
-            {sub.status === 'ACTIVE' && sub.current_period_end && (
-              <p className="text-sm text-muted-foreground">
-                Próxima renovação: {new Date(sub.current_period_end).toLocaleDateString('pt-BR')}
-              </p>
-            )}
-            {sub.status === 'PENDING' && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
-                Aguardando confirmação do pagamento.
-              </p>
+            {/* Bloco 2: Tentativa de assinatura pendente */}
+            {pendingSub && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                      Assinatura {pendingSub.plan.name} aguardando pagamento
+                    </p>
+                    <p className="text-xs text-amber-800 dark:text-amber-200 mt-0.5">
+                      O plano só será liberado após a confirmação do pagamento.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {pendingSub.invoice_url && (
+                    <Button size="sm" asChild>
+                      <a href={pendingSub.invoice_url} target="_blank" rel="noopener noreferrer">
+                        Pagar fatura <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="text-destructive">
+                        Cancelar tentativa
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancelar tentativa de assinatura?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Essa fatura pendente será cancelada. Você poderá assinar novamente quando quiser.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleCancel(pendingSub.id)}
+                          disabled={canceling === pendingSub.id}
+                        >
+                          {canceling === pendingSub.id ? 'Cancelando...' : 'Confirmar'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
             )}
 
             {/* Saldo de créditos */}
@@ -142,7 +208,7 @@ export const MySubscriptionCard = () => {
             </div>
 
             {/* Uso do plano */}
-            {!limitsLoading && plan && (
+            {plan && (
               <div className="space-y-3 pt-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Uso do plano este mês
@@ -174,18 +240,12 @@ export const MySubscriptionCard = () => {
               </div>
             )}
 
+            {/* Ações */}
             <div className="flex flex-wrap gap-2 pt-2">
-              {sub.status === 'PENDING' && sub.invoice_url && (
-                <Button size="sm" asChild>
-                  <a href={sub.invoice_url} target="_blank" rel="noopener noreferrer">
-                    Pagar fatura <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </Button>
-              )}
               <Button size="sm" variant="outline" onClick={() => navigate('/planos')}>
-                Trocar plano
+                {activeSub ? 'Trocar plano' : 'Ver planos disponíveis'}
               </Button>
-              {sub.status !== 'CANCELED' && (
+              {activeSub && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="ghost" className="text-destructive">
@@ -201,8 +261,11 @@ export const MySubscriptionCard = () => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Manter assinatura</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleCancel} disabled={canceling}>
-                        {canceling ? 'Cancelando...' : 'Confirmar cancelamento'}
+                      <AlertDialogAction
+                        onClick={() => handleCancel(activeSub.id)}
+                        disabled={canceling === activeSub.id}
+                      >
+                        {canceling === activeSub.id ? 'Cancelando...' : 'Confirmar cancelamento'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
