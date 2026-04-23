@@ -15,9 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Home, Building2, Store, Landmark, TreePine, Building } from 'lucide-react';
+import { ArrowLeft, Home, Building2, Store, Landmark, TreePine, Building, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 type PropertyType = 'CASA' | 'APARTAMENTO' | 'SALA_COMERCIAL' | 'LOTE' | 'RURAL' | 'PREDIO_COMERCIAL';
 
@@ -71,6 +75,9 @@ const NewPropertySearch = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
+  const { can, plan, loading: limitsLoading } = useSubscriptionLimits();
+  const requestGate = can('partnership_requests');
+  const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   const [selected, setSelected] = useState<TypeOption | null>(null);
   const [saving, setSaving] = useState(false);
@@ -130,6 +137,10 @@ const NewPropertySearch = () => {
 
   const handleSubmit = async () => {
     if (!selected || !user) return;
+    if (!requestGate.allowed) {
+      setShowLimitDialog(true);
+      return;
+    }
     if (!city.trim()) {
       toast({ title: 'Campo obrigatório', description: 'Informe a cidade.', variant: 'destructive' });
       return;
@@ -241,6 +252,32 @@ const NewPropertySearch = () => {
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Interesse do Comprador</h1>
           <p className="text-muted-foreground">Selecione o tipo de imóvel que você procura:</p>
+
+          {!limitsLoading && plan && (
+            <Alert className={cn(!requestGate.allowed && 'border-destructive/50 bg-destructive/5')}>
+              <Crown className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+                <span>
+                  Plano <strong>{plan.name}</strong>:{' '}
+                  {requestGate.isUnlimited
+                    ? `${requestGate.used} solicitações ativas (ilimitado)`
+                    : `${requestGate.used} de ${requestGate.limit} solicitações ativas`}
+                </span>
+                {!requestGate.allowed && (
+                  <Button type="button" size="sm" variant="outline" onClick={() => navigate('/planos')}>
+                    Fazer upgrade
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <PlanLimitDialog
+            open={showLimitDialog}
+            onOpenChange={setShowLimitDialog}
+            description={requestGate.reason ?? 'Faça upgrade do seu plano para criar mais solicitações de parceria.'}
+          />
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {typeOptions.map((opt, i) => (
               <Card

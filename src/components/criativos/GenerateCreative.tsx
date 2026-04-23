@@ -3,20 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Loader2, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StepImages, type ImageSlot } from './wizard/StepImages';
 import { StepStyleFormat } from './wizard/StepStyleFormat';
 import { StepInfo } from './wizard/StepInfo';
 import { StepResult } from './wizard/StepResult';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const TOTAL_STEPS = 4;
+const CREATIVE_COST = 10;
 const initialSlots = (): ImageSlot[] =>
   Array.from({ length: 8 }, () => ({ url: null, position: 'bottom-right' as const }));
 
 export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { can, plan, creditBalance, refresh: refreshLimits } = useSubscriptionLimits();
+  const creativesGate = can('creatives_per_month');
   const [step, setStep] = useState(1);
   const [slots, setSlots] = useState<ImageSlot[]>(initialSlots());
   const [styleSlug, setStyleSlug] = useState<string | null>(null);
@@ -25,6 +31,10 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [creativeId, setCreativeId] = useState<string | null>(null);
+  const [limitDialog, setLimitDialog] = useState<{ open: boolean; reason: string; secondary?: { label: string; path: string } }>({
+    open: false,
+    reason: '',
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -41,6 +51,26 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
 
   const handleGenerate = async () => {
     if (!user) return;
+
+    const willCallAi = !!slots[0]?.url;
+
+    if (!creativesGate.allowed) {
+      setLimitDialog({
+        open: true,
+        reason: creativesGate.reason ?? `Você atingiu o limite mensal de criativos do plano ${plan?.name ?? ''}.`,
+      });
+      return;
+    }
+
+    if (willCallAi && creditBalance < CREATIVE_COST) {
+      setLimitDialog({
+        open: true,
+        reason: `Cada criativo custa ${CREATIVE_COST} créditos. Seu saldo atual é ${creditBalance}.`,
+        secondary: { label: 'Comprar créditos', path: '/comprar-creditos' },
+      });
+      return;
+    }
+
     setSaving(true);
     const principal = slots[0];
     const mockups = slots.slice(1)

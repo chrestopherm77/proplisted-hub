@@ -51,6 +51,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
 
 interface PropertySearch {
   id: string;
@@ -171,6 +173,9 @@ const PropertySearches = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { can: canResource } = useSubscriptionLimits();
+  const offersGate = canResource('partnership_offers');
+  const [showOffersLimitDialog, setShowOffersLimitDialog] = useState(false);
   const [searches, setSearches] = useState<PropertySearch[]>([]);
   const [loading, setLoading] = useState(true);
   const [textFilter, setTextFilter] = useState('');
@@ -321,6 +326,10 @@ const PropertySearches = () => {
 
   const handleWhatsAppOffer = async (search: PropertySearch) => {
     if (!user) return;
+    if (!offersGate.allowed) {
+      setShowOffersLimitDialog(true);
+      return;
+    }
     setSendingOffer(true);
 
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
@@ -359,6 +368,11 @@ const PropertySearches = () => {
 
   const handleSendLink = async () => {
     if (!offerModalSearch || !user || !offerLink.trim()) return;
+    if (!offersGate.allowed) {
+      setShowOffersLimitDialog(true);
+      setOfferModalSearch(null);
+      return;
+    }
     setSendingLink(true);
 
     const { data: myProfile } = await supabase.from('profiles').select('name, phone').eq('id', user.id).single();
@@ -1091,6 +1105,12 @@ const PropertySearches = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlanLimitDialog
+        open={showOffersLimitDialog}
+        onOpenChange={setShowOffersLimitDialog}
+        description={offersGate.reason ?? 'Faça upgrade do seu plano para enviar mais ofertas de parceria neste mês.'}
+      />
     </Layout>
   );
 };

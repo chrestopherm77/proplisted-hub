@@ -12,9 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { ArrowLeft, Loader2, Save, ChevronsUpDown, Check, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, ChevronsUpDown, Check, Plus, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PropertyPhotosUpload } from '@/components/portal/PropertyPhotosUpload';
 import { AmenitiesPicker, type CondoAmenitiesValue } from '@/components/portal/AmenitiesPicker';
@@ -35,6 +38,9 @@ const NewProperty = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { states, cities, fetchCities, loadingCities } = useIBGELocation();
+  const { can, plan, loading: limitsLoading } = useSubscriptionLimits();
+  const propertyGate = can('portal_properties');
+  const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
@@ -161,6 +167,11 @@ const NewProperty = () => {
     e.preventDefault();
     if (!user) return;
 
+    if (!propertyGate.allowed) {
+      setShowLimitDialog(true);
+      return;
+    }
+
     if (!propertyType) {
       toast({ title: 'Selecione o tipo do imóvel', variant: 'destructive' });
       return;
@@ -253,6 +264,31 @@ const NewProperty = () => {
         </Button>
 
         <h1 className="text-2xl sm:text-3xl font-bold mb-6">Publicar Imóvel</h1>
+
+        {!limitsLoading && plan && (
+          <Alert className={cn('mb-4', !propertyGate.allowed && 'border-destructive/50 bg-destructive/5')}>
+            <Crown className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+              <span>
+                Plano <strong>{plan.name}</strong>:{' '}
+                {propertyGate.isUnlimited
+                  ? `${propertyGate.used} imóveis publicados (ilimitado)`
+                  : `${propertyGate.used} de ${propertyGate.limit} imóveis publicados`}
+              </span>
+              {!propertyGate.allowed && (
+                <Button type="button" size="sm" variant="outline" onClick={() => navigate('/planos')}>
+                  Fazer upgrade
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <PlanLimitDialog
+          open={showLimitDialog}
+          onOpenChange={setShowLimitDialog}
+          description={propertyGate.reason ?? 'Faça upgrade do seu plano para publicar mais imóveis.'}
+        />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
