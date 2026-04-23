@@ -71,7 +71,7 @@ const formatCurrency = (raw: string): string => {
 };
 
 const NewPropertySearch = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
