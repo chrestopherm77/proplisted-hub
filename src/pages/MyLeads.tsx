@@ -7,9 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { LeadKanbanColumn } from '@/components/myleads/LeadKanbanColumn';
 import { LeadCrmDialog } from '@/components/myleads/LeadCrmDialog';
 import { LeadKanbanCard } from '@/components/myleads/LeadKanbanCard';
+import { NewContactDialog } from '@/components/myleads/NewContactDialog';
 import { CrmLead, CrmStage, STAGES } from '@/components/myleads/types';
 
 export default function MyLeads() {
