@@ -1,0 +1,124 @@
+import { useEffect, useState } from 'react';
+import { Layout } from '@/components/Layout';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { PlanCard, type PlanCardData } from '@/components/plans/PlanCard';
+import { SubscribeDialog } from '@/components/plans/SubscribeDialog';
+
+export default function Planos() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [plans, setPlans] = useState<PlanCardData[]>([]);
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
+  const [dialogPlan, setDialogPlan] = useState<PlanCardData | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
+    if (user) loadData();
+  }, [user, authLoading, navigate]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [{ data: plansData }, { data: subData }] = await Promise.all([
+        supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true }),
+        supabase
+          .from('user_subscriptions')
+          .select('plan_id, status')
+          .eq('user_id', user!.id)
+          .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
+          .maybeSingle(),
+      ]);
+      setPlans((plansData ?? []) as any);
+      setCurrentPlanId(subData?.plan_id ?? null);
+    } catch (err: any) {
+      toast({ title: 'Erro ao carregar planos', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelect = async (plan: PlanCardData) => {
+    if (Number(plan.price) === 0) {
+      // Ativa direto
+      setSubmittingPlanId(plan.id);
+      try {
+        const { data, error } = await supabase.functions.invoke('create-subscription', {
+          body: { planId: plan.id },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast({ title: 'Plano ativado!', description: `${plan.monthly_credits} créditos foram adicionados.` });
+        await loadData();
+      } catch (err: any) {
+        toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+      } finally {
+        setSubmittingPlanId(null);
+      }
+    } else {
+      setDialogPlan(plan);
+      setDialogOpen(true);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Escolha seu plano</h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Mais créditos, mais funcionalidades, mais resultado. Cancele quando quiser.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {plans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              isCurrent={currentPlanId === plan.id}
+              isPopular={plan.slug === 'performance'}
+              loading={submittingPlanId === plan.id}
+              onSelect={handleSelect}
+            />
+          ))}
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-8">
+          Cobrança mensal recorrente via Asaas. Os créditos são renovados a cada pagamento confirmado.
+        </p>
+      </div>
+
+      <SubscribeDialog
+        plan={dialogPlan}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={loadData}
+      />
+    </Layout>
+  );
+}
