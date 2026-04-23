@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeadsManagement } from '@/components/admin/LeadsManagement';
 import { PurchasesOverview } from '@/components/admin/PurchasesOverview';
+import { LeadPurchasesOverview } from '@/components/admin/LeadPurchasesOverview';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { UsersManagement } from '@/components/admin/UsersManagement';
 import { LeadTracking } from '@/components/admin/LeadTracking';
