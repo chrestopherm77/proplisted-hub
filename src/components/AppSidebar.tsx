@@ -122,22 +122,40 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
-      {/* Credit Balance */}
-      <div className="px-3 pb-2">
+      {/* Credit Balance + Current Plan */}
+      <div className="px-3 pb-2 space-y-2">
         <Link
           to="/comprar-creditos"
-          className="flex items-center gap-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-2.5 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
         >
           <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
           {!collapsed && (
-            <div className="flex flex-col min-w-0">
+            <div className="flex items-center justify-between flex-1 min-w-0">
               <span className="text-xs text-muted-foreground">Créditos</span>
-              <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300 truncate">
+              <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300">
                 {(creditBalance ?? 0).toLocaleString('pt-BR')}
               </span>
             </div>
           )}
         </Link>
+
+        {!collapsed && !isPartnerSite && (
+          <Link
+            to="/planos"
+            className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1.5 hover:bg-primary/10 transition-colors"
+          >
+            <Crown className="h-3.5 w-3.5 text-primary shrink-0" />
+            <div className="flex items-center justify-between flex-1 min-w-0 gap-1">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">Plano</span>
+                <span className="text-xs font-semibold truncate leading-tight">{plan?.name ?? 'Conexão'}</span>
+              </div>
+              <span className="text-[10px] text-primary font-medium shrink-0">
+                {Number(plan?.price ?? 0) === 0 ? 'Upgrade' : 'Trocar'}
+              </span>
+            </div>
+          </Link>
+        )}
       </div>
 
       <SidebarContent>
