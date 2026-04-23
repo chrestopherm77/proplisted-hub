@@ -53,7 +53,7 @@ export function ReferralPopup({ userId }: ReferralPopupProps) {
 
   if (!code) return null;
 
-  const message = `Olá! 👋 Tô usando a LeadBay pra comprar leads de imóveis. Se você se cadastrar usando meu código de indicação *${code}*, eu ganho créditos e você entra numa plataforma top. Cadastra aqui: https://leadbay.com.br/auth`;
+  const message = `Conheça a LeadBay: um hub de soluções que oferece a estrutura completa para o corretor de imóveis. De leads qualificados ao suporte administrativo, tudo o que você precisa para operar com autonomia.\n\nCadastre-se com o código ${code}: https://leadbay.com.br/auth`;
 
   const handleCopyCode = async () => {
     try {
