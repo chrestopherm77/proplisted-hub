@@ -185,19 +185,3 @@ function parseIntentionFromDescription(description: string): string {
   if (lower.includes('alugar')) return 'RENT';
   return '';
 }
-
-function parseDescriptionToDisplay(description: string) {
-  const lines = description.split('\n').map(line => line.trim()).filter(Boolean);
-  return lines.map((line, idx) => {
-    const [label, ...valueParts] = line.split(':');
-    const value = valueParts.join(':').trim();
-    if (value) {
-      return (
-        <p key={idx}>
-          <span className="font-medium text-foreground">{label}:</span> {value}
-        </p>
-      );
-    }
-    return <p key={idx}>{line}</p>;
-  });
-}
