@@ -10,6 +10,8 @@ import { ArrowLeft, MessageCircle, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
 
 const typeLabels: Record<string, string> = {
   CASA: 'Casa',
@@ -67,6 +69,9 @@ const PropertySearchDetail = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { can: canResource } = useSubscriptionLimits();
+  const offersGate = canResource('partnership_offers');
+  const [showOffersLimitDialog, setShowOffersLimitDialog] = useState(false);
   const [search, setSearch] = useState<PropertySearch | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingOffer, setSendingOffer] = useState(false);
@@ -116,6 +121,10 @@ const PropertySearchDetail = () => {
 
   const handleSendOffer = async () => {
     if (!search || !user) return;
+    if (!offersGate.allowed) {
+      setShowOffersLimitDialog(true);
+      return;
+    }
     setSendingOffer(true);
 
     await supabase.rpc('increment_offer_count', { p_search_id: search.id });
@@ -280,6 +289,12 @@ const PropertySearchDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      <PlanLimitDialog
+        open={showOffersLimitDialog}
+        onOpenChange={setShowOffersLimitDialog}
+        description={offersGate.reason ?? 'Faça upgrade do seu plano para enviar mais ofertas neste mês.'}
+      />
     </Layout>
   );
 };

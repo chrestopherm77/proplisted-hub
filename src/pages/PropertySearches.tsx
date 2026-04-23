@@ -1105,6 +1105,12 @@ const PropertySearches = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlanLimitDialog
+        open={showOffersLimitDialog}
+        onOpenChange={setShowOffersLimitDialog}
+        description={offersGate.reason ?? 'Faça upgrade do seu plano para enviar mais ofertas de parceria neste mês.'}
+      />
     </Layout>
   );
 };
