@@ -14,6 +14,7 @@ export default function Planos() {
   const { toast } = useToast();
   const [plans, setPlans] = useState<PlanCardData[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [activePlanPrice, setActivePlanPrice] = useState<number>(0);
   const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
   const [pendingInvoiceUrl, setPendingInvoiceUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ export default function Planos() {
           .order('display_order', { ascending: true }),
         supabase
           .from('user_subscriptions')
-          .select('plan_id, status, invoice_url, created_at')
+          .select('plan_id, status, invoice_url, created_at, plan:subscription_plans(price)')
           .eq('user_id', user!.id)
           .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
           .order('created_at', { ascending: false }),
@@ -63,6 +64,7 @@ export default function Planos() {
       const active = subs.find((s) => s.status === 'ACTIVE' || s.status === 'OVERDUE');
       const pending = subs.find((s) => s.status === 'PENDING');
       setActivePlanId(active?.plan_id ?? null);
+      setActivePlanPrice(active ? Number(active.plan?.price ?? 0) : 0);
       setPendingPlanId(pending?.plan_id ?? null);
       setPendingInvoiceUrl(pending?.invoice_url ?? null);
     } catch (err: any) {
@@ -105,6 +107,36 @@ export default function Planos() {
     );
   }
 
+  // Calcula motivo de bloqueio para cada plano
+  const activeIsPaid = activePlanPrice > 0;
+  const hasPendingPaid = !!pendingPlanId && pendingInvoiceUrl !== null;
+
+  const getDisabledReason = (p: PlanCardData): string | null => {
+    if (activePlanId === p.id) return null; // o "Plano Atual" cuida disso
+    const isFree = Number(p.price) === 0;
+
+    // Se o usuário está em plano grátis e clica em outro grátis: bloqueia
+    if (isFree && !activeIsPaid && activePlanId && activePlanId !== p.id) {
+      return 'Você já está em um plano grátis. Aguarde o término do ciclo para trocar.';
+    }
+    // Se há PENDING pago, bloqueia ativação de qualquer grátis
+    if (isFree && hasPendingPaid) {
+      return 'Conclua ou cancele a assinatura pendente antes de ativar um plano grátis.';
+    }
+    // Se há PENDING para outro plano pago, bloqueia este pago também
+    if (!isFree && hasPendingPaid && pendingPlanId !== p.id) {
+      return 'Você tem uma assinatura pendente. Conclua ou cancele para escolher outro plano.';
+    }
+    return null;
+  };
+
+  const isDowngradePlan = (p: PlanCardData): boolean => {
+    if (!activeIsPaid) return false;
+    if (activePlanId === p.id) return false;
+    if (Number(p.price) === 0) return true;
+    return Number(p.price) < activePlanPrice;
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -113,6 +145,12 @@ export default function Planos() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Mais créditos, mais funcionalidades, mais resultado. Cancele quando quiser.
           </p>
+          {activeIsPaid && (
+            <p className="text-xs text-muted-foreground mt-3 max-w-xl mx-auto">
+              Você está em um plano pago. Trocas de plano são <strong>agendadas</strong> para a próxima cobrança — você
+              não será cobrado duas vezes nem perderá os créditos atuais.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -124,6 +162,8 @@ export default function Planos() {
               isPopular={plan.slug === 'performance'}
               loading={submittingPlanId === plan.id}
               pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
+              disabledReason={getDisabledReason(plan)}
+              isDowngrade={isDowngradePlan(plan)}
               onSelect={handleSelect}
             />
           ))}
