@@ -173,6 +173,9 @@ const PropertySearches = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { can: canResource } = useSubscriptionLimits();
+  const offersGate = canResource('partnership_offers');
+  const [showOffersLimitDialog, setShowOffersLimitDialog] = useState(false);
   const [searches, setSearches] = useState<PropertySearch[]>([]);
   const [loading, setLoading] = useState(true);
   const [textFilter, setTextFilter] = useState('');
