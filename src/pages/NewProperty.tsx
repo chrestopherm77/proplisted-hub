@@ -17,7 +17,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PropertyPhotosUpload } from '@/components/portal/PropertyPhotosUpload';
-import { AmenitiesPicker } from '@/components/portal/AmenitiesPicker';
+import { AmenitiesPicker, type CondoAmenitiesValue } from '@/components/portal/AmenitiesPicker';
+import { PropertyFeaturesPicker, type PropertyFeaturesValue } from '@/components/portal/PropertyFeaturesPicker';
 import { geocodeAndSaveProperty } from '@/lib/geocodeProperty';
 import {
   PROPERTY_TYPES,
@@ -57,7 +58,8 @@ const NewProperty = () => {
   const [priceRent, setPriceRent] = useState('');
   const [condoFee, setCondoFee] = useState('');
   const [iptu, setIptu] = useState('');
-  const [amenities, setAmenities] = useState<string[]>([]);
+  const [condoAmenities, setCondoAmenities] = useState<CondoAmenitiesValue>({});
+  const [propertyFeatures, setPropertyFeatures] = useState<PropertyFeaturesValue>({});
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [acceptAffiliation, setAcceptAffiliation] = useState(true);
 
@@ -197,7 +199,7 @@ const NewProperty = () => {
       price_rent: parseCurrencyInput(priceRent),
       condo_fee: parseCurrencyInput(condoFee),
       iptu: parseCurrencyInput(iptu),
-      amenities,
+      amenities: { condo: condoAmenities, property: propertyFeatures },
       additional_info: additionalInfo || null,
       photos: photos as any,
       accept_affiliation: acceptAffiliation,
@@ -486,9 +488,16 @@ const NewProperty = () => {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-lg">Comodidades</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Comodidades do Condomínio</CardTitle></CardHeader>
             <CardContent>
-              <AmenitiesPicker value={amenities} onChange={setAmenities} />
+              <AmenitiesPicker value={condoAmenities} onChange={setCondoAmenities} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Características do Imóvel</CardTitle></CardHeader>
+            <CardContent>
+              <PropertyFeaturesPicker value={propertyFeatures} onChange={setPropertyFeatures} />
             </CardContent>
           </Card>
 
