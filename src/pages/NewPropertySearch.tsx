@@ -98,11 +98,10 @@ const NewPropertySearch = () => {
   const [observation, setObservation] = useState('');
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) { navigate('/auth'); return; }
-      if (isAdmin === false) { navigate('/'); return; }
+    if (!authLoading && !user) {
+      navigate('/auth');
     }
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleStateChange = (uf: string) => {
     setState(uf);
