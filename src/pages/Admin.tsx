@@ -16,6 +16,7 @@ import { AccessHistory } from '@/components/admin/AccessHistory';
 import { PartnersManagement } from '@/components/admin/PartnersManagement';
 import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManagement';
 import { PendingPaymentsManagement } from '@/components/admin/PendingPaymentsManagement';
+import { SubscriptionsManagement } from '@/components/admin/SubscriptionsManagement';
 
 export default function Admin() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -63,11 +64,12 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-11 mb-6 md:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-12 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
             <TabsTrigger value="purchases">Compras (Créditos)</TabsTrigger>
             <TabsTrigger value="lead-purchases">Compra de Leads</TabsTrigger>
+            <TabsTrigger value="subscriptions">Assinaturas</TabsTrigger>
             <TabsTrigger value="pending">Pendentes</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="access">Acessos</TabsTrigger>
@@ -91,6 +93,10 @@ export default function Admin() {
 
           <TabsContent value="lead-purchases">
             <LeadPurchasesOverview />
+          </TabsContent>
+
+          <TabsContent value="subscriptions">
+            <SubscriptionsManagement />
           </TabsContent>
 
           <TabsContent value="pending">

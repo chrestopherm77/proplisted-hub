@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2 } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown } from 'lucide-react';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import { usePartner } from '@/contexts/PartnerContext';
 import {
@@ -148,6 +148,19 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             >
               <Calculator className="h-5 w-5" />
               <span className="font-medium">Calculadora</span>
+            </Link>
+          )}
+          {!isPartnerSite && (
+            <Link
+              to="/planos"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/planos')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Crown className="h-5 w-5" />
+              <span className="font-medium">Planos</span>
             </Link>
           )}
           {isAdmin && !isPartnerSite && (

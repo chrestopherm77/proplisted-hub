@@ -136,8 +136,9 @@ serve(async (req) => {
       console.error('Error storing webhook event:', webhookError);
     }
 
-    // Determine if this is a credit purchase based on externalReference prefix
+    // Determine type by externalReference prefix or by presence of subscription
     const isCreditPurchase = externalReference?.startsWith('credits_');
+    const isSubscription = externalReference?.startsWith('sub_') || !!payload.payment?.subscription;
 
     // Process checkout events
     if (event === 'CHECKOUT_CREATED') {
@@ -165,7 +166,9 @@ serve(async (req) => {
     // Handle direct payment events
     if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       console.log('Direct payment confirmed!');
-      if (isCreditPurchase) {
+      if (isSubscription) {
+        await processSubscriptionPayment(supabaseClient, payload, eventId);
+      } else if (isCreditPurchase) {
         await processCreditPaymentConfirmation(supabaseClient, externalReference, checkoutSession, eventId);
       } else {
         await processPaymentConfirmation(supabaseClient, paymentId, eventId, externalReference, checkoutSession);
@@ -174,11 +177,18 @@ serve(async (req) => {
 
     if (event === 'PAYMENT_OVERDUE') {
       console.log('Payment overdue');
-      if (isCreditPurchase) {
+      if (isSubscription) {
+        await updateSubscriptionStatus(supabaseClient, payload, 'OVERDUE');
+      } else if (isCreditPurchase) {
         await updateCreditPurchaseStatus(supabaseClient, externalReference, checkoutSession, 'OVERDUE');
       } else {
         await updatePurchaseStatus(supabaseClient, paymentId, 'OVERDUE', externalReference, checkoutSession);
       }
+    }
+
+    if (event === 'SUBSCRIPTION_DELETED' || event === 'SUBSCRIPTION_CANCELED') {
+      console.log('Subscription deleted/canceled');
+      await markSubscriptionCanceled(supabaseClient, payload);
     }
 
     console.log('=== Webhook processed successfully ===');
@@ -566,4 +576,142 @@ async function updateCreditPurchaseStatus(
   }
 
   console.log('✅ Credit purchase status updated to', status);
+}
+
+// =========================================================
+// SUBSCRIPTION HANDLERS
+// =========================================================
+
+async function processSubscriptionPayment(supabaseClient: any, payload: any, eventId: string) {
+  const payment = payload.payment;
+  const asaasSubscriptionId = payment?.subscription;
+  const asaasPaymentId = payment?.id;
+  const externalReference = payment?.externalReference;
+
+  console.log('Processing subscription payment:', { asaasSubscriptionId, asaasPaymentId, externalReference });
+
+  if (!asaasSubscriptionId && !externalReference) {
+    console.warn('⚠️ Subscription payment without subscription id or externalReference');
+    return;
+  }
+
+  // Idempotency: skip if this asaas_payment_id already saved as PAID
+  if (asaasPaymentId) {
+    const { data: existing } = await supabaseClient
+      .from('subscription_payments')
+      .select('id, status')
+      .eq('asaas_payment_id', asaasPaymentId)
+      .maybeSingle();
+    if (existing && (existing.status === 'PAID' || existing.status === 'CONFIRMED')) {
+      console.log('⏭️ Subscription payment already processed:', asaasPaymentId);
+      await supabaseClient
+        .from('asaas_webhook_events')
+        .update({ processed: true, processed_at: new Date().toISOString() })
+        .eq('asaas_event_id', eventId);
+      return;
+    }
+  }
+
+  // Locate user_subscription
+  let sub: any = null;
+  if (asaasSubscriptionId) {
+    const { data } = await supabaseClient
+      .from('user_subscriptions')
+      .select('*, plan:subscription_plans(*)')
+      .eq('asaas_subscription_id', asaasSubscriptionId)
+      .maybeSingle();
+    sub = data;
+  }
+
+  if (!sub) {
+    console.warn('⚠️ user_subscription not found for', asaasSubscriptionId);
+    return;
+  }
+
+  // Insert subscription_payment (unique by asaas_payment_id)
+  const { error: payInsertError } = await supabaseClient
+    .from('subscription_payments')
+    .insert({
+      subscription_id: sub.id,
+      user_id: sub.user_id,
+      asaas_payment_id: asaasPaymentId,
+      amount: Number(payment.value ?? sub.plan.price),
+      status: 'PAID',
+      paid_at: payment.paymentDate ? new Date(payment.paymentDate).toISOString() : new Date().toISOString(),
+      due_date: payment.dueDate ?? null,
+      payment_method: payment.billingType ?? null,
+      invoice_url: payment.invoiceUrl ?? null,
+    });
+
+  if (payInsertError && !String(payInsertError.message ?? '').includes('duplicate')) {
+    console.error('Error inserting subscription_payment:', payInsertError);
+  }
+
+  // Update user_subscription period and status
+  const now = new Date();
+  const periodEnd = new Date(now);
+  periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+  await supabaseClient
+    .from('user_subscriptions')
+    .update({
+      status: 'ACTIVE',
+      current_period_start: now.toISOString(),
+      current_period_end: periodEnd.toISOString(),
+      next_due_date: payment.nextDueDate ?? null,
+      invoice_url: payment.invoiceUrl ?? sub.invoice_url,
+    })
+    .eq('id', sub.id);
+
+  // Credit monthly credits to user
+  const monthly = sub.plan?.monthly_credits ?? 0;
+  if (monthly > 0) {
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('credit_balance')
+      .eq('id', sub.user_id)
+      .single();
+    const newBalance = (profile?.credit_balance ?? 0) + monthly;
+    await supabaseClient
+      .from('profiles')
+      .update({ credit_balance: newBalance })
+      .eq('id', sub.user_id);
+
+    await supabaseClient
+      .from('credit_transactions')
+      .insert({
+        user_id: sub.user_id,
+        credits_used: -monthly, // negative = credits added (matches existing convention)
+        type: 'SUBSCRIPTION_RENEWAL',
+      });
+
+    console.log(`✅ Credited ${monthly} subscription credits to user ${sub.user_id}. New balance: ${newBalance}`);
+  }
+
+  await supabaseClient
+    .from('asaas_webhook_events')
+    .update({ processed: true, processed_at: new Date().toISOString() })
+    .eq('asaas_event_id', eventId);
+
+  console.log('✅ Subscription payment processed');
+}
+
+async function updateSubscriptionStatus(supabaseClient: any, payload: any, status: string) {
+  const asaasSubscriptionId = payload.payment?.subscription;
+  if (!asaasSubscriptionId) return;
+  await supabaseClient
+    .from('user_subscriptions')
+    .update({ status })
+    .eq('asaas_subscription_id', asaasSubscriptionId);
+  console.log(`✅ Subscription marked ${status}:`, asaasSubscriptionId);
+}
+
+async function markSubscriptionCanceled(supabaseClient: any, payload: any) {
+  const asaasSubscriptionId = payload.subscription?.id || payload.payment?.subscription;
+  if (!asaasSubscriptionId) return;
+  await supabaseClient
+    .from('user_subscriptions')
+    .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
+    .eq('asaas_subscription_id', asaasSubscriptionId);
+  console.log('✅ Subscription canceled:', asaasSubscriptionId);
 }

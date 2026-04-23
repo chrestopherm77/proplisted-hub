@@ -19,6 +19,7 @@ import {
   Calculator,
   Sparkles,
   Building2,
+  Crown,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -93,6 +94,7 @@ export function AppSidebar() {
     { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: isAdmin },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },
     { title: 'Criativos', url: '/criativos', icon: Sparkles, show: isAdmin },
+    { title: 'Planos', url: '/planos', icon: Crown, show: !isPartnerSite },
     { title: 'Admin', url: '/admin', icon: LayoutDashboard, show: isAdmin && !isPartnerSite },
   ];
 
