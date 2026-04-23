@@ -1,109 +1,52 @@
 
 
-## Limites por plano (Etapa 2) + ajustes
+## Correções: admin do usuário + UI mostrando plano não pago como ativo
 
-### 1. Custo de criativo: 10 créditos cada
+Investiguei a conta `chresautomacao@gmail.com` (id `82390105-...`). Achei isto:
 
-A geração de criativo passa a debitar **10 créditos por imagem** (não conta no limite mensal — esses são dois gates separados):
+| Problema | Estado real |
+|---|---|
+| Role do usuário | Tem **MASTER_ADMIN** + USER (deveria ser só USER) |
+| Assinatura ESSENCIAL | Status `PENDING` (sem pagamento confirmado) |
+| Card "Minha Assinatura" | Mostra "ESSENCIAL · Aguardando pagamento" — passa a impressão de que o plano está liberado |
+| `useSubscriptionLimits` | **Já está correto**: ignora PENDING, usa fallback Conexão. Limites estão sendo aplicados de fato (1 solicitação / 5 ofertas / 3 imóveis). |
+| `NewPropertySearch.tsx` linha 103 | Bug: `if (isAdmin === false) navigate('/')` — **só admins conseguem entrar na página de criar parceria.** Quando removermos o admin desse usuário ele perderá o acesso. Hoje ele só estava entrando porque é admin. |
 
-- O usuário precisa ter ≥10 créditos disponíveis OU não ter atingido a cota do plano para gerar.
-- **Função RPC `consume_credits_for_creative(p_user_id, p_creative_id, p_amount)`** valida saldo, debita `credit_balance`, registra em `credit_transactions` (novo `type = 'CREATIVE_GENERATION'`).
-- Chamada no `generate-creative-image` antes de invocar a Gemini. Se falhar → marca criativo como `FAILED` com mensagem "Créditos insuficientes" e devolve erro para o front.
-- No card do criativo (StepResult / GenerateCreative) e na aba "Gerar criativo" mostra: "Cada criativo custa **10 créditos**. Saldo atual: X."
+### Mudanças
 
-### 2. Helper central de plano + limites
+**1. Remover MASTER_ADMIN do usuário** (operação de dados)
+- `DELETE FROM user_roles WHERE user_id = '82390105-3c7a-4b7b-b52a-bb0395ba4224' AND role = 'MASTER_ADMIN'`
+- Mantém o `USER`.
 
-**Hook `useSubscriptionLimits()`** (`src/hooks/useSubscriptionLimits.ts`):
-- Carrega assinatura ativa do usuário + features do plano + saldo de créditos.
-- Calcula uso atual:
-  - `properties_used` = `properties` ativos do usuário
-  - `creatives_used_month` = `creatives` do mês corrente (`created_at >= date_trunc('month', now())`)
-  - `partnership_requests_used` = `property_searches` ativos do usuário
-  - `partnership_offers_used_month` = `property_search_offers` do mês corrente
-- Retorna `{ plan, features, usage, can(resource): { allowed, reason, limit, used, isUnlimited } }`.
-- Sem assinatura ativa → fallback para plano `CONEXÃO` (free).
+**2. Corrigir o gate invertido em `NewPropertySearch.tsx`**
+- Linha 103: trocar `if (isAdmin === false) { navigate('/'); return; }` por simplesmente garantir que está logado. Criar parceria é função de qualquer usuário comum, não de admin.
+- Verificar `NewProperty.tsx` e `NewLaunch.tsx` pelo mesmo padrão e corrigir se houver.
 
-### 3. Aplicar bloqueios
+**3. Card "Minha Assinatura" — separar visualmente plano em uso vs. plano pendente**
+- Quando a assinatura está `PENDING`, o card hoje exibe "ESSENCIAL · Aguardando pagamento" como se fosse o plano atual. Mudar para:
+  - Bloco principal: **"Plano atual: CONEXÃO"** (o que está realmente liberado) com badge verde "Ativo".
+  - Bloco secundário/alerta: "Você tem uma assinatura **ESSENCIAL** aguardando pagamento" + botão "Pagar fatura" (link Asaas) + "Cancelar tentativa".
+  - Os indicadores de uso (`Imóveis no portal`, `Ofertas`, etc.) continuam refletindo o plano CONEXÃO até o pagamento confirmar.
+- Isso elimina a confusão de "achei que já estava no Essencial".
 
-**Imóveis no portal** — `src/pages/NewProperty.tsx`:
-- No `useEffect` inicial, checa `can('portal_properties')`. Se atingiu o limite, mostra modal/tela "Limite de imóveis atingido — faça upgrade" com CTA para `/planos`. Bloqueia o botão Salvar.
+**4. Página `/planos` — botão correto para plano com pagamento pendente**
+- Hoje mostra "Plano atual" no card do plano cuja sub está PENDING. Mudar `Planos.tsx` para considerar só `ACTIVE` como plano atual. Para PENDING, o botão do card vira **"Concluir pagamento"** apontando pro `invoice_url`. Outros planos continuam clicáveis para troca.
 
-**Solicitação de parceria (criar procura no Balcão)** — `src/pages/NewPropertySearch.tsx`:
-- Mesmo padrão: ao montar, valida `can('partnership_requests')`. Bloqueia salvar se atingido.
+**5. Polling pós-checkout (defesa em profundidade)**
+- No `MySubscriptionCard` e `Planos`, após retorno do Asaas (foco da janela), refazer `load()` para pegar o webhook que confirmou. Já existe `refresh`, só falta disparar no evento `visibilitychange` quando o usuário volta da aba do Asaas.
 
-**Envio de oferta no Balcão** — `src/pages/PropertySearches.tsx` + `PropertySearchDetail.tsx`:
-- Antes de cada `handleWhatsAppOffer` / `handleSendLink`, chama `can('partnership_offers')`. Se atingiu, toast "Limite de ofertas mensais atingido. Faça upgrade." e abre modal com CTA `/planos`.
-- Botão "Enviar Oferta" mostra tooltip com "X de Y ofertas usadas no mês" quando próximo do limite.
+### O que NÃO muda
 
-**Geração de criativo** — `src/components/criativos/GenerateCreative.tsx`:
-- Antes de chamar `handleGenerate`, valida dois gates:
-  1. `can('creatives_per_month')` — limite mensal do plano.
-  2. `credit_balance >= 10` — saldo de créditos.
-- Se algum falha, mostra dialog específico com motivo e CTA (planos ou comprar créditos).
+- Lógica de `useSubscriptionLimits` (já correta — usa só ACTIVE).
+- Webhook `asaas-webhook` (já credita certo quando paga).
+- RLS, edge functions de criação/cancelamento.
+- Plano CONEXÃO continua sendo o fallback automático.
 
-**Componente reutilizável** `src/components/plans/PlanLimitDialog.tsx`:
-- Dialog padronizado mostrando "Você atingiu o limite do plano X (Y de Y usados). Faça upgrade para continuar." + botão para `/planos`.
+### Arquivos afetados
 
-### 4. Indicadores de uso
-
-**Card "Minha Assinatura"** (`MySubscriptionCard.tsx`) ganha barras de progresso por recurso:
-- Imóveis no portal: 2/3
-- Criativos no mês: 1/1
-- Solicitações de parceria: 0/1
-- Ofertas de parceria no mês: 3/5
-- Itens com `-1` (ilimitado) mostram "Ilimitado" ao invés de barra.
-
-### 5. Ajustes solicitados nos cards de plano
-
-**ESSENCIAL** já está com `training_level: intermediate` no banco — apenas ajustar a bullet do `feature_list` se necessário (já está "Básicos e Intermediários" ✅).
-
-**ELITE** atualmente está com `training_level: basic` e bullet "Acesso a treinamentos Básicos". Trocar para:
-- `features.training_level = 'intermediate'`
-- `feature_list` substituir "Acesso a treinamentos Básicos" por "Acesso a treinamentos Básicos e Intermediários".
-
-**PERFORMANCE**: bullet permanece "Acesso a treinamentos Básicos" (sem mudança).
-
-Update via `UPDATE subscription_plans` (operação de dados, sem migration).
-
-### 6. Edge function nova: `consume_credits_for_creative` (RPC SQL)
-
-Migration cria função SECURITY DEFINER:
-```text
-input: p_user_id uuid, p_creative_id uuid, p_amount int (default 10)
-- lock profile FOR UPDATE
-- if credit_balance < amount → return {error:'Créditos insuficientes', balance}
-- decrement credit_balance
-- insert credit_transactions (type='CREATIVE_GENERATION', credits_used=amount, lead_id=null)
-- return {success:true, new_balance}
-```
-
-`generate-creative-image` chama essa RPC com service role logo após validar creative; se falhar, marca FAILED e retorna 402.
-
-### 7. Arquivos afetados
-
-**Migration**:
-- Nova função `consume_credits_for_creative`
-- `UPDATE subscription_plans` para o ELITE (training intermediário)
-
-**Backend**:
-- `supabase/functions/generate-creative-image/index.ts` — debitar créditos antes da geração
-
-**Frontend (novos)**:
-- `src/hooks/useSubscriptionLimits.ts`
-- `src/components/plans/PlanLimitDialog.tsx`
-
-**Frontend (editar)**:
-- `src/pages/NewProperty.tsx` — gate de imóveis
-- `src/pages/NewPropertySearch.tsx` — gate de solicitação de parceria
-- `src/pages/PropertySearches.tsx` + `src/pages/PropertySearchDetail.tsx` — gate de envio de oferta
-- `src/components/criativos/GenerateCreative.tsx` — gate de criativo + aviso "10 créditos"
-- `src/components/profile/MySubscriptionCard.tsx` — barras de uso
-- `src/integrations/supabase/types.ts` — auto-regen após migration
-
-### O que NÃO entra agora
-
-- **Hot Seat** (`hot_seat_per_month`) — não existe módulo de hot seat ainda. Limite fica gravado no plano para uso futuro.
-- **Leads inclusos** (`leads_included`) — atualmente lead é comprado avulso com créditos. A entrega de "2 leads grátis no Performance / 5 no Elite" exige fluxo de seleção próprio, fica para próxima etapa.
-- **Treinamentos** (`training_level`) — não há módulo de cursos no app ainda; gating apenas exibido no card.
-- **Pró-rata** em mudança de plano (já documentado na Etapa 1).
+- **Migration de dados**: `DELETE` do role MASTER_ADMIN do usuário citado.
+- `src/pages/NewPropertySearch.tsx` — corrigir guard invertido.
+- `src/pages/NewProperty.tsx` e `src/pages/NewLaunch.tsx` — verificar/corrigir guard se igual.
+- `src/components/profile/MySubscriptionCard.tsx` — separar "plano em uso" de "tentativa pendente".
+- `src/pages/Planos.tsx` — só considerar ACTIVE como plano atual + botão "Concluir pagamento" para PENDING.
 
