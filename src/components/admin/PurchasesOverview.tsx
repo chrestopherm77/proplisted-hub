@@ -5,25 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 
-interface Purchase {
+interface CreditPurchase {
   id: string;
   amount: number;
+  credits: number;
   status: string;
-  purchased_at: string;
+  created_at: string;
+  confirmed_at: string | null;
   payment_method: string | null;
-  coupon_code: string | null;
-  lead: {
-    name: string;
-    description: string;
-  };
-  user: {
-    name: string;
-    email: string;
-  };
+  package_name: string;
+  user_name: string;
 }
 
 export function PurchasesOverview() {
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchases, setPurchases] = useState<CreditPurchase[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -33,29 +28,26 @@ export function PurchasesOverview() {
 
   const fetchPurchases = async () => {
     try {
-      // First fetch purchases with leads
       const { data: purchasesData, error: purchasesError } = await supabase
-        .from('purchases')
+        .from('credit_purchases')
         .select(`
           id,
           amount,
+          credits,
           status,
-          purchased_at,
-          user_id,
+          created_at,
+          confirmed_at,
           payment_method,
-          coupon_code,
-          leads (
-            name,
-            description
-          )
+          user_id,
+          package_id,
+          credit_packages ( name )
         `)
-        .order('purchased_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (purchasesError) throw purchasesError;
 
-      // Get unique user_ids and fetch profiles
       const userIds = [...new Set(purchasesData?.map(p => p.user_id) || [])];
-      
+
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, name')
@@ -63,29 +55,26 @@ export function PurchasesOverview() {
 
       if (profilesError) throw profilesError;
 
-      // Create a map of user_id to profile
       const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
-      const formattedData = purchasesData?.map((purchase: any) => ({
-        id: purchase.id,
-        amount: purchase.amount,
-        status: purchase.status,
-        purchased_at: purchase.purchased_at,
-        payment_method: purchase.payment_method,
-        coupon_code: purchase.coupon_code,
-        lead: purchase.leads,
-        user: {
-          name: profilesMap.get(purchase.user_id)?.name || 'Usuário desconhecido',
-          email: '',
-        },
-      })) || [];
+      const formattedData: CreditPurchase[] = (purchasesData || []).map((p: any) => ({
+        id: p.id,
+        amount: Number(p.amount),
+        credits: p.credits,
+        status: p.status,
+        created_at: p.created_at,
+        confirmed_at: p.confirmed_at,
+        payment_method: p.payment_method,
+        package_name: p.credit_packages?.name || 'Pacote removido',
+        user_name: profilesMap.get(p.user_id)?.name || 'Usuário desconhecido',
+      }));
 
       setPurchases(formattedData);
     } catch (error) {
-      console.error('Error fetching purchases:', error);
+      console.error('Error fetching credit purchases:', error);
       toast({
         title: 'Erro ao carregar compras',
-        description: 'Não foi possível carregar as compras',
+        description: 'Não foi possível carregar as compras de créditos',
         variant: 'destructive',
       });
     } finally {
@@ -117,38 +106,16 @@ export function PurchasesOverview() {
       EXPIRED: { variant: 'destructive', label: 'Expirado' },
       FAILED: { variant: 'destructive', label: 'Falhou' },
     };
-
     const config = statusMap[status] || { variant: 'secondary', label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getPaymentBadge = (purchase: Purchase) => {
-    const method = purchase.payment_method;
-    const couponCode = purchase.coupon_code;
-    const inferredMethod = method || (purchase.amount === 0 ? 'VOUCHER' : null);
-
-    if (!inferredMethod && !couponCode) {
-      return <span className="text-muted-foreground">—</span>;
-    }
-
-    return (
-      <div className="flex flex-col gap-0.5">
-        {inferredMethod === 'VOUCHER' && (
-          <Badge className="bg-purple-600 text-white hover:bg-purple-700">Voucher</Badge>
-        )}
-        {inferredMethod === 'PIX' && (
-          <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">PIX</Badge>
-        )}
-        {inferredMethod === 'CREDIT_CARD' && (
-          <Badge className="bg-blue-600 text-white hover:bg-blue-700">Cartão</Badge>
-        )}
-        {couponCode && (
-          <span className="text-xs text-muted-foreground">
-            {inferredMethod === 'VOUCHER' ? '' : 'Cupom: '}{couponCode}
-          </span>
-        )}
-      </div>
-    );
+  const getPaymentBadge = (method: string | null) => {
+    if (!method) return <span className="text-muted-foreground">—</span>;
+    if (method === 'PIX') return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">PIX</Badge>;
+    if (method === 'CREDIT_CARD') return <Badge className="bg-blue-600 text-white hover:bg-blue-700">Cartão</Badge>;
+    if (method === 'BOLETO') return <Badge className="bg-orange-600 text-white hover:bg-orange-700">Boleto</Badge>;
+    return <Badge variant="secondary">{method}</Badge>;
   };
 
   if (loading) {
@@ -158,7 +125,7 @@ export function PurchasesOverview() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Histórico de Compras</CardTitle>
+        <CardTitle className="text-lg md:text-xl">Compras de Créditos</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
@@ -167,7 +134,8 @@ export function PurchasesOverview() {
               <TableRow>
                 <TableHead className="whitespace-nowrap">Data</TableHead>
                 <TableHead className="whitespace-nowrap">Cliente</TableHead>
-                <TableHead className="whitespace-nowrap">Lead</TableHead>
+                <TableHead className="whitespace-nowrap">Pacote</TableHead>
+                <TableHead className="whitespace-nowrap">Créditos</TableHead>
                 <TableHead className="whitespace-nowrap">Valor</TableHead>
                 <TableHead className="whitespace-nowrap">Forma</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
@@ -177,19 +145,13 @@ export function PurchasesOverview() {
               {purchases.map((purchase) => (
                 <TableRow key={purchase.id}>
                   <TableCell className="font-medium whitespace-nowrap text-sm">
-                    {formatDate(purchase.purchased_at)}
+                    {formatDate(purchase.confirmed_at || purchase.created_at)}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm">{purchase.user.name}</TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px] md:max-w-xs">
-                      <p className="font-medium text-sm truncate">{purchase.lead?.name || 'Lead removido'}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {purchase.lead?.description || '-'}
-                      </p>
-                    </div>
-                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">{purchase.user_name}</TableCell>
+                  <TableCell className="text-sm">{purchase.package_name}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm font-medium">{purchase.credits}</TableCell>
                   <TableCell className="font-semibold whitespace-nowrap text-sm">{formatPrice(purchase.amount)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{getPaymentBadge(purchase)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getPaymentBadge(purchase.payment_method)}</TableCell>
                   <TableCell className="whitespace-nowrap">{getStatusBadge(purchase.status)}</TableCell>
                 </TableRow>
               ))}
@@ -199,7 +161,7 @@ export function PurchasesOverview() {
 
         {purchases.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
-            Nenhuma compra realizada ainda
+            Nenhuma compra de créditos realizada ainda
           </div>
         )}
       </CardContent>

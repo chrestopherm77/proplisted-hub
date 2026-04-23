@@ -28,17 +28,17 @@ export function DashboardStats() {
 
   const fetchStats = async () => {
     try {
-      // Total Revenue
-      const { data: purchases } = await supabase
-        .from('purchases')
+      // Total Revenue (compras de créditos = dinheiro real)
+      const { data: creditPurchases } = await supabase
+        .from('credit_purchases')
         .select('amount')
         .eq('status', 'PAID');
       
-      const totalRevenue = purchases?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      const totalRevenue = creditPurchases?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
-      // Total Purchases
+      // Total Purchases (quantidade de compras de créditos pagas)
       const { count: purchaseCount } = await supabase
-        .from('purchases')
+        .from('credit_purchases')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'PAID');
 

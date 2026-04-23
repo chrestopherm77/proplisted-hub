@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeadsManagement } from '@/components/admin/LeadsManagement';
 import { PurchasesOverview } from '@/components/admin/PurchasesOverview';
+import { LeadPurchasesOverview } from '@/components/admin/LeadPurchasesOverview';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { UsersManagement } from '@/components/admin/UsersManagement';
 import { LeadTracking } from '@/components/admin/LeadTracking';
@@ -62,10 +63,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-10 mb-6 md:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-11 mb-6 md:mb-8 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
-            <TabsTrigger value="purchases">Compras</TabsTrigger>
+            <TabsTrigger value="purchases">Compras (Créditos)</TabsTrigger>
+            <TabsTrigger value="lead-purchases">Compra de Leads</TabsTrigger>
             <TabsTrigger value="pending">Pendentes</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="access">Acessos</TabsTrigger>
@@ -85,6 +87,10 @@ export default function Admin() {
 
           <TabsContent value="purchases">
             <PurchasesOverview />
+          </TabsContent>
+
+          <TabsContent value="lead-purchases">
+            <LeadPurchasesOverview />
           </TabsContent>
 
           <TabsContent value="pending">

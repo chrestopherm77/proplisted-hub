@@ -34,7 +34,7 @@ export function SalesByStatusChart() {
   const fetchStatusData = async () => {
     try {
       const { data: purchases, error } = await supabase
-        .from('purchases')
+        .from('credit_purchases')
         .select('status');
 
       if (error) throw error;
