@@ -19,22 +19,23 @@ export function RevenueChart() {
 
   const fetchChartData = async () => {
     try {
-      // Buscar compras dos últimos 30 dias
+      // Buscar compras de créditos dos últimos 30 dias
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data: purchases, error } = await supabase
-        .from('purchases')
-        .select('amount, purchased_at, status')
+        .from('credit_purchases')
+        .select('amount, confirmed_at, status')
         .eq('status', 'PAID')
-        .gte('purchased_at', thirtyDaysAgo.toISOString())
-        .order('purchased_at', { ascending: true });
+        .gte('confirmed_at', thirtyDaysAgo.toISOString())
+        .order('confirmed_at', { ascending: true });
 
       if (error) throw error;
 
       // Agrupar por data
       const groupedData = purchases?.reduce((acc: Record<string, { receita: number; vendas: number }>, purchase) => {
-        const date = new Date(purchase.purchased_at || '').toLocaleDateString('pt-BR', {
+        if (!purchase.confirmed_at) return acc;
+        const date = new Date(purchase.confirmed_at).toLocaleDateString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
         });
