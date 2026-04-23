@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search, Download, Coins, Crown } from 'lucide-react';
+import { Search, Download, Coins, Crown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AdjustCreditsDialog } from './AdjustCreditsDialog';
@@ -58,6 +58,9 @@ export function UsersManagement() {
 
   useEffect(() => {
     fetchData();
+    const onFocus = () => fetchData();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const fetchData = async () => {
@@ -221,6 +224,10 @@ export function UsersManagement() {
             ))}
           </SelectContent>
         </Select>
+        <Button size="sm" variant="outline" onClick={() => fetchData()} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
         <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Exportar CSV
