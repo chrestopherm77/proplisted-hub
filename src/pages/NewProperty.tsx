@@ -259,7 +259,7 @@ const NewProperty = () => {
             <CardHeader><CardTitle className="text-lg">Fotos</CardTitle></CardHeader>
             <CardContent>
               {user && (
-                <PropertyPhotosUpload userId={user.id} photos={photos} onChange={setPhotos} max={20} />
+                <PropertyPhotosUpload userId={user.id} photos={photos} onChange={setPhotos} max={30} />
               )}
             </CardContent>
           </Card>
@@ -476,11 +476,11 @@ const NewProperty = () => {
                   </div>
                 )}
                 <div>
-                  <Label>Condomínio</Label>
+                  <Label>Condomínio (Mensal)</Label>
                   <Input value={condoFee} onChange={(e) => setCondoFee(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
                 </div>
                 <div>
-                  <Label>IPTU</Label>
+                  <Label>IPTU (Anual)</Label>
                   <Input value={iptu} onChange={(e) => setIptu(formatCurrencyInput(e.target.value))} placeholder="R$ 0,00" />
                 </div>
               </div>

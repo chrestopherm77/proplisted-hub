@@ -142,7 +142,7 @@ const PortalImoveis = () => {
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1100]">
               <SelectItem value="ALL">Todos os tipos</SelectItem>
               {PROPERTY_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -151,7 +151,7 @@ const PortalImoveis = () => {
           </Select>
           <Select value={opFilter} onValueChange={setOpFilter}>
             <SelectTrigger><SelectValue placeholder="Operação" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1100]">
               <SelectItem value="ALL">Todas operações</SelectItem>
               {OPERATION_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>

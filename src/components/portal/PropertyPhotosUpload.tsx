@@ -12,7 +12,7 @@ interface PropertyPhotosUploadProps {
   max?: number;
 }
 
-export function PropertyPhotosUpload({ userId, photos, onChange, max = 20 }: PropertyPhotosUploadProps) {
+export function PropertyPhotosUpload({ userId, photos, onChange, max = 30 }: PropertyPhotosUploadProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
