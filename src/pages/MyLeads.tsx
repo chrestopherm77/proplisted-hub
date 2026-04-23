@@ -272,6 +272,15 @@ export default function MyLeads() {
         userName={userName}
         userPhone={userPhone}
       />
+
+      {user && (
+        <NewContactDialog
+          open={newContactOpen}
+          onOpenChange={setNewContactOpen}
+          userId={user.id}
+          onCreated={fetchAll}
+        />
+      )}
     </Layout>
   );
 }
