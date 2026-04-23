@@ -87,7 +87,14 @@ export default function Planos() {
         toast({ title: 'Plano ativado!', description: `${plan.monthly_credits} créditos foram adicionados.` });
         await loadData();
       } catch (err: any) {
-        toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+        const msg = String(err?.message ?? '');
+        const isAlreadyOnPlan = /j[áa]\s+est[áa]\s+no\s+plano/i.test(msg) || /already\s+(on|in)\s+plan/i.test(msg);
+        if (isAlreadyOnPlan) {
+          toast({ title: 'Plano já ativo', description: msg });
+          await loadData();
+        } else {
+          toast({ title: 'Erro', description: msg, variant: 'destructive' });
+        }
       } finally {
         setSubmittingPlanId(null);
       }
