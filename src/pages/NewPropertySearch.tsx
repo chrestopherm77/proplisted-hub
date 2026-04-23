@@ -15,9 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Home, Building2, Store, Landmark, TreePine, Building } from 'lucide-react';
+import { ArrowLeft, Home, Building2, Store, Landmark, TreePine, Building, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 type PropertyType = 'CASA' | 'APARTAMENTO' | 'SALA_COMERCIAL' | 'LOTE' | 'RURAL' | 'PREDIO_COMERCIAL';
 
@@ -71,6 +75,9 @@ const NewPropertySearch = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
+  const { can, plan, loading: limitsLoading } = useSubscriptionLimits();
+  const requestGate = can('partnership_requests');
+  const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   const [selected, setSelected] = useState<TypeOption | null>(null);
   const [saving, setSaving] = useState(false);
@@ -130,6 +137,10 @@ const NewPropertySearch = () => {
 
   const handleSubmit = async () => {
     if (!selected || !user) return;
+    if (!requestGate.allowed) {
+      setShowLimitDialog(true);
+      return;
+    }
     if (!city.trim()) {
       toast({ title: 'Campo obrigatório', description: 'Informe a cidade.', variant: 'destructive' });
       return;
