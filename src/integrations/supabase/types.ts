@@ -1758,6 +1758,10 @@ export type Database = {
     }
     Functions: {
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
+      consume_credits_for_creative: {
+        Args: { p_amount?: number; p_creative_id: string; p_user_id: string }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
