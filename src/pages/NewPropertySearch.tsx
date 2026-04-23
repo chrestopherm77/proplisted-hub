@@ -252,6 +252,32 @@ const NewPropertySearch = () => {
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Interesse do Comprador</h1>
           <p className="text-muted-foreground">Selecione o tipo de imóvel que você procura:</p>
+
+          {!limitsLoading && plan && (
+            <Alert className={cn(!requestGate.allowed && 'border-destructive/50 bg-destructive/5')}>
+              <Crown className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+                <span>
+                  Plano <strong>{plan.name}</strong>:{' '}
+                  {requestGate.isUnlimited
+                    ? `${requestGate.used} solicitações ativas (ilimitado)`
+                    : `${requestGate.used} de ${requestGate.limit} solicitações ativas`}
+                </span>
+                {!requestGate.allowed && (
+                  <Button type="button" size="sm" variant="outline" onClick={() => navigate('/planos')}>
+                    Fazer upgrade
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <PlanLimitDialog
+            open={showLimitDialog}
+            onOpenChange={setShowLimitDialog}
+            description={requestGate.reason ?? 'Faça upgrade do seu plano para criar mais solicitações de parceria.'}
+          />
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {typeOptions.map((opt, i) => (
               <Card
