@@ -40,27 +40,18 @@ const sections = [
 ];
 
 const NossaIA = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (loading || isAdmin === null) return;
+    if (loading) return;
     if (!user) {
       navigate('/auth');
-      return;
     }
-    if (isAdmin === false) {
-      toast({
-        title: 'Acesso Negado',
-        description: 'Você não tem permissão para acessar esta área',
-        variant: 'destructive',
-      });
-      navigate('/leads');
-    }
-  }, [user, loading, isAdmin, navigate, toast]);
+  }, [user, loading, navigate]);
 
-  if (loading || isAdmin !== true) {
+  if (loading || !user) {
     return (
       <Layout>
         <div className="text-center py-12">Carregando...</div>

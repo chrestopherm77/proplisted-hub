@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { buildWaLink } from '@/lib/whatsapp';
 
 interface Launch {
   id: string;
@@ -240,12 +241,16 @@ const Launches = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            {(isAdmin || isConstrutora) && (
-              <Button onClick={() => navigate('/launches/new')} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Novo Lançamento
-              </Button>
-            )}
+            <Button
+              onClick={() => {
+                const url = buildWaLink('5516992456258', 'Vim do site da leadbay e quero criar um novo lançamento');
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Lançamento
+            </Button>
           </div>
         </div>
 
