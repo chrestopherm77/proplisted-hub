@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search, Download, Coins } from 'lucide-react';
+import { Search, Download, Coins, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AdjustCreditsDialog } from './AdjustCreditsDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Profile {
   id: string;
@@ -32,6 +33,12 @@ interface Profile {
   credit_balance: number;
 }
 
+interface PlanInfo {
+  name: string;
+  slug: string;
+  status: string;
+}
+
 const professionLabels: Record<string, string> = {
   CORRETOR: 'Corretor',
   ARQUITETO: 'Arquiteto',
@@ -41,8 +48,10 @@ const professionLabels: Record<string, string> = {
 export function UsersManagement() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [emailMap, setEmailMap] = useState<Record<string, string>>({});
+  const [planMap, setPlanMap] = useState<Record<string, PlanInfo>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [planFilter, setPlanFilter] = useState<string>('all');
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [adjustingProfile, setAdjustingProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
@@ -53,13 +62,18 @@ export function UsersManagement() {
 
   const fetchData = async () => {
     setLoading(true);
-    
-    const [profilesRes, emailsRes] = await Promise.all([
+
+    const [profilesRes, emailsRes, subsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, name, phone, person_type, cpf, cnpj, company_name, profession, creci, creci_uf, cau, cau_uf, crea, crea_uf, address_uf, address_city, address_neighborhood, is_active, created_at, credit_balance')
         .order('created_at', { ascending: false }),
       supabase.functions.invoke('list-users'),
+      supabase
+        .from('user_subscriptions')
+        .select('user_id, status, created_at, plan:subscription_plans(name, slug, price)')
+        .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
+        .order('created_at', { ascending: false }),
     ]);
 
     if (profilesRes.data) {
@@ -72,6 +86,21 @@ export function UsersManagement() {
         map[u.id] = u.email;
       }
       setEmailMap(map);
+    }
+
+    if (subsRes.data) {
+      const map: Record<string, PlanInfo> = {};
+      // Prioriza ACTIVE > OVERDUE > PENDING. Como ordenado por created_at DESC,
+      // só guardamos o ACTIVE/OVERDUE; PENDING só se nada melhor existir.
+      for (const s of subsRes.data as any[]) {
+        const planName = s.plan?.name ?? '—';
+        const planSlug = s.plan?.slug ?? '';
+        const existing = map[s.user_id];
+        if (!existing || (existing.status === 'PENDING' && s.status !== 'PENDING')) {
+          map[s.user_id] = { name: planName, slug: planSlug, status: s.status };
+        }
+      }
+      setPlanMap(map);
     }
 
     setLoading(false);
@@ -102,32 +131,58 @@ export function UsersManagement() {
     return '-';
   };
 
+  // Lista única de planos presentes (para o select)
+  const planOptions = useMemo(() => {
+    const set = new Map<string, string>();
+    for (const info of Object.values(planMap)) {
+      if (info.slug) set.set(info.slug, info.name);
+    }
+    // Garante que "Sem plano" esteja como opção se houver perfis sem assinatura
+    const hasNone = profiles.some((p) => !planMap[p.id]);
+    const arr = Array.from(set.entries()).map(([slug, name]) => ({ slug, name }));
+    arr.sort((a, b) => a.name.localeCompare(b.name));
+    if (hasNone) arr.push({ slug: '__none__', name: 'Sem plano' });
+    return arr;
+  }, [planMap, profiles]);
+
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
-    return (
+    const matchesSearch =
+      !q ||
       p.name?.toLowerCase().includes(q) ||
       p.phone?.includes(q) ||
       p.company_name?.toLowerCase().includes(q) ||
-      emailMap[p.id]?.toLowerCase().includes(q)
-    );
+      emailMap[p.id]?.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (planFilter === 'all') return true;
+    const plan = planMap[p.id];
+    if (planFilter === '__none__') return !plan;
+    return plan?.slug === planFilter;
   });
 
   const exportCsv = () => {
-    const headers = ['Nome', 'E-mail', 'Telefone', 'Tipo', 'CPF/CNPJ', 'Profissão', 'Registro', 'UF', 'Cidade', 'Bairro', 'Status', 'Data Cadastro'];
-    const rows = filtered.map((p) => [
-      p.company_name || p.name,
-      emailMap[p.id] || '',
-      p.phone,
-      p.person_type === 'PJ' ? 'PJ' : 'PF',
-      p.person_type === 'PJ' ? (p.cnpj || '') : (p.cpf || ''),
-      professionLabels[p.profession || ''] || p.profession || '',
-      getRegistration(p),
-      p.address_uf || '',
-      p.address_city || '',
-      p.address_neighborhood || '',
-      p.is_active ? 'Ativo' : 'Inativo',
-      p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
-    ]);
+    const headers = ['Nome', 'E-mail', 'Telefone', 'Tipo', 'CPF/CNPJ', 'Profissão', 'Registro', 'UF', 'Cidade', 'Bairro', 'Plano', 'Status Plano', 'Status', 'Data Cadastro'];
+    const rows = filtered.map((p) => {
+      const plan = planMap[p.id];
+      return [
+        p.company_name || p.name,
+        emailMap[p.id] || '',
+        p.phone,
+        p.person_type === 'PJ' ? 'PJ' : 'PF',
+        p.person_type === 'PJ' ? (p.cnpj || '') : (p.cpf || ''),
+        professionLabels[p.profession || ''] || p.profession || '',
+        getRegistration(p),
+        p.address_uf || '',
+        p.address_city || '',
+        p.address_neighborhood || '',
+        plan?.name || 'Sem plano',
+        plan?.status || '',
+        p.is_active ? 'Ativo' : 'Inativo',
+        p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '',
+      ];
+    });
     const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -155,6 +210,17 @@ export function UsersManagement() {
             className="pl-9"
           />
         </div>
+        <Select value={planFilter} onValueChange={setPlanFilter}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Filtrar por plano" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os planos</SelectItem>
+            {planOptions.map((opt) => (
+              <SelectItem key={opt.slug} value={opt.slug}>{opt.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Exportar CSV
@@ -175,58 +241,79 @@ export function UsersManagement() {
               <TableHead>Registro</TableHead>
               <TableHead>UF/Cidade</TableHead>
               <TableHead>Bairro</TableHead>
+              <TableHead className="min-w-[140px]">Plano</TableHead>
               <TableHead className="min-w-[160px]">Créditos</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.company_name || p.name}</TableCell>
-                <TableCell>
-                  {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
-                </TableCell>
-                <TableCell className="text-xs">{emailMap[p.id] || '-'}</TableCell>
-                <TableCell>{p.person_type === 'PJ' ? 'PJ' : 'PF'}</TableCell>
-                <TableCell>{p.phone}</TableCell>
-                <TableCell>{p.person_type === 'PJ' ? p.cnpj : p.cpf || '-'}</TableCell>
-                <TableCell>{professionLabels[p.profession || ''] || p.profession || '-'}</TableCell>
-                <TableCell>{getRegistration(p)}</TableCell>
-                <TableCell>{p.address_uf ? `${p.address_uf}/${p.address_city || ''}` : '-'}</TableCell>
-                <TableCell>{p.address_neighborhood || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 font-semibold text-yellow-600 dark:text-yellow-500">
-                      <Coins className="h-3.5 w-3.5" />
-                      {p.credit_balance ?? 0}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => setAdjustingProfile(p)}
-                    >
-                      Ajustar
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={p.is_active}
-                      onCheckedChange={() => toggleActive(p)}
-                      disabled={togglingId === p.id}
-                    />
-                    <Badge variant={p.is_active ? 'default' : 'destructive'} className="text-xs">
-                      {p.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {filtered.map((p) => {
+              const plan = planMap[p.id];
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.company_name || p.name}</TableCell>
+                  <TableCell>
+                    {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
+                  </TableCell>
+                  <TableCell className="text-xs">{emailMap[p.id] || '-'}</TableCell>
+                  <TableCell>{p.person_type === 'PJ' ? 'PJ' : 'PF'}</TableCell>
+                  <TableCell>{p.phone}</TableCell>
+                  <TableCell>{p.person_type === 'PJ' ? p.cnpj : p.cpf || '-'}</TableCell>
+                  <TableCell>{professionLabels[p.profession || ''] || p.profession || '-'}</TableCell>
+                  <TableCell>{getRegistration(p)}</TableCell>
+                  <TableCell>{p.address_uf ? `${p.address_uf}/${p.address_city || ''}` : '-'}</TableCell>
+                  <TableCell>{p.address_neighborhood || '-'}</TableCell>
+                  <TableCell>
+                    {plan ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold">
+                          <Crown className="h-3 w-3 text-primary" />
+                          {plan.name}
+                        </span>
+                        {plan.status !== 'ACTIVE' && (
+                          <Badge variant="outline" className="text-[10px] w-fit">
+                            {plan.status === 'PENDING' ? 'Aguardando pgto' : plan.status}
+                          </Badge>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sem plano</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 font-semibold text-yellow-600 dark:text-yellow-500">
+                        <Coins className="h-3.5 w-3.5" />
+                        {p.credit_balance ?? 0}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setAdjustingProfile(p)}
+                      >
+                        Ajustar
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={p.is_active}
+                        onCheckedChange={() => toggleActive(p)}
+                        disabled={togglingId === p.id}
+                      />
+                      <Badge variant={p.is_active ? 'default' : 'destructive'} className="text-xs">
+                        {p.is_active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
