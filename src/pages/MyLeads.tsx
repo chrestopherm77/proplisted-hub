@@ -20,6 +20,7 @@ export default function MyLeads() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<CrmLead | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [newContactOpen, setNewContactOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
   const { user, loading: authLoading } = useAuth();
