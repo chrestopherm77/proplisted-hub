@@ -37,9 +37,17 @@ export const MySubscriptionCard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { plan, can, creditBalance, loading: limitsLoading } = useSubscriptionLimits();
   const [sub, setSub] = useState<SubData | null>(null);
   const [loading, setLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
+
+  const usageItems: Array<{ key: LimitResource; label: string; icon: typeof Building2 }> = [
+    { key: 'portal_properties', label: 'Imóveis no portal', icon: Building2 },
+    { key: 'partnership_requests', label: 'Solicitações de parceria', icon: Handshake },
+    { key: 'partnership_offers', label: 'Ofertas de parceria (mês)', icon: Send },
+    { key: 'creatives_per_month', label: 'Criativos (mês)', icon: Sparkles },
+  ];
 
   useEffect(() => {
     if (!user) return;
