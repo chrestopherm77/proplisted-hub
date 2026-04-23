@@ -259,7 +259,7 @@ const NewProperty = () => {
             <CardHeader><CardTitle className="text-lg">Fotos</CardTitle></CardHeader>
             <CardContent>
               {user && (
-                <PropertyPhotosUpload userId={user.id} photos={photos} onChange={setPhotos} max={20} />
+                <PropertyPhotosUpload userId={user.id} photos={photos} onChange={setPhotos} max={30} />
               )}
             </CardContent>
           </Card>
