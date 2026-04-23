@@ -224,6 +224,10 @@ export function UsersManagement() {
             ))}
           </SelectContent>
         </Select>
+        <Button size="sm" variant="outline" onClick={() => fetchData()} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
         <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Exportar CSV
