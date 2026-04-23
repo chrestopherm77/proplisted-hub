@@ -110,6 +110,24 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="space-y-6">
+      <Alert>
+        <Coins className="h-4 w-4" />
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+          <span>
+            Cada criativo gerado com IA custa <strong>{CREATIVE_COST} créditos</strong>. Saldo atual:{' '}
+            <strong>{creditBalance}</strong> créditos.
+          </span>
+          {!creativesGate.isUnlimited && creativesGate.limit > 0 && (
+            <span className="text-xs text-muted-foreground">
+              Uso mensal: {creativesGate.used}/{creativesGate.limit} criativos do plano {plan?.name ?? ''}
+            </span>
+          )}
+          {creativesGate.isUnlimited && (
+            <span className="text-xs text-muted-foreground">Criativos ilimitados no plano {plan?.name ?? ''}</span>
+          )}
+        </AlertDescription>
+      </Alert>
+
       <div className="flex items-center gap-2">
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
@@ -119,6 +137,14 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
         ))}
       </div>
       <p className="text-sm text-muted-foreground">Passo {step} de {TOTAL_STEPS}</p>
+
+      <PlanLimitDialog
+        open={limitDialog.open}
+        onOpenChange={(open) => setLimitDialog((s) => ({ ...s, open }))}
+        title="Não foi possível gerar o criativo"
+        reason={limitDialog.reason}
+        secondary={limitDialog.secondary}
+      />
 
       <Card>
         <CardContent className="p-6">
