@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import { supabase } from '@/integrations/supabase/client';
 import leadbayLogo from '@/assets/leadbay-logo.png';
 import {
