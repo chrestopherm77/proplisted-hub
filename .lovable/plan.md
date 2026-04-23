@@ -1,52 +1,115 @@
 
 
-## Correções: admin do usuário + UI mostrando plano não pago como ativo
+## Correções: contagem de uso histórica + bloqueio anti-fraude de plano
 
-Investiguei a conta `chresautomacao@gmail.com` (id `82390105-...`). Achei isto:
+Encontrei dois bugs reais. O usuário `chresautomacao@gmail.com` ativou o plano grátis **3 vezes seguidas** ganhando créditos a cada clique (saldo atual 20 = 2x10), e a contagem de uso reseta quando o usuário desativa um imóvel ou parceria.
 
-| Problema | Estado real |
+### Problema 1 — Limites resetam ao excluir/desativar
+
+Hoje em `useSubscriptionLimits.ts`:
+- `portal_properties` conta `properties WHERE is_active = true`
+- `partnership_requests` conta `property_searches WHERE is_active = true`
+
+Ao excluir/desativar, o slot volta. Você quer: **uma vez publicado, conta para sempre** (até a renovação mensal, no caso dos recursos mensais).
+
+#### Solução
+
+Separar a regra por tipo de recurso:
+
+| Recurso | Janela de contagem |
 |---|---|
-| Role do usuário | Tem **MASTER_ADMIN** + USER (deveria ser só USER) |
-| Assinatura ESSENCIAL | Status `PENDING` (sem pagamento confirmado) |
-| Card "Minha Assinatura" | Mostra "ESSENCIAL · Aguardando pagamento" — passa a impressão de que o plano está liberado |
-| `useSubscriptionLimits` | **Já está correto**: ignora PENDING, usa fallback Conexão. Limites estão sendo aplicados de fato (1 solicitação / 5 ofertas / 3 imóveis). |
-| `NewPropertySearch.tsx` linha 103 | Bug: `if (isAdmin === false) navigate('/')` — **só admins conseguem entrar na página de criar parceria.** Quando removermos o admin desse usuário ele perderá o acesso. Hoje ele só estava entrando porque é admin. |
+| `portal_properties` | **Ciclo do plano** — conta tudo que foi criado dentro do período corrente da assinatura, ativo OU não. Sem assinatura paga ativa, conta a partir do início do mês corrente. |
+| `partnership_requests` | **Ciclo do plano** — mesma regra. |
+| `partnership_offers` | Já é mensal pelo `created_at`, mantém. |
+| `creatives_per_month` | Já é mensal pelo `created_at`, mantém. |
 
-### Mudanças
+**Implementação no `useSubscriptionLimits.ts`**:
+- Buscar a assinatura ativa (já buscamos), pegar `current_period_start`. Se não existir (fallback Conexão), usar `date_trunc('month', now())`.
+- Trocar as queries de `properties` e `property_searches` para `gte('created_at', cycleStart)` e remover o filtro `is_active`.
+- Não toca em quem já criou no passado: o ciclo começa do `current_period_start`. Isso significa que ao **renovar/upgrade**, a contagem zera naturalmente.
 
-**1. Remover MASTER_ADMIN do usuário** (operação de dados)
-- `DELETE FROM user_roles WHERE user_id = '82390105-3c7a-4b7b-b52a-bb0395ba4224' AND role = 'MASTER_ADMIN'`
-- Mantém o `USER`.
+Botões de "Excluir/Desativar" continuam funcionando — mas o slot consumido segue contado até o próximo ciclo.
 
-**2. Corrigir o gate invertido em `NewPropertySearch.tsx`**
-- Linha 103: trocar `if (isAdmin === false) { navigate('/'); return; }` por simplesmente garantir que está logado. Criar parceria é função de qualquer usuário comum, não de admin.
-- Verificar `NewProperty.tsx` e `NewLaunch.tsx` pelo mesmo padrão e corrigir se houver.
+### Problema 2 — Plano grátis pode ser reativado infinitas vezes (gera créditos infinitos)
 
-**3. Card "Minha Assinatura" — separar visualmente plano em uso vs. plano pendente**
-- Quando a assinatura está `PENDING`, o card hoje exibe "ESSENCIAL · Aguardando pagamento" como se fosse o plano atual. Mudar para:
-  - Bloco principal: **"Plano atual: CONEXÃO"** (o que está realmente liberado) com badge verde "Ativo".
-  - Bloco secundário/alerta: "Você tem uma assinatura **ESSENCIAL** aguardando pagamento" + botão "Pagar fatura" (link Asaas) + "Cancelar tentativa".
-  - Os indicadores de uso (`Imóveis no portal`, `Ofertas`, etc.) continuam refletindo o plano CONEXÃO até o pagamento confirmar.
-- Isso elimina a confusão de "achei que já estava no Essencial".
+E o problema relacionado: se o usuário tem PENDING de um pago, o card de Conexão fica clicável e ele recebe 10 créditos por clique. Bug crítico.
 
-**4. Página `/planos` — botão correto para plano com pagamento pendente**
-- Hoje mostra "Plano atual" no card do plano cuja sub está PENDING. Mudar `Planos.tsx` para considerar só `ACTIVE` como plano atual. Para PENDING, o botão do card vira **"Concluir pagamento"** apontando pro `invoice_url`. Outros planos continuam clicáveis para troca.
+#### Solução em `create-subscription` (edge function)
 
-**5. Polling pós-checkout (defesa em profundidade)**
-- No `MySubscriptionCard` e `Planos`, após retorno do Asaas (foco da janela), refazer `load()` para pegar o webhook que confirmou. Já existe `refresh`, só falta disparar no evento `visibilitychange` quando o usuário volta da aba do Asaas.
+Adicionar 3 guardas no início, **antes** de qualquer crédito ser dado:
+
+1. **Bloquear reativação do mesmo plano grátis dentro do ciclo**:  
+   Se já existe uma `user_subscriptions` (mesmo `CANCELED`) do mesmo `plan_id` grátis criada nos últimos 30 dias OU cujo `current_period_end > now()`, retornar erro: *"Você já está no plano Conexão. Aguarde o término do ciclo para reativar."*
+
+2. **Bloquear ativação de grátis quando há PENDING pago**:  
+   Se existe `user_subscriptions` com status `PENDING` e `plan.price > 0`, recusar ativação de plano grátis. O usuário deve **concluir** ou **cancelar** o pendente primeiro. Mensagem: *"Você tem uma assinatura aguardando pagamento. Conclua ou cancele para trocar de plano."*
+
+3. **Bloquear troca quando há ACTIVE recente sem cobrança nova devida**:  
+   Para evitar "sobe e desce de plano" — se já existe uma `ACTIVE` (paga) e o usuário pede outra, regra abaixo (downgrade vs upgrade).
+
+#### Regras de troca de plano (downgrade / upgrade)
+
+| Cenário | Comportamento |
+|---|---|
+| Tem ACTIVE pago e pede **outro pago** (qualquer direção) e ainda não venceu o ciclo | Cria nova subscription **PENDING** mas NÃO desativa a atual. A atual continua valendo (créditos do plano antigo permanecem) até `current_period_end`. No vencimento, o webhook do Asaas: cancela a antiga, cobra a nova, credita os créditos da nova. |
+| Tem ACTIVE pago e pede **plano grátis** | Trata como downgrade pendente: cancela no Asaas (sem cobrar próxima), mantém ACTIVE atual até `current_period_end`. Quando vencer, cron/webhook converte para Conexão. |
+| Tem PENDING (nunca pagou) e pede outro plano | Cancela o PENDING (incluindo no Asaas) e cria o novo. |
+| Tem ACTIVE grátis (Conexão) e pede pago | Cria subscription paga PENDING. Conexão continua até pagamento confirmar. Webhook cancela Conexão e ativa nova ao confirmar pagamento. |
+| Tem ACTIVE grátis e pede grátis novamente | **Bloqueado** (regra 1 acima). |
+
+Isso resolve o "fica subindo e descendo": para planos pagos, **só uma cobrança por ciclo**. A troca é agendada para o próximo vencimento.
+
+#### Mudanças no banco (migration)
+
+Adicionar à `user_subscriptions`:
+- `pending_downgrade_to_plan_id uuid` — guarda plano destino quando há downgrade agendado
+- `scheduled_change_at timestamptz` — quando a troca acontece
+
+#### Mudanças no `asaas-webhook`
+
+No evento `PAYMENT_RECEIVED` de assinatura: antes de creditar, se existe outra `ACTIVE` do mesmo user com `plan_id` diferente, marcar a antiga como `EXPIRED`. Isso fecha o ciclo de troca de planos pagos.
+
+#### Cron diário (nova edge function `process-scheduled-plan-changes`)
+
+Roda 1x/dia. Para cada `user_subscriptions` ACTIVE grátis com `pending_downgrade_to_plan_id` setado e `scheduled_change_at <= now()` → executa downgrade efetivo. Cobertura para o caso "ACTIVE pago → grátis" sem pagar mais.
+
+Para essa entrega, o cron pode ser simples: se `current_period_end < now()` para qualquer ACTIVE pago sem renovação confirmada → marca EXPIRED e cria Conexão automaticamente.
+
+### Problema 3 — UI permite clicar em "Ativar Grátis" enquanto há PENDING
+
+Em `Planos.tsx` + `PlanCard.tsx`:
+- Quando existe `pendingPlanId`, **desabilitar o botão "Ativar Plano Grátis"** dos outros planos grátis com tooltip: *"Conclua ou cancele a assinatura pendente primeiro."*
+- Quando existe `activePlanId` pago, mostrar nos planos de menor valor o texto **"Fazer downgrade"** (e explicar que a troca acontece no próximo ciclo).
+- Quando existe `activePlanId` grátis e o usuário clica em outro grátis → desabilitar.
+
+### Resumo do que muda
+
+**Backend (edge functions)**
+- `supabase/functions/create-subscription/index.ts`:
+  - Guarda 1: bloquear reativação do mesmo plano grátis dentro do ciclo.
+  - Guarda 2: bloquear ativação de grátis se há PENDING pago.
+  - Guarda 3: tratar upgrade/downgrade entre pagos como agendado (não cancelar atual nem creditar dobrado).
+  - Para grátis ativo já existente do mesmo plano: idempotente (não credita de novo).
+- `supabase/functions/asaas-webhook/index.ts`:
+  - Ao confirmar pagamento de uma nova assinatura, expirar a anterior do mesmo user.
+- Nova `supabase/functions/expire-plans-cron/index.ts` (chamada por cron) — converte assinaturas vencidas sem renovação para Conexão.
+
+**Migration**
+- `ALTER TABLE user_subscriptions ADD COLUMN pending_downgrade_to_plan_id uuid, ADD COLUMN scheduled_change_at timestamptz`.
+
+**Frontend**
+- `src/hooks/useSubscriptionLimits.ts`: contagem de `portal_properties` e `partnership_requests` por ciclo (todos criados desde `current_period_start`), sem filtro `is_active`.
+- `src/pages/Planos.tsx`: passar `pendingPlanId`, `activePlanId` e `activePlanIsPaid` para o `PlanCard`.
+- `src/components/plans/PlanCard.tsx`: novo prop `disabledReason` para desabilitar com tooltip explicativo (grátis bloqueado por PENDING; mesmo grátis bloqueado por ciclo; downgrade agendado etc.).
+- `src/components/profile/MySubscriptionCard.tsx`: mensagem clara quando há downgrade agendado ("Você tem um downgrade para X agendado para DD/MM").
+
+**Operação de dados (correção do estado atual do usuário)**
+- Marcar a Conexão duplicada `4d8620aa-...` como CANCELED (mantém a `d51b9ca8-...` mais antiga já marcada CANCELED — recriar a primeira ativa correta).
+- Reverter os 20 créditos extras: `credit_balance = 0` para `82390105-3c7a-4b7b-b52a-bb0395ba4224`.
 
 ### O que NÃO muda
 
-- Lógica de `useSubscriptionLimits` (já correta — usa só ACTIVE).
-- Webhook `asaas-webhook` (já credita certo quando paga).
-- RLS, edge functions de criação/cancelamento.
-- Plano CONEXÃO continua sendo o fallback automático.
-
-### Arquivos afetados
-
-- **Migration de dados**: `DELETE` do role MASTER_ADMIN do usuário citado.
-- `src/pages/NewPropertySearch.tsx` — corrigir guard invertido.
-- `src/pages/NewProperty.tsx` e `src/pages/NewLaunch.tsx` — verificar/corrigir guard se igual.
-- `src/components/profile/MySubscriptionCard.tsx` — separar "plano em uso" de "tentativa pendente".
-- `src/pages/Planos.tsx` — só considerar ACTIVE como plano atual + botão "Concluir pagamento" para PENDING.
+- Lógica de débito de créditos para criativos.
+- RLS, fallback Conexão como plano padrão.
+- Webhook idempotência para pagamentos individuais.
 
