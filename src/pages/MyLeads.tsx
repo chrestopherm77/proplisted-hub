@@ -213,18 +213,20 @@ export default function MyLeads() {
           </Button>
         </div>
 
-        {leads.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">Você ainda não tem nenhum lead ou contato</p>
-            <div className="flex items-center justify-center gap-3">
-              <Link to="/leads" className="text-primary hover:underline">Explorar Marketplace</Link>
-              <span className="text-muted-foreground">·</span>
-              <button onClick={() => setNewContactOpen(true)} className="text-primary hover:underline">
+        {leads.length === 0 && (
+          <div className="mb-4 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              Você ainda não tem leads ou contatos.{' '}
+              <Link to="/leads" className="text-primary hover:underline font-medium">Explorar Marketplace</Link>
+              <span className="mx-1.5 text-muted-foreground">·</span>
+              <button onClick={() => setNewContactOpen(true)} className="text-primary hover:underline font-medium">
                 Adicionar contato manual
               </button>
-            </div>
+            </p>
           </div>
-        ) : isMobile ? (
+        )}
+
+        {isMobile ? (
           // Mobile: Tabs
           <Tabs defaultValue="ENTRADA" className="w-full">
             <TabsList className="w-full flex overflow-x-auto h-auto scrollbar-hide">
