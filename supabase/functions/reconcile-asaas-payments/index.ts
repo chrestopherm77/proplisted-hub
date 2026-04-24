@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
             const newBalance = (balanceResult as any)?.new_balance ?? null;
             results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'CONFIRMED', message: `creditados ${cp.credits} créditos${newBalance !== null ? ` (saldo: ${newBalance})` : ''}` });
           } else {
-            results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'ALREADY_CONFIRMED', message: 'Já creditado anteriormente' });
+            results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'CONFIRMED', message: 'Já creditado anteriormente' });
           }
         } else if (expired && payments.length > 0) {
           await adminClient.from('credit_purchases').update({ status: 'EXPIRED' }).eq('id', cp.id);
