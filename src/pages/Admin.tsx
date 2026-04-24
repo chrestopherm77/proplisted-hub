@@ -11,6 +11,7 @@ import { UsersManagement } from '@/components/admin/UsersManagement';
 import { AccessHistory } from '@/components/admin/AccessHistory';
 import { PartnersManagement } from '@/components/admin/PartnersManagement';
 import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManagement';
+import { LaunchAccessManagement } from '@/components/admin/LaunchAccessManagement';
 
 type Section =
   | 'dashboard'
@@ -23,6 +24,7 @@ type Section =
   | 'vouchers'
   | 'users'
   | 'access'
+  | 'launch-access'
   | 'partners'
   | 'creatives';
 
@@ -37,6 +39,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   vouchers: VouchersManagement,
   users: UsersManagement,
   access: AccessHistory,
+  'launch-access': LaunchAccessManagement,
   partners: PartnersManagement,
   creatives: CreativeStylesManagement,
 };
