@@ -522,28 +522,19 @@ async function processCreditPaymentConfirmation(
     .update({ status: 'PAID', confirmed_at: new Date().toISOString() })
     .eq('id', creditPurchase.id);
 
-  // Add credits to user profile
-  const { data: profile } = await supabaseClient
-    .from('profiles')
-    .select('credit_balance')
-    .eq('id', creditPurchase.user_id)
-    .single();
+  // Add credits to user profile atomically (prevents race condition with check-credit-status)
+  const { data: balanceResult, error: balanceError } = await supabaseClient.rpc('add_credits_atomic', {
+    p_user_id: creditPurchase.user_id,
+    p_amount: creditPurchase.credits,
+    p_type: 'CREDIT_PURCHASE',
+    p_lead_id: null,
+  });
 
-  const newBalance = (profile?.credit_balance || 0) + creditPurchase.credits;
+  if (balanceError || (balanceResult as any)?.error) {
+    console.error('Failed to credit user atomically:', balanceError ?? (balanceResult as any)?.error);
+  }
 
-  await supabaseClient
-    .from('profiles')
-    .update({ credit_balance: newBalance })
-    .eq('id', creditPurchase.user_id);
-
-  // Record transaction
-  await supabaseClient
-    .from('credit_transactions')
-    .insert({
-      user_id: creditPurchase.user_id,
-      credits_used: -creditPurchase.credits, // negative = credits added
-      type: 'CREDIT_PURCHASE',
-    });
+  const newBalance = (balanceResult as any)?.new_balance;
 
   // Mark webhook event as processed
   await supabaseClient
@@ -696,29 +687,21 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
     }
   }
 
-  // Credit monthly credits to user
+  // Credit monthly credits to user atomically
   const monthly = sub.plan?.monthly_credits ?? 0;
   if (monthly > 0) {
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('credit_balance')
-      .eq('id', sub.user_id)
-      .single();
-    const newBalance = (profile?.credit_balance ?? 0) + monthly;
-    await supabaseClient
-      .from('profiles')
-      .update({ credit_balance: newBalance })
-      .eq('id', sub.user_id);
+    const { data: balanceResult, error: balanceError } = await supabaseClient.rpc('add_credits_atomic', {
+      p_user_id: sub.user_id,
+      p_amount: monthly,
+      p_type: 'SUBSCRIPTION_RENEWAL',
+      p_lead_id: null,
+    });
 
-    await supabaseClient
-      .from('credit_transactions')
-      .insert({
-        user_id: sub.user_id,
-        credits_used: -monthly, // negative = credits added (matches existing convention)
-        type: 'SUBSCRIPTION_RENEWAL',
-      });
-
-    console.log(`✅ Credited ${monthly} subscription credits to user ${sub.user_id}. New balance: ${newBalance}`);
+    if (balanceError || (balanceResult as any)?.error) {
+      console.error('Failed to credit subscription renewal:', balanceError ?? (balanceResult as any)?.error);
+    } else {
+      console.log(`✅ Credited ${monthly} subscription credits to user ${sub.user_id}. New balance: ${(balanceResult as any)?.new_balance}`);
+    }
   }
 
   await supabaseClient

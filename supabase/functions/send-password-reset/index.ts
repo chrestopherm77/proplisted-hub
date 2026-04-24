@@ -40,10 +40,14 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use getUserByEmail instead of listUsers to avoid loading all users
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.toLowerCase());
+    // Look up user by email via profiles table (has email column synced from auth)
+    const { data: profileRow, error: profileLookupError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", email.toLowerCase())
+      .maybeSingle();
 
-    if (userError || !userData?.user) {
+    if (profileLookupError || !profileRow) {
       // For security, always return success
       return new Response(
         JSON.stringify({ success: true, message: "Se o e-mail existir, você receberá instruções de recuperação" }),

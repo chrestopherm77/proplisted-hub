@@ -119,39 +119,49 @@ serve(async (req) => {
     if (confirmedPayment) {
       console.log('✅ Payment confirmed in Asaas! Updating credit purchase...');
 
-      // Update credit purchase status
-      await supabaseClient
+      // Atomically mark purchase as PAID — if it was already PAID, skip crediting (idempotency)
+      const { data: updatedRows, error: purchaseUpdateError } = await supabaseClient
         .from('credit_purchases')
         .update({ status: 'PAID', confirmed_at: new Date().toISOString() })
-        .eq('id', pendingPurchase.id);
+        .eq('id', pendingPurchase.id)
+        .eq('status', 'PENDING')
+        .select('id');
 
-      // Add credits to profile
+      if (purchaseUpdateError) {
+        console.error('Failed to update credit purchase:', purchaseUpdateError);
+      }
+
+      // Only credit if the row actually transitioned from PENDING -> PAID
+      if (updatedRows && updatedRows.length > 0) {
+        const { data: balanceResult, error: rpcError } = await supabaseClient.rpc('add_credits_atomic', {
+          p_user_id: user.id,
+          p_amount: pendingPurchase.credits,
+          p_type: 'CREDIT_PURCHASE',
+          p_lead_id: null,
+        });
+
+        if (rpcError || (balanceResult as any)?.error) {
+          console.error('Failed to credit user atomically:', rpcError ?? (balanceResult as any)?.error);
+        }
+
+        const newBalance = (balanceResult as any)?.new_balance ?? 0;
+        console.log(`✅ Credited ${pendingPurchase.credits} to user. New balance: ${newBalance}`);
+
+        return new Response(
+          JSON.stringify({ status: 'PAID', balance: newBalance, credits: pendingPurchase.credits }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Already credited by webhook — just return current balance
       const { data: profile } = await supabaseClient
         .from('profiles')
         .select('credit_balance')
         .eq('id', user.id)
         .single();
 
-      const newBalance = (profile?.credit_balance || 0) + pendingPurchase.credits;
-
-      await supabaseClient
-        .from('profiles')
-        .update({ credit_balance: newBalance })
-        .eq('id', user.id);
-
-      // Record transaction
-      await supabaseClient
-        .from('credit_transactions')
-        .insert({
-          user_id: user.id,
-          credits_used: -pendingPurchase.credits,
-          type: 'CREDIT_PURCHASE',
-        });
-
-      console.log(`✅ Credited ${pendingPurchase.credits} to user. New balance: ${newBalance}`);
-
       return new Response(
-        JSON.stringify({ status: 'PAID', balance: newBalance, credits: pendingPurchase.credits }),
+        JSON.stringify({ status: 'PAID', balance: profile?.credit_balance ?? 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

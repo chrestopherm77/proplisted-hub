@@ -132,13 +132,26 @@ Deno.serve(async (req) => {
         const expired = payments.find((p) => ['REFUNDED', 'CANCELLED', 'EXPIRED', 'OVERDUE'].includes(p.status));
 
         if (paid) {
-          // Mark as PAID + add credits + log transaction (idempotent)
-          const { data: profile } = await adminClient.from('profiles').select('credit_balance').eq('id', cp.user_id).single();
-          const newBalance = (profile?.credit_balance ?? 0) + cp.credits;
-          await adminClient.from('credit_purchases').update({ status: 'PAID', confirmed_at: new Date().toISOString() }).eq('id', cp.id);
-          await adminClient.from('profiles').update({ credit_balance: newBalance }).eq('id', cp.user_id);
-          await adminClient.from('credit_transactions').insert({ user_id: cp.user_id, credits_used: cp.credits, type: 'CREDIT_PURCHASE_RECONCILED' });
-          results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'CONFIRMED', message: `creditados ${cp.credits} créditos` });
+          // Atomically transition PENDING -> PAID; only credit if we win the race
+          const { data: updatedRows } = await adminClient
+            .from('credit_purchases')
+            .update({ status: 'PAID', confirmed_at: new Date().toISOString() })
+            .eq('id', cp.id)
+            .eq('status', 'PENDING')
+            .select('id');
+
+          if (updatedRows && updatedRows.length > 0) {
+            const { data: balanceResult } = await adminClient.rpc('add_credits_atomic', {
+              p_user_id: cp.user_id,
+              p_amount: cp.credits,
+              p_type: 'CREDIT_PURCHASE_RECONCILED',
+              p_lead_id: null,
+            });
+            const newBalance = (balanceResult as any)?.new_balance ?? null;
+            results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'CONFIRMED', message: `creditados ${cp.credits} créditos${newBalance !== null ? ` (saldo: ${newBalance})` : ''}` });
+          } else {
+            results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: paid.status, action: 'CONFIRMED', message: 'Já creditado anteriormente' });
+          }
         } else if (expired && payments.length > 0) {
           await adminClient.from('credit_purchases').update({ status: 'EXPIRED' }).eq('id', cp.id);
           results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: expired.status, action: 'EXPIRED' });

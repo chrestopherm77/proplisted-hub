@@ -68,11 +68,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Find user by email using getUserByEmail instead of listUsers
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.toLowerCase());
+    // Find user via profiles table (has email column synced from auth)
+    const { data: profileRow, error: profileLookupError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", email.toLowerCase())
+      .maybeSingle();
 
-    if (userError || !userData?.user) {
-      console.error("Error finding user:", userError);
+    if (profileLookupError || !profileRow) {
+      console.error("Error finding user:", profileLookupError);
       return new Response(
         JSON.stringify({ error: "Usuário não encontrado" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -81,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Update password
     const { error: updateError } = await supabase.auth.admin.updateUserById(
-      userData.user.id,
+      profileRow.id,
       { password: newPassword }
     );
 
