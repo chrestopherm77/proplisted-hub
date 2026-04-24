@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Sparkles, Loader2, Coins } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { StepImages, type ImageSlot } from './wizard/StepImages';
 import { StepStyleFormat } from './wizard/StepStyleFormat';
-import { StepInfo } from './wizard/StepInfo';
+import { StepInfo, emptyPropertyInfo, formatPropertyInfo, hasAnyInfo, type PropertyInfo } from './wizard/StepInfo';
 import { StepResult } from './wizard/StepResult';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
@@ -27,7 +27,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const [slots, setSlots] = useState<ImageSlot[]>(initialSlots());
   const [styleSlug, setStyleSlug] = useState<string | null>(null);
   const [format, setFormat] = useState<string | null>(null);
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState<PropertyInfo>(emptyPropertyInfo());
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [creativeId, setCreativeId] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const canNext = () => {
     if (step === 1) return slots.some((s) => s.url);
     if (step === 2) return !!styleSlug && !!format;
-    if (step === 3) return info.trim().length > 0;
+    if (step === 3) return hasAnyInfo(info);
     return true;
   };
 
@@ -81,7 +81,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       user_id: user.id,
       style_slug: styleSlug!,
       format: format!,
-      info_text: info,
+      info_text: formatPropertyInfo(info),
       main_image_url: principal?.url || null,
       mockup_images: mockups,
       status: 'PENDING',
