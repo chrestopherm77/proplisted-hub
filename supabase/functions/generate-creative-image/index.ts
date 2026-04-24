@@ -136,8 +136,9 @@ Deno.serve(async (req) => {
           .eq("id", creativeId);
         return new Response(JSON.stringify({ error: msg, balance: (debit as any).balance }), {
           status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Mark as PENDING
