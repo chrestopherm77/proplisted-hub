@@ -176,14 +176,19 @@ export function useSubscriptionLimits() {
       creatives_per_month: creativesRes.count ?? 0,
     });
     setLoading(false);
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
+    if (permissionsLoading) return;
     load();
-  }, [load]);
+  }, [load, permissionsLoading]);
 
   const can = useCallback(
     (resource: LimitResource): CanResult => {
+      // Admin: liberado para tudo, sem limites
+      if (isAdmin) {
+        return { allowed: true, limit: -1, used: 0, isUnlimited: true, remaining: Infinity };
+      }
       const limit = plan?.features?.[resource] ?? 0;
       const usedKey = resource as keyof Usage;
       const used = (usage as any)[usedKey] ?? 0;
