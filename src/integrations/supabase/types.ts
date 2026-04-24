@@ -946,6 +946,7 @@ export type Database = {
           address_city: string | null
           address_neighborhood: string | null
           address_uf: string | null
+          avatar_url: string | null
           cau: string | null
           cau_uf: string | null
           cnpj: string | null
@@ -987,6 +988,7 @@ export type Database = {
           address_city?: string | null
           address_neighborhood?: string | null
           address_uf?: string | null
+          avatar_url?: string | null
           cau?: string | null
           cau_uf?: string | null
           cnpj?: string | null
@@ -1028,6 +1030,7 @@ export type Database = {
           address_city?: string | null
           address_neighborhood?: string | null
           address_uf?: string | null
+          avatar_url?: string | null
           cau?: string | null
           cau_uf?: string | null
           cnpj?: string | null

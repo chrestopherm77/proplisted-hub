@@ -8,6 +8,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { ReferralPopup } from '@/components/referral/ReferralPopup';
+import { UserAvatarMenu } from '@/components/UserAvatarMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -65,6 +66,9 @@ export const Layout = ({ children }: LayoutProps) => {
             <div className="flex items-center gap-2">
               <MobileMenu isAdmin={isAdmin ?? false} isConstrutora={isConstrutora} onSignOut={handleSignOut} />
               <SidebarTrigger className="hidden md:flex" />
+            </div>
+            <div className="flex items-center gap-2">
+              <UserAvatarMenu />
             </div>
           </header>
 

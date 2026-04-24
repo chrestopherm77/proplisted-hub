@@ -183,32 +183,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/comprar-creditos')} tooltip="Comprar Créditos">
-              <Link to="/comprar-creditos">
-                <Coins className="h-4 w-4" />
-                <span>Comprar Créditos</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/profile')} tooltip="Perfil">
-              <Link to="/profile">
-                <User className="h-4 w-4" />
-                <span>Perfil</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} tooltip="Sair">
-              <LogOut className="h-4 w-4" />
-              <span>Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }
