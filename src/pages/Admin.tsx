@@ -1,133 +1,51 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Layout } from '@/components/Layout';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { DashboardStats } from '@/components/admin/DashboardStats';
 import { LeadsManagement } from '@/components/admin/LeadsManagement';
+import { LeadTracking } from '@/components/admin/LeadTracking';
 import { PurchasesOverview } from '@/components/admin/PurchasesOverview';
 import { LeadPurchasesOverview } from '@/components/admin/LeadPurchasesOverview';
-import { DashboardStats } from '@/components/admin/DashboardStats';
-import { UsersManagement } from '@/components/admin/UsersManagement';
-import { LeadTracking } from '@/components/admin/LeadTracking';
+import { SubscriptionsManagement } from '@/components/admin/SubscriptionsManagement';
+import { PendingPaymentsManagement } from '@/components/admin/PendingPaymentsManagement';
 import { VouchersManagement } from '@/components/admin/VouchersManagement';
+import { UsersManagement } from '@/components/admin/UsersManagement';
 import { AccessHistory } from '@/components/admin/AccessHistory';
 import { PartnersManagement } from '@/components/admin/PartnersManagement';
 import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManagement';
-import { PendingPaymentsManagement } from '@/components/admin/PendingPaymentsManagement';
-import { SubscriptionsManagement } from '@/components/admin/SubscriptionsManagement';
 
-export default function Admin() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+type Section =
+  | 'dashboard'
+  | 'leads'
+  | 'tracking'
+  | 'purchases'
+  | 'lead-purchases'
+  | 'subscriptions'
+  | 'pending'
+  | 'vouchers'
+  | 'users'
+  | 'access'
+  | 'partners'
+  | 'creatives';
 
-  useEffect(() => {
-    if (authLoading || isAdmin === null) return;
-    
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
+const COMPONENTS: Record<Section, React.ComponentType> = {
+  dashboard: DashboardStats,
+  leads: LeadsManagement,
+  tracking: LeadTracking,
+  purchases: PurchasesOverview,
+  'lead-purchases': LeadPurchasesOverview,
+  subscriptions: SubscriptionsManagement,
+  pending: PendingPaymentsManagement,
+  vouchers: VouchersManagement,
+  users: UsersManagement,
+  access: AccessHistory,
+  partners: PartnersManagement,
+  creatives: CreativeStylesManagement,
+};
 
-    if (isAdmin === false) {
-      toast({
-        title: 'Acesso Negado',
-        description: 'Você não tem permissão para acessar esta área',
-        variant: 'destructive',
-      });
-      navigate('/leads');
-      return;
-    }
-
-    setLoading(false);
-  }, [user, authLoading, isAdmin, navigate, toast]);
-
-  if (loading || authLoading) {
-    return (
-      <Layout>
-        <div className="text-center py-12">Carregando...</div>
-      </Layout>
-    );
-  }
-
+export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
+  const Component = COMPONENTS[section];
   return (
-    <Layout>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Painel Administrativo</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Gerencie leads, visualize compras e acompanhe estatísticas
-          </p>
-        </div>
-
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-12 mb-6 md:mb-8 h-auto">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="leads">Leads</TabsTrigger>
-            <TabsTrigger value="purchases">Compras (Créditos)</TabsTrigger>
-            <TabsTrigger value="lead-purchases">Compra de Leads</TabsTrigger>
-            <TabsTrigger value="subscriptions">Assinaturas</TabsTrigger>
-            <TabsTrigger value="pending">Pendentes</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="access">Acessos</TabsTrigger>
-            <TabsTrigger value="tracking">Rastreamento</TabsTrigger>
-            <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
-            <TabsTrigger value="partners">Parceiros</TabsTrigger>
-            <TabsTrigger value="creatives">Criativos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard">
-            <DashboardStats />
-          </TabsContent>
-
-          <TabsContent value="leads">
-            <LeadsManagement />
-          </TabsContent>
-
-          <TabsContent value="purchases">
-            <PurchasesOverview />
-          </TabsContent>
-
-          <TabsContent value="lead-purchases">
-            <LeadPurchasesOverview />
-          </TabsContent>
-
-          <TabsContent value="subscriptions">
-            <SubscriptionsManagement />
-          </TabsContent>
-
-          <TabsContent value="pending">
-            <PendingPaymentsManagement />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UsersManagement />
-          </TabsContent>
-
-          <TabsContent value="access">
-            <AccessHistory />
-          </TabsContent>
-
-          <TabsContent value="tracking">
-            <LeadTracking />
-          </TabsContent>
-
-          <TabsContent value="vouchers">
-            <VouchersManagement />
-          </TabsContent>
-
-          <TabsContent value="partners">
-            <PartnersManagement />
-          </TabsContent>
-
-          <TabsContent value="creatives">
-            <CreativeStylesManagement />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+    <AdminLayout>
+      <Component />
+    </AdminLayout>
   );
 }
