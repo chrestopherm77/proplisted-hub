@@ -84,7 +84,7 @@ const RESOURCE_LABELS: Record<LimitResource, string> = {
 };
 
 export function useSubscriptionLimits() {
-  const { user } = useAuth();
+  const { user, isAdmin, permissionsLoading } = useAuth();
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [usage, setUsage] = useState<Usage>({
     portal_properties: 0,
@@ -101,6 +101,16 @@ export function useSubscriptionLimits() {
       return;
     }
     setLoading(true);
+
+    // Admin: acesso ilimitado, sem checagem de plano nem uso
+    if (isAdmin) {
+      setPlan(ADMIN_PLAN);
+      setUsage({ portal_properties: 0, partnership_requests: 0, partnership_offers: 0, creatives_per_month: 0 });
+      const { data: profile } = await supabase.from('profiles').select('credit_balance').eq('id', user.id).maybeSingle();
+      setCreditBalance(profile?.credit_balance ?? 0);
+      setLoading(false);
+      return;
+    }
 
     const monthStart = new Date();
     monthStart.setDate(1);
