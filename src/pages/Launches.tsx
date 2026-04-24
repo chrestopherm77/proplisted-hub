@@ -53,7 +53,7 @@ const handlePriceMask = (value: string): string => {
 const ZONE_OPTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
 
 const Launches = () => {
-  const { user, loading: authLoading, isAdmin, isConstrutora } = useAuth();
+  const { user, loading: authLoading, isAdmin, isConstrutora, canPublishLaunches } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [launches, setLaunches] = useState<Launch[]>([]);
@@ -241,16 +241,23 @@ const Launches = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button
-              onClick={() => {
-                const url = buildWaLink('5516992456258', 'Vim do site da leadbay e quero criar um novo lançamento');
-                window.open(url, '_blank', 'noopener,noreferrer');
-              }}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Novo Lançamento
-            </Button>
+            {canPublishLaunches ? (
+              <Button onClick={() => navigate('/launches/new')} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Publicar novo lançamento
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  const url = buildWaLink('5516992456258', 'Vim do site da leadbay e quero criar um novo lançamento');
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Quero publicar lançamento
+              </Button>
+            )}
           </div>
         </div>
 
