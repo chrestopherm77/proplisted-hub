@@ -21,7 +21,7 @@ const initialSlots = (): ImageSlot[] =>
 export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { can, plan, creditBalance, refresh: refreshLimits } = useSubscriptionLimits();
+  const { can, plan, creditBalance, refresh: refreshLimits, isAdmin } = useSubscriptionLimits();
   const creativesGate = can('creatives_per_month');
   const [step, setStep] = useState(1);
   const [slots, setSlots] = useState<ImageSlot[]>(initialSlots());
