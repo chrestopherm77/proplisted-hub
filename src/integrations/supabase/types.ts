@@ -1797,6 +1797,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_credits_atomic: {
+        Args: {
+          p_amount: number
+          p_lead_id?: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
       consume_credits_for_creative: {
         Args: { p_amount?: number; p_creative_id: string; p_user_id: string }
