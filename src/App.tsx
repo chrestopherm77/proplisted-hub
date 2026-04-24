@@ -76,7 +76,18 @@ const App = () => {
           <Route path="/checkout-success" element={<CheckoutSuccess />} />
           <Route path="/checkout-error" element={<CheckoutError />} />
           <Route path="/checkout-expired" element={<CheckoutExpired />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<Admin section="dashboard" />} />
+          <Route path="/admin/leads" element={<Admin section="leads" />} />
+          <Route path="/admin/tracking" element={<Admin section="tracking" />} />
+          <Route path="/admin/purchases" element={<Admin section="purchases" />} />
+          <Route path="/admin/lead-purchases" element={<Admin section="lead-purchases" />} />
+          <Route path="/admin/subscriptions" element={<Admin section="subscriptions" />} />
+          <Route path="/admin/pending" element={<Admin section="pending" />} />
+          <Route path="/admin/vouchers" element={<Admin section="vouchers" />} />
+          <Route path="/admin/users" element={<Admin section="users" />} />
+          <Route path="/admin/access" element={<Admin section="access" />} />
+          <Route path="/admin/partners" element={<Admin section="partners" />} />
+          <Route path="/admin/creatives" element={<Admin section="creatives" />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
