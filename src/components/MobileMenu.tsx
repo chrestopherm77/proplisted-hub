@@ -185,24 +185,6 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
               <span className="font-medium">Admin</span>
             </Link>
           )}
-          <Link
-            to="/profile"
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/profile')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            <User className="h-5 w-5" />
-            <span className="font-medium">Perfil</span>
-          </Link>
-          <button
-            onClick={onSignOut}
-            className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted text-left w-full transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="font-medium">Sair</span>
-          </button>
         </nav>
       </SheetContent>
     </Sheet>
