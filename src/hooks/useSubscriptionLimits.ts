@@ -219,8 +219,8 @@ export function useSubscriptionLimits() {
       }
       return { allowed: true, limit, used, isUnlimited: false, remaining: limit - used };
     },
-    [plan, usage]
+    [plan, usage, isAdmin]
   );
 
-  return { plan, usage, creditBalance, loading, can, refresh: load };
+  return { plan, usage, creditBalance, loading, can, refresh: load, isAdmin: !!isAdmin };
 }
