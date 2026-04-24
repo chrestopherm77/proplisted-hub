@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Validate user exists and pre-check resulting balance
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("id, credit_balance, name")
@@ -102,33 +103,30 @@ Deno.serve(async (req) => {
 
     const currentBalance = profile.credit_balance ?? 0;
     const delta = operation === 'ADD' ? amount : -amount;
-    const newBalance = currentBalance + delta;
 
-    if (newBalance < 0) {
+    if (currentBalance + delta < 0) {
       return new Response(
         JSON.stringify({ error: "Saldo ficaria negativo", current: currentBalance, requested: amount }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const { error: updateError } = await adminClient
-      .from("profiles")
-      .update({ credit_balance: newBalance })
-      .eq("id", user_id);
+    // Atomic balance update + transaction log
+    const { data: balanceResult, error: rpcError } = await adminClient.rpc('add_credits_atomic', {
+      p_user_id: user_id,
+      p_amount: delta,
+      p_type: operation === 'ADD' ? 'ADMIN_ADD' : 'ADMIN_REMOVE',
+      p_lead_id: null,
+    });
 
-    if (updateError) {
+    if (rpcError || (balanceResult as any)?.error) {
       return new Response(JSON.stringify({ error: "Falha ao atualizar saldo" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    await adminClient.from("credit_transactions").insert({
-      user_id,
-      credits_used: amount,
-      type: operation === 'ADD' ? 'ADMIN_ADD' : 'ADMIN_REMOVE',
-      lead_id: null,
-    });
+    const newBalance = (balanceResult as any)?.new_balance ?? currentBalance + delta;
 
     console.log(`[admin-adjust-credits] admin=${adminId} user=${user_id} op=${operation} amount=${amount} new_balance=${newBalance} reason=${reason ?? '-'}`);
 
