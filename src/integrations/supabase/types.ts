@@ -375,6 +375,30 @@ export type Database = {
         }
         Relationships: []
       }
+      launch_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       launches: {
         Row: {
           associative: string | null

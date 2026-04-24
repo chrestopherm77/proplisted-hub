@@ -30,6 +30,7 @@ import {
   Ticket,
   Handshake,
   Sparkles,
+  KeyRound,
   ArrowLeft,
 } from 'lucide-react';
 
@@ -53,6 +54,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 
   { title: 'Usuários', url: '/admin/users', icon: Users, group: 'Pessoas' },
   { title: 'Acessos', url: '/admin/access', icon: History, group: 'Pessoas' },
+  { title: 'Liberar acesso', url: '/admin/launch-access', icon: KeyRound, group: 'Pessoas' },
   { title: 'Parceiros', url: '/admin/partners', icon: Handshake, group: 'Pessoas' },
 
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
