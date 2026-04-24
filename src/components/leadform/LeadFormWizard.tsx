@@ -589,12 +589,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
       supabase.from('lp_partial_leads').insert([payload])
         .then(({ error }) => { if (error) console.error('Partial lead insert error:', error); });
     } else {
-      // Use a per-request client with x-lp-session-id header so RLS can scope this update
-      const sessionScopedClient = (supabase as any).rest
-        ? supabase
-        : supabase;
-      // PostgREST: pass the session id via headers for the RLS check
-      (supabase.from('lp_partial_leads') as any)
+      supabase.from('lp_partial_leads')
         .update({
           current_step: payload.current_step,
           step_index: payload.step_index,
@@ -604,9 +599,9 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
           phone: payload.phone,
           form_data: payload.form_data,
           source_lp: payload.source_lp,
-        }, { headers: { 'x-lp-session-id': sessionIdRef.current } })
+        })
         .eq('session_id', sessionIdRef.current)
-        .then(({ error }: any) => { if (error) console.error('Partial lead update error:', error); });
+        .then(({ error }) => { if (error) console.error('Partial lead update error:', error); });
     }
   }, [formData, visibleSteps]);
 
