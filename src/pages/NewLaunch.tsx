@@ -18,18 +18,17 @@ import { cn } from '@/lib/utils';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 
 const NewLaunch = () => {
-  const { user, loading: authLoading, isAdmin, isConstrutora } = useAuth();
+  const { user, loading: authLoading, canPublishLaunches, permissionsLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const { states: ibgeStates, cities: ibgeCities, fetchCities, clearCities } = useIBGELocation();
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) { navigate('/auth'); return; }
-      if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    }
-  }, [user, authLoading, isAdmin, navigate]);
+    if (authLoading || permissionsLoading) return;
+    if (!user) { navigate('/auth'); return; }
+    if (!canPublishLaunches) { navigate('/launches'); return; }
+  }, [user, authLoading, permissionsLoading, canPublishLaunches, navigate]);
 
   const [name, setName] = useState('');
   const [state, setState] = useState('');

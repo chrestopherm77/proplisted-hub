@@ -9,21 +9,31 @@ export const useAuth = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isConstrutora, setIsConstrutora] = useState<boolean>(false);
   const [hasLaunchPermission, setHasLaunchPermission] = useState<boolean>(false);
+  const [permissionsLoading, setPermissionsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    const loadPermissions = async (userId: string) => {
+      setPermissionsLoading(true);
+      await Promise.all([
+        checkAdminStatus(userId),
+        checkConstrutora(userId),
+        checkLaunchPermission(userId),
+      ]);
+      setPermissionsLoading(false);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          checkAdminStatus(session.user.id);
-          checkConstrutora(session.user.id);
-          checkLaunchPermission(session.user.id);
+          loadPermissions(session.user.id);
         } else {
           setIsAdmin(false);
           setIsConstrutora(false);
           setHasLaunchPermission(false);
+          setPermissionsLoading(false);
         }
       }
     );
@@ -34,9 +44,9 @@ export const useAuth = () => {
       setLoading(false);
       
       if (session?.user) {
-        checkAdminStatus(session.user.id);
-        checkConstrutora(session.user.id);
-        checkLaunchPermission(session.user.id);
+        loadPermissions(session.user.id);
+      } else {
+        setPermissionsLoading(false);
       }
     });
 
@@ -94,5 +104,5 @@ export const useAuth = () => {
 
   const canPublishLaunches = isAdmin === true || isConstrutora || hasLaunchPermission;
 
-  return { user, session, loading, isAdmin, isConstrutora, hasLaunchPermission, canPublishLaunches, signOut };
+  return { user, session, loading, isAdmin, isConstrutora, hasLaunchPermission, canPublishLaunches, permissionsLoading, signOut };
 };
