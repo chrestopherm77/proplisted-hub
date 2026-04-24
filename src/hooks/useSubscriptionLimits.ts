@@ -2,6 +2,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+const ADMIN_PLAN: PlanInfo = {
+  id: 'admin',
+  slug: 'admin',
+  name: 'Admin',
+  price: 0,
+  monthly_credits: 0,
+  features: {
+    partnership_requests: -1,
+    partnership_offers: -1,
+    portal_properties: -1,
+    creatives_per_month: -1,
+    leads_included: -1,
+    hot_seat_per_month: -1,
+    training_level: 'advanced',
+  },
+  feature_list: ['Acesso ilimitado de administrador'],
+};
+
 export type LimitResource =
   | 'portal_properties'
   | 'partnership_requests'
