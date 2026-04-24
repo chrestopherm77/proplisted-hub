@@ -56,7 +56,8 @@ async function findWhatsAppNumber(
       console.log(`isOnWhatsApp ${candidate}: ${JSON.stringify(result).substring(0, 200)} → exists=${exists}`);
       if (exists) return candidate;
     } catch (e) {
-      console.warn(`isOnWhatsApp check failed for ${candidate}: ${e.message}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`isOnWhatsApp check failed for ${candidate}: ${msg}`);
     }
   }
   return null;
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
 
     if (listResult.success) {
       console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${listResult.messageId}`);
-      await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult.messageId);
+      await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult.messageId ?? null);
       return new Response(
         JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
     const textResult = await trySendTextMessage(verifiedNumber, textBody, instanceKey, MEGA_API_TOKEN);
     if (textResult.success) {
       console.log(`Fallback text sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${textResult.messageId}`);
-      await updateLeadStatus(sb, leadId, "sent_fallback_text", listResult.error, textResult.messageId);
+      await updateLeadStatus(sb, leadId, "sent_fallback_text", listResult.error ?? null, textResult.messageId ?? null);
       return new Response(
         JSON.stringify({ success: true, delivery_status: "sent_fallback_text", messageId: textResult.messageId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -152,8 +153,9 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("Unexpected error:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return new Response(
-      JSON.stringify({ error: err.message, delivery_status: "failed" }),
+      JSON.stringify({ error: message, delivery_status: "failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -222,7 +224,8 @@ async function trySendListMessage(
       }
       return { success: false, error: `HTTP ${res.status}: ${errMsg}` };
     } catch (e) {
-      return { success: false, error: `Fetch error: ${e.message}` };
+      const msg = e instanceof Error ? e.message : String(e);
+      return { success: false, error: `Fetch error: ${msg}` };
     }
   }
   return { success: false, error: "Max retries exceeded" };
@@ -268,7 +271,8 @@ async function trySendTextMessage(
     const errMsg = resData?.message || resData?.error || resText.substring(0, 300);
     return { success: false, error: `HTTP ${res.status}: ${errMsg}` };
   } catch (e) {
-    return { success: false, error: `Fetch error: ${e.message}` };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { success: false, error: `Fetch error: ${msg}` };
   }
 }
 
