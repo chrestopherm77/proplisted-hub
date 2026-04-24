@@ -103,31 +103,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Debit credits BEFORE invoking Gemini (atomic via RPC)
-    const { data: debit, error: debitErr } = await admin.rpc("consume_credits_for_creative", {
-      p_user_id: userId,
-      p_creative_id: creativeId,
-      p_amount: CREATIVE_COST,
+    // Verifica se é admin (acesso liberado, sem débito de créditos)
+    const { data: isAdminData } = await admin.rpc("has_role", {
+      _user_id: userId,
+      _role: "MASTER_ADMIN",
     });
-    if (debitErr) {
-      console.error("[generate-creative-image] debit error:", debitErr);
-      await admin
-        .from("creatives")
-        .update({ status: "FAILED", error_message: "Falha ao debitar créditos" })
-        .eq("id", creativeId);
-      return new Response(JSON.stringify({ error: "Falha ao debitar créditos" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const isAdmin = isAdminData === true;
+
+    if (!isAdmin) {
+      // Debit credits BEFORE invoking Gemini (atomic via RPC)
+      const { data: debit, error: debitErr } = await admin.rpc("consume_credits_for_creative", {
+        p_user_id: userId,
+        p_creative_id: creativeId,
+        p_amount: CREATIVE_COST,
       });
-    }
-    if (debit && (debit as any).error) {
-      const msg = (debit as any).error as string;
-      await admin
-        .from("creatives")
-        .update({ status: "FAILED", error_message: msg })
-        .eq("id", creativeId);
-      return new Response(JSON.stringify({ error: msg, balance: (debit as any).balance }), {
-        status: 402,
+      if (debitErr) {
+        console.error("[generate-creative-image] debit error:", debitErr);
+        await admin
+          .from("creatives")
+          .update({ status: "FAILED", error_message: "Falha ao debitar créditos" })
+          .eq("id", creativeId);
+        return new Response(JSON.stringify({ error: "Falha ao debitar créditos" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (debit && (debit as any).error) {
+        const msg = (debit as any).error as string;
+        await admin
+          .from("creatives")
+          .update({ status: "FAILED", error_message: msg })
+          .eq("id", creativeId);
+        return new Response(JSON.stringify({ error: msg, balance: (debit as any).balance }), {
+          status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
