@@ -2,6 +2,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+const ADMIN_PLAN: PlanInfo = {
+  id: 'admin',
+  slug: 'admin',
+  name: 'Admin',
+  price: 0,
+  monthly_credits: 0,
+  features: {
+    partnership_requests: -1,
+    partnership_offers: -1,
+    portal_properties: -1,
+    creatives_per_month: -1,
+    leads_included: -1,
+    hot_seat_per_month: -1,
+    training_level: 'advanced',
+  },
+  feature_list: ['Acesso ilimitado de administrador'],
+};
+
 export type LimitResource =
   | 'portal_properties'
   | 'partnership_requests'
@@ -66,7 +84,7 @@ const RESOURCE_LABELS: Record<LimitResource, string> = {
 };
 
 export function useSubscriptionLimits() {
-  const { user } = useAuth();
+  const { user, isAdmin, permissionsLoading } = useAuth();
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [usage, setUsage] = useState<Usage>({
     portal_properties: 0,
@@ -83,6 +101,16 @@ export function useSubscriptionLimits() {
       return;
     }
     setLoading(true);
+
+    // Admin: acesso ilimitado, sem checagem de plano nem uso
+    if (isAdmin) {
+      setPlan(ADMIN_PLAN);
+      setUsage({ portal_properties: 0, partnership_requests: 0, partnership_offers: 0, creatives_per_month: 0 });
+      const { data: profile } = await supabase.from('profiles').select('credit_balance').eq('id', user.id).maybeSingle();
+      setCreditBalance(profile?.credit_balance ?? 0);
+      setLoading(false);
+      return;
+    }
 
     const monthStart = new Date();
     monthStart.setDate(1);
@@ -148,14 +176,19 @@ export function useSubscriptionLimits() {
       creatives_per_month: creativesRes.count ?? 0,
     });
     setLoading(false);
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
+    if (permissionsLoading) return;
     load();
-  }, [load]);
+  }, [load, permissionsLoading]);
 
   const can = useCallback(
     (resource: LimitResource): CanResult => {
+      // Admin: liberado para tudo, sem limites
+      if (isAdmin) {
+        return { allowed: true, limit: -1, used: 0, isUnlimited: true, remaining: Infinity };
+      }
       const limit = plan?.features?.[resource] ?? 0;
       const usedKey = resource as keyof Usage;
       const used = (usage as any)[usedKey] ?? 0;
@@ -186,8 +219,8 @@ export function useSubscriptionLimits() {
       }
       return { allowed: true, limit, used, isUnlimited: false, remaining: limit - used };
     },
-    [plan, usage]
+    [plan, usage, isAdmin]
   );
 
-  return { plan, usage, creditBalance, loading, can, refresh: load };
+  return { plan, usage, creditBalance, loading, can, refresh: load, isAdmin: !!isAdmin };
 }

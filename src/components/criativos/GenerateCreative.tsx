@@ -21,7 +21,7 @@ const initialSlots = (): ImageSlot[] =>
 export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { can, plan, creditBalance, refresh: refreshLimits } = useSubscriptionLimits();
+  const { can, plan, creditBalance, refresh: refreshLimits, isAdmin } = useSubscriptionLimits();
   const creativesGate = can('creatives_per_month');
   const [step, setStep] = useState(1);
   const [slots, setSlots] = useState<ImageSlot[]>(initialSlots());
@@ -62,7 +62,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       return;
     }
 
-    if (willCallAi && creditBalance < CREATIVE_COST) {
+    if (willCallAi && !isAdmin && creditBalance < CREATIVE_COST) {
       setLimitDialog({
         open: true,
         reason: `Cada criativo custa ${CREATIVE_COST} créditos. Seu saldo atual é ${creditBalance}.`,
@@ -113,17 +113,23 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       <Alert>
         <Coins className="h-4 w-4" />
         <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-          <span>
-            Cada criativo gerado com IA custa <strong>{CREATIVE_COST} créditos</strong>. Saldo atual:{' '}
-            <strong>{creditBalance}</strong> créditos.
-          </span>
-          {!creativesGate.isUnlimited && creativesGate.limit > 0 && (
-            <span className="text-xs text-muted-foreground">
-              Uso mensal: {creativesGate.used}/{creativesGate.limit} criativos do plano {plan?.name ?? ''}
-            </span>
-          )}
-          {creativesGate.isUnlimited && (
-            <span className="text-xs text-muted-foreground">Criativos ilimitados no plano {plan?.name ?? ''}</span>
+          {isAdmin ? (
+            <span>Acesso de administrador: geração de criativos liberada sem custo de créditos e sem limites.</span>
+          ) : (
+            <>
+              <span>
+                Cada criativo gerado com IA custa <strong>{CREATIVE_COST} créditos</strong>. Saldo atual:{' '}
+                <strong>{creditBalance}</strong> créditos.
+              </span>
+              {!creativesGate.isUnlimited && creativesGate.limit > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Uso mensal: {creativesGate.used}/{creativesGate.limit} criativos do plano {plan?.name ?? ''}
+                </span>
+              )}
+              {creativesGate.isUnlimited && (
+                <span className="text-xs text-muted-foreground">Criativos ilimitados no plano {plan?.name ?? ''}</span>
+              )}
+            </>
           )}
         </AlertDescription>
       </Alert>
