@@ -104,5 +104,5 @@ export const useAuth = () => {
 
   const canPublishLaunches = isAdmin === true || isConstrutora || hasLaunchPermission;
 
-  return { user, session, loading, isAdmin, isConstrutora, hasLaunchPermission, canPublishLaunches, signOut };
+  return { user, session, loading, isAdmin, isConstrutora, hasLaunchPermission, canPublishLaunches, permissionsLoading, signOut };
 };
