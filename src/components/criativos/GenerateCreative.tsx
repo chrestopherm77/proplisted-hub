@@ -62,7 +62,7 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
       return;
     }
 
-    if (willCallAi && creditBalance < CREATIVE_COST) {
+    if (willCallAi && !isAdmin && creditBalance < CREATIVE_COST) {
       setLimitDialog({
         open: true,
         reason: `Cada criativo custa ${CREATIVE_COST} créditos. Seu saldo atual é ${creditBalance}.`,
