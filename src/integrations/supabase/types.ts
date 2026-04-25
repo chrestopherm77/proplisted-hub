@@ -1850,6 +1850,7 @@ export type Database = {
         }
         Returns: Json
       }
+      validate_signup_metadata: { Args: { meta: Json }; Returns: undefined }
     }
     Enums: {
       app_role: "MASTER_ADMIN" | "USER"
