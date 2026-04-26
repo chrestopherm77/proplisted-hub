@@ -6,9 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Info, DollarSign, Building2, User, MessageCircle, Download, FileText, FolderOpen, Loader2, MapPin, TrendingUp, Calendar, Trash2, Ruler, Home } from 'lucide-react';
+import { ArrowLeft, Info, DollarSign, Building2, User, MessageCircle, Download, FileText, FolderOpen, Loader2, MapPin, TrendingUp, Calendar, Trash2, Pencil, Ruler, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { buildWaLink } from '@/lib/whatsapp';
 
 interface Launch {
   id: string;
