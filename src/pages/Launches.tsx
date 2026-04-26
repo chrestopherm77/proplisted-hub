@@ -352,13 +352,15 @@ const Launches = () => {
                 onClick={() => navigate(`/launches/${launch.id}`)}
                 className="bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow cursor-pointer"
               >
-                <div className="aspect-[16/10] bg-muted overflow-hidden relative">
+                <div className="aspect-[16/10] bg-white overflow-hidden relative flex items-center justify-center">
                   {launch.banner_url ? (
-                    <img src={launch.banner_url} alt={launch.name} className="w-full h-full object-cover" />
+                    <img src={launch.banner_url} alt={launch.name} className="w-full h-full object-contain" />
+                  ) : launch.logo_url ? (
+                    <img src={launch.logo_url} alt={launch.name} className="w-full h-full object-contain p-4" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">Sem imagem</div>
                   )}
-                  {launch.logo_url && (
+                  {launch.banner_url && launch.logo_url && (
                     <img src={launch.logo_url} alt="Logo" className="absolute bottom-2 left-2 h-10 w-10 rounded-md bg-white object-contain shadow" />
                   )}
                 </div>
