@@ -370,6 +370,19 @@ export function LandingPageEditor() {
                 </AccordionContent>
               </AccordionItem>
 
+              {/* SEÇÕES DINÂMICAS (Como Funciona, Stats, Benefícios, FAQ) */}
+              <AccordionItem value="sections" className="border rounded-md px-3">
+                <AccordionTrigger>
+                  Seções da página ({content.sections?.length ?? 0})
+                </AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <SectionsEditor
+                    sections={content.sections ?? []}
+                    onChange={(next) => updateContent('sections', next)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
               {/* PROVA SOCIAL */}
               <AccordionItem value="social_proof" className="border rounded-md px-3">
                 <AccordionTrigger>Prova social ({content.social_proof.testimonials.length})</AccordionTrigger>
