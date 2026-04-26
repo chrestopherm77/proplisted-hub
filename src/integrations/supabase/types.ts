@@ -324,6 +324,42 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_landing_pages: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          slug: string
+          theme: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          slug: string
+          theme?: Json
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          slug?: string
+          theme?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_verification_codes: {
         Row: {
           code: string
