@@ -424,7 +424,7 @@ const Index = () => {
                   <Button
                     className="w-full"
                     variant={plan.popular ? 'default' : 'outline'}
-                    onClick={goAuth}
+                    onClick={() => handlePlanSelect(plan.slug)}
                   >
                     {plan.cta}
                   </Button>
