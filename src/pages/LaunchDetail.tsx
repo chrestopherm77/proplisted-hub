@@ -126,10 +126,16 @@ const LaunchDetail = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <Button variant="ghost" onClick={() => navigate('/launches')} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
+          <div className="flex items-center gap-2">
+            {(isAdmin || (user && launch.user_id === user.id)) && (
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/launches/${launch.id}/edit`)}>
+                <Pencil className="h-4 w-4" /> Editar
+              </Button>
+            )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" className="gap-2">
