@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { Button } from '@/components/ui/button';
-import leadbayLogo from '@/assets/leadbay-logo.png';
+import { BrandLogo } from '@/components/BrandLogo';
 import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -34,7 +34,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 {isPartnerSite && partner?.logo_url ? (
                   <img src={partner.logo_url} alt={partner.name} className="h-8 md:h-10 max-w-[160px] object-contain" />
                 ) : (
-                  <img src={leadbayLogo} alt="LeadBay" className="h-8 md:h-10" />
+                  <BrandLogo size="md" />
                 )}
               </Link>
               <Link to="/auth">
@@ -46,7 +46,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <main className="container mx-auto px-4 py-4 md:py-8">{children}</main>
         <footer className="bg-white border-t border-border mt-auto">
           <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-            © 2025 {isPartnerSite && partner ? partner.name : 'LeadBay'}. Todos os direitos reservados.
+            © 2025 {isPartnerSite && partner ? partner.name : 'Conectaae Imob'}. Todos os direitos reservados.
           </div>
         </footer>
       </div>
@@ -75,7 +75,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
           <footer className="bg-white border-t border-border mt-auto">
             <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-              © 2025 {isPartnerSite && partner ? partner.name : 'LeadBay'}. Todos os direitos reservados.
+              © 2025 {isPartnerSite && partner ? partner.name : 'Conectaae Imob'}. Todos os direitos reservados.
             </div>
           </footer>
         </div>

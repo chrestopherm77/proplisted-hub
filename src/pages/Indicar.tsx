@@ -54,7 +54,7 @@ export default function Indicar() {
   if (!user) return null;
 
   const link = code ? `${window.location.origin}/auth?ref=${code}` : "";
-  const message = `Conheça a LeadBay: hub completo para o corretor de imóveis. De leads qualificados ao suporte administrativo, tudo o que você precisa para operar com autonomia.\n\nCadastre-se pelo meu link e comece agora:\n${link}`;
+  const message = `Conheça o Conectaae Imob: hub completo para o corretor de imóveis. De leads qualificados ao suporte administrativo, tudo o que você precisa para operar com autonomia.\n\nCadastre-se pelo meu link e comece agora:\n${link}`;
   const whatsappLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
   const copy = async (text: string, label: string) => {
