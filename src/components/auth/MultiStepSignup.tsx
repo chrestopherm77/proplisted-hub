@@ -19,11 +19,15 @@ import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
+  initialReferralCode?: string;
 }
 
-export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
+export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiStepSignupProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<SignupFormData>(initialFormData);
+  const [formData, setFormData] = useState<SignupFormData>({
+    ...initialFormData,
+    referralCode: initialReferralCode || '',
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -528,6 +532,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
             formData={formData}
             onChange={handleFieldChange}
             errors={errors}
+            referralLocked={!!initialReferralCode}
           />
         );
       }
@@ -560,6 +565,7 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
           formData={formData}
           onChange={handleFieldChange}
           errors={errors}
+          referralLocked={!!initialReferralCode}
         />
       );
     }

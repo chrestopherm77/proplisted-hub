@@ -40,6 +40,7 @@ import PublicPropertyLP from "./pages/PublicPropertyLP";
 import Planos from "./pages/Planos";
 import CustomLandingPage from "./pages/CustomLandingPage";
 import PrimeirosPassos from "./pages/PrimeirosPassos";
+import Indicar from "./pages/Indicar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,7 @@ const App = () => {
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           <Route path="/planos" element={<Planos />} />
           <Route path="/primeiros-passos" element={<PrimeirosPassos />} />
+          <Route path="/indicar" element={<Indicar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
           <Route path="/:customSlug" element={<CustomLandingPage />} />

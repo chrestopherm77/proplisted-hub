@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle } from 'lucide-react';
+import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle, Gift } from 'lucide-react';
 
 const ALLOWED = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -215,6 +215,10 @@ export function UserAvatarMenu() {
           <DropdownMenuItem onClick={() => navigate('/comprar-creditos')}>
             <Coins className="mr-2 h-4 w-4" />
             <span>Comprar Créditos</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/indicar')}>
+            <Gift className="mr-2 h-4 w-4 text-primary" />
+            <span>Indicar e ganhar</span>
           </DropdownMenuItem>
           {!isPartnerSite && (
             <DropdownMenuItem onClick={() => navigate('/planos')}>

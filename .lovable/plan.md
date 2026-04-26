@@ -1,130 +1,98 @@
+## Objetivo
 
-# Página "Primeiros Passos" com vídeo + atalho no menu do avatar
-
-Criar uma página `/primeiros-passos` para todos os usuários autenticados, com vídeo tutorial gerenciável pelo admin (upload MP4 ou URL do YouTube/Vimeo). Adicionar atalho no menu suspenso do avatar e redirecionar automaticamente o usuário para essa página logo após o cadastro.
-
----
-
-### 1. Banco de dados — tabela `onboarding_video` (single-row config)
-
-```sql
-CREATE TABLE public.onboarding_video (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  video_url text,
-  video_type text NOT NULL DEFAULT 'url' CHECK (video_type IN ('url','mp4')),
-  title text DEFAULT 'Bem-vindo ao Conecta&Imob!',
-  description text DEFAULT 'Assista ao vídeo abaixo e descubra como aproveitar ao máximo a plataforma.',
-  updated_at timestamptz DEFAULT now(),
-  updated_by uuid REFERENCES auth.users(id)
-);
-
-ALTER TABLE public.onboarding_video ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Authenticated users can read onboarding video"
-ON public.onboarding_video FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "Only admins can manage onboarding video"
-ON public.onboarding_video FOR ALL TO authenticated
-USING (has_role(auth.uid(), 'MASTER_ADMIN'))
-WITH CHECK (has_role(auth.uid(), 'MASTER_ADMIN'));
-
-INSERT INTO public.onboarding_video (video_type, video_url) VALUES ('url', NULL);
-```
-
-### 2. Storage — bucket público `onboarding-videos` (limite 100MB)
-
-```sql
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('onboarding-videos', 'onboarding-videos', true, 104857600,
-        ARRAY['video/mp4','video/webm']);
-
-CREATE POLICY "Public read onboarding videos"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = 'onboarding-videos');
-
-CREATE POLICY "Admin upload onboarding videos"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'onboarding-videos' AND has_role(auth.uid(), 'MASTER_ADMIN'));
-
-CREATE POLICY "Admin delete onboarding videos"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'onboarding-videos' AND has_role(auth.uid(), 'MASTER_ADMIN'));
-```
-
-### 3. Página pública — `src/pages/PrimeirosPassos.tsx`
-
-Renderizada com o `Layout` padrão (sidebar + header).
-- Busca o registro de `onboarding_video`.
-- Renderiza título e descrição editáveis pelo admin.
-- Player responsivo `aspect-video` 16:9:
-  - `video_type = 'url'`: detecta YouTube/Vimeo e usa `<iframe>` (`youtube.com/embed/{id}` ou `player.vimeo.com/video/{id}`).
-  - `video_type = 'mp4'`: usa `<video controls>` HTML5 com URL pública.
-  - Sem vídeo: placeholder "Vídeo em breve".
-- Dois CTAs abaixo do vídeo: **"Ir para Meus Leads"** e **"Comprar Créditos"**.
-
-### 4. Rotas — `src/App.tsx`
-
-Inserir antes do catch-all `/:customSlug`:
-```tsx
-<Route path="/primeiros-passos" element={<PrimeirosPassos />} />
-<Route path="/admin/onboarding-video" element={<Admin section="onboarding-video" />} />
-```
-
-### 5. Redirect pós-cadastro — `src/components/auth/MultiStepSignup.tsx`
-
-Após `signUp` bem-sucedido (linha ~459), trocar o toast por:
-```tsx
-toast.success("Cadastro realizado com sucesso! Bem-vindo!");
-setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
-```
-
-O **login normal** em `Auth.tsx` continua indo para `/leads`. Apenas o cadastro vai para Primeiros Passos.
-
-### 6. Atalho no menu do avatar — `src/components/UserAvatarMenu.tsx`
-
-Adicionar item logo abaixo de "Meu Perfil":
-```tsx
-<DropdownMenuItem onClick={() => navigate('/primeiros-passos')}>
-  <PlayCircle className="mr-2 h-4 w-4" />
-  <span>Primeiros Passos</span>
-</DropdownMenuItem>
-```
-
-Ordem: Trocar foto · Remover foto · **Meu Perfil · Primeiros Passos** · Comprar Créditos · Planos · Sair.
-
-### 7. Editor admin — `src/components/admin/OnboardingVideoManagement.tsx`
-
-Nova tela no painel admin:
-- Toggle "URL externa (YouTube/Vimeo)" vs "Upload MP4".
-- Modo URL: input de texto com validação básica.
-- Modo MP4: input `accept="video/mp4,video/webm"`, upload para `onboarding-videos`, salva URL pública.
-- Inputs para `title` e `description`.
-- Preview ao vivo do player ao lado do formulário.
-- Botão "Salvar alterações" → `update` no único row.
-
-### 8. Menu do admin — `AdminLayout.tsx` + `Admin.tsx`
-
-- Em `ADMIN_NAV`, adicionar no grupo **Conteúdo**:
-  ```tsx
-  { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' }
-  ```
-- Em `Admin.tsx`, adicionar `'onboarding-video'` no tipo `Section` e no map `COMPONENTS`.
+Substituir o sistema atual de **código de indicação** (popup que aparece em todo login) por um sistema de **link de indicação único**, em que o crédito de 280 só é concedido quando o indicado tiver uma **assinatura paga ativa** (qualquer plano diferente do CONEXÃO/Free).
 
 ---
 
-### Arquivos novos
-- `src/pages/PrimeirosPassos.tsx`
-- `src/components/admin/OnboardingVideoManagement.tsx`
-- 1 migração SQL (tabela + bucket + policies + seed)
+## 1. Substituir o popup de "Indicar" pela tela de Link de Indicação
 
-### Arquivos editados
-- `src/App.tsx`
-- `src/components/auth/MultiStepSignup.tsx`
-- `src/components/UserAvatarMenu.tsx`
-- `src/components/admin/AdminLayout.tsx`
-- `src/pages/Admin.tsx`
+**Arquivo**: `src/components/referral/ReferralPopup.tsx` → renomear para `ReferralCard.tsx` (ou manter o popup mas mudar o conteúdo).
 
-### Comportamento final
-- **Recém-cadastrado** → vai automaticamente para `/primeiros-passos`.
-- **Qualquer usuário** pode rever clicando na bolinha do avatar → **"Primeiros Passos"**.
-- **Admin** gerencia vídeo, título e descrição em `/admin/onboarding-video`, alternando entre URL do YouTube/Vimeo ou upload de MP4 (até 100MB).
+- **Remover** o popup recorrente que aparece toda vez que a pessoa entra no sistema (hoje usa `sessionStorage` mas ainda aparece em toda nova sessão).
+- O conteúdo de indicação passa a viver em **uma página dedicada** ou seção do **Profile** ("Meu link de indicação"), mais um item no menu do avatar (`UserAvatarMenu.tsx`) chamado **"Indicar e ganhar"**.
+- Layout da nova tela:
+  - Cartão com o **link único**: `https://leadbay.com.br/auth?ref=ABC12345` (usando o `referral_code` existente do perfil — não precisa mudar a coluna).
+  - Botões "Copiar link", "Compartilhar no WhatsApp" (mensagem pronta).
+  - Texto explicativo: *"Você ganha 280 créditos quando seu indicado se cadastrar **e ativar uma assinatura paga** (Essencial, Performance ou Elite)."*
+  - Estatísticas simples: "X pessoas se cadastraram pelo seu link · Y assinaturas confirmadas · Z créditos recebidos".
+
+**Nota**: o popup automático será **removido** completamente. A pessoa só vê quando clica no menu.
+
+---
+
+## 2. Captura do link `?ref=CODIGO` no cadastro
+
+**Arquivo**: `src/pages/Auth.tsx` e `src/components/auth/MultiStepSignup.tsx`.
+
+- Ler `?ref=` da URL na chegada da página `/auth`.
+- Pré-preencher `formData.referralCode` automaticamente.
+- Ocultar (ou deixar somente leitura) o campo de código manual em `CredentialsStep.tsx` quando vier do link — o usuário só vê uma mensagem: *"Você foi indicado por um corretor. Bônus aplicado após sua assinatura."*
+- Manter o campo manual visível só quando **não** vier `?ref=` na URL (compatibilidade).
+
+---
+
+## 3. Mudar a regra de concessão dos 280 créditos (a parte crítica)
+
+Hoje a função `redeem_referral` credita os 280 imediatamente no signup. Vamos mudar para **registrar a indicação agora** e **só creditar depois que a assinatura paga for confirmada**.
+
+### 3.1. Nova migração SQL
+
+- **Alterar `redeem_referral`** para apenas marcar `referred_by` no perfil do indicado e **NÃO** creditar mais nada nem marcar `referral_credits_granted = true`. (A coluna `referral_credits_granted` passa a significar "bônus já pago ao indicador", não "indicação registrada".)
+- **Nova função `grant_referral_bonus_if_eligible(p_user_id uuid)`** (SECURITY DEFINER):
+  1. Busca o perfil do indicado.
+  2. Se `referred_by IS NULL` ou `referral_credits_granted = true` → sai.
+  3. Verifica se o indicado tem `user_subscriptions` com `status = 'ACTIVE'` cujo `plan.slug != 'conexao'` (ou seja, plano pago).
+  4. Se sim → credita 280 no `referred_by` via `add_credits_atomic` com tipo `REFERRAL_BONUS`, e marca `referral_credits_granted = true` no perfil do indicado.
+
+### 3.2. Hook no webhook do Asaas
+
+**Arquivo**: `supabase/functions/asaas-webhook/index.ts` (perto da linha 705, depois de creditar a renovação mensal).
+
+- Após uma assinatura paga ser ativada com sucesso (status `ACTIVE` + plano com `price > 0`), chamar `supabase.rpc('grant_referral_bonus_if_eligible', { p_user_id: sub.user_id })`.
+- Se o usuário não tiver indicador, a função simplesmente não faz nada.
+
+### 3.3. Backfill (opcional)
+
+A migração também pode rodar uma única vez para indicações **antigas** que ainda não têm crédito: para todo usuário com `referred_by IS NOT NULL AND referral_credits_granted = false` que já tem assinatura paga ativa, conceder os 280 ao indicador.
+
+---
+
+## 4. Mensagem de WhatsApp do link
+
+Atualizar a mensagem existente em `ReferralPopup.tsx` para usar o **link** em vez do código:
+
+```
+Conheça a LeadBay: hub completo para corretor de imóveis.
+Cadastre-se pelo meu link e comece agora:
+https://leadbay.com.br/auth?ref=ABC12345
+```
+
+---
+
+## 5. Item no menu do avatar
+
+**Arquivo**: `src/components/UserAvatarMenu.tsx`.
+
+- Adicionar entrada **"Indicar e ganhar"** com ícone `Gift`, abrindo a nova página/modal de link de indicação.
+
+---
+
+## Arquivos afetados
+
+- `src/components/referral/ReferralPopup.tsx` — refatorar (vira card/página, sem auto-open)
+- `src/components/Layout.tsx` — remover `<ReferralPopup>` do layout logado
+- `src/components/UserAvatarMenu.tsx` — novo item "Indicar e ganhar"
+- `src/pages/Auth.tsx` — ler `?ref=` da URL
+- `src/components/auth/MultiStepSignup.tsx` — passar `referralCode` da URL
+- `src/components/auth/steps/CredentialsStep.tsx` — esconder/desabilitar campo quando vier do link
+- `supabase/functions/asaas-webhook/index.ts` — chamar `grant_referral_bonus_if_eligible` após pagamento de assinatura
+- **Nova migração SQL** com:
+  - `redeem_referral` ajustada (só marca `referred_by`)
+  - Nova função `grant_referral_bonus_if_eligible`
+  - Backfill opcional para indicações antigas com assinatura paga já ativa
+
+## Resultado esperado
+
+- Popup chato no login: **eliminado**.
+- Cada corretor tem um **link único** (`/auth?ref=SEUCODIGO`) que pode compartilhar.
+- O bônus de **280 créditos** só cai na conta do indicador **quando o indicado fizer um plano pago** (Essencial, Performance ou Elite). Se o indicado ficar só no plano grátis CONEXÃO, **nenhum crédito é gerado**.

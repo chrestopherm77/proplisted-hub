@@ -704,6 +704,23 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
     }
   }
 
+  // Grant referral bonus if eligible (paid plan now active)
+  try {
+    const { data: refResult, error: refError } = await supabaseClient.rpc(
+      'grant_referral_bonus_if_eligible',
+      { p_user_id: sub.user_id }
+    );
+    if (refError) {
+      console.error('grant_referral_bonus_if_eligible error:', refError);
+    } else if ((refResult as any)?.success) {
+      console.log(
+        `🎁 Referral bonus credited (280) to ${(refResult as any).referrer_id} for user ${sub.user_id}`
+      );
+    }
+  } catch (e) {
+    console.error('Referral bonus check failed:', e);
+  }
+
   await supabaseClient
     .from('asaas_webhook_events')
     .update({ processed: true, processed_at: new Date().toISOString() })
