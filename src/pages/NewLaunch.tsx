@@ -182,12 +182,13 @@ const NewLaunch = () => {
 
     setSaving(true);
     try {
-      const launchId = crypto.randomUUID();
+      const launchId = isEditMode && editId ? editId : crypto.randomUUID();
 
-      let banner_url: string | null = null;
-      let logo_url: string | null = null;
-      let book_url: string | null = null;
-      let table_url: string | null = null;
+      // Em modo edição, parte das URLs já existe; só substituímos se houver arquivo novo
+      let banner_url: string | null = isEditMode ? existingBannerUrl : null;
+      let logo_url: string | null = isEditMode ? existingLogoUrl : null;
+      let book_url: string | null = isEditMode ? existingBookUrl : null;
+      let table_url: string | null = isEditMode ? existingTableUrl : null;
 
       if (bannerFile) {
         const ext = bannerFile.name.split('.').pop();
@@ -200,27 +201,26 @@ const NewLaunch = () => {
 
       if (bookMode === 'pdf' && bookFile) {
         book_url = await uploadFile(bookFile, `docs/${launchId}/book.pdf`);
-      } else if (bookMode === 'link' && bookLink.trim()) {
-        book_url = bookLink.trim();
+      } else if (bookMode === 'link') {
+        book_url = bookLink.trim() || null;
       }
 
       if (tableMode === 'pdf' && tableFile) {
         table_url = await uploadFile(tableFile, `docs/${launchId}/tabela.pdf`);
-      } else if (tableMode === 'link' && tableLink.trim()) {
-        table_url = tableLink.trim();
+      } else if (tableMode === 'link') {
+        table_url = tableLink.trim() || null;
       }
 
       const priceFromRaw = priceFrom.replace(/\D/g, '') || null;
       const priceMaxRaw = priceMax.replace(/\D/g, '') || null;
+      const zoneValue = zone && zone !== '__none__' ? zone : null;
 
-      const { error } = await supabase.from('launches').insert({
-        id: launchId,
-        user_id: user.id,
+      const payload = {
         name: name.trim(),
         state: state || null,
         city: city.trim(),
         neighborhood: neighborhood || null,
-        zone: zone || null,
+        zone: zoneValue,
         launch_date: launchDate ? format(launchDate, 'yyyy-MM-dd') : null,
         delivery_date: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null,
         price_from: priceFromRaw,
@@ -231,7 +231,6 @@ const NewLaunch = () => {
         associative: associative || null,
         book_url,
         table_url,
-        drive_url: null,
         drive_link: driveLink.trim() || null,
         coordinator_name: coordinatorName || null,
         coordinator_phone: coordinatorPhone || null,
@@ -243,6 +242,21 @@ const NewLaunch = () => {
         size_m2_max: sizeM2Max || null,
         status: launchStatus || null,
         table_expires_at: tableExpiresAt ? format(tableExpiresAt, 'yyyy-MM-dd') : null,
+      };
+
+      if (isEditMode && editId) {
+        const { error } = await supabase.from('launches').update(payload as any).eq('id', editId);
+        if (error) throw error;
+        toast({ title: 'Lançamento atualizado com sucesso!' });
+        navigate(`/launches/${editId}`);
+        return;
+      }
+
+      const { error } = await supabase.from('launches').insert({
+        id: launchId,
+        user_id: user.id,
+        drive_url: null,
+        ...payload,
       } as any);
 
       if (error) throw error;
@@ -257,7 +271,7 @@ const NewLaunch = () => {
             launchId,
             state: state || null,
             city: city.trim(),
-            zone: zone || null,
+            zone: zoneValue,
             property_type: propertyType || null,
             status: launchStatus || null,
             price_from: priceFromRaw,
@@ -271,7 +285,7 @@ const NewLaunch = () => {
       toast({ title: 'Lançamento publicado com sucesso!' });
       navigate('/launches');
     } catch (err: any) {
-      toast({ title: 'Erro ao publicar', description: err.message, variant: 'destructive' });
+      toast({ title: isEditMode ? 'Erro ao salvar' : 'Erro ao publicar', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
