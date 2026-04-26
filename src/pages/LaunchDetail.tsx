@@ -55,8 +55,13 @@ const formatDate = (d: string | null): string => {
   try { return format(new Date(d), 'dd/MM/yyyy'); } catch { return '—'; }
 };
 
-const whatsLink = (phone: string | null) =>
-  phone ? `https://wa.me/55${phone.replace(/\D/g, '')}` : '#';
+const buildWhatsMessage = (corretorName: string | null, launchName: string) => {
+  const nome = corretorName?.trim();
+  if (nome) {
+    return `Olá! Sou ${nome}, vim através do site Conecta&Imob e tenho interesse no empreendimento "${launchName}". Pode me passar mais informações?`;
+  }
+  return `Olá! Vim através do site Conecta&Imob e tenho interesse no empreendimento "${launchName}". Pode me passar mais informações?`;
+};
 
 const LaunchDetail = () => {
   const { id } = useParams<{ id: string }>();
