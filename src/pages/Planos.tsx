@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { PlanCard, type PlanCardData } from '@/components/plans/PlanCard';
 import { SubscribeDialog } from '@/components/plans/SubscribeDialog';
+import { getPendingPlan, clearPendingPlan, resolvePendingPlan } from '@/lib/pendingPlan';
 
 export default function Planos() {
   const { user, loading: authLoading } = useAuth();
