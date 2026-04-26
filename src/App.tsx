@@ -39,6 +39,7 @@ import PropertyDetail from "./pages/PropertyDetail";
 import PublicPropertyLP from "./pages/PublicPropertyLP";
 import Planos from "./pages/Planos";
 import CustomLandingPage from "./pages/CustomLandingPage";
+import PrimeirosPassos from "./pages/PrimeirosPassos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,7 @@ const App = () => {
           <Route path="/admin/creatives" element={<Admin section="creatives" />} />
           <Route path="/admin/landing-pages" element={<Admin section="landing-pages" />} />
           <Route path="/admin/landing-pages/:id" element={<Admin section="landing-page-editor" />} />
+          <Route path="/admin/onboarding-video" element={<Admin section="onboarding-video" />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
@@ -116,6 +118,7 @@ const App = () => {
           <Route path="/portal-imoveis/:id" element={<PropertyDetail />} />
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           <Route path="/planos" element={<Planos />} />
+          <Route path="/primeiros-passos" element={<PrimeirosPassos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
           <Route path="/:customSlug" element={<CustomLandingPage />} />

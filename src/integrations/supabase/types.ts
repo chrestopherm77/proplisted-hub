@@ -909,6 +909,36 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_video: {
+        Row: {
+          description: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+          video_type: string
+          video_url: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          video_type?: string
+          video_url?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          video_type?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       partners: {
         Row: {
           created_at: string | null
