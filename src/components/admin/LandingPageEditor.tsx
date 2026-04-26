@@ -87,6 +87,7 @@ export function LandingPageEditor() {
         footer: { ...DEFAULT_CONTENT.footer, ...lp.content?.footer },
         features: lp.content?.features ?? DEFAULT_CONTENT.features,
         floating_ctas: lp.content?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
+        sections: lp.content?.sections ?? [],
       });
       setLoading(false);
     })();
