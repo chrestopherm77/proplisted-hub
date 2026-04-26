@@ -148,6 +148,11 @@ export function LandingPageRenderer({ theme, content }: Props) {
         </section>
       )}
 
+      {/* Seções dinâmicas (Como Funciona, Stats, Benefícios, FAQ) */}
+      {content.sections?.map((sec) => (
+        <DynamicSection key={sec.id} section={sec} theme={theme} />
+      ))}
+
       {/* Prova social */}
       {(content.social_proof?.testimonials?.length > 0 || content.social_proof?.logos?.length > 0) && (
         <section className="py-12 md:py-16" style={{ backgroundColor: `${theme.primary}08` }}>
