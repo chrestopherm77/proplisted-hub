@@ -55,7 +55,7 @@ export function HomePageEditor() {
   const handleSave = async () => {
     setSaving(true);
     const payload = {
-      content: content as unknown as Record<string, unknown>,
+      content: content as any,
       updated_by: user?.id ?? null,
     };
     let error;
@@ -65,7 +65,7 @@ export function HomePageEditor() {
     } else {
       const { data, error: insertErr } = await supabase
         .from('home_page_content')
-        .insert({ singleton: true, ...payload }).select('id').single();
+        .insert({ singleton: true, ...payload } as any).select('id').single();
       error = insertErr;
       if (data) setRowId(data.id);
     }
