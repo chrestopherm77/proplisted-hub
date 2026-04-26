@@ -7,7 +7,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { PlanCard, type PlanCardData } from '@/components/plans/PlanCard';
 import { SubscribeDialog } from '@/components/plans/SubscribeDialog';
-import { getPendingPlan, clearPendingPlan, resolvePendingPlan } from '@/lib/pendingPlan';
+import { clearPendingPlan, resolvePendingPlan } from '@/lib/pendingPlan';
 
 export default function Planos() {
   const { user, loading: authLoading } = useAuth();
