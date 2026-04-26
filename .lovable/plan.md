@@ -1,98 +1,150 @@
-## Objetivo
+## 🎯 Objetivo
 
-Substituir o sistema atual de **código de indicação** (popup que aparece em todo login) por um sistema de **link de indicação único**, em que o crédito de 280 só é concedido quando o indicado tiver uma **assinatura paga ativa** (qualquer plano diferente do CONEXÃO/Free).
-
----
-
-## 1. Substituir o popup de "Indicar" pela tela de Link de Indicação
-
-**Arquivo**: `src/components/referral/ReferralPopup.tsx` → renomear para `ReferralCard.tsx` (ou manter o popup mas mudar o conteúdo).
-
-- **Remover** o popup recorrente que aparece toda vez que a pessoa entra no sistema (hoje usa `sessionStorage` mas ainda aparece em toda nova sessão).
-- O conteúdo de indicação passa a viver em **uma página dedicada** ou seção do **Profile** ("Meu link de indicação"), mais um item no menu do avatar (`UserAvatarMenu.tsx`) chamado **"Indicar e ganhar"**.
-- Layout da nova tela:
-  - Cartão com o **link único**: `https://leadbay.com.br/auth?ref=ABC12345` (usando o `referral_code` existente do perfil — não precisa mudar a coluna).
-  - Botões "Copiar link", "Compartilhar no WhatsApp" (mensagem pronta).
-  - Texto explicativo: *"Você ganha 280 créditos quando seu indicado se cadastrar **e ativar uma assinatura paga** (Essencial, Performance ou Elite)."*
-  - Estatísticas simples: "X pessoas se cadastraram pelo seu link · Y assinaturas confirmadas · Z créditos recebidos".
-
-**Nota**: o popup automático será **removido** completamente. A pessoa só vê quando clica no menu.
+Reformular completamente a Landing Page principal (`/`) com a nova marca **Conectaae Imob**, destacando todas as funcionalidades do sistema, planos e CTAs de conversão. Aplicar o novo nome em cabeçalhos visíveis (logo, título da aba, footer) — mantendo intactos os termos jurídicos e a configuração de domínio multi-tenant.
 
 ---
 
-## 2. Captura do link `?ref=CODIGO` no cadastro
+## 🏷️ Marca: Conectaae Imob
 
-**Arquivo**: `src/pages/Auth.tsx` e `src/components/auth/MultiStepSignup.tsx`.
+- Logo textual estilizado: **Conectaae** em peso bold + **imob** em peso regular com cor primária (mantemos as cores atuais do tema).
+- Sem PNG novo — uso tipografia + ícone simples (`Building2` ou `Network` do lucide-react) ao lado do nome.
 
-- Ler `?ref=` da URL na chegada da página `/auth`.
-- Pré-preencher `formData.referralCode` automaticamente.
-- Ocultar (ou deixar somente leitura) o campo de código manual em `CredentialsStep.tsx` quando vier do link — o usuário só vê uma mensagem: *"Você foi indicado por um corretor. Bônus aplicado após sua assinatura."*
-- Manter o campo manual visível só quando **não** vier `?ref=` na URL (compatibilidade).
+### 💡 Sugestões alternativas de nome (caso queira reconsiderar depois)
 
----
+Curtos, vibrantes e ligados ao mercado imobiliário:
 
-## 3. Mudar a regra de concessão dos 280 créditos (a parte crítica)
+| Nome | Vibe |
+|---|---|
+| **Imobix** | Tecnologia + imob, fácil de memorizar |
+| **Corretta** | Direto ao corretor, soa profissional |
+| **Casabay** | Casa + hub (similar ao atual, suave) |
+| **Lardo** | Curto, único, "lar" + final marcante |
+| **Conecta Imob** | Versão simplificada da escolha atual |
+| **ImobHub** | "Hub" comunica bem o conceito da plataforma |
+| **Vendae** | Verbo de ação, foco em resultado |
+| **Predo** | Curtíssimo, premium, fácil |
+| **Imobi** | Direto, brasileiro, memorável |
+| **CorretorPro** | Foco no profissional |
 
-Hoje a função `redeem_referral` credita os 280 imediatamente no signup. Vamos mudar para **registrar a indicação agora** e **só creditar depois que a assinatura paga for confirmada**.
-
-### 3.1. Nova migração SQL
-
-- **Alterar `redeem_referral`** para apenas marcar `referred_by` no perfil do indicado e **NÃO** creditar mais nada nem marcar `referral_credits_granted = true`. (A coluna `referral_credits_granted` passa a significar "bônus já pago ao indicador", não "indicação registrada".)
-- **Nova função `grant_referral_bonus_if_eligible(p_user_id uuid)`** (SECURITY DEFINER):
-  1. Busca o perfil do indicado.
-  2. Se `referred_by IS NULL` ou `referral_credits_granted = true` → sai.
-  3. Verifica se o indicado tem `user_subscriptions` com `status = 'ACTIVE'` cujo `plan.slug != 'conexao'` (ou seja, plano pago).
-  4. Se sim → credita 280 no `referred_by` via `add_credits_atomic` com tipo `REFERRAL_BONUS`, e marca `referral_credits_granted = true` no perfil do indicado.
-
-### 3.2. Hook no webhook do Asaas
-
-**Arquivo**: `supabase/functions/asaas-webhook/index.ts` (perto da linha 705, depois de creditar a renovação mensal).
-
-- Após uma assinatura paga ser ativada com sucesso (status `ACTIVE` + plano com `price > 0`), chamar `supabase.rpc('grant_referral_bonus_if_eligible', { p_user_id: sub.user_id })`.
-- Se o usuário não tiver indicador, a função simplesmente não faz nada.
-
-### 3.3. Backfill (opcional)
-
-A migração também pode rodar uma única vez para indicações **antigas** que ainda não têm crédito: para todo usuário com `referred_by IS NOT NULL AND referral_credits_granted = false` que já tem assinatura paga ativa, conceder os 280 ao indicador.
+> Vou seguir com **Conectaae Imob** conforme aprovado. Esses ficam como referência caso queira pivotar.
 
 ---
 
-## 4. Mensagem de WhatsApp do link
+## 📐 Nova estrutura da LP (`/` — `src/pages/Index.tsx`)
 
-Atualizar a mensagem existente em `ReferralPopup.tsx` para usar o **link** em vez do código:
+### 1. Header
+- Logo textual "Conectaae **imob**" + botão "Entrar" / "Cadastre-se".
+- Sticky com leve blur ao rolar.
 
+### 2. Hero
+- **Título**: "O hub completo do corretor de imóveis moderno"
+- **Subtítulo**: "Leads qualificados, parcerias, lançamentos, portal de imóveis, IA, criativos e muito mais — tudo em uma única plataforma."
+- 2 CTAs: "Começar grátis" → `/auth` e "Ver planos" → âncora `#planos`.
+- Badge: "Plano grátis disponível • Sem cartão de crédito"
+
+### 3. Seção "Tudo que você precisa para vender mais" (9 funcionalidades)
+
+Grid 3×3 (responsivo) com card para cada feature, cada um com ícone lucide-react, título e copy persuasiva:
+
+| # | Funcionalidade | Ícone | Copy curta |
+|---|---|---|---|
+| 1 | **Leads Disponíveis** | `Target` | "Compre leads de clientes prontos para fechar. Pague só pelo lead que escolher." |
+| 2 | **Balcão de Parcerias** | `Handshake` | "Tem cliente sem imóvel? Publique e encontre o corretor que tem o match perfeito." |
+| 3 | **Lançamentos** | `Building2` | "Acesso direto a lançamentos de construtoras parceiras para você vender." |
+| 4 | **Portal de Imóveis** | `Home` | "Publique seus imóveis e deixe outros corretores se afiliarem para vender." |
+| 5 | **Financiamento** | `Banknote` | "Suporte completo no financiamento dos seus clientes do início ao fim." |
+| 6 | **Criativos com IA** | `Sparkles` | "Gere criativos profissionais para suas redes sociais em segundos." |
+| 7 | **Calculadora de Emolumentos** | `Calculator` | "Calcule emolumentos por estado com precisão antes de fechar negócio." |
+| 8 | **IA de Atendimento** | `Bot` | "Sua IA exclusiva para atender clientes 24/7 sem perder oportunidade." |
+| 9 | **Notícias do Mercado** | `Newspaper` | "Fique por dentro das tendências e dados do mercado imobiliário diariamente." |
+
+Mais 2 cards de **serviços extras** (largura completa, abaixo do grid):
+- 🎓 **Educação Conectaae**: "Treinamentos básicos, intermediários e Hot Seats com especialistas."
+- ⚖️ **Suporte Jurídico**: "Serviços jurídicos sob demanda para você operar com segurança total."
+
+### 4. Como funciona (3 passos)
+1. **Cadastre-se grátis** → comece sem custo
+2. **Escolha seu plano** → mais créditos, mais resultado
+3. **Use todas as ferramentas** → leads, parcerias, IA e mais
+
+### 5. Stats de prova social
+Mantém os 3 stats atuais, atualizando textos:
+- 500+ Corretores ativos · 2.000+ Negócios viabilizados · 24/7 Suporte
+
+### 6. **Seção Planos** (nova, completa, com âncora `#planos`)
+4 cards lado a lado (grid responsivo 1/2/4 colunas):
+
+- **Conexão** — Grátis · 10 créditos/mês — features resumidas → CTA "Começar grátis" → `/auth`
+- **Essencial** — R$ 39,90/mês · 30 créditos — → CTA "Assinar" → `/auth?next=/planos`
+- **Performance** — R$ 79,90/mês · 430 créditos — **badge "Mais Popular"** + destaque visual → CTA "Assinar"
+- **Elite** — R$ 149,90/mês · 1.000 créditos — → CTA "Assinar"
+
+Cada card mostra preço, créditos/mês e top 5-6 benefícios (lista completa com `Check`).
+Texto abaixo: "Cancele quando quiser · Cobrança mensal recorrente"
+
+### 7. CTA final
+Banner gradiente: "Pronto para vender mais imóveis?" + botão "Criar conta grátis"
+
+### 8. Footer
+Logo textual + © 2025 Conectaae Imob.
+
+---
+
+## 🔧 Arquivos a editar
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/Index.tsx` | **Reescrita completa** seguindo a estrutura acima |
+| `index.html` | `<title>` + meta tags og/twitter: "Conectaae Imob" |
+| `src/components/Layout.tsx` | Trocar `<img leadbayLogo>` por componente `<BrandLogo>` textual + footer "Conectaae Imob" |
+| `src/components/AppSidebar.tsx` | Trocar logo por `<BrandLogo>` textual (mantém fallback para partner) |
+| `src/components/MobileMenu.tsx` | Trocar logo por `<BrandLogo>` textual |
+| `src/components/admin/AdminLayout.tsx` | Trocar logo por `<BrandLogo>` textual |
+| `src/pages/Auth.tsx` | Logo textual + título "Entrar no Conectaae Imob" |
+| `src/pages/ThankYou.tsx` / `ThankYou01.tsx` | Logo textual |
+| `src/pages/LeadForm.tsx` / `LeadForm01.tsx` | Logo textual |
+| `src/pages/Indicar.tsx` | Atualizar mensagem WhatsApp para "Conhece o Conectaae Imob:..." |
+| `src/components/BrandLogo.tsx` | **NOVO** componente reutilizável (props: `size`, `variant`) |
+
+### Não vou alterar nesta rodada (preservados):
+- `src/components/auth/constants/registrationTerms.ts` — termos jurídicos com "LEADBAY" (você decidiu manter)
+- `src/contexts/PartnerContext.tsx` — lista de domínios `leadbay.com.br` (afeta white-label)
+- `src/assets/leadbay-logo.png` — fica como fallback para sites parceiros que não têm logo próprio
+- `src/pages/Launches.tsx` linha 252 — mensagem WhatsApp hardcoded de admin (revisamos depois se quiser)
+
+---
+
+## 🧩 Componente novo: `BrandLogo.tsx`
+
+```tsx
+// src/components/BrandLogo.tsx
+interface BrandLogoProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export const BrandLogo = ({ size = 'md', className }: BrandLogoProps) => {
+  const sizes = { sm: 'text-lg', md: 'text-xl', lg: 'text-3xl' };
+  return (
+    <div className={cn('flex items-center gap-1.5 font-display', className)}>
+      <Building2 className="text-primary" />
+      <span className={cn('font-bold tracking-tight', sizes[size])}>
+        Conectaae<span className="font-light text-muted-foreground">imob</span>
+      </span>
+    </div>
+  );
+};
 ```
-Conheça a LeadBay: hub completo para corretor de imóveis.
-Cadastre-se pelo meu link e comece agora:
-https://leadbay.com.br/auth?ref=ABC12345
-```
+
+Em sites de parceiros (white-label), continuamos exibindo o logo PNG do parceiro — o `BrandLogo` só aparece quando `!isPartnerSite`.
 
 ---
 
-## 5. Item no menu do avatar
+## ✅ Resultado esperado
 
-**Arquivo**: `src/components/UserAvatarMenu.tsx`.
+- Página inicial moderna mostrando todas as 9 funcionalidades + 2 serviços extras + 4 planos com CTAs claros.
+- Marca "Conectaae Imob" aparece em todos os cabeçalhos visíveis: aba do navegador, header, sidebar, menu mobile, admin, auth, lead forms, thank you e indicar.
+- White-label de parceiros continua funcionando perfeitamente (logo do parceiro tem prioridade).
+- Termos jurídicos e configuração de domínio intactos.
 
-- Adicionar entrada **"Indicar e ganhar"** com ícone `Gift`, abrindo a nova página/modal de link de indicação.
-
----
-
-## Arquivos afetados
-
-- `src/components/referral/ReferralPopup.tsx` — refatorar (vira card/página, sem auto-open)
-- `src/components/Layout.tsx` — remover `<ReferralPopup>` do layout logado
-- `src/components/UserAvatarMenu.tsx` — novo item "Indicar e ganhar"
-- `src/pages/Auth.tsx` — ler `?ref=` da URL
-- `src/components/auth/MultiStepSignup.tsx` — passar `referralCode` da URL
-- `src/components/auth/steps/CredentialsStep.tsx` — esconder/desabilitar campo quando vier do link
-- `supabase/functions/asaas-webhook/index.ts` — chamar `grant_referral_bonus_if_eligible` após pagamento de assinatura
-- **Nova migração SQL** com:
-  - `redeem_referral` ajustada (só marca `referred_by`)
-  - Nova função `grant_referral_bonus_if_eligible`
-  - Backfill opcional para indicações antigas com assinatura paga já ativa
-
-## Resultado esperado
-
-- Popup chato no login: **eliminado**.
-- Cada corretor tem um **link único** (`/auth?ref=SEUCODIGO`) que pode compartilhar.
-- O bônus de **280 créditos** só cai na conta do indicador **quando o indicado fizer um plano pago** (Essencial, Performance ou Elite). Se o indicado ficar só no plano grátis CONEXÃO, **nenhum crédito é gerado**.
+Próximo passo após aprovar: implemento tudo na próxima resposta.
