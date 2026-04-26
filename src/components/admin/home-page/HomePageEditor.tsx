@@ -36,7 +36,7 @@ export function HomePageEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('editor');
   const [content, setContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
   const [rowId, setRowId] = useState<string | null>(null);
 
