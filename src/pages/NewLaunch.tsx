@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,10 +18,13 @@ import { cn } from '@/lib/utils';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 
 const NewLaunch = () => {
-  const { user, loading: authLoading, canPublishLaunches, permissionsLoading } = useAuth();
+  const { user, loading: authLoading, canPublishLaunches, permissionsLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [loadingLaunch, setLoadingLaunch] = useState(isEditMode);
   const { states: ibgeStates, cities: ibgeCities, fetchCities, clearCities } = useIBGELocation();
 
   useEffect(() => {
@@ -67,6 +70,78 @@ const NewLaunch = () => {
   // Drive: Link only
   const [driveLink, setDriveLink] = useState('');
 
+  // URLs já salvas (modo edição) — preservadas se o usuário não trocar o arquivo
+  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(null);
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [existingBookUrl, setExistingBookUrl] = useState<string | null>(null);
+  const [existingTableUrl, setExistingTableUrl] = useState<string | null>(null);
+
+  // Carrega lançamento em modo edição
+  useEffect(() => {
+    if (!isEditMode || !editId || !user) return;
+    (async () => {
+      const { data, error } = await supabase.from('launches').select('*').eq('id', editId).single();
+      if (error || !data) {
+        toast({ title: 'Erro ao carregar lançamento', description: error?.message, variant: 'destructive' });
+        navigate('/launches');
+        return;
+      }
+      // Permissão: dono ou admin
+      if (data.user_id !== user.id && !isAdmin) {
+        toast({ title: 'Sem permissão para editar este lançamento', variant: 'destructive' });
+        navigate('/launches');
+        return;
+      }
+      setName(data.name || '');
+      setState(data.state || '');
+      if (data.state) await fetchCities(data.state);
+      setCity(data.city || '');
+      setNeighborhood(data.neighborhood || '');
+      setZone(data.zone || '');
+      setLaunchDate(data.launch_date ? new Date(data.launch_date + 'T00:00:00') : undefined);
+      setDeliveryDate(data.delivery_date ? new Date(data.delivery_date + 'T00:00:00') : undefined);
+      const fmtMoney = (raw: string | null) => {
+        if (!raw) return '';
+        const num = parseInt(raw, 10);
+        if (isNaN(num)) return '';
+        return `R$ ${(num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+      };
+      setPriceFrom(fmtMoney(data.price_from));
+      setPriceMax(fmtMoney(data.price_max));
+      setCommission(data.commission || '');
+      setFloors(data.floors || '');
+      setTotalUnits(data.total_units || '');
+      setAssociative(data.associative || '');
+      setCoordinatorName(data.coordinator_name || '');
+      setCoordinatorPhone(data.coordinator_phone || '');
+      setCoordinatorPhone2(data.coordinator_phone2 || '');
+      setPropertyType(data.property_type || '');
+      setSizeM2Min(data.size_m2_min || '');
+      setSizeM2Max(data.size_m2_max || '');
+      setLaunchStatus(data.status || '');
+      const tea = (data as any).table_expires_at;
+      setTableExpiresAt(tea ? new Date(tea + 'T00:00:00') : undefined);
+      setExistingBannerUrl(data.banner_url || null);
+      setExistingLogoUrl(data.logo_url || null);
+      setBannerPreview(data.banner_url || null);
+      setLogoPreview(data.logo_url || null);
+      setExistingBookUrl(data.book_url || null);
+      setExistingTableUrl(data.table_url || null);
+      // Heurística: se a URL existente NÃO contém o storage path, é link externo
+      if (data.book_url) {
+        setBookMode(data.book_url.includes('/storage/') ? 'pdf' : 'link');
+        if (!data.book_url.includes('/storage/')) setBookLink(data.book_url);
+      }
+      if (data.table_url) {
+        setTableMode(data.table_url.includes('/storage/') ? 'pdf' : 'link');
+        if (!data.table_url.includes('/storage/')) setTableLink(data.table_url);
+      }
+      setDriveLink(data.drive_link || data.drive_url || '');
+      setLoadingLaunch(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, editId, user, isAdmin]);
+
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) { setBannerFile(file); setBannerPreview(URL.createObjectURL(file)); }
@@ -107,12 +182,13 @@ const NewLaunch = () => {
 
     setSaving(true);
     try {
-      const launchId = crypto.randomUUID();
+      const launchId = isEditMode && editId ? editId : crypto.randomUUID();
 
-      let banner_url: string | null = null;
-      let logo_url: string | null = null;
-      let book_url: string | null = null;
-      let table_url: string | null = null;
+      // Em modo edição, parte das URLs já existe; só substituímos se houver arquivo novo
+      let banner_url: string | null = isEditMode ? existingBannerUrl : null;
+      let logo_url: string | null = isEditMode ? existingLogoUrl : null;
+      let book_url: string | null = isEditMode ? existingBookUrl : null;
+      let table_url: string | null = isEditMode ? existingTableUrl : null;
 
       if (bannerFile) {
         const ext = bannerFile.name.split('.').pop();
@@ -125,27 +201,26 @@ const NewLaunch = () => {
 
       if (bookMode === 'pdf' && bookFile) {
         book_url = await uploadFile(bookFile, `docs/${launchId}/book.pdf`);
-      } else if (bookMode === 'link' && bookLink.trim()) {
-        book_url = bookLink.trim();
+      } else if (bookMode === 'link') {
+        book_url = bookLink.trim() || null;
       }
 
       if (tableMode === 'pdf' && tableFile) {
         table_url = await uploadFile(tableFile, `docs/${launchId}/tabela.pdf`);
-      } else if (tableMode === 'link' && tableLink.trim()) {
-        table_url = tableLink.trim();
+      } else if (tableMode === 'link') {
+        table_url = tableLink.trim() || null;
       }
 
       const priceFromRaw = priceFrom.replace(/\D/g, '') || null;
       const priceMaxRaw = priceMax.replace(/\D/g, '') || null;
+      const zoneValue = zone && zone !== '__none__' ? zone : null;
 
-      const { error } = await supabase.from('launches').insert({
-        id: launchId,
-        user_id: user.id,
+      const payload = {
         name: name.trim(),
         state: state || null,
         city: city.trim(),
         neighborhood: neighborhood || null,
-        zone: zone || null,
+        zone: zoneValue,
         launch_date: launchDate ? format(launchDate, 'yyyy-MM-dd') : null,
         delivery_date: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null,
         price_from: priceFromRaw,
@@ -156,7 +231,6 @@ const NewLaunch = () => {
         associative: associative || null,
         book_url,
         table_url,
-        drive_url: null,
         drive_link: driveLink.trim() || null,
         coordinator_name: coordinatorName || null,
         coordinator_phone: coordinatorPhone || null,
@@ -168,6 +242,21 @@ const NewLaunch = () => {
         size_m2_max: sizeM2Max || null,
         status: launchStatus || null,
         table_expires_at: tableExpiresAt ? format(tableExpiresAt, 'yyyy-MM-dd') : null,
+      };
+
+      if (isEditMode && editId) {
+        const { error } = await supabase.from('launches').update(payload as any).eq('id', editId);
+        if (error) throw error;
+        toast({ title: 'Lançamento atualizado com sucesso!' });
+        navigate(`/launches/${editId}`);
+        return;
+      }
+
+      const { error } = await supabase.from('launches').insert({
+        id: launchId,
+        user_id: user.id,
+        drive_url: null,
+        ...payload,
       } as any);
 
       if (error) throw error;
@@ -182,7 +271,7 @@ const NewLaunch = () => {
             launchId,
             state: state || null,
             city: city.trim(),
-            zone: zone || null,
+            zone: zoneValue,
             property_type: propertyType || null,
             status: launchStatus || null,
             price_from: priceFromRaw,
@@ -196,20 +285,24 @@ const NewLaunch = () => {
       toast({ title: 'Lançamento publicado com sucesso!' });
       navigate('/launches');
     } catch (err: any) {
-      toast({ title: 'Erro ao publicar', description: err.message, variant: 'destructive' });
+      toast({ title: isEditMode ? 'Erro ao salvar' : 'Erro ao publicar', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
+  if (isEditMode && loadingLaunch) {
+    return <Layout><div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  }
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/launches')} className="gap-2">
+        <Button variant="ghost" onClick={() => navigate(isEditMode && editId ? `/launches/${editId}` : '/launches')} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <h1 className="text-2xl font-bold text-foreground">Novo Lançamento</h1>
+        <h1 className="text-2xl font-bold text-foreground">{isEditMode ? 'Editar Lançamento' : 'Novo Lançamento'}</h1>
 
         {/* Banner & Logo */}
         <Card>
@@ -281,6 +374,7 @@ const NewLaunch = () => {
               <Select value={zone} onValueChange={setZone}>
                 <SelectTrigger><SelectValue placeholder="Selecionar zona" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Nenhuma</SelectItem>
                   <SelectItem value="Norte">Norte</SelectItem>
                   <SelectItem value="Sul">Sul</SelectItem>
                   <SelectItem value="Leste">Leste</SelectItem>
@@ -466,7 +560,7 @@ const NewLaunch = () => {
 
         <Button onClick={handleSubmit} disabled={saving} className="w-full gap-2" size="lg">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Publicar Lançamento
+          {isEditMode ? 'Salvar Alterações' : 'Publicar Lançamento'}
         </Button>
       </div>
     </Layout>

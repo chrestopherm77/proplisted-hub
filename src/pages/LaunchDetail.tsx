@@ -6,9 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Info, DollarSign, Building2, User, MessageCircle, Download, FileText, FolderOpen, Loader2, MapPin, TrendingUp, Calendar, Trash2, Ruler, Home } from 'lucide-react';
+import { ArrowLeft, Info, DollarSign, Building2, User, MessageCircle, Download, FileText, FolderOpen, Loader2, MapPin, TrendingUp, Calendar, Trash2, Pencil, Ruler, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { buildWaLink } from '@/lib/whatsapp';
 
 interface Launch {
   id: string;
@@ -54,8 +55,13 @@ const formatDate = (d: string | null): string => {
   try { return format(new Date(d), 'dd/MM/yyyy'); } catch { return '—'; }
 };
 
-const whatsLink = (phone: string | null) =>
-  phone ? `https://wa.me/55${phone.replace(/\D/g, '')}` : '#';
+const buildWhatsMessage = (corretorName: string | null, launchName: string) => {
+  const nome = corretorName?.trim();
+  if (nome) {
+    return `Olá! Sou ${nome}, vim através do site Conecta&Imob e tenho interesse no empreendimento "${launchName}". Pode me passar mais informações?`;
+  }
+  return `Olá! Vim através do site Conecta&Imob e tenho interesse no empreendimento "${launchName}". Pode me passar mais informações?`;
+};
 
 const LaunchDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,13 +71,27 @@ const LaunchDetail = () => {
   const [launch, setLaunch] = useState<Launch | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [brokerName, setBrokerName] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
     if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    if (isAdmin || isConstrutora) fetchLaunch();
+    if (isAdmin || isConstrutora) {
+      fetchLaunch();
+      fetchBrokerName();
+    }
   }, [id, user, authLoading, isAdmin]);
+
+  const fetchBrokerName = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, company_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    setBrokerName(data?.name || data?.company_name || null);
+  };
 
   const fetchLaunch = async () => {
     if (!id) return;
@@ -106,10 +126,16 @@ const LaunchDetail = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <Button variant="ghost" onClick={() => navigate('/launches')} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
+          <div className="flex items-center gap-2">
+            {(isAdmin || (user && launch.user_id === user.id)) && (
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/launches/${launch.id}/edit`)}>
+                <Pencil className="h-4 w-4" /> Editar
+              </Button>
+            )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" className="gap-2">
@@ -129,6 +155,7 @@ const LaunchDetail = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -208,14 +235,14 @@ const LaunchDetail = () => {
               <CardContent className="text-center space-y-3">
                 <p className="font-medium text-foreground">{launch.coordinator_name || '—'}</p>
                 {launch.coordinator_phone && (
-                  <a href={whatsLink(launch.coordinator_phone)} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWaLink(launch.coordinator_phone, buildWhatsMessage(brokerName, launch.name))} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
                       <MessageCircle className="h-4 w-4" /> WhatsApp 1
                     </Button>
                   </a>
                 )}
                 {launch.coordinator_phone2 && (
-                  <a href={whatsLink(launch.coordinator_phone2)} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWaLink(launch.coordinator_phone2, buildWhatsMessage(brokerName, launch.name))} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white mt-2">
                       <MessageCircle className="h-4 w-4" /> WhatsApp 2
                     </Button>
