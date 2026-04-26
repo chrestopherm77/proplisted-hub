@@ -7,7 +7,6 @@ import leadbayLogo from '@/assets/leadbay-logo.png';
 import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { ReferralPopup } from '@/components/referral/ReferralPopup';
 import { UserAvatarMenu } from '@/components/UserAvatarMenu';
 
 interface LayoutProps {
