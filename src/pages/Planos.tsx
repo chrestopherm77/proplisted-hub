@@ -13,6 +13,7 @@ export default function Planos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [plans, setPlans] = useState<PlanCardData[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [activePlanPrice, setActivePlanPrice] = useState<number>(0);
@@ -22,6 +23,8 @@ export default function Planos() {
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
   const [dialogPlan, setDialogPlan] = useState<PlanCardData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Garante que o auto-trigger via ?plan= dispare apenas uma vez por carga.
+  const autoTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
