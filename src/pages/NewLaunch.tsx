@@ -292,13 +292,18 @@ const NewLaunch = () => {
   };
 
   return (
+  if (isEditMode && loadingLaunch) {
+    return <Layout><div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  }
+
+  return (
     <Layout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/launches')} className="gap-2">
+        <Button variant="ghost" onClick={() => navigate(isEditMode && editId ? `/launches/${editId}` : '/launches')} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <h1 className="text-2xl font-bold text-foreground">Novo Lançamento</h1>
+        <h1 className="text-2xl font-bold text-foreground">{isEditMode ? 'Editar Lançamento' : 'Novo Lançamento'}</h1>
 
         {/* Banner & Logo */}
         <Card>
