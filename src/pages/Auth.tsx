@@ -89,7 +89,7 @@ export default function Auth() {
           <div className="flex justify-center mb-6">
             <img src={leadbayLogo} alt="LeadBay" className="h-12" />
           </div>
-          <MultiStepSignup onSwitchToLogin={() => setIsLogin(true)} />
+          <MultiStepSignup onSwitchToLogin={() => setIsLogin(true)} initialReferralCode={refFromUrl} />
         </div>
       </div>
     );
