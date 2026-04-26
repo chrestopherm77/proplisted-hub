@@ -1,58 +1,82 @@
+# Adicionar seções editáveis ao gerador de LP
 
-## Plano — Ajustes em Lançamentos
+Hoje a LP customizável tem **6 blocos fixos** (Header, Hero, Features, Mídia, Prova Social, CTA Final, Footer). Vou adicionar **4 novos tipos de seção** replicando a página inicial da Leadbay e implementar um **sistema de seções dinâmicas** onde você adiciona, remove e reordena livremente.
 
-### 1. Zona — opção "Nenhuma" (poder desselecionar)
-**Arquivo:** `src/pages/NewLaunch.tsx` (e o futuro editor reutilizando)
+## 1. Novos tipos de seção (replicados da Leadbay)
 
-- Adicionar `<SelectItem value="__none__">Nenhuma</SelectItem>` como primeira opção do Select de Zona.
-- No submit, converter `zone === "__none__"` para `null` antes do INSERT (já existe `zone || null`, ajusto para `zone && zone !== "__none__" ? zone : null`).
-- Mesmo padrão será aplicado nos outros selects opcionais conforme necessário (mantendo o escopo só em Zona por ora, conforme pedido).
+Cada uma vira um "bloco" plugável dentro de um array `sections[]` no `content` da LP:
 
-### 2. Editar lançamento depois de publicado
-Hoje só existe `/launches/new` (criar). Vou:
+### a) `how_it_works` — Como Funciona
+3 passos numerados (círculo com 1, 2, 3) + título + descrição. Cada item editável; suporta de 2 a 6 passos.
 
-- **Refatorar `src/pages/NewLaunch.tsx`** para suportar modo edição via parâmetro de rota:
-  - Nova rota: `/launches/:id/edit` em `src/App.tsx`.
-  - Ao montar, se houver `id`, carrega o lançamento (`select('*').eq('id', id).single()`) e popula todos os states.
-  - Botão final muda de "Publicar" para "Salvar alterações".
-  - No submit, em modo edição: `update(...).eq('id', id)` em vez de `insert`.
-  - Permissão: só o `user_id` dono do lançamento OU `MASTER_ADMIN` pode editar (já garantido pelas RLS existentes — `Users can update own launches` + `Admins can manage all launches`).
-  - Banner/logo/PDFs: se o usuário não trocar o arquivo, mantém URLs atuais; se trocar, faz upload novo e substitui.
+### b) `stats` — Estatísticas
+3 cards com ícone Lucide + número grande (ex: "500+") + label (ex: "Corretores Ativos"). Cor primária do tema. 2 a 6 itens.
 
-- **Adicionar botão "Editar" em `src/pages/LaunchDetail.tsx`**:
-  - Aparece ao lado do botão "Excluir" no header.
-  - Visível apenas se `user.id === launch.user_id` ou `isAdmin`.
-  - Navega para `/launches/${id}/edit`.
+### c) `benefits` — Benefícios
+Lista vertical de itens com check verde + título + descrição em cards brancos. Igual ao "Benefícios Exclusivos". 2 a 8 itens.
 
-### 3. Logo/banner cortado no card da listagem
-**Arquivo:** `src/pages/Launches.tsx` (cards do grid)
+### d) `faq` — Perguntas Frequentes
+Accordion de pergunta/resposta. 1 a 12 itens. Tipo extra que não existe na Leadbay original mas pediu.
 
-Causa: o card usa `aspect-[16/10]` com `object-cover` no `banner_url`. Quando o usuário sobe a logo como banner (caso da imagem enviada — "Construa Comigo"), ela é cortada.
+## 2. Sistema de seções dinâmicas
 
-**Correção:**
-- Trocar `object-cover` por `object-contain` na imagem do card e adicionar fundo neutro (`bg-white`) para que **logos e imagens proporcionais apareçam inteiras dentro do quadro do card**, sem corte (igual ao print).
-- Manter o `aspect-[16/10]` (formato do quadro inalterado).
-- A logo flutuante pequena no canto inferior esquerdo (`launch.logo_url`) será **escondida** quando não houver `banner_url` separado — evita duplicação visual.
+### Estrutura de dados (em `LPContent`)
+Adicionar um novo campo `sections: LPSection[]` que vive **entre a Mídia e a Prova Social** na renderização. Os blocos antigos (Hero, Features, Mídia, Prova Social, CTA Final) continuam fixos para não quebrar LPs existentes.
 
-**Não mexer** na página de detalhe (`LaunchDetail.tsx` banner permanece `object-cover` no aspect 16/7, que é o comportamento esperado para banner de cabeçalho).
+```ts
+type LPSection =
+  | { id: string; type: 'how_it_works'; title: string; subtitle: string; steps: { title: string; description: string }[] }
+  | { id: string; type: 'stats'; items: { icon: string; value: string; label: string }[] }
+  | { id: string; type: 'benefits'; title: string; items: { title: string; description: string }[] }
+  | { id: string; type: 'faq'; title: string; items: { question: string; answer: string }[] };
+```
 
-### 4. Mensagem padrão no WhatsApp do coordenador
-**Arquivo:** `src/pages/LaunchDetail.tsx`
+Cada seção tem `id` único (UUID) para servir de chave do drag & drop e do React.
 
-Hoje: `whatsLink` só monta `https://wa.me/55<numero>` sem texto.
+### Template padrão da Leadbay
+LPs novas começam com `sections` pré-populado nesta ordem (idêntico à Leadbay):
+1. `how_it_works` (Escolha o Lead → Pagamento → Contato)
+2. `stats` (500+ Corretores, 2.000+ Leads, 24/7 Suporte)
+3. `benefits` (4 itens com check)
+4. `faq` (vazio por padrão, opcional)
 
-**Correção:**
-- Buscar o `name` do corretor logado a partir de `profiles` (ou usar `user.user_metadata?.name`) no `fetchLaunch`.
-- Trocar `whatsLink` por uma versão que monte:
-  ```
-  Olá! Sou {nome do corretor logado}, vim através do site Conecta&Imob 
-  e tenho interesse no empreendimento {nome do lançamento}. 
-  Pode me passar mais informações?
-  ```
-- Encodar com `encodeURIComponent` e usar o helper `buildWaLink(phone, message)` que já existe em `src/lib/whatsapp.ts` (faz a normalização correta de telefone para 12 dígitos — regra do projeto).
-- Aplicar nos dois botões (WhatsApp 1 e WhatsApp 2).
-- Fallback: se por algum motivo o nome do corretor não carregar, usar "Olá! Vim através do site Conecta&Imob..." sem o nome.
+LPs já existentes recebem `sections: []` no merge com `DEFAULT_CONTENT` — não quebra nada.
 
-### Resumo dos arquivos
-- **Editar:** `src/pages/NewLaunch.tsx` (modo edição + Zona "Nenhuma"), `src/pages/LaunchDetail.tsx` (botão Editar + WhatsApp com mensagem), `src/pages/Launches.tsx` (card sem corte), `src/App.tsx` (nova rota `/launches/:id/edit`).
-- **Sem mudanças no banco** — RLS de `launches` já permite update pelo dono e pelo admin.
+### Drag & drop no editor
+Usar **`@dnd-kit/core` + `@dnd-kit/sortable`** (já é o padrão Lovable, leve e acessível). Cada bloco vira um card com:
+- Handle de arrastar (ícone `GripVertical`)
+- Botão "Editar" (expande accordion interno)
+- Botão "Duplicar" (clona com novo `id`)
+- Botão "Remover" (`Trash2`)
+
+Botão **"+ Adicionar seção"** no final abre um menu (popover) com os 4 tipos disponíveis. Ao escolher, adiciona um bloco novo com conteúdo padrão.
+
+## 3. Ordem final de renderização na LP
+
+Header → Hero → Features → Mídia → **[sections dinâmicas na ordem definida]** → Prova social → CTA final → Footer → Floating CTAs
+
+Isso mantém a ordem da Leadbay como você pediu, e ainda permite remover/reordenar tudo do meio.
+
+## 4. Arquivos a editar/criar
+
+- **`src/components/admin/landing-page/types.ts`**: adicionar tipos `LPSection`, `LPHowItWorksSection`, `LPStatsSection`, `LPBenefitsSection`, `LPFaqSection` e o array `sections` em `LPContent`. Atualizar `DEFAULT_CONTENT` com o template da Leadbay.
+
+- **`src/components/landing-page-renderer/LandingPageRenderer.tsx`**: adicionar bloco que itera `content.sections` e renderiza o componente certo por tipo. Cada tipo respeita o tema (cores `theme.primary`, `theme.text`, `theme.background`, `theme.accent`).
+
+- **`src/components/admin/landing-page/SectionsEditor.tsx`** (novo): componente isolado com drag & drop e os 4 sub-editores (`HowItWorksEditor`, `StatsEditor`, `BenefitsEditor`, `FaqEditor`).
+
+- **`src/components/admin/LandingPageEditor.tsx`**: encaixar `<SectionsEditor>` dentro do accordion principal entre "Mídia" e "Prova social". Ajustar o merge no `useEffect` para incluir `sections`.
+
+- **Dependência**: instalar `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (provavelmente já presentes — verificar `package.json`; se não, `bun add`).
+
+## 5. Compatibilidade com LPs já criadas
+
+LPs salvas hoje **não têm** `sections` no JSON. O loader já faz spread com `DEFAULT_CONTENT`, então `sections` virá `[]` para LPs antigas — elas continuam funcionando exatamente como estão. O admin pode entrar e adicionar seções manualmente quando quiser.
+
+## 6. O que **não** muda
+
+- Slug, tema, header, hero, features, mídia, prova social, CTA final, footer, floating CTAs, redes sociais — tudo igual.
+- Banco: nenhuma migration necessária (tudo cabe no `content jsonb`).
+- Renderização pública em `/{slug}` continua igual; só ganha mais blocos no meio.
+
+Quando aprovar, eu implemento.

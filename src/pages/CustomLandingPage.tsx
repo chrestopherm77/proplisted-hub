@@ -67,6 +67,7 @@ export default function CustomLandingPage() {
     features: (lp.content as LPContent)?.features ?? DEFAULT_CONTENT.features,
     floating_ctas:
       (lp.content as LPContent)?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
+    sections: (lp.content as LPContent)?.sections ?? [],
   };
 
   return <LandingPageRenderer theme={theme} content={content} />;

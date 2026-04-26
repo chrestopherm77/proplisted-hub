@@ -20,6 +20,7 @@ import {
   type CustomLandingPage, type LPContent, type LPTheme,
 } from '@/components/admin/landing-page/types';
 import { LandingPageRenderer } from '@/components/landing-page-renderer/LandingPageRenderer';
+import { SectionsEditor } from '@/components/admin/landing-page/SectionsEditor';
 import { normalizeSlug, validateSlug } from '@/lib/reservedSlugs';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -86,6 +87,7 @@ export function LandingPageEditor() {
         footer: { ...DEFAULT_CONTENT.footer, ...lp.content?.footer },
         features: lp.content?.features ?? DEFAULT_CONTENT.features,
         floating_ctas: lp.content?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
+        sections: lp.content?.sections ?? [],
       });
       setLoading(false);
     })();
@@ -365,6 +367,19 @@ export function LandingPageEditor() {
                         onChange={(e) => updateContent('media', { ...content.media, caption: e.target.value })} />
                     </div>
                   )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* SEÇÕES DINÂMICAS (Como Funciona, Stats, Benefícios, FAQ) */}
+              <AccordionItem value="sections" className="border rounded-md px-3">
+                <AccordionTrigger>
+                  Seções da página ({content.sections?.length ?? 0})
+                </AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <SectionsEditor
+                    sections={content.sections ?? []}
+                    onChange={(next) => updateContent('sections', next)}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
