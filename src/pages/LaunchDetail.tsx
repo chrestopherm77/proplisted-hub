@@ -235,14 +235,14 @@ const LaunchDetail = () => {
               <CardContent className="text-center space-y-3">
                 <p className="font-medium text-foreground">{launch.coordinator_name || '—'}</p>
                 {launch.coordinator_phone && (
-                  <a href={whatsLink(launch.coordinator_phone)} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWaLink(launch.coordinator_phone, buildWhatsMessage(brokerName, launch.name))} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
                       <MessageCircle className="h-4 w-4" /> WhatsApp 1
                     </Button>
                   </a>
                 )}
                 {launch.coordinator_phone2 && (
-                  <a href={whatsLink(launch.coordinator_phone2)} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWaLink(launch.coordinator_phone2, buildWhatsMessage(brokerName, launch.name))} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white mt-2">
                       <MessageCircle className="h-4 w-4" /> WhatsApp 2
                     </Button>
