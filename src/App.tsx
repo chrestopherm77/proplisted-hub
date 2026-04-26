@@ -38,6 +38,7 @@ import NewProperty from "./pages/NewProperty";
 import PropertyDetail from "./pages/PropertyDetail";
 import PublicPropertyLP from "./pages/PublicPropertyLP";
 import Planos from "./pages/Planos";
+import CustomLandingPage from "./pages/CustomLandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,8 @@ const App = () => {
           <Route path="/admin/launch-access" element={<Admin section="launch-access" />} />
           <Route path="/admin/partners" element={<Admin section="partners" />} />
           <Route path="/admin/creatives" element={<Admin section="creatives" />} />
+          <Route path="/admin/landing-pages" element={<Admin section="landing-pages" />} />
+          <Route path="/admin/landing-pages/:id" element={<Admin section="landing-page-editor" />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
@@ -113,6 +116,8 @@ const App = () => {
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           <Route path="/planos" element={<Planos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Catch-slug for custom landing pages — MUST be last before "*" */}
+          <Route path="/:customSlug" element={<CustomLandingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </PartnerProvider>

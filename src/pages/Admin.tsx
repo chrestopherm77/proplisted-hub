@@ -12,6 +12,8 @@ import { AccessHistory } from '@/components/admin/AccessHistory';
 import { PartnersManagement } from '@/components/admin/PartnersManagement';
 import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManagement';
 import { LaunchAccessManagement } from '@/components/admin/LaunchAccessManagement';
+import { LandingPagesManagement } from '@/components/admin/LandingPagesManagement';
+import { LandingPageEditor } from '@/components/admin/LandingPageEditor';
 
 type Section =
   | 'dashboard'
@@ -26,7 +28,9 @@ type Section =
   | 'access'
   | 'launch-access'
   | 'partners'
-  | 'creatives';
+  | 'creatives'
+  | 'landing-pages'
+  | 'landing-page-editor';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -42,6 +46,8 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'launch-access': LaunchAccessManagement,
   partners: PartnersManagement,
   creatives: CreativeStylesManagement,
+  'landing-pages': LandingPagesManagement,
+  'landing-page-editor': LandingPageEditor,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
