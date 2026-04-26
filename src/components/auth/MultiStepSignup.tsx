@@ -461,8 +461,18 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
 
       toast.success("Cadastro realizado com sucesso! Bem-vindo!");
-      // Redireciona para a página de Primeiros Passos após o cadastro
-      setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
+
+      // Se o usuário escolheu um plano na LP antes de cadastrar, vamos direto para
+      // /planos com o slug — lá o checkout (ou ativação do grátis) acontece automaticamente.
+      const { getPendingPlan, clearPendingPlan } = await import('@/lib/pendingPlan');
+      const pending = getPendingPlan();
+      if (pending) {
+        clearPendingPlan();
+        setTimeout(() => { window.location.href = `/planos?plan=${pending}`; }, 800);
+      } else {
+        // Redireciona para a página de Primeiros Passos após o cadastro
+        setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
+      }
     } catch (error: any) {
       toast.error("Erro ao criar conta. Tente novamente.");
     } finally {
