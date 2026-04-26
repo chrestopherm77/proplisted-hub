@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown, Sparkles } from 'lucide-react';
-import leadbayLogo from '@/assets/leadbay-logo.png';
+import { BrandLogo } from '@/components/BrandLogo';
 import { usePartner } from '@/contexts/PartnerContext';
 import {
   Sheet,
@@ -36,7 +36,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             {isPartnerSite && partner?.logo_url ? (
               <img src={partner.logo_url} alt={partner.name} className="h-7 max-w-[140px] object-contain" />
             ) : (
-              <img src={leadbayLogo} alt="LeadBay" className="h-7" />
+              <BrandLogo size="sm" />
             )}
           </SheetTitle>
         </SheetHeader>

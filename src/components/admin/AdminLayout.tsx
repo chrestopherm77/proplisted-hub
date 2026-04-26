@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import leadbayLogo from '@/assets/leadbay-logo.png';
+import { BrandLogo } from '@/components/BrandLogo';
 import { UserAvatarMenu } from '@/components/UserAvatarMenu';
 import {
   Sidebar,
@@ -77,7 +77,7 @@ function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <Link to="/admin" className="flex items-center gap-2">
-          <img src={leadbayLogo} alt="LeadBay" className={collapsed ? 'h-8' : 'h-10'} />
+          <BrandLogo size={collapsed ? 'sm' : 'md'} />
           {!collapsed && (
             <span className="text-xs font-semibold uppercase tracking-wide text-primary">
               Admin

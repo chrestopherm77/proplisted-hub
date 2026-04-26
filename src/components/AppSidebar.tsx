@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/contexts/PartnerContext';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import { supabase } from '@/integrations/supabase/client';
-import leadbayLogo from '@/assets/leadbay-logo.png';
+import { BrandLogo } from '@/components/BrandLogo';
 import {
   ShoppingBag,
   Package,
@@ -109,15 +109,9 @@ export function AppSidebar() {
               src={partner.logo_url}
               alt={partner.name || 'Parceiro'}
               className="h-12 max-w-[180px] object-contain"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = leadbayLogo; }}
             />
           ) : (
-            <img
-              src={leadbayLogo}
-              alt="LeadBay"
-              className={collapsed ? 'h-10' : 'h-12'}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-            />
+            <BrandLogo size={collapsed ? 'sm' : 'md'} hideIcon={false} />
           )}
         </Link>
       </SidebarHeader>

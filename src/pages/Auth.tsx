@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import leadbayLogo from '@/assets/leadbay-logo.png';
+import { BrandLogo } from '@/components/BrandLogo';
 import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 
@@ -87,7 +87,7 @@ export default function Auth() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
         <div className="w-full max-w-lg">
           <div className="flex justify-center mb-6">
-            <img src={leadbayLogo} alt="LeadBay" className="h-12" />
+            <BrandLogo size="lg" />
           </div>
           <MultiStepSignup onSwitchToLogin={() => setIsLogin(true)} initialReferralCode={refFromUrl} />
         </div>
@@ -101,9 +101,9 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <img src={leadbayLogo} alt="LeadBay" className="h-12" />
+            <BrandLogo size="lg" />
           </div>
-          <CardTitle className="text-2xl">Entrar no LeadBay</CardTitle>
+          <CardTitle className="text-2xl">Entrar no Conectaae Imob</CardTitle>
           <CardDescription>Acesse sua conta para comprar leads</CardDescription>
         </CardHeader>
         <CardContent>
