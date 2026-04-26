@@ -155,7 +155,7 @@ export function CredentialsStep({ formData, onChange, errors, referralLocked }: 
         <div className="space-y-2 pt-4 border-t">
           <Label htmlFor="referralCode" className="flex items-center gap-2">
             <Gift className="w-4 h-4 text-primary" />
-            Foi indicado? Coloque o código aqui
+            {referralLocked ? 'Você foi indicado!' : 'Foi indicado? Coloque o código aqui'}
           </Label>
           <Input
             id="referralCode"
@@ -165,9 +165,13 @@ export function CredentialsStep({ formData, onChange, errors, referralLocked }: 
             value={formData.referralCode}
             onChange={(e) => onChange('referralCode', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').trim())}
             className="font-mono tracking-widest uppercase"
+            readOnly={referralLocked}
+            disabled={referralLocked}
           />
           <p className="text-xs text-muted-foreground">
-            Opcional — se um amigo te indicou, ele ganha 280 créditos quando você se cadastrar.
+            {referralLocked
+              ? 'Indicação aplicada automaticamente. Seu indicador receberá 280 créditos quando você ativar uma assinatura paga.'
+              : 'Opcional — se um corretor te indicou, ele ganha 280 créditos quando você ativar uma assinatura paga.'}
           </p>
         </div>
 
