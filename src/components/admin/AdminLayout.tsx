@@ -33,6 +33,7 @@ import {
   KeyRound,
   ArrowLeft,
   Globe,
+  PlayCircle,
 } from 'lucide-react';
 
 interface AdminNavItem {
@@ -60,6 +61,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
+  { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
 ];
 
 const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Conteúdo'];

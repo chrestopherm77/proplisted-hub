@@ -456,7 +456,9 @@ export function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
         }
       }
 
-      toast.success("Cadastro realizado com sucesso! Você já pode acessar o sistema.");
+      toast.success("Cadastro realizado com sucesso! Bem-vindo!");
+      // Redireciona para a página de Primeiros Passos após o cadastro
+      setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
     } catch (error: any) {
       toast.error("Erro ao criar conta. Tente novamente.");
     } finally {

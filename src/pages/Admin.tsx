@@ -14,6 +14,7 @@ import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManag
 import { LaunchAccessManagement } from '@/components/admin/LaunchAccessManagement';
 import { LandingPagesManagement } from '@/components/admin/LandingPagesManagement';
 import { LandingPageEditor } from '@/components/admin/LandingPageEditor';
+import { OnboardingVideoManagement } from '@/components/admin/OnboardingVideoManagement';
 
 type Section =
   | 'dashboard'
@@ -30,7 +31,8 @@ type Section =
   | 'partners'
   | 'creatives'
   | 'landing-pages'
-  | 'landing-page-editor';
+  | 'landing-page-editor'
+  | 'onboarding-video';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -48,6 +50,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   creatives: CreativeStylesManagement,
   'landing-pages': LandingPagesManagement,
   'landing-page-editor': LandingPageEditor,
+  'onboarding-video': OnboardingVideoManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
