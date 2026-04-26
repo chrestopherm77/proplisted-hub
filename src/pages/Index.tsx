@@ -456,6 +456,16 @@ const Index = () => {
               Criar conta grátis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+            <p className="mt-6 text-sm md:text-base opacity-95">
+              Já tem cadastro?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/auth?mode=login')}
+                className="underline font-semibold hover:opacity-80 transition-opacity"
+              >
+                Acesse agora
+              </button>
+            </p>
           </div>
         </section>
       </main>
