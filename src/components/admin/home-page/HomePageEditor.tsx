@@ -108,9 +108,32 @@ export function HomePageEditor() {
               <ExternalLink className="h-4 w-4" /> Abrir home
             </a>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowPreview((p) => !p)}>
-            {showPreview ? <><EyeOff className="h-4 w-4" /> Editor</> : <><Eye className="h-4 w-4" /> Preview</>}
-          </Button>
+          <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
+            <Button
+              variant={viewMode === 'editor' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('editor')}
+            >
+              <EyeOff className="h-3.5 w-3.5" /> Editor
+            </Button>
+            <Button
+              variant={viewMode === 'split' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2 hidden lg:inline-flex"
+              onClick={() => setViewMode('split')}
+            >
+              <Eye className="h-3.5 w-3.5" /> Split
+            </Button>
+            <Button
+              variant={viewMode === 'preview' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('preview')}
+            >
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </Button>
+          </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
