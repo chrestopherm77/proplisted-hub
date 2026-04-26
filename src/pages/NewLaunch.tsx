@@ -18,10 +18,13 @@ import { cn } from '@/lib/utils';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 
 const NewLaunch = () => {
-  const { user, loading: authLoading, canPublishLaunches, permissionsLoading } = useAuth();
+  const { user, loading: authLoading, canPublishLaunches, permissionsLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [loadingLaunch, setLoadingLaunch] = useState(isEditMode);
   const { states: ibgeStates, cities: ibgeCities, fetchCities, clearCities } = useIBGELocation();
 
   useEffect(() => {
