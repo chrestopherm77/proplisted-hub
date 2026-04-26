@@ -216,6 +216,10 @@ export function UserAvatarMenu() {
             <Coins className="mr-2 h-4 w-4" />
             <span>Comprar Créditos</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/indicar')}>
+            <Gift className="mr-2 h-4 w-4 text-primary" />
+            <span>Indicar e ganhar</span>
+          </DropdownMenuItem>
           {!isPartnerSite && (
             <DropdownMenuItem onClick={() => navigate('/planos')}>
               <Crown className="mr-2 h-4 w-4" />
