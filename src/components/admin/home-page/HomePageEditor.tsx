@@ -36,7 +36,7 @@ export function HomePageEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('editor');
   const [content, setContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
   const [rowId, setRowId] = useState<string | null>(null);
 
@@ -108,9 +108,32 @@ export function HomePageEditor() {
               <ExternalLink className="h-4 w-4" /> Abrir home
             </a>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowPreview((p) => !p)}>
-            {showPreview ? <><EyeOff className="h-4 w-4" /> Editor</> : <><Eye className="h-4 w-4" /> Preview</>}
-          </Button>
+          <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
+            <Button
+              variant={viewMode === 'editor' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('editor')}
+            >
+              <EyeOff className="h-3.5 w-3.5" /> Editor
+            </Button>
+            <Button
+              variant={viewMode === 'split' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2 hidden lg:inline-flex"
+              onClick={() => setViewMode('split')}
+            >
+              <Eye className="h-3.5 w-3.5" /> Split
+            </Button>
+            <Button
+              variant={viewMode === 'preview' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('preview')}
+            >
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </Button>
+          </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -138,13 +161,22 @@ export function HomePageEditor() {
         </div>
       </div>
 
-      {showPreview ? (
-        <Card className="overflow-hidden">
-          <HomeContentContext.Provider value={content}>
-            <Index />
-          </HomeContentContext.Provider>
-        </Card>
-      ) : (
+      {(() => {
+        const previewFrame = (
+          <Card className="overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground border-b flex items-center justify-between">
+              <span>Preview ao vivo • reflete edições não salvas</span>
+              <Badge variant="outline" className="text-[10px]">não publicado</Badge>
+            </div>
+            <div className="max-h-[calc(100vh-180px)] overflow-y-auto bg-background">
+              <HomeContentContext.Provider value={content}>
+                <Index />
+              </HomeContentContext.Provider>
+            </div>
+          </Card>
+        );
+
+        const editorPanel = (
         <Tabs defaultValue="header" className="w-full">
           <TabsList className="flex flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="header">Cabeçalho</TabsTrigger>
@@ -532,7 +564,19 @@ export function HomePageEditor() {
             </Card>
           </TabsContent>
         </Tabs>
-      )}
+        );
+
+        if (viewMode === 'preview') return previewFrame;
+        if (viewMode === 'split') {
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              <div className="min-w-0">{editorPanel}</div>
+              <div className="min-w-0 lg:sticky lg:top-16">{previewFrame}</div>
+            </div>
+          );
+        }
+        return editorPanel;
+      })()}
     </div>
   );
 }
