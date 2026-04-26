@@ -13,7 +13,10 @@ import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const refFromUrl = (searchParams.get('ref') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
-  const [isLogin, setIsLogin] = useState(!refFromUrl); // se vier ?ref=, abre direto no signup
+  const planFromUrl = (searchParams.get('plan') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+
+  // Se vier ?ref= ou ?plan=, abre direto no signup
+  const [isLogin, setIsLogin] = useState(!refFromUrl && !planFromUrl);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,9 +26,17 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Persiste o plano escolhido na LP (sessionStorage), de modo que o pós-cadastro
+  // saiba para onde mandar o usuário (Planos com checkout aberto).
   useEffect(() => {
-    if (refFromUrl) setIsLogin(false);
-  }, [refFromUrl]);
+    if (planFromUrl) {
+      import('@/lib/pendingPlan').then(({ setPendingPlan }) => setPendingPlan(planFromUrl));
+    }
+  }, [planFromUrl]);
+
+  useEffect(() => {
+    if (refFromUrl || planFromUrl) setIsLogin(false);
+  }, [refFromUrl, planFromUrl]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +74,16 @@ export default function Auth() {
         title: 'Login realizado com sucesso!',
         description: 'Bem-vindo de volta.',
       });
-      navigate('/leads');
+
+      // Se o usuário veio de um CTA de plano, manda direto para /planos com o slug.
+      const { getPendingPlan, clearPendingPlan } = await import('@/lib/pendingPlan');
+      const pending = planFromUrl || getPendingPlan();
+      if (pending) {
+        clearPendingPlan();
+        navigate(`/planos?plan=${pending}`);
+      } else {
+        navigate('/leads');
+      }
     } catch (error: any) {
       const isNetworkError =
         error?.message?.includes('Failed to fetch') ||

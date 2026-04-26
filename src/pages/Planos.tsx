@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { PlanCard, type PlanCardData } from '@/components/plans/PlanCard';
 import { SubscribeDialog } from '@/components/plans/SubscribeDialog';
+import { clearPendingPlan, resolvePendingPlan } from '@/lib/pendingPlan';
 
 export default function Planos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [plans, setPlans] = useState<PlanCardData[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [activePlanPrice, setActivePlanPrice] = useState<number>(0);
@@ -21,6 +23,8 @@ export default function Planos() {
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
   const [dialogPlan, setDialogPlan] = useState<PlanCardData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Garante que o auto-trigger via ?plan= dispare apenas uma vez por carga.
+  const autoTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -131,17 +135,8 @@ export default function Planos() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
-  }
-
-  // Calcula motivo de bloqueio para cada plano
+  // Calcula motivo de bloqueio para cada plano (declarado cedo para que o
+  // efeito de auto-disparo abaixo possa consultá-lo antes do early-return).
   const activeIsPaid = activePlanPrice > 0;
   const hasPendingPaid = !!pendingPlanId && pendingInvoiceUrl !== null;
 
@@ -170,6 +165,50 @@ export default function Planos() {
     if (Number(p.price) === 0) return true;
     return Number(p.price) < activePlanPrice;
   };
+
+  // Auto-acionamento: se a URL traz ?plan=slug (ou existe um plano pendente em
+  // sessionStorage vindo da LP), ao terminar o load disparamos automaticamente
+  // o fluxo certo — ativação direta para gratuitos, dialog de checkout para pagos.
+  useEffect(() => {
+    if (loading || authLoading || !user || autoTriggeredRef.current) return;
+    if (plans.length === 0) return;
+
+    const urlSlug = (searchParams.get('plan') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const slug = resolvePendingPlan(urlSlug || null);
+    if (!slug) return;
+
+    const target = plans.find((p) => p.slug === slug);
+    if (!target) {
+      clearPendingPlan();
+      if (urlSlug) setSearchParams({}, { replace: true });
+      return;
+    }
+
+    autoTriggeredRef.current = true;
+    clearPendingPlan();
+    if (urlSlug) setSearchParams({}, { replace: true });
+
+    if (activePlanId === target.id) return; // já está nesse plano
+
+    const blocked = getDisabledReason(target);
+    if (blocked) {
+      toast({ title: 'Não foi possível abrir o plano', description: blocked });
+      return;
+    }
+
+    handleSelect(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, authLoading, user, plans, activePlanId, activePlanPrice, pendingPlanId, pendingInvoiceUrl]);
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

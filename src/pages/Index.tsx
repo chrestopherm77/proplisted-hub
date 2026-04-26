@@ -195,6 +195,17 @@ const Index = () => {
     const el = document.getElementById('planos');
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  // CTA dos cards de plano: leva para /auth (cadastro) já carregando o plano escolhido,
+  // que será aplicado automaticamente após o cadastro/verificação. Se já estiver logado,
+  // pula direto para /planos abrindo o checkout do plano certo.
+  const handlePlanSelect = (slug: string) => {
+    import('@/lib/pendingPlan').then(({ setPendingPlan }) => setPendingPlan(slug));
+    if (user) {
+      navigate(`/planos?plan=${slug}`);
+    } else {
+      navigate(`/auth?plan=${slug}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -413,7 +424,7 @@ const Index = () => {
                   <Button
                     className="w-full"
                     variant={plan.popular ? 'default' : 'outline'}
-                    onClick={goAuth}
+                    onClick={() => handlePlanSelect(plan.slug)}
                   >
                     {plan.cta}
                   </Button>
