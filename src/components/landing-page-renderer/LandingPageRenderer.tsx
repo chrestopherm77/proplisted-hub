@@ -1,8 +1,11 @@
 import { useRef } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star } from 'lucide-react';
+import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle } from 'lucide-react';
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import type { LPContent, LPTheme } from '@/components/admin/landing-page/types';
+import type { LPContent, LPSection, LPTheme } from '@/components/admin/landing-page/types';
 
 interface Props {
   theme: LPTheme;
