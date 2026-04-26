@@ -562,7 +562,8 @@ export function HomePageEditor() {
                 </div>
               </div>
             </Card>
-          </Tabs>
+          </TabsContent>
+        </Tabs>
         );
 
         if (viewMode === 'preview') return previewFrame;
