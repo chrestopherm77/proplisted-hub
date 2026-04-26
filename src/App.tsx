@@ -103,6 +103,7 @@ const App = () => {
           <Route path="/property-searches/:id" element={<PropertySearchDetail />} />
           <Route path="/launches" element={<Launches />} />
           <Route path="/launches/new" element={<NewLaunch />} />
+          <Route path="/launches/:id/edit" element={<NewLaunch />} />
           <Route path="/launches/:id" element={<LaunchDetail />} />
           <Route path="/financiamento" element={<Financing />} />
           <Route path="/giro-do-mercado" element={<MarketNews />} />
