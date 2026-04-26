@@ -565,6 +565,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
           formData={formData}
           onChange={handleFieldChange}
           errors={errors}
+          referralLocked={!!initialReferralCode}
         />
       );
     }
