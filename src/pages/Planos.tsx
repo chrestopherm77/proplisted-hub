@@ -135,17 +135,8 @@ export default function Planos() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
-  }
-
-  // Calcula motivo de bloqueio para cada plano
+  // Calcula motivo de bloqueio para cada plano (declarado cedo para que o
+  // efeito de auto-disparo abaixo possa consultá-lo antes do early-return).
   const activeIsPaid = activePlanPrice > 0;
   const hasPendingPaid = !!pendingPlanId && pendingInvoiceUrl !== null;
 
@@ -174,6 +165,50 @@ export default function Planos() {
     if (Number(p.price) === 0) return true;
     return Number(p.price) < activePlanPrice;
   };
+
+  // Auto-acionamento: se a URL traz ?plan=slug (ou existe um plano pendente em
+  // sessionStorage vindo da LP), ao terminar o load disparamos automaticamente
+  // o fluxo certo — ativação direta para gratuitos, dialog de checkout para pagos.
+  useEffect(() => {
+    if (loading || authLoading || !user || autoTriggeredRef.current) return;
+    if (plans.length === 0) return;
+
+    const urlSlug = (searchParams.get('plan') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const slug = resolvePendingPlan(urlSlug || null);
+    if (!slug) return;
+
+    const target = plans.find((p) => p.slug === slug);
+    if (!target) {
+      clearPendingPlan();
+      if (urlSlug) setSearchParams({}, { replace: true });
+      return;
+    }
+
+    autoTriggeredRef.current = true;
+    clearPendingPlan();
+    if (urlSlug) setSearchParams({}, { replace: true });
+
+    if (activePlanId === target.id) return; // já está nesse plano
+
+    const blocked = getDisabledReason(target);
+    if (blocked) {
+      toast({ title: 'Não foi possível abrir o plano', description: blocked });
+      return;
+    }
+
+    handleSelect(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, authLoading, user, plans, activePlanId, activePlanPrice, pendingPlanId, pendingInvoiceUrl]);
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
