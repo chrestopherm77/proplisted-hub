@@ -40,6 +40,7 @@ import PublicPropertyLP from "./pages/PublicPropertyLP";
 import Planos from "./pages/Planos";
 import CustomLandingPage from "./pages/CustomLandingPage";
 import PrimeirosPassos from "./pages/PrimeirosPassos";
+import Indicar from "./pages/Indicar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
