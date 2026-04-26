@@ -11,7 +11,9 @@ import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const refFromUrl = (searchParams.get('ref') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  const [isLogin, setIsLogin] = useState(!refFromUrl); // se vier ?ref=, abre direto no signup
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,6 +22,10 @@ export default function Auth() {
   });
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (refFromUrl) setIsLogin(false);
+  }, [refFromUrl]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
