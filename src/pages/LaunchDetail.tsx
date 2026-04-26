@@ -71,13 +71,27 @@ const LaunchDetail = () => {
   const [launch, setLaunch] = useState<Launch | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [brokerName, setBrokerName] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
     if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    if (isAdmin || isConstrutora) fetchLaunch();
+    if (isAdmin || isConstrutora) {
+      fetchLaunch();
+      fetchBrokerName();
+    }
   }, [id, user, authLoading, isAdmin]);
+
+  const fetchBrokerName = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, company_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    setBrokerName(data?.name || data?.company_name || null);
+  };
 
   const fetchLaunch = async () => {
     if (!id) return;
