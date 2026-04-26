@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, ExternalLink, Pencil, Trash2, Copy, Loader2 } from 'lucide-react';
+import { Plus, ExternalLink, Pencil, Trash2, Copy, Loader2, Home } from 'lucide-react';
 import type { CustomLandingPage } from '@/components/admin/landing-page/types';
 
 export function LandingPagesManagement() {

@@ -1,150 +1,178 @@
-## 🎯 Objetivo
 
-Reformular completamente a Landing Page principal (`/`) com a nova marca **Conectaae Imob**, destacando todas as funcionalidades do sistema, planos e CTAs de conversão. Aplicar o novo nome em cabeçalhos visíveis (logo, título da aba, footer) — mantendo intactos os termos jurídicos e a configuração de domínio multi-tenant.
+## Objetivo
 
----
+Tornar **toda** a copy, ícones, cards, logo e textos da **Página Principal** (`/` → `src/pages/Index.tsx`) editáveis a partir do admin, sem alterar o visual atual da home.
 
-## 🏷️ Marca: Conectaae Imob
-
-- Logo textual estilizado: **Conectaae** em peso bold + **imob** em peso regular com cor primária (mantemos as cores atuais do tema).
-- Sem PNG novo — uso tipografia + ícone simples (`Building2` ou `Network` do lucide-react) ao lado do nome.
-
-### 💡 Sugestões alternativas de nome (caso queira reconsiderar depois)
-
-Curtos, vibrantes e ligados ao mercado imobiliário:
-
-| Nome | Vibe |
-|---|---|
-| **Imobix** | Tecnologia + imob, fácil de memorizar |
-| **Corretta** | Direto ao corretor, soa profissional |
-| **Casabay** | Casa + hub (similar ao atual, suave) |
-| **Lardo** | Curto, único, "lar" + final marcante |
-| **Conecta Imob** | Versão simplificada da escolha atual |
-| **ImobHub** | "Hub" comunica bem o conceito da plataforma |
-| **Vendae** | Verbo de ação, foco em resultado |
-| **Predo** | Curtíssimo, premium, fácil |
-| **Imobi** | Direto, brasileiro, memorável |
-| **CorretorPro** | Foco no profissional |
-
-> Vou seguir com **Conectaae Imob** conforme aprovado. Esses ficam como referência caso queira pivotar.
+A edição vive dentro de **Landing Pages** como um item fixo no topo da lista chamado **"Página Principal (home)"**, separado das LPs de slug livre que você já tem.
 
 ---
 
-## 📐 Nova estrutura da LP (`/` — `src/pages/Index.tsx`)
+## 1. Banco de dados (1 migration)
 
-### 1. Header
-- Logo textual "Conectaae **imob**" + botão "Entrar" / "Cadastre-se".
-- Sticky com leve blur ao rolar.
+Crio uma tabela nova **`home_page_content`** (singleton — apenas 1 linha permitida via constraint) para guardar o conteúdo da home. Não reaproveito `custom_landing_pages` porque a estrutura de dados é diferente (planos, 9 cards fixos, header de auth, etc.).
 
-### 2. Hero
-- **Título**: "O hub completo do corretor de imóveis moderno"
-- **Subtítulo**: "Leads qualificados, parcerias, lançamentos, portal de imóveis, IA, criativos e muito mais — tudo em uma única plataforma."
-- 2 CTAs: "Começar grátis" → `/auth` e "Ver planos" → âncora `#planos`.
-- Badge: "Plano grátis disponível • Sem cartão de crédito"
+```
+home_page_content
+├── id            uuid PK
+├── singleton     boolean UNIQUE DEFAULT true   -- garante 1 linha só
+├── content       jsonb  (estrutura abaixo)
+├── updated_by    uuid
+├── updated_at    timestamptz
+└── created_at    timestamptz
+```
 
-### 3. Seção "Tudo que você precisa para vender mais" (9 funcionalidades)
+**RLS**:
+- `SELECT` público (anon + authenticated) — a home é pública.
+- `INSERT/UPDATE/DELETE` apenas `MASTER_ADMIN` via `has_role()`.
 
-Grid 3×3 (responsivo) com card para cada feature, cada um com ícone lucide-react, título e copy persuasiva:
+**Seed**: insiro a primeira (e única) linha com o conteúdo atual hard-coded da `Index.tsx` como default, então nada quebra ao publicar.
 
-| # | Funcionalidade | Ícone | Copy curta |
-|---|---|---|---|
-| 1 | **Leads Disponíveis** | `Target` | "Compre leads de clientes prontos para fechar. Pague só pelo lead que escolher." |
-| 2 | **Balcão de Parcerias** | `Handshake` | "Tem cliente sem imóvel? Publique e encontre o corretor que tem o match perfeito." |
-| 3 | **Lançamentos** | `Building2` | "Acesso direto a lançamentos de construtoras parceiras para você vender." |
-| 4 | **Portal de Imóveis** | `Home` | "Publique seus imóveis e deixe outros corretores se afiliarem para vender." |
-| 5 | **Financiamento** | `Banknote` | "Suporte completo no financiamento dos seus clientes do início ao fim." |
-| 6 | **Criativos com IA** | `Sparkles` | "Gere criativos profissionais para suas redes sociais em segundos." |
-| 7 | **Calculadora de Emolumentos** | `Calculator` | "Calcule emolumentos por estado com precisão antes de fechar negócio." |
-| 8 | **IA de Atendimento** | `Bot` | "Sua IA exclusiva para atender clientes 24/7 sem perder oportunidade." |
-| 9 | **Notícias do Mercado** | `Newspaper` | "Fique por dentro das tendências e dados do mercado imobiliário diariamente." |
+### Estrutura do JSON `content`
 
-Mais 2 cards de **serviços extras** (largura completa, abaixo do grid):
-- 🎓 **Educação Conectaae**: "Treinamentos básicos, intermediários e Hot Seats com especialistas."
-- ⚖️ **Suporte Jurídico**: "Serviços jurídicos sob demanda para você operar com segurança total."
-
-### 4. Como funciona (3 passos)
-1. **Cadastre-se grátis** → comece sem custo
-2. **Escolha seu plano** → mais créditos, mais resultado
-3. **Use todas as ferramentas** → leads, parcerias, IA e mais
-
-### 5. Stats de prova social
-Mantém os 3 stats atuais, atualizando textos:
-- 500+ Corretores ativos · 2.000+ Negócios viabilizados · 24/7 Suporte
-
-### 6. **Seção Planos** (nova, completa, com âncora `#planos`)
-4 cards lado a lado (grid responsivo 1/2/4 colunas):
-
-- **Conexão** — Grátis · 10 créditos/mês — features resumidas → CTA "Começar grátis" → `/auth`
-- **Essencial** — R$ 39,90/mês · 30 créditos — → CTA "Assinar" → `/auth?next=/planos`
-- **Performance** — R$ 79,90/mês · 430 créditos — **badge "Mais Popular"** + destaque visual → CTA "Assinar"
-- **Elite** — R$ 149,90/mês · 1.000 créditos — → CTA "Assinar"
-
-Cada card mostra preço, créditos/mês e top 5-6 benefícios (lista completa com `Check`).
-Texto abaixo: "Cancele quando quiser · Cobrança mensal recorrente"
-
-### 7. CTA final
-Banner gradiente: "Pronto para vender mais imóveis?" + botão "Criar conta grátis"
-
-### 8. Footer
-Logo textual + © 2025 Conectaae Imob.
-
----
-
-## 🔧 Arquivos a editar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/pages/Index.tsx` | **Reescrita completa** seguindo a estrutura acima |
-| `index.html` | `<title>` + meta tags og/twitter: "Conectaae Imob" |
-| `src/components/Layout.tsx` | Trocar `<img leadbayLogo>` por componente `<BrandLogo>` textual + footer "Conectaae Imob" |
-| `src/components/AppSidebar.tsx` | Trocar logo por `<BrandLogo>` textual (mantém fallback para partner) |
-| `src/components/MobileMenu.tsx` | Trocar logo por `<BrandLogo>` textual |
-| `src/components/admin/AdminLayout.tsx` | Trocar logo por `<BrandLogo>` textual |
-| `src/pages/Auth.tsx` | Logo textual + título "Entrar no Conectaae Imob" |
-| `src/pages/ThankYou.tsx` / `ThankYou01.tsx` | Logo textual |
-| `src/pages/LeadForm.tsx` / `LeadForm01.tsx` | Logo textual |
-| `src/pages/Indicar.tsx` | Atualizar mensagem WhatsApp para "Conhece o Conectaae Imob:..." |
-| `src/components/BrandLogo.tsx` | **NOVO** componente reutilizável (props: `size`, `variant`) |
-
-### Não vou alterar nesta rodada (preservados):
-- `src/components/auth/constants/registrationTerms.ts` — termos jurídicos com "LEADBAY" (você decidiu manter)
-- `src/contexts/PartnerContext.tsx` — lista de domínios `leadbay.com.br` (afeta white-label)
-- `src/assets/leadbay-logo.png` — fica como fallback para sites parceiros que não têm logo próprio
-- `src/pages/Launches.tsx` linha 252 — mensagem WhatsApp hardcoded de admin (revisamos depois se quiser)
-
----
-
-## 🧩 Componente novo: `BrandLogo.tsx`
-
-```tsx
-// src/components/BrandLogo.tsx
-interface BrandLogoProps {
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-}
-
-export const BrandLogo = ({ size = 'md', className }: BrandLogoProps) => {
-  const sizes = { sm: 'text-lg', md: 'text-xl', lg: 'text-3xl' };
-  return (
-    <div className={cn('flex items-center gap-1.5 font-display', className)}>
-      <Building2 className="text-primary" />
-      <span className={cn('font-bold tracking-tight', sizes[size])}>
-        Conectaae<span className="font-light text-muted-foreground">imob</span>
-      </span>
-    </div>
-  );
+```ts
+type HomeContent = {
+  header: {
+    brand_logo_url: string;     // se vazio → usa <BrandLogo/> textual
+    show_login_button: boolean; // padrão true
+    login_label: string;        // "Entrar"
+    signup_label: string;       // "Cadastre-se"
+  };
+  hero: {
+    badge_text: string;         // "✨ Plano grátis disponível • Sem cartão de crédito"
+    title_line1: string;        // "O hub completo do"
+    title_line2: string;        // "corretor de imóveis moderno" (em destaque)
+    subtitle: string;
+    cta_primary_label: string;  // "Começar grátis"
+    cta_secondary_label: string;// "Ver planos"
+  };
+  features_section: {
+    badge: string;              // "Funcionalidades"
+    title: string;
+    subtitle: string;
+    items: [9 cards FIXOS]      // {icon, title, desc} — sempre 9, só edita conteúdo
+  };
+  extras: [2 cards FIXOS]       // Educação e Jurídico — {icon, title, desc}
+  how_it_works: {
+    title: string;
+    subtitle: string;
+    steps: [3 passos FIXOS]     // {title, desc}
+  };
+  stats: {
+    items: [3 stats FIXOS]      // {icon, value, label}
+  };
+  plans_section: {
+    badge: string;              // "Planos"
+    title: string;              // "Escolha seu plano"
+    subtitle: string;
+    plans: [4 planos FIXOS]     // slug travado: conexao/essencial/performance/elite
+                                // Editáveis: name, price, priceSuffix, credits, cta, features[]
+    footer_note: string;        // "Cobrança mensal recorrente..."
+  };
+  final_cta: {
+    title: string;
+    subtitle: string;
+    cta_label: string;
+    secondary_text: string;     // "Já tem cadastro? Acesse agora"
+  };
 };
 ```
 
-Em sites de parceiros (white-label), continuamos exibindo o logo PNG do parceiro — o `BrandLogo` só aparece quando `!isPartnerSite`.
+**Validação na UI**: campos travados em 9/2/3/3/4 quantidades. Admin só edita `icon`, `title`, `desc`, `value`, etc. — não pode adicionar/remover. Slugs dos planos ficam travados (apenas mostrados como label, não editáveis), porque o sistema de auto-checkout depende deles (`conexao/essencial/performance/elite`).
 
 ---
 
-## ✅ Resultado esperado
+## 2. Frontend — refatorar `Index.tsx`
 
-- Página inicial moderna mostrando todas as 9 funcionalidades + 2 serviços extras + 4 planos com CTAs claros.
-- Marca "Conectaae Imob" aparece em todos os cabeçalhos visíveis: aba do navegador, header, sidebar, menu mobile, admin, auth, lead forms, thank you e indicar.
-- White-label de parceiros continua funcionando perfeitamente (logo do parceiro tem prioridade).
-- Termos jurídicos e configuração de domínio intactos.
+`src/pages/Index.tsx` deixa de ter as constantes `FEATURES` e `PLANS` hard-coded. Em vez disso:
 
-Próximo passo após aprovar: implemento tudo na próxima resposta.
+1. Carrega `home_page_content` via `useQuery` no mount (com fallback para os defaults atuais caso a tabela esteja vazia).
+2. Renderiza exatamente o mesmo JSX/estilo de hoje, mas lendo de `content.*`.
+3. Lógica de auto-checkout dos planos (`handlePlanSelect`) **não muda** — continua usando os slugs travados.
+4. Ícones: cada card guarda só o nome do ícone (`"Target"`, `"Handshake"`...). Resolução em runtime via `lucide-react` dinâmico (mesma técnica já usada no `LandingPageRenderer`).
+5. Loading skeleton enquanto busca conteúdo.
+
+Resultado: visual idêntico ao atual, mas todo o texto e ícones vêm do banco.
+
+---
+
+## 3. Admin — novo editor dedicado
+
+### 3.1. Lista de LPs (`LandingPagesManagement.tsx`)
+
+Adiciono no topo da lista um **card fixo destacado** — não vem do banco `custom_landing_pages`, é um item visual hard-coded:
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ 🏠  Página Principal (home)              [Sempre visível em /]      │
+│     Editar hero, features, planos, CTA, logo e toda a copy          │
+│                                  [Ver home] [Editar página]        │
+└────────────────────────────────────────────────────────────────────┘
+─────────────  Landing pages com slug livre  ─────────────
+┌── lista atual (custom_landing_pages) ──┐
+```
+
+O botão "Editar página" leva para `/admin/home-page`.
+
+### 3.2. Novo editor: `HomePageEditor.tsx`
+
+Componente novo em `src/components/admin/home-page/HomePageEditor.tsx` com **tabs verticais**, cada uma para um bloco da home:
+
+| Tab | O que edita |
+|---|---|
+| 🎨 Cabeçalho | Upload do logo (ou usa textual), rótulos dos botões Entrar/Cadastre-se, toggle pra esconder Entrar |
+| 🚀 Hero | Badge, título linha 1 e 2 (destaque), subtítulo, label dos 2 CTAs |
+| ⚡ Funcionalidades (9) | Badge da seção, título, subtítulo + 9 cards (ícone via Select com 30+ ícones, título, descrição) |
+| 🎓 Serviços extras (2) | Os 2 cards "Educação Conectaae" e "Suporte Jurídico" (ícone, título, descrição) |
+| 📋 Como funciona (3) | Título da seção, subtítulo + 3 passos (título, descrição) |
+| 📊 Stats (3) | 3 itens (ícone, número grande, legenda) |
+| 💰 Planos (4) | Badge, título, subtítulo + 4 planos (nome, preço, sufixo, créditos, label do CTA, lista de features adicionável/removível dentro do plano) — slug travado e exibido como badge |
+| 🎯 CTA Final | Título, subtítulo, label do botão, texto "Já tem cadastro? Acesse agora" |
+| 👁 Preview | Renderiza o `Index.tsx` com o conteúdo atualmente em edição (modo preview) |
+
+Cada tab tem auto-save desabilitado — botão **"Salvar"** no topo persiste tudo de uma vez. Botão **"Restaurar padrão"** com confirmação reseta para o conteúdo original.
+
+**Componentes reaproveitáveis**:
+- `IconPicker` — Select com preview do ícone Lucide.
+- `ImageUploadField` — já existe no `LandingPageEditor`, extraio para `src/components/admin/shared/ImageUploadField.tsx` e reuso nos dois editores. Upload vai para o bucket `landing-pages` que já existe.
+
+### 3.3. Roteamento
+
+- Rota nova `/admin/home-page` em `App.tsx`.
+- Adiciono `'home-page': HomePageEditor` no map de seções de `src/pages/Admin.tsx`.
+- O sidebar do admin **não ganha item separado** (decisão sua: fica dentro de Landing Pages como item fixo).
+
+---
+
+## 4. Arquivos criados / alterados
+
+**Novos**
+- `supabase/migrations/<ts>_home_page_content.sql` — tabela + RLS + seed.
+- `src/components/admin/home-page/types.ts` — tipos do `HomeContent` + defaults.
+- `src/components/admin/home-page/HomePageEditor.tsx` — editor principal com tabs.
+- `src/components/admin/home-page/tabs/` — um arquivo por tab (HeaderTab, HeroTab, FeaturesTab, ExtrasTab, HowItWorksTab, StatsTab, PlansTab, FinalCtaTab, PreviewTab).
+- `src/components/admin/shared/ImageUploadField.tsx` — extraído do editor de LP.
+- `src/components/admin/shared/IconPicker.tsx` — Select de ícones Lucide com preview.
+- `src/hooks/useHomeContent.ts` — hook que faz `useQuery` da tabela com fallback default.
+
+**Alterados**
+- `src/pages/Index.tsx` — remove constantes hard-coded, lê do hook, mantém visual.
+- `src/pages/Admin.tsx` — adiciona `'home-page'` ao map.
+- `src/App.tsx` — adiciona rota `/admin/home-page`.
+- `src/components/admin/LandingPagesManagement.tsx` — adiciona card fixo no topo "Página Principal (home)" + separador antes da lista atual.
+
+**Não toco**
+- `LandingPageEditor.tsx` (editor de LPs com slug livre) — fica como está, finalidades diferentes.
+- Lógica de auto-checkout dos planos (`pendingPlan.ts`, `Planos.tsx`, `MultiStepSignup.tsx`) — slugs continuam travados.
+- White-label/PartnerContext — quando `isPartnerSite=true`, a home continua mostrando a marca do parceiro e ignora o `home_page_content`.
+
+---
+
+## 5. Como você vai usar (depois de aprovar)
+
+1. Vai em **Admin → Landing Pages**.
+2. Clica no card destacado **"Página Principal (home)"** no topo.
+3. Cai numa tela com tabs laterais. Em cada tab edita o que quiser (texto, ícones, upload de logo, planos, etc.).
+4. Clica **"Preview"** pra ver como ficou antes de publicar.
+5. Clica **"Salvar"** — qualquer pessoa que abrir `/` já vê o novo conteúdo.
+
+Tudo o que está hoje na home (header, hero, 9 cards, 2 extras, como funciona, stats, 4 planos, CTA final, "Já tem cadastro?") fica editável. O visual continua **exatamente** o mesmo da home atual.

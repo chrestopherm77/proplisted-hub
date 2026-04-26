@@ -387,6 +387,33 @@ export type Database = {
         }
         Relationships: []
       }
+      home_page_content: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       launch_alerts: {
         Row: {
           created_at: string | null

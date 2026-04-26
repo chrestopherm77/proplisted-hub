@@ -14,6 +14,7 @@ import { CreativeStylesManagement } from '@/components/admin/CreativeStylesManag
 import { LaunchAccessManagement } from '@/components/admin/LaunchAccessManagement';
 import { LandingPagesManagement } from '@/components/admin/LandingPagesManagement';
 import { LandingPageEditor } from '@/components/admin/LandingPageEditor';
+import { HomePageEditor } from '@/components/admin/home-page/HomePageEditor';
 import { OnboardingVideoManagement } from '@/components/admin/OnboardingVideoManagement';
 
 type Section =
@@ -32,6 +33,7 @@ type Section =
   | 'creatives'
   | 'landing-pages'
   | 'landing-page-editor'
+  | 'home-page'
   | 'onboarding-video';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
@@ -50,6 +52,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   creatives: CreativeStylesManagement,
   'landing-pages': LandingPagesManagement,
   'landing-page-editor': LandingPageEditor,
+  'home-page': HomePageEditor,
   'onboarding-video': OnboardingVideoManagement,
 };
 
