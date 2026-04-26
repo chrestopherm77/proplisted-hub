@@ -161,13 +161,22 @@ export function HomePageEditor() {
         </div>
       </div>
 
-      {showPreview ? (
-        <Card className="overflow-hidden">
-          <HomeContentContext.Provider value={content}>
-            <Index />
-          </HomeContentContext.Provider>
-        </Card>
-      ) : (
+      {(() => {
+        const previewFrame = (
+          <Card className="overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground border-b flex items-center justify-between">
+              <span>Preview ao vivo • reflete edições não salvas</span>
+              <Badge variant="outline" className="text-[10px]">não publicado</Badge>
+            </div>
+            <div className="max-h-[calc(100vh-180px)] overflow-y-auto bg-background">
+              <HomeContentContext.Provider value={content}>
+                <Index />
+              </HomeContentContext.Provider>
+            </div>
+          </Card>
+        );
+
+        const editorPanel = (
         <Tabs defaultValue="header" className="w-full">
           <TabsList className="flex flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="header">Cabeçalho</TabsTrigger>
@@ -553,9 +562,20 @@ export function HomePageEditor() {
                 </div>
               </div>
             </Card>
-          </TabsContent>
-        </Tabs>
-      )}
+          </Tabs>
+        );
+
+        if (viewMode === 'preview') return previewFrame;
+        if (viewMode === 'split') {
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              <div className="min-w-0">{editorPanel}</div>
+              <div className="min-w-0 lg:sticky lg:top-16">{previewFrame}</div>
+            </div>
+          );
+        }
+        return editorPanel;
+      })()}
     </div>
   );
 }
