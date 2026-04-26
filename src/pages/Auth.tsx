@@ -74,7 +74,16 @@ export default function Auth() {
         title: 'Login realizado com sucesso!',
         description: 'Bem-vindo de volta.',
       });
-      navigate('/leads');
+
+      // Se o usuário veio de um CTA de plano, manda direto para /planos com o slug.
+      const { getPendingPlan, clearPendingPlan } = await import('@/lib/pendingPlan');
+      const pending = planFromUrl || getPendingPlan();
+      if (pending) {
+        clearPendingPlan();
+        navigate(`/planos?plan=${pending}`);
+      } else {
+        navigate('/leads');
+      }
     } catch (error: any) {
       const isNetworkError =
         error?.message?.includes('Failed to fetch') ||
