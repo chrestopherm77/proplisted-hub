@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle } from 'lucide-react';
+import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle, Gift } from 'lucide-react';
 
 const ALLOWED = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const MAX_BYTES = 2 * 1024 * 1024;
