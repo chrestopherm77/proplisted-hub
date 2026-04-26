@@ -20,6 +20,7 @@ import {
   type CustomLandingPage, type LPContent, type LPTheme,
 } from '@/components/admin/landing-page/types';
 import { LandingPageRenderer } from '@/components/landing-page-renderer/LandingPageRenderer';
+import { SectionsEditor } from '@/components/admin/landing-page/SectionsEditor';
 import { normalizeSlug, validateSlug } from '@/lib/reservedSlugs';
 import { useAuth } from '@/hooks/useAuth';
 
