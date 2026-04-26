@@ -374,6 +374,7 @@ const NewLaunch = () => {
               <Select value={zone} onValueChange={setZone}>
                 <SelectTrigger><SelectValue placeholder="Selecionar zona" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Nenhuma</SelectItem>
                   <SelectItem value="Norte">Norte</SelectItem>
                   <SelectItem value="Sul">Sul</SelectItem>
                   <SelectItem value="Leste">Leste</SelectItem>
