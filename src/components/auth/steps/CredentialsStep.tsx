@@ -18,9 +18,10 @@ interface CredentialsStepProps {
   formData: SignupFormData;
   onChange: (field: keyof SignupFormData, value: string | boolean) => void;
   errors: Record<string, string>;
+  referralLocked?: boolean;
 }
 
-export function CredentialsStep({ formData, onChange, errors }: CredentialsStepProps) {
+export function CredentialsStep({ formData, onChange, errors, referralLocked }: CredentialsStepProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
