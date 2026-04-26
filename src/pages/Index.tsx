@@ -218,7 +218,7 @@ const Index = () => {
             <BrandLogo size="md" />
           )}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={goAuth} className="hidden sm:inline-flex">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/auth?mode=login')} className="md:size-default">
               Entrar
             </Button>
             <Button onClick={goAuth} size="sm" className="md:size-default">
@@ -456,6 +456,16 @@ const Index = () => {
               Criar conta grátis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+            <p className="mt-6 text-sm md:text-base opacity-95">
+              Já tem cadastro?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/auth?mode=login')}
+                className="underline font-semibold hover:opacity-80 transition-opacity"
+              >
+                Acesse agora
+              </button>
+            </p>
           </div>
         </section>
       </main>
