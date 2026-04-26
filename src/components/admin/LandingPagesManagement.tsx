@@ -65,6 +65,42 @@ export function LandingPagesManagement() {
         </Button>
       </div>
 
+      {/* Card fixo da Página Principal */}
+      <Card className="p-4 flex items-center justify-between gap-4 flex-wrap border-primary/40 bg-primary/5">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Home className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold">Página Principal (home)</h3>
+              <Badge variant="default">Sempre visível em /</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Editar hero, features, planos, CTA, logo e toda a copy.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" asChild>
+            <a href="/" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" /> Ver home
+            </a>
+          </Button>
+          <Button size="sm" onClick={() => navigate('/admin/home-page')}>
+            <Pencil className="h-4 w-4" /> Editar página
+          </Button>
+        </div>
+      </Card>
+
+      <div className="flex items-center gap-3 pt-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+          Landing pages com slug livre
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       {loading ? (
         <div className="flex justify-center p-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
