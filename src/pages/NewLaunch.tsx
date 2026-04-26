@@ -560,7 +560,7 @@ const NewLaunch = () => {
 
         <Button onClick={handleSubmit} disabled={saving} className="w-full gap-2" size="lg">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Publicar Lançamento
+          {isEditMode ? 'Salvar Alterações' : 'Publicar Lançamento'}
         </Button>
       </div>
     </Layout>
