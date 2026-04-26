@@ -70,6 +70,78 @@ const NewLaunch = () => {
   // Drive: Link only
   const [driveLink, setDriveLink] = useState('');
 
+  // URLs já salvas (modo edição) — preservadas se o usuário não trocar o arquivo
+  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(null);
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [existingBookUrl, setExistingBookUrl] = useState<string | null>(null);
+  const [existingTableUrl, setExistingTableUrl] = useState<string | null>(null);
+
+  // Carrega lançamento em modo edição
+  useEffect(() => {
+    if (!isEditMode || !editId || !user) return;
+    (async () => {
+      const { data, error } = await supabase.from('launches').select('*').eq('id', editId).single();
+      if (error || !data) {
+        toast({ title: 'Erro ao carregar lançamento', description: error?.message, variant: 'destructive' });
+        navigate('/launches');
+        return;
+      }
+      // Permissão: dono ou admin
+      if (data.user_id !== user.id && !isAdmin) {
+        toast({ title: 'Sem permissão para editar este lançamento', variant: 'destructive' });
+        navigate('/launches');
+        return;
+      }
+      setName(data.name || '');
+      setState(data.state || '');
+      if (data.state) await fetchCities(data.state);
+      setCity(data.city || '');
+      setNeighborhood(data.neighborhood || '');
+      setZone(data.zone || '');
+      setLaunchDate(data.launch_date ? new Date(data.launch_date + 'T00:00:00') : undefined);
+      setDeliveryDate(data.delivery_date ? new Date(data.delivery_date + 'T00:00:00') : undefined);
+      const fmtMoney = (raw: string | null) => {
+        if (!raw) return '';
+        const num = parseInt(raw, 10);
+        if (isNaN(num)) return '';
+        return `R$ ${(num / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+      };
+      setPriceFrom(fmtMoney(data.price_from));
+      setPriceMax(fmtMoney(data.price_max));
+      setCommission(data.commission || '');
+      setFloors(data.floors || '');
+      setTotalUnits(data.total_units || '');
+      setAssociative(data.associative || '');
+      setCoordinatorName(data.coordinator_name || '');
+      setCoordinatorPhone(data.coordinator_phone || '');
+      setCoordinatorPhone2(data.coordinator_phone2 || '');
+      setPropertyType(data.property_type || '');
+      setSizeM2Min(data.size_m2_min || '');
+      setSizeM2Max(data.size_m2_max || '');
+      setLaunchStatus(data.status || '');
+      const tea = (data as any).table_expires_at;
+      setTableExpiresAt(tea ? new Date(tea + 'T00:00:00') : undefined);
+      setExistingBannerUrl(data.banner_url || null);
+      setExistingLogoUrl(data.logo_url || null);
+      setBannerPreview(data.banner_url || null);
+      setLogoPreview(data.logo_url || null);
+      setExistingBookUrl(data.book_url || null);
+      setExistingTableUrl(data.table_url || null);
+      // Heurística: se a URL existente NÃO contém o storage path, é link externo
+      if (data.book_url) {
+        setBookMode(data.book_url.includes('/storage/') ? 'pdf' : 'link');
+        if (!data.book_url.includes('/storage/')) setBookLink(data.book_url);
+      }
+      if (data.table_url) {
+        setTableMode(data.table_url.includes('/storage/') ? 'pdf' : 'link');
+        if (!data.table_url.includes('/storage/')) setTableLink(data.table_url);
+      }
+      setDriveLink(data.drive_link || data.drive_url || '');
+      setLoadingLaunch(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, editId, user, isAdmin]);
+
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) { setBannerFile(file); setBannerPreview(URL.createObjectURL(file)); }
