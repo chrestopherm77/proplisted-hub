@@ -1,82 +1,130 @@
-# Adicionar seções editáveis ao gerador de LP
 
-Hoje a LP customizável tem **6 blocos fixos** (Header, Hero, Features, Mídia, Prova Social, CTA Final, Footer). Vou adicionar **4 novos tipos de seção** replicando a página inicial da Leadbay e implementar um **sistema de seções dinâmicas** onde você adiciona, remove e reordena livremente.
+# Página "Primeiros Passos" com vídeo + atalho no menu do avatar
 
-## 1. Novos tipos de seção (replicados da Leadbay)
+Criar uma página `/primeiros-passos` para todos os usuários autenticados, com vídeo tutorial gerenciável pelo admin (upload MP4 ou URL do YouTube/Vimeo). Adicionar atalho no menu suspenso do avatar e redirecionar automaticamente o usuário para essa página logo após o cadastro.
 
-Cada uma vira um "bloco" plugável dentro de um array `sections[]` no `content` da LP:
+---
 
-### a) `how_it_works` — Como Funciona
-3 passos numerados (círculo com 1, 2, 3) + título + descrição. Cada item editável; suporta de 2 a 6 passos.
+### 1. Banco de dados — tabela `onboarding_video` (single-row config)
 
-### b) `stats` — Estatísticas
-3 cards com ícone Lucide + número grande (ex: "500+") + label (ex: "Corretores Ativos"). Cor primária do tema. 2 a 6 itens.
+```sql
+CREATE TABLE public.onboarding_video (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  video_url text,
+  video_type text NOT NULL DEFAULT 'url' CHECK (video_type IN ('url','mp4')),
+  title text DEFAULT 'Bem-vindo ao Conecta&Imob!',
+  description text DEFAULT 'Assista ao vídeo abaixo e descubra como aproveitar ao máximo a plataforma.',
+  updated_at timestamptz DEFAULT now(),
+  updated_by uuid REFERENCES auth.users(id)
+);
 
-### c) `benefits` — Benefícios
-Lista vertical de itens com check verde + título + descrição em cards brancos. Igual ao "Benefícios Exclusivos". 2 a 8 itens.
+ALTER TABLE public.onboarding_video ENABLE ROW LEVEL SECURITY;
 
-### d) `faq` — Perguntas Frequentes
-Accordion de pergunta/resposta. 1 a 12 itens. Tipo extra que não existe na Leadbay original mas pediu.
+CREATE POLICY "Authenticated users can read onboarding video"
+ON public.onboarding_video FOR SELECT TO authenticated USING (true);
 
-## 2. Sistema de seções dinâmicas
+CREATE POLICY "Only admins can manage onboarding video"
+ON public.onboarding_video FOR ALL TO authenticated
+USING (has_role(auth.uid(), 'MASTER_ADMIN'))
+WITH CHECK (has_role(auth.uid(), 'MASTER_ADMIN'));
 
-### Estrutura de dados (em `LPContent`)
-Adicionar um novo campo `sections: LPSection[]` que vive **entre a Mídia e a Prova Social** na renderização. Os blocos antigos (Hero, Features, Mídia, Prova Social, CTA Final) continuam fixos para não quebrar LPs existentes.
-
-```ts
-type LPSection =
-  | { id: string; type: 'how_it_works'; title: string; subtitle: string; steps: { title: string; description: string }[] }
-  | { id: string; type: 'stats'; items: { icon: string; value: string; label: string }[] }
-  | { id: string; type: 'benefits'; title: string; items: { title: string; description: string }[] }
-  | { id: string; type: 'faq'; title: string; items: { question: string; answer: string }[] };
+INSERT INTO public.onboarding_video (video_type, video_url) VALUES ('url', NULL);
 ```
 
-Cada seção tem `id` único (UUID) para servir de chave do drag & drop e do React.
+### 2. Storage — bucket público `onboarding-videos` (limite 100MB)
 
-### Template padrão da Leadbay
-LPs novas começam com `sections` pré-populado nesta ordem (idêntico à Leadbay):
-1. `how_it_works` (Escolha o Lead → Pagamento → Contato)
-2. `stats` (500+ Corretores, 2.000+ Leads, 24/7 Suporte)
-3. `benefits` (4 itens com check)
-4. `faq` (vazio por padrão, opcional)
+```sql
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('onboarding-videos', 'onboarding-videos', true, 104857600,
+        ARRAY['video/mp4','video/webm']);
 
-LPs já existentes recebem `sections: []` no merge com `DEFAULT_CONTENT` — não quebra nada.
+CREATE POLICY "Public read onboarding videos"
+ON storage.objects FOR SELECT TO public
+USING (bucket_id = 'onboarding-videos');
 
-### Drag & drop no editor
-Usar **`@dnd-kit/core` + `@dnd-kit/sortable`** (já é o padrão Lovable, leve e acessível). Cada bloco vira um card com:
-- Handle de arrastar (ícone `GripVertical`)
-- Botão "Editar" (expande accordion interno)
-- Botão "Duplicar" (clona com novo `id`)
-- Botão "Remover" (`Trash2`)
+CREATE POLICY "Admin upload onboarding videos"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'onboarding-videos' AND has_role(auth.uid(), 'MASTER_ADMIN'));
 
-Botão **"+ Adicionar seção"** no final abre um menu (popover) com os 4 tipos disponíveis. Ao escolher, adiciona um bloco novo com conteúdo padrão.
+CREATE POLICY "Admin delete onboarding videos"
+ON storage.objects FOR DELETE TO authenticated
+USING (bucket_id = 'onboarding-videos' AND has_role(auth.uid(), 'MASTER_ADMIN'));
+```
 
-## 3. Ordem final de renderização na LP
+### 3. Página pública — `src/pages/PrimeirosPassos.tsx`
 
-Header → Hero → Features → Mídia → **[sections dinâmicas na ordem definida]** → Prova social → CTA final → Footer → Floating CTAs
+Renderizada com o `Layout` padrão (sidebar + header).
+- Busca o registro de `onboarding_video`.
+- Renderiza título e descrição editáveis pelo admin.
+- Player responsivo `aspect-video` 16:9:
+  - `video_type = 'url'`: detecta YouTube/Vimeo e usa `<iframe>` (`youtube.com/embed/{id}` ou `player.vimeo.com/video/{id}`).
+  - `video_type = 'mp4'`: usa `<video controls>` HTML5 com URL pública.
+  - Sem vídeo: placeholder "Vídeo em breve".
+- Dois CTAs abaixo do vídeo: **"Ir para Meus Leads"** e **"Comprar Créditos"**.
 
-Isso mantém a ordem da Leadbay como você pediu, e ainda permite remover/reordenar tudo do meio.
+### 4. Rotas — `src/App.tsx`
 
-## 4. Arquivos a editar/criar
+Inserir antes do catch-all `/:customSlug`:
+```tsx
+<Route path="/primeiros-passos" element={<PrimeirosPassos />} />
+<Route path="/admin/onboarding-video" element={<Admin section="onboarding-video" />} />
+```
 
-- **`src/components/admin/landing-page/types.ts`**: adicionar tipos `LPSection`, `LPHowItWorksSection`, `LPStatsSection`, `LPBenefitsSection`, `LPFaqSection` e o array `sections` em `LPContent`. Atualizar `DEFAULT_CONTENT` com o template da Leadbay.
+### 5. Redirect pós-cadastro — `src/components/auth/MultiStepSignup.tsx`
 
-- **`src/components/landing-page-renderer/LandingPageRenderer.tsx`**: adicionar bloco que itera `content.sections` e renderiza o componente certo por tipo. Cada tipo respeita o tema (cores `theme.primary`, `theme.text`, `theme.background`, `theme.accent`).
+Após `signUp` bem-sucedido (linha ~459), trocar o toast por:
+```tsx
+toast.success("Cadastro realizado com sucesso! Bem-vindo!");
+setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
+```
 
-- **`src/components/admin/landing-page/SectionsEditor.tsx`** (novo): componente isolado com drag & drop e os 4 sub-editores (`HowItWorksEditor`, `StatsEditor`, `BenefitsEditor`, `FaqEditor`).
+O **login normal** em `Auth.tsx` continua indo para `/leads`. Apenas o cadastro vai para Primeiros Passos.
 
-- **`src/components/admin/LandingPageEditor.tsx`**: encaixar `<SectionsEditor>` dentro do accordion principal entre "Mídia" e "Prova social". Ajustar o merge no `useEffect` para incluir `sections`.
+### 6. Atalho no menu do avatar — `src/components/UserAvatarMenu.tsx`
 
-- **Dependência**: instalar `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (provavelmente já presentes — verificar `package.json`; se não, `bun add`).
+Adicionar item logo abaixo de "Meu Perfil":
+```tsx
+<DropdownMenuItem onClick={() => navigate('/primeiros-passos')}>
+  <PlayCircle className="mr-2 h-4 w-4" />
+  <span>Primeiros Passos</span>
+</DropdownMenuItem>
+```
 
-## 5. Compatibilidade com LPs já criadas
+Ordem: Trocar foto · Remover foto · **Meu Perfil · Primeiros Passos** · Comprar Créditos · Planos · Sair.
 
-LPs salvas hoje **não têm** `sections` no JSON. O loader já faz spread com `DEFAULT_CONTENT`, então `sections` virá `[]` para LPs antigas — elas continuam funcionando exatamente como estão. O admin pode entrar e adicionar seções manualmente quando quiser.
+### 7. Editor admin — `src/components/admin/OnboardingVideoManagement.tsx`
 
-## 6. O que **não** muda
+Nova tela no painel admin:
+- Toggle "URL externa (YouTube/Vimeo)" vs "Upload MP4".
+- Modo URL: input de texto com validação básica.
+- Modo MP4: input `accept="video/mp4,video/webm"`, upload para `onboarding-videos`, salva URL pública.
+- Inputs para `title` e `description`.
+- Preview ao vivo do player ao lado do formulário.
+- Botão "Salvar alterações" → `update` no único row.
 
-- Slug, tema, header, hero, features, mídia, prova social, CTA final, footer, floating CTAs, redes sociais — tudo igual.
-- Banco: nenhuma migration necessária (tudo cabe no `content jsonb`).
-- Renderização pública em `/{slug}` continua igual; só ganha mais blocos no meio.
+### 8. Menu do admin — `AdminLayout.tsx` + `Admin.tsx`
 
-Quando aprovar, eu implemento.
+- Em `ADMIN_NAV`, adicionar no grupo **Conteúdo**:
+  ```tsx
+  { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' }
+  ```
+- Em `Admin.tsx`, adicionar `'onboarding-video'` no tipo `Section` e no map `COMPONENTS`.
+
+---
+
+### Arquivos novos
+- `src/pages/PrimeirosPassos.tsx`
+- `src/components/admin/OnboardingVideoManagement.tsx`
+- 1 migração SQL (tabela + bucket + policies + seed)
+
+### Arquivos editados
+- `src/App.tsx`
+- `src/components/auth/MultiStepSignup.tsx`
+- `src/components/UserAvatarMenu.tsx`
+- `src/components/admin/AdminLayout.tsx`
+- `src/pages/Admin.tsx`
+
+### Comportamento final
+- **Recém-cadastrado** → vai automaticamente para `/primeiros-passos`.
+- **Qualquer usuário** pode rever clicando na bolinha do avatar → **"Primeiros Passos"**.
+- **Admin** gerencia vídeo, título e descrição em `/admin/onboarding-video`, alternando entre URL do YouTube/Vimeo ou upload de MP4 (até 100MB).
