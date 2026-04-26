@@ -1880,6 +1880,10 @@ export type Database = {
       generate_referral_code: { Args: never; Returns: string }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
+      grant_referral_bonus_if_eligible: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
