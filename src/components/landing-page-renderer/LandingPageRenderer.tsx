@@ -299,3 +299,126 @@ export function LandingPageRenderer({ theme, content }: Props) {
     </div>
   );
 }
+
+function DynamicSection({ section, theme }: { section: LPSection; theme: LPTheme }) {
+  if (section.type === 'how_it_works') {
+    return (
+      <section className="py-12 md:py-20" style={{ backgroundColor: `${theme.text}06` }}>
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3">
+            {section.title}
+          </h2>
+          {section.subtitle && (
+            <p className="text-center opacity-80 mb-10 max-w-2xl mx-auto">
+              {section.subtitle}
+            </p>
+          )}
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {section.steps.map((step, i) => (
+              <div key={i} className="text-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold"
+                  style={{ backgroundColor: theme.primary, color: '#fff' }}
+                >
+                  {i + 1}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                <p className="opacity-80 leading-relaxed">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (section.type === 'stats') {
+    return (
+      <section className="py-12 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 text-center">
+            {section.items.map((item, i) => {
+              const Icon = getIcon(item.icon);
+              return (
+                <div key={i} className="p-6 md:p-8">
+                  <Icon className="h-12 w-12 mx-auto mb-4" style={{ color: theme.primary }} />
+                  <div className="text-4xl font-bold mb-2" style={{ color: theme.primary }}>
+                    {item.value}
+                  </div>
+                  <p className="opacity-80">{item.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (section.type === 'benefits') {
+    return (
+      <section className="py-12 md:py-20" style={{ backgroundColor: `${theme.primary}10` }}>
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            {section.title && (
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10">
+                {section.title}
+              </h2>
+            )}
+            <div className="space-y-4">
+              {section.items.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-4 p-5 rounded-lg shadow-sm"
+                  style={{ backgroundColor: theme.background }}
+                >
+                  <CheckCircle
+                    className="h-6 w-6 flex-shrink-0 mt-1"
+                    style={{ color: theme.accent }}
+                  />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
+                    <p className="opacity-80">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (section.type === 'faq') {
+    return (
+      <section className="py-12 md:py-20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          {section.title && (
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10">
+              {section.title}
+            </h2>
+          )}
+          <Accordion type="single" collapsible className="space-y-2">
+            {section.items.map((item, i) => (
+              <AccordionItem
+                key={i}
+                value={`q-${i}`}
+                className="border rounded-md px-4"
+                style={{ borderColor: `${theme.text}20` }}
+              >
+                <AccordionTrigger className="text-left font-semibold">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="opacity-80 leading-relaxed whitespace-pre-line">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+    );
+  }
+
+  return null;
+}
