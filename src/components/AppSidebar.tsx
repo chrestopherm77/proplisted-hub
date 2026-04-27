@@ -93,7 +93,7 @@ export function AppSidebar() {
     { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },
-    { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: true },
+    { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: !!isAdmin },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },
     { title: 'Criativos', url: '/criativos', icon: Sparkles, show: true },
     { title: 'Planos', url: '/planos', icon: Crown, show: !isPartnerSite },
