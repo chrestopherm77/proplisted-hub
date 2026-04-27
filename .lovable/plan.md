@@ -1,33 +1,62 @@
-## Remover mockup + scroll reveal nos cards de funcionalidades (mobile)
+## Objetivo
 
-### O que muda
+1. Mudar o fundo do badge "✨ Plano grátis disponível • Sem cartão de crédito" (Hero da Landing Page) do branco/transparente atual para o **verde da logo Conectae**.
+2. Adicionar a logo `conectaeblue.png` ao projeto como asset oficial, disponível para uso no `BrandLogo` e configurações white-label.
 
-**1. Remover a seção do ContainerScroll (mockup do laptop)**
-- Apaga o bloco `<section>` que renderiza `<ContainerScroll>` com a imagem do dashboard.
-- Remove o import de `ContainerScroll` e do asset `dashboardMockup` em `src/pages/Index.tsx`.
-- Mantém o arquivo `src/components/ui/container-scroll-animation.tsx` no projeto (caso queira usar em outro lugar depois). Se preferir apagar de vez, me diga.
-- O asset `src/assets/dashboard-mockup.jpg` também fica (não é referenciado por mais ninguém). Posso deletar se quiser.
+---
 
-**2. Novo componente: `src/components/ui/mobile-scroll-feature-card.tsx`**
-- Wrapper que aplica scroll-driven animation **apenas no mobile** (`window.innerWidth < 768`).
-- Usa `useScroll({ target: ref, offset: ["start end", "end start"] })` + `useTransform` do `framer-motion` para animar:
-  - `opacity`: 0 → 1
-  - `translateY`: 80px → 0
-  - `scale`: 0.85 → 1
-- O reveal acontece conforme o card entra na viewport (à medida que a pessoa rola).
-- No desktop (≥ 768px) ou se o usuário tiver `prefers-reduced-motion`, renderiza o conteúdo sem qualquer animação — o grid `sm:grid-cols-2 lg:grid-cols-3` continua funcionando normalmente.
+## Mudanças propostas
 
-**3. Aplicar o wrapper nos cards de funcionalidades em `src/pages/Index.tsx`**
-- Envolve cada card do `c.features_section.items.map(...)` com `<MobileScrollFeatureCard>`.
-- Remove o `animate-fade-in-up` + `animationDelay` desses cards (substituídos pelo scroll-driven).
-- Os cards extras (`c.extras`) ficam como estão (são apenas 2, não justifica o efeito).
+### 1. Adicionar token de cor "brand-green" ao design system
 
-### Arquivos
+Em `src/index.css`, adicionar uma variável HSL representando o verde da logo (aproximadamente `145 63% 42%` — verde médio similar ao da curva direita do logo):
 
-- **Criar**: `src/components/ui/mobile-scroll-feature-card.tsx`
-- **Editar**: `src/pages/Index.tsx` (remover seção ContainerScroll, trocar wrapper dos cards de funcionalidades)
+```css
+--brand-green: 145 63% 42%;
+--brand-green-foreground: 0 0% 100%;
+```
 
-### Resultado esperado
+Em `tailwind.config.ts`, registrar a cor para uso via classes Tailwind:
 
-- Desktop: visual idêntico ao atual, sem o mockup do laptop.
-- Mobile: cada card de funcionalidade aparece com fade + slide-up + scale conforme a pessoa rola, criando aquele efeito "stories" de revelação progressiva.
+```ts
+"brand-green": {
+  DEFAULT: "hsl(var(--brand-green))",
+  foreground: "hsl(var(--brand-green-foreground))",
+},
+```
+
+### 2. Aplicar o verde no badge do Hero
+
+Em `src/pages/Index.tsx` (linhas ~108-114), o `<Badge>` do hero hoje usa `variant="secondary"` com fundo translúcido. Trocar para um estilo sólido verde:
+
+```tsx
+<Badge
+  className="mb-6 px-4 py-1.5 text-xs font-medium bg-brand-green text-brand-green-foreground border-transparent shadow-lg shadow-brand-green/30 hover:bg-brand-green/90 animate-fade-in-up"
+>
+  {c.hero.badge_text}
+</Badge>
+```
+
+Resultado: pílula verde sólida com texto branco, mantendo a posição/animação atuais.
+
+### 3. Adicionar a logo Conectae como asset
+
+- Copiar `user-uploads://conectaeblue.png` para `src/assets/conectae-logo.png`.
+- A logo ficará disponível para:
+  - Uso futuro no componente `BrandLogo` (substituir o ícone `Building2` pela logo real, se desejado em próxima iteração).
+  - Configuração no admin (`HomePageEditor → header.brand_logo_url`) caso o admin queira definir essa logo como padrão da home.
+
+> **Observação**: nesta etapa **não** vou alterar o `BrandLogo.tsx` automaticamente para já trocar o ícone pela imagem — quero confirmar com você se prefere:
+> - (a) só salvar o asset agora, ou
+> - (b) já substituir o ícone "predinho" do `BrandLogo` pela logo Conectae em todos os lugares (header da LP, sidebar, footer, etc.).
+>
+> Me diga depois da aprovação qual caminho seguir, ou já implemento só o (a) para ficar conservador.
+
+---
+
+## Arquivos afetados
+
+- `src/index.css` — adicionar variáveis `--brand-green` / `--brand-green-foreground`.
+- `tailwind.config.ts` — registrar cor `brand-green`.
+- `src/pages/Index.tsx` — atualizar classes do `<Badge>` do hero.
+- `src/assets/conectae-logo.png` — novo arquivo (cópia da imagem enviada).
