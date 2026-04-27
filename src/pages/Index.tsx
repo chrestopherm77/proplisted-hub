@@ -67,11 +67,11 @@ const Index = () => {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           {isWhiteLabel ? (
-            <img src={partnerLogo} alt={brandName} className="h-10 max-w-[180px] object-contain" />
+            <img src={partnerLogo} alt={brandName} className="h-14 md:h-16 max-w-[220px] object-contain" />
           ) : c.header.brand_logo_url ? (
-            <img src={c.header.brand_logo_url} alt={brandName} className="h-10 max-w-[180px] object-contain" />
+            <img src={c.header.brand_logo_url} alt={brandName} className="h-14 md:h-16 max-w-[220px] object-contain" />
           ) : (
-            <BrandLogo size="md" />
+            <BrandLogo size="lg" />
           )}
           <div className="flex items-center gap-2">
             {c.header.show_login_button && (
@@ -371,7 +371,7 @@ const Index = () => {
           <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {isWhiteLabel ? (
-                <img src={partnerLogo} alt={brandName} className="h-7 max-w-[140px] object-contain opacity-80" />
+                <img src={partnerLogo} alt={brandName} className="h-10 max-w-[160px] object-contain opacity-80" />
               ) : (
                 <BrandLogo size="sm" />
               )}

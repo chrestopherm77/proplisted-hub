@@ -1,62 +1,76 @@
 ## Objetivo
 
-1. Mudar o fundo do badge "✨ Plano grátis disponível • Sem cartão de crédito" (Hero da Landing Page) do branco/transparente atual para o **verde da logo Conectae**.
-2. Adicionar a logo `conectaeblue.png` ao projeto como asset oficial, disponível para uso no `BrandLogo` e configurações white-label.
+1. Aumentar o tamanho da logo Conectae no header da landing page.
+2. Substituir o `BrandLogo` (ícone "predinho" + texto "Conectaae imob") pela imagem `conectae-logo.png` em todo o sistema (header LP, sidebar, admin, auth, lead form, thank you, mobile menu).
 
 ---
 
 ## Mudanças propostas
 
-### 1. Adicionar token de cor "brand-green" ao design system
+### 1. Refatorar `src/components/BrandLogo.tsx` para usar a imagem
 
-Em `src/index.css`, adicionar uma variável HSL representando o verde da logo (aproximadamente `145 63% 42%` — verde médio similar ao da curva direita do logo):
-
-```css
---brand-green: 145 63% 42%;
---brand-green-foreground: 0 0% 100%;
-```
-
-Em `tailwind.config.ts`, registrar a cor para uso via classes Tailwind:
-
-```ts
-"brand-green": {
-  DEFAULT: "hsl(var(--brand-green))",
-  foreground: "hsl(var(--brand-green-foreground))",
-},
-```
-
-### 2. Aplicar o verde no badge do Hero
-
-Em `src/pages/Index.tsx` (linhas ~108-114), o `<Badge>` do hero hoje usa `variant="secondary"` com fundo translúcido. Trocar para um estilo sólido verde:
+Substituir a lógica atual (ícone Lucide `Building2` + texto) por uma `<img>` da logo Conectae. Mantém:
+- a mesma API (`size`, `className`, `hideIcon`) para não quebrar nenhum chamador,
+- escala generosa por tamanho para a logo ficar visível.
 
 ```tsx
-<Badge
-  className="mb-6 px-4 py-1.5 text-xs font-medium bg-brand-green text-brand-green-foreground border-transparent shadow-lg shadow-brand-green/30 hover:bg-brand-green/90 animate-fade-in-up"
->
-  {c.hero.badge_text}
-</Badge>
+import conectaeLogo from '@/assets/conectae-logo.png';
+import { cn } from '@/lib/utils';
+
+interface BrandLogoProps {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
+  hideIcon?: boolean; // mantido por compatibilidade, ignorado
+}
+
+const SIZE_MAP = {
+  sm: 'h-8',         // antes ~text-base
+  md: 'h-12',        // antes text-xl  → bem maior
+  lg: 'h-16',        // antes text-2xl
+  xl: 'h-20 md:h-24',// antes text-3xl/4xl
+};
+
+export const BrandLogo = ({ size = 'md', className }: BrandLogoProps) => (
+  <img
+    src={conectaeLogo}
+    alt="Conectae"
+    className={cn('w-auto object-contain select-none', SIZE_MAP[size], className)}
+    draggable={false}
+  />
+);
 ```
 
-Resultado: pílula verde sólida com texto branco, mantendo a posição/animação atuais.
+Como o componente já é importado em todos os lugares relevantes, a troca propaga automaticamente para:
+- Header da Landing Page (`src/pages/Index.tsx`) — `size="md"` → vira `h-12` (≈48px), bem maior que o atual.
+- Sidebar (`src/components/AppSidebar.tsx`) — collapsed `sm` (h-8) / expanded `md` (h-12).
+- Admin (`src/components/admin/AdminLayout.tsx`) — mesmo comportamento.
+- Layout principal (`src/components/Layout.tsx`).
+- Auth (`src/pages/Auth.tsx`) — `size="lg"` (h-16).
+- LeadForm / LeadForm01 / ThankYou / ThankYou01 — `size="lg"` (h-16).
+- MobileMenu — `size="sm"` (h-8).
+- Footer da Landing Page — `size="sm"` (h-8).
 
-### 3. Adicionar a logo Conectae como asset
+### 2. Aumentar a logo no header da Landing Page
 
-- Copiar `user-uploads://conectaeblue.png` para `src/assets/conectae-logo.png`.
-- A logo ficará disponível para:
-  - Uso futuro no componente `BrandLogo` (substituir o ícone `Building2` pela logo real, se desejado em próxima iteração).
-  - Configuração no admin (`HomePageEditor → header.brand_logo_url`) caso o admin queira definir essa logo como padrão da home.
+Em `src/pages/Index.tsx`, o header hoje usa `<BrandLogo size="md" />`. Após a mudança acima ela já fica `h-12`. Para ficar ainda mais destacada no header (que tem `py-3`), trocamos para `size="lg"`:
 
-> **Observação**: nesta etapa **não** vou alterar o `BrandLogo.tsx` automaticamente para já trocar o ícone pela imagem — quero confirmar com você se prefere:
-> - (a) só salvar o asset agora, ou
-> - (b) já substituir o ícone "predinho" do `BrandLogo` pela logo Conectae em todos os lugares (header da LP, sidebar, footer, etc.).
->
-> Me diga depois da aprovação qual caminho seguir, ou já implemento só o (a) para ficar conservador.
+```tsx
+<BrandLogo size="lg" />
+```
+
+Isso deixa a logo com altura `h-16` (~64px) no header, ficando bem visível e proporcional.
+
+### 3. Compatibilidade com white-label e logo customizada
+
+- Quando `isWhiteLabel` ou `c.header.brand_logo_url` estiver setado, `Index.tsx` continua usando `<img>` próprio do parceiro/admin (já é o caso hoje) — apenas aumentamos a altura também:
+  - `className="h-14 md:h-16 max-w-[220px] object-contain"` (hoje é `h-10 max-w-[180px]`).
+- Footer mantém logo do parceiro com altura levemente maior: `h-10 max-w-[160px]` (hoje `h-7`).
 
 ---
 
 ## Arquivos afetados
 
-- `src/index.css` — adicionar variáveis `--brand-green` / `--brand-green-foreground`.
-- `tailwind.config.ts` — registrar cor `brand-green`.
-- `src/pages/Index.tsx` — atualizar classes do `<Badge>` do hero.
-- `src/assets/conectae-logo.png` — novo arquivo (cópia da imagem enviada).
+- `src/components/BrandLogo.tsx` — refatorar para renderizar `conectae-logo.png` com escala maior por tamanho.
+- `src/pages/Index.tsx` — header: trocar `size="md"` → `size="lg"`; aumentar `<img>` do white-label/custom logo no header e footer.
+
+Nenhuma mudança necessária nos outros chamadores — eles herdam o novo visual automaticamente.
