@@ -25,6 +25,11 @@ export default function Planos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   // Garante que o auto-trigger via ?plan= dispare apenas uma vez por carga.
   const autoTriggeredRef = useRef(false);
+  // IDs de assinaturas pagas vistas como PENDING nesta sessão. Quando uma delas
+  // virar ACTIVE (após confirmação do webhook do Asaas), redirecionamos para
+  // /primeiros-passos automaticamente.
+  const pendingPaidIdsRef = useRef<Set<string>>(new Set());
+  const paidActivationHandledRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
