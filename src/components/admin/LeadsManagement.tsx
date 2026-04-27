@@ -432,6 +432,25 @@ export function LeadsManagement() {
                         try {
                           await supabase.from('leads').update({ is_active: true, whatsapp_confirmed: true }).eq('id', lead.id);
                           toast({ title: 'Lead ativado manualmente' });
+
+                          // Dispara notificações em paralelo (não bloqueante)
+                          Promise.allSettled([
+                            supabase.functions.invoke('notify-new-lead', { body: { leadId: lead.id } }),
+                            supabase.functions.invoke('notify-lead-group', { body: { leadId: lead.id } }),
+                          ]).then((results) => {
+                            const [emailRes, groupRes] = results;
+                            if (emailRes.status === 'fulfilled' && !(emailRes.value as any)?.error) {
+                              toast({ title: '📧 E-mails enviados aos corretores' });
+                            } else {
+                              toast({ title: 'Falha ao disparar e-mails', variant: 'destructive' });
+                            }
+                            if (groupRes.status === 'fulfilled' && !(groupRes.value as any)?.error) {
+                              toast({ title: '📣 Notificação enviada ao grupo WhatsApp' });
+                            } else {
+                              toast({ title: 'Falha ao disparar grupo WhatsApp', variant: 'destructive' });
+                            }
+                          });
+
                           fetchLeads();
                         } catch { toast({ title: 'Erro', variant: 'destructive' }); }
                       }}
