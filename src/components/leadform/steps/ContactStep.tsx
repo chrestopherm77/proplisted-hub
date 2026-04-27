@@ -23,9 +23,9 @@ Ao preencher este formulário, o titular declara que leu, compreendeu e concorda
 
 1. CONTROLADOR E NATUREZA DA OPERAÇÃO
 
-A LEADBAY atua como plataforma de geração, qualificação e intermediação comercial de contatos (leads), exercendo o papel de Controladora dos Dados Pessoais no âmbito das atividades de coleta, armazenamento temporário, organização, qualificação e disponibilização limitada dos dados, conforme o consentimento do titular.
+A CONECTAE atua como plataforma de geração, qualificação e intermediação comercial de contatos (leads), exercendo o papel de Controladora dos Dados Pessoais no âmbito das atividades de coleta, armazenamento temporário, organização, qualificação e disponibilização limitada dos dados, conforme o consentimento do titular.
 
-O tratamento posterior realizado pelos parceiros comerciais ocorre sob sua exclusiva responsabilidade, na condição de Controladores Independentes, não havendo qualquer ingerência, controle ou corresponsabilidade da LEADBAY sobre o uso dos dados após sua disponibilização.
+O tratamento posterior realizado pelos parceiros comerciais ocorre sob sua exclusiva responsabilidade, na condição de Controladores Independentes, não havendo qualquer ingerência, controle ou corresponsabilidade da CONECTAE sobre o uso dos dados após sua disponibilização.
 
 2. DADOS PESSOAIS COLETADOS
 
@@ -47,7 +47,7 @@ Os dados pessoais fornecidos pelo titular serão tratados exclusivamente, de for
 
 a) Identificar o titular como potencial interessado em produtos ou serviços compatíveis com as preferências voluntariamente informadas;
 
-b) Disponibilizar o contato do titular a até 5 (cinco) parceiros comerciais previamente cadastrados na plataforma, no contexto de intermediação comercial realizada pela LEADBAY;
+b) Disponibilizar o contato do titular a até 5 (cinco) parceiros comerciais previamente cadastrados na plataforma, no contexto de intermediação comercial realizada pela CONECTAE;
 
 c) Permitir que os parceiros comerciais que adquirirem o contato entrem em contato direto com o titular, no prazo máximo de 60 (sessenta) dias, para apresentação de produtos ou serviços compatíveis com o interesse manifestado.
 
@@ -65,7 +65,7 @@ d) O tratamento posterior realizado pelos parceiros ocorre sob sua exclusiva res
 
 5. INTERMEDIAÇÃO E CONTATO COMERCIAL
 
-O titular autoriza expressamente que a LEADBAY realize a intermediação comercial e a disponibilização limitada de seu contato a parceiros comerciais previamente cadastrados, estando ciente de que:
+O titular autoriza expressamente que a CONECTAE realize a intermediação comercial e a disponibilização limitada de seu contato a parceiros comerciais previamente cadastrados, estando ciente de que:
 
 a) O contato por parte dos parceiros ocorrerá somente após a disponibilização do lead no âmbito da plataforma, conforme o consentimento concedido;
 
@@ -87,7 +87,7 @@ d) Adotar medidas técnicas e administrativas adequadas à proteção dos dados 
 
 e) Interromper imediatamente novos contatos mediante solicitação do titular ou revogação do consentimento;
 
-f) Fornecer à LEADBAY feedback mínimo sobre a utilização do lead, como condição para manutenção do acesso à plataforma;
+f) Fornecer à CONECTAE feedback mínimo sobre a utilização do lead, como condição para manutenção do acesso à plataforma;
 
 g) Assumir responsabilidade integral por qualquer tratamento realizado após o recebimento dos dados.
 
@@ -101,7 +101,7 @@ O titular poderá exercer, a qualquer momento, os direitos previstos no artigo 1
 
 9. REVOGAÇÃO DO CONSENTIMENTO
 
-A revogação do consentimento poderá ser solicitada a qualquer tempo. A partir do recebimento da solicitação, a LEADBAY compromete-se a:
+A revogação do consentimento poderá ser solicitada a qualquer tempo. A partir do recebimento da solicitação, a CONECTAE compromete-se a:
 
 a) Cessar novas disponibilizações dos dados;
 

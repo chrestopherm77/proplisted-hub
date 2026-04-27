@@ -5,8 +5,8 @@ import { Resend } from "npm:resend@2.0.0";
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const ALLOWED_ORIGINS = [
-  'https://leadbay.com.br',
-  'https://www.leadbay.com.br',
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
   'https://proplisted-hub.lovable.app',
 ];
 
@@ -742,7 +742,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const email of emails) {
       try {
         const { data, error: sendError } = await resend.emails.send({
-          from: "Conectae <noreply@leadbay.com.br>",
+          from: "Conectae <noreply@conectaeimob.com.br>",
           to: [email],
           subject: `🏠 Novo lead em ${city}! Confira agora`,
           html: emailHTML,

@@ -5,8 +5,8 @@ import { Resend } from "resend";
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const ALLOWED_ORIGINS = [
-  'https://leadbay.com.br',
-  'https://www.leadbay.com.br',
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
   'https://proplisted-hub.lovable.app',
 ];
 
@@ -53,7 +53,7 @@ const buildHtml = (name: string) => `
     </p>
 
     <div style="text-align: center; margin-bottom: 32px;">
-      <a href="https://www.leadbay.com.br" style="display: inline-block; background-color: #18181b; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 40px; border-radius: 8px;">
+      <a href="https://www.conectaeimob.com.br" style="display: inline-block; background-color: #18181b; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 40px; border-radius: 8px;">
         Ver leads disponíveis
       </a>
     </div>
@@ -149,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const profile of validProfiles) {
       try {
         const emailResponse = await resend.emails.send({
-          from: "Conectae <noreply@leadbay.com.br>",
+          from: "Conectae <noreply@conectaeimob.com.br>",
           to: [profile.email],
           subject: "🔥 Liquidação de Leads - A partir de R$5,00!",
           html: buildHtml(profile.name || "Corretor"),

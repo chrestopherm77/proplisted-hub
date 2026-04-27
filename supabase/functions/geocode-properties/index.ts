@@ -24,7 +24,7 @@ async function geocodeQuery(query: string): Promise<{ lat: number; lng: number }
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`;
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Conectae/1.0 (contato@leadbay.com.br)',
+        'User-Agent': 'Conectae/1.0 (contato@conectaeimob.com.br)',
         'Accept-Language': 'pt-BR',
       },
     });

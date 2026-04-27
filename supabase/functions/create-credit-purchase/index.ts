@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
-  'https://leadbay.com.br',
-  'https://www.leadbay.com.br',
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
   'https://proplisted-hub.lovable.app',
 ];
 
@@ -57,7 +57,7 @@ serve(async (req) => {
     const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
     const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const FRONTEND_URL = 'https://leadbay.com.br';
+    const FRONTEND_URL = 'https://conectaeimob.com.br';
 
     if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
 

@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
         if (details) groupMsg += `${details}\n\n`;
         groupMsg += `Seja rápido! Leads recentes têm maior taxa de conversão.\n\n`;
         groupMsg += `Clique abaixo para entrar em contato agora:\n\n`;
-        groupMsg += `👉 https://www.leadbay.com.br/leads`;
+        groupMsg += `👉 https://www.conectaeimob.com.br/leads`;
 
         const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
         if (MEGA_API_TOKEN) {
@@ -334,7 +334,7 @@ Deno.serve(async (req) => {
 
                   const msg = `Olá ${profile.name?.split(" ")[0] || ""}! 🚀\n\n` +
                     `Um novo lead de *${intentionLabel}* em *${leadCity} - ${leadUF}* acabou de ser cadastrado e combina com seu alerta!\n\n` +
-                    `Acesse agora para garantir antes de outros:\n👉 https://www.leadbay.com.br/leads\n\n` +
+                    `Acesse agora para garantir antes de outros:\n👉 https://www.conectaeimob.com.br/leads\n\n` +
                     `Seja rápido! 💨`;
 
                   const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";

@@ -87,7 +87,7 @@ serve(async (req) => {
     message += `*Zona:* ${zone || 'Não informado'}\n`;
     message += `*Bairro/Condomínio:* ${neighborhood || 'Não informado'}\n`;
     message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
-    message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.leadbay.com.br/property-searches`;
+    message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.conectaeimob.com.br/property-searches`;
 
     const WHATSAPP_GROUP_IDS = [
       "120363407964054463@g.us",
