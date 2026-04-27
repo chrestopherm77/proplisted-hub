@@ -40,18 +40,22 @@ const sections = [
 ];
 
 const NossaIA = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin, permissionsLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || permissionsLoading) return;
     if (!user) {
       navigate('/auth');
+      return;
     }
-  }, [user, loading, navigate]);
+    if (isAdmin === false) {
+      navigate('/leads');
+    }
+  }, [user, loading, isAdmin, permissionsLoading, navigate]);
 
-  if (loading || !user) {
+  if (loading || permissionsLoading || !user || isAdmin !== true) {
     return (
       <Layout>
         <div className="text-center py-12">Carregando...</div>

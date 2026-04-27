@@ -124,17 +124,19 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             <Newspaper className="h-5 w-5" />
             <span className="font-medium">Giro do Mercado</span>
           </Link>
-          <Link
-            to="/nossa-ia"
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/nossa-ia')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            <Bot className="h-5 w-5" />
-            <span className="font-medium">Nossa IA</span>
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/nossa-ia"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/nossa-ia')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Bot className="h-5 w-5" />
+              <span className="font-medium">Nossa IA</span>
+            </Link>
+          )}
           <Link
             to="/criativos"
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
