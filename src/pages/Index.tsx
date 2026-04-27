@@ -27,7 +27,7 @@ const Index = () => {
   // White-label segue exibindo a marca do parceiro
   const isWhiteLabel = isPartnerSite && !!partner;
   const partnerLogo = partner?.logo_url ?? leadbayLogo;
-  const brandName = isWhiteLabel ? partner!.name : 'Conectaae Imob';
+  const brandName = isWhiteLabel ? partner!.name : 'Conectae Imob';
 
   useEffect(() => {
     if (!loading && user && !override) navigate('/leads');
@@ -36,7 +36,7 @@ const Index = () => {
   // SEO básico
   useEffect(() => {
     if (!isWhiteLabel && !override) {
-      document.title = 'Conectaae Imob — O hub completo do corretor de imóveis';
+      document.title = 'Conectae Imob — O hub completo do corretor de imóveis';
     }
   }, [isWhiteLabel, override]);
 

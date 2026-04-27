@@ -114,7 +114,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
     ],
   },
   extras: [
-    { icon: 'GraduationCap', title: 'Educação Conectaae', desc: 'Treinamentos básicos, intermediários e Hot Seats com especialistas para você evoluir no mercado imobiliário.' },
+    { icon: 'GraduationCap', title: 'Educação Conectae', desc: 'Treinamentos básicos, intermediários e Hot Seats com especialistas para você evoluir no mercado imobiliário.' },
     { icon: 'Scale', title: 'Suporte Jurídico', desc: 'Serviços jurídicos sob demanda para você operar com segurança total em contratos e negociações.' },
   ],
   how_it_works: {

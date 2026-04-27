@@ -2,7 +2,7 @@
 // Estratégia: URL (?plan=slug) é a fonte primária; sessionStorage serve como fallback
 // caso o usuário recarregue ou o fluxo perca o query param entre redirects.
 
-const KEY = 'conectaae:pendingPlan';
+const KEY = 'conectae:pendingPlan';
 
 export const setPendingPlan = (slug: string | null | undefined) => {
   if (!slug) return;
