@@ -34,6 +34,7 @@ import {
   ArrowLeft,
   Globe,
   PlayCircle,
+  LifeBuoy,
 } from 'lucide-react';
 
 interface AdminNavItem {
@@ -55,6 +56,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Vouchers', url: '/admin/vouchers', icon: Ticket, group: 'Financeiro' },
 
   { title: 'Usuários', url: '/admin/users', icon: Users, group: 'Pessoas' },
+  { title: 'Chamados', url: '/admin/support', icon: LifeBuoy, group: 'Pessoas' },
   { title: 'Acessos', url: '/admin/access', icon: History, group: 'Pessoas' },
   { title: 'Liberar acesso', url: '/admin/launch-access', icon: KeyRound, group: 'Pessoas' },
   { title: 'Parceiros', url: '/admin/partners', icon: Handshake, group: 'Pessoas' },
