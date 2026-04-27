@@ -75,11 +75,36 @@ export default function Auth() {
         description: 'Bem-vindo de volta.',
       });
 
-      // Se o usuário veio de um CTA de plano, manda direto para /planos com o slug.
+      // Se o usuário veio de um CTA de plano, decidir o destino:
+      // - Se já tem assinatura ATIVA nesse plano (ex.: o trigger já ativou "conexao"
+      //   no signup), não faz sentido reabrir o checkout — vai direto pra /leads.
+      // - Caso contrário, abre /planos?plan=slug pra concluir a contratação.
       const { getPendingPlan, clearPendingPlan } = await import('@/lib/pendingPlan');
       const pending = planFromUrl || getPendingPlan();
       if (pending) {
         clearPendingPlan();
+        try {
+          const { data: planRow } = await supabase
+            .from('subscription_plans')
+            .select('id')
+            .eq('slug', pending)
+            .maybeSingle();
+          if (planRow?.id) {
+            const { data: existingSub } = await supabase
+              .from('user_subscriptions')
+              .select('id')
+              .eq('user_id', data.user.id)
+              .eq('plan_id', planRow.id)
+              .in('status', ['ACTIVE', 'OVERDUE'])
+              .maybeSingle();
+            if (existingSub) {
+              navigate('/leads');
+              return;
+            }
+          }
+        } catch {
+          /* segue fluxo padrão se a verificação falhar */
+        }
         navigate(`/planos?plan=${pending}`);
       } else {
         navigate('/leads');
