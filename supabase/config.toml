@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.send-whatsapp-code]
 verify_jwt = false
 
+[functions.check-whatsapp]
+verify_jwt = false
+
 [functions.verify-whatsapp-code]
 verify_jwt = false
 
