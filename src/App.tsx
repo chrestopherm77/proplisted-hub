@@ -96,6 +96,7 @@ const App = () => {
           <Route path="/admin/landing-pages/:id" element={<Admin section="landing-page-editor" />} />
           <Route path="/admin/home-page" element={<Admin section="home-page" />} />
           <Route path="/admin/onboarding-video" element={<Admin section="onboarding-video" />} />
+          <Route path="/admin/support" element={<Admin section="support" />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />

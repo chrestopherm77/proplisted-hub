@@ -8,6 +8,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserAvatarMenu } from '@/components/UserAvatarMenu';
+import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 
 interface LayoutProps {
   children: ReactNode;
@@ -80,6 +81,7 @@ export const Layout = ({ children }: LayoutProps) => {
           </footer>
         </div>
       </div>
+      <SupportChatWidget />
     </SidebarProvider>
   );
 };
