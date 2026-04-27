@@ -62,7 +62,7 @@ export default function Planos() {
           .order('display_order', { ascending: true }),
         supabase
           .from('user_subscriptions')
-          .select('plan_id, status, invoice_url, created_at, plan:subscription_plans(price)')
+          .select('id, plan_id, status, invoice_url, created_at, plan:subscription_plans(price)')
           .eq('user_id', user!.id)
           .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
           .order('created_at', { ascending: false }),
@@ -76,6 +76,32 @@ export default function Planos() {
       setActivePlanPrice(active ? Number(active.plan?.price ?? 0) : 0);
       setPendingPlanId(pending?.plan_id ?? null);
       setPendingInvoiceUrl(pending?.invoice_url ?? null);
+
+      // Rastreia qualquer assinatura PAGA atualmente em PENDING para detectar
+      // depois a confirmação do pagamento (PENDING → ACTIVE) via webhook do Asaas.
+      for (const s of subs) {
+        if (s.status === 'PENDING' && Number(s.plan?.price ?? 0) > 0 && s.id) {
+          pendingPaidIdsRef.current.add(s.id as string);
+        }
+      }
+
+      // Se uma das pendentes pagas que vimos virou ACTIVE, é pagamento confirmado.
+      const justActivated = subs.find(
+        (s) =>
+          (s.status === 'ACTIVE' || s.status === 'OVERDUE') &&
+          Number(s.plan?.price ?? 0) > 0 &&
+          s.id &&
+          pendingPaidIdsRef.current.has(s.id as string),
+      );
+      if (justActivated && !paidActivationHandledRef.current) {
+        paidActivationHandledRef.current = true;
+        pendingPaidIdsRef.current.delete(justActivated.id as string);
+        toast({
+          title: 'Pagamento confirmado!',
+          description: 'Seu plano foi ativado. Vamos aos primeiros passos.',
+        });
+        setTimeout(() => navigate('/primeiros-passos'), 600);
+      }
     } catch (err: any) {
       toast({ title: 'Erro ao carregar planos', description: err.message, variant: 'destructive' });
     } finally {
