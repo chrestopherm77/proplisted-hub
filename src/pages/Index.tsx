@@ -149,32 +149,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* ===== ContainerScroll: mockup ===== */}
-        <section className="relative -mt-10 md:-mt-20 bg-background">
-          <ContainerScroll
-            titleComponent={
-              <div className="px-4">
-                <h2 className="text-2xl md:text-4xl font-bold mb-3">
-                  Veja sua operação <br className="hidden md:block" />
-                  <span className="text-gradient-primary text-3xl md:text-5xl mt-2 inline-block">
-                    em um só lugar
-                  </span>
-                </h2>
-                <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-                  Leads, parcerias, lançamentos e IA — tudo integrado num painel pensado para corretor.
-                </p>
-              </div>
-            }
-          >
-            <img
-              src={dashboardMockup}
-              alt="Dashboard Conectaae"
-              className="mx-auto rounded-2xl object-cover h-full object-left-top w-full"
-              draggable={false}
-            />
-          </ContainerScroll>
-        </section>
-
         {/* ===== Funcionalidades ===== */}
         <section className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="text-center max-w-2xl mx-auto mb-14">
@@ -193,10 +167,9 @@ const Index = () => {
             {c.features_section.items.map((f, i) => {
               const Icon = getLucideIcon(f.icon);
               return (
-                <div
+                <MobileScrollFeatureCard
                   key={i}
-                  className="group relative rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 hover:border-primary/40 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 animate-fade-in-up"
-                  style={{ animationDelay: `${i * 60}ms` }}
+                  className="group relative rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 hover:border-primary/40 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300"
                 >
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   <div className="relative">
@@ -206,7 +179,7 @@ const Index = () => {
                     <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                   </div>
-                </div>
+                </MobileScrollFeatureCard>
               );
             })}
           </div>
