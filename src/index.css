@@ -225,3 +225,26 @@ All colors MUST be HSL.
     animation: none !important;
   }
 }
+
+/* Admin: barra de rolagem horizontal sempre visível */
+.admin-users-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.5) hsl(var(--muted));
+}
+.admin-users-scroll::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+  -webkit-appearance: none;
+}
+.admin-users-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 6px;
+}
+.admin-users-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border-radius: 6px;
+  border: 2px solid hsl(var(--muted));
+}
+.admin-users-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.8);
+}
