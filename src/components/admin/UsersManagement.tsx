@@ -287,7 +287,15 @@ export function UsersManagement() {
               const plan = planMap[p.id];
               return (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.company_name || p.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setDetailsProfileId(p.id)}
+                      className="text-left hover:text-primary hover:underline focus:outline-none focus:text-primary"
+                    >
+                      {p.company_name || p.name}
+                    </button>
+                  </TableCell>
                   <TableCell>
                     {p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '-'}
                   </TableCell>
