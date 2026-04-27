@@ -327,7 +327,7 @@ async function processPaymentConfirmation(
       const paymentResponse = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}`, {
         headers: {
           'access_token': ASAAS_API_KEY || '',
-          'User-Agent': 'LeadBay-Webhook',
+          'User-Agent': 'Conectae-Webhook',
         },
       });
 
@@ -678,7 +678,7 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
           const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
           await fetch(`${ASAAS_BASE_URL}/subscriptions/${other.asaas_subscription_id}`, {
             method: 'DELETE',
-            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-Webhook' },
+            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'Conectae-Webhook' },
           });
         } catch (e) {
           console.error('Falha ao cancelar assinatura antiga no Asaas:', e);

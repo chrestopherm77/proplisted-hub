@@ -1,6 +1,6 @@
 export const CONTRACT_TERMS = `CONTRATO DE PARCERIA COMERCIAL PARA AQUISIÇÃO E USO DE LEADS
 
-Pelo presente instrumento particular, de um lado LEADBAY, pessoa jurídica de direito privado, doravante denominada PLATAFORMA, e, de outro, o PARCEIRO, pessoa física ou jurídica devidamente cadastrada, qualificada e aceita na plataforma, resolvem celebrar o presente Contrato de Parceria Comercial, que se regerá pelas cláusulas e condições abaixo, nos termos da legislação civil e da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
+Pelo presente instrumento particular, de um lado CONECTAE, pessoa jurídica de direito privado, doravante denominada PLATAFORMA, e, de outro, o PARCEIRO, pessoa física ou jurídica devidamente cadastrada, qualificada e aceita na plataforma, resolvem celebrar o presente Contrato de Parceria Comercial, que se regerá pelas cláusulas e condições abaixo, nos termos da legislação civil e da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
 
 
 CLÁUSULA 1 — DEFINIÇÕES
@@ -15,7 +15,7 @@ e) DPA: Acordo de Tratamento de Dados Pessoais, Anexo I.
 
 CLÁUSULA 2 — OBJETO
 
-2.1. O presente contrato tem por objeto a concessão ao PARCEIRO de acesso à plataforma tecnológica da LEADBAY para aquisição onerosa de leads qualificados, no contexto de intermediação comercial, mediante consentimento válido dos titulares.
+2.1. O presente contrato tem por objeto a concessão ao PARCEIRO de acesso à plataforma tecnológica da CONECTAE para aquisição onerosa de leads qualificados, no contexto de intermediação comercial, mediante consentimento válido dos titulares.
 2.2. A aquisição de leads não implica garantia de conversão, exclusividade, resultado comercial ou fechamento de negócios.
 
 2.3. O PARCEIRO reconhece que o lead consiste exclusivamente em manifestação de interesse do titular, não havendo garantia de veracidade, atualidade ou intenção de contratação.
@@ -27,7 +27,7 @@ CLÁUSULA 3 — NATUREZA DA OPERAÇÃO (NÃO VENDA DE DADOS)
 
 CLÁUSULA 4 — PAPÉIS E RESPONSABILIDADES (LGPD)
 
-4.1. A LEADBAY atua como Controladora no âmbito da coleta, organização, qualificação e disponibilização limitada dos leads.
+4.1. A CONECTAE atua como Controladora no âmbito da coleta, organização, qualificação e disponibilização limitada dos leads.
 4.2. O PARCEIRO, ao receber os dados, passa a atuar como CONTROLADOR INDEPENDENTE, sendo exclusivamente responsável pelo tratamento posterior.
 4.3. Inexiste solidariedade, corresponsabilidade, subordinação, grupo econômico, joint venture ou co-controladoria entre as Partes.
 4.4. Cada Parte responde exclusivamente pelos tratamentos que realizar.
@@ -67,7 +67,7 @@ b) Status do lead;
 c) Evolução ou conversão comercial.
 
 8.2. O feedback constitui condição essencial de governança da plataforma.
-8.3. O descumprimento autoriza, a critério exclusivo da LEADBAY:
+8.3. O descumprimento autoriza, a critério exclusivo da CONECTAE:
 
 a) Redução de prioridade;
 b) Suspensão de acesso;
@@ -95,7 +95,7 @@ b) subsistirá pelo prazo mínimo de 5 (cinco) anos após a rescisão quanto às
 9.4. Não serão consideradas Informações Confidenciais aquelas que:
 a) sejam ou se tornem públicas sem violação deste Contrato;
 b) sejam comprovadamente conhecidas pelo PARCEIRO antes da contratação;
-c) devam ser divulgadas por força de lei, ordem judicial ou determinação de autoridade competente, hipótese em que a LEADBAY deverá ser previamente comunicada, sempre que possível.
+c) devam ser divulgadas por força de lei, ordem judicial ou determinação de autoridade competente, hipótese em que a CONECTAE deverá ser previamente comunicada, sempre que possível.
 
 9.5. O descumprimento desta cláusula sujeitará o infrator:
 a) à obrigação de cessar imediatamente a infração;
@@ -105,7 +105,7 @@ d) sem prejuízo da adoção de medidas judiciais de urgência.
 
 CLÁUSULA 10 — INCIDENTES DE SEGURANÇA, NOTIFICAÇÃO E COOPERAÇÃO
 
-10.1. O PARCEIRO deverá comunicar à LEADBAY, imediatamente e no prazo máximo de 48 (quarenta e oito) horas a partir da ciência, qualquer incidente de segurança que possa acarretar risco ou dano relevante aos titulares de dados pessoais, incluindo, mas não se limitando a acesso não autorizado, vazamento, destruição, perda, alteração ou divulgação indevida de dados pessoais.
+10.1. O PARCEIRO deverá comunicar à CONECTAE, imediatamente e no prazo máximo de 48 (quarenta e oito) horas a partir da ciência, qualquer incidente de segurança que possa acarretar risco ou dano relevante aos titulares de dados pessoais, incluindo, mas não se limitando a acesso não autorizado, vazamento, destruição, perda, alteração ou divulgação indevida de dados pessoais.
 
 10.2. A comunicação deverá conter, no mínimo:
  a) descrição detalhada do incidente;
@@ -114,12 +114,12 @@ CLÁUSULA 10 — INCIDENTES DE SEGURANÇA, NOTIFICAÇÃO E COOPERAÇÃO
  d) medidas técnicas e organizacionais adotadas para contenção e mitigação;
  e) avaliação preliminar dos riscos e impactos aos titulares.
 
-10.3. O PARCEIRO obriga-se a cooperar integralmente com a LEADBAY, comprometendo-se a:
+10.3. O PARCEIRO obriga-se a cooperar integralmente com a CONECTAE, comprometendo-se a:
  a) fornecer todas as informações e documentos solicitados;
  b) permitir auditorias técnicas e jurídicas relacionadas ao incidente;
  c) implementar, às suas expensas, as medidas corretivas e preventivas determinadas.
 
-10.4. Caberá exclusivamente à LEADBAY deliberar sobre a necessidade, o conteúdo e o momento da comunicação do incidente aos titulares e à Autoridade Nacional de Proteção de Dados (ANPD), sem prejuízo do dever de apoio técnico do PARCEIRO.
+10.4. Caberá exclusivamente à CONECTAE deliberar sobre a necessidade, o conteúdo e o momento da comunicação do incidente aos titulares e à Autoridade Nacional de Proteção de Dados (ANPD), sem prejuízo do dever de apoio técnico do PARCEIRO.
 
 10.5. Todos os custos decorrentes do incidente de segurança, incluindo investigações, comunicações, auditorias, sanções, indenizações e medidas de mitigação, serão suportados integralmente pelo PARCEIRO, quando o incidente decorrer de sua atuação, direta ou indireta.
 
@@ -127,21 +127,21 @@ CLÁUSULA 10 — INCIDENTES DE SEGURANÇA, NOTIFICAÇÃO E COOPERAÇÃO
 
 CLÁUSULA 11 — DEFESA, INDENIZAÇÃO E REGRESSO
 
-11.1. O PARCEIRO obriga-se a assumir integral e exclusiva responsabilidade, inclusive financeira, pela defesa administrativa, judicial ou extrajudicial da LEADBAY em qualquer reclamação, investigação, processo, procedimento, ação coletiva ou individual, termo de ajustamento de conduta (TAC), processo administrativo ou demanda regulatória que decorra, direta ou indiretamente, do tratamento de dados pessoais realizado pelo PARCEIRO.
+11.1. O PARCEIRO obriga-se a assumir integral e exclusiva responsabilidade, inclusive financeira, pela defesa administrativa, judicial ou extrajudicial da CONECTAE em qualquer reclamação, investigação, processo, procedimento, ação coletiva ou individual, termo de ajustamento de conduta (TAC), processo administrativo ou demanda regulatória que decorra, direta ou indiretamente, do tratamento de dados pessoais realizado pelo PARCEIRO.
 
 11.2. A obrigação de defesa inclui, sem limitação:
 a) custeio integral de honorários advocatícios, periciais e despesas processuais;
 b) pagamento de condenações, multas administrativas, sanções, acordos judiciais ou extrajudiciais;
-c) ressarcimento imediato de quaisquer valores adiantados pela LEADBAY.
+c) ressarcimento imediato de quaisquer valores adiantados pela CONECTAE.
 
-11.3. A LEADBAY poderá, a seu exclusivo critério:
+11.3. A CONECTAE poderá, a seu exclusivo critério:
 a) indicar ou aprovar os profissionais responsáveis pela defesa;
 b) conduzir a defesa de forma autônoma ou conjunta;
 c) celebrar acordos, transações ou termos administrativos, sem prejuízo do direito de regresso.
 
-11.4. A responsabilidade do PARCEIRO subsiste independentemente de alegação de culpa concorrente, coautoria ou corresponsabilidade, salvo se houver decisão judicial transitada em julgado reconhecendo culpa exclusiva e direta da LEADBAY, sem qualquer contribuição do PARCEIRO
+11.4. A responsabilidade do PARCEIRO subsiste independentemente de alegação de culpa concorrente, coautoria ou corresponsabilidade, salvo se houver decisão judicial transitada em julgado reconhecendo culpa exclusiva e direta da CONECTAE, sem qualquer contribuição do PARCEIRO
 
-11.5. O PARCEIRO obriga-se a reembolsar integralmente a LEADBAY no prazo máximo de 10 (dez) dias contados da notificação, sob pena de multa, correção monetária e juros legais.
+11.5. O PARCEIRO obriga-se a reembolsar integralmente a CONECTAE no prazo máximo de 10 (dez) dias contados da notificação, sob pena de multa, correção monetária e juros legais.
 
 11.6. As obrigações previstas nesta cláusula sobrevivem à rescisão do contrato por qualquer motivo.
 
@@ -161,21 +161,21 @@ a) o dever de indenização integral por perdas e danos;
 b) a obrigação de cessar imediatamente a infração;
 c) a responsabilização administrativa perante a ANPD.
 
-12.4. As Partes reconhecem que os valores ora pactuados são proporcionais à natureza da atividade, aos riscos regulatórios envolvidos e à potencial exposição da LEADBAY a sanções administrativas e judiciais.
+12.4. As Partes reconhecem que os valores ora pactuados são proporcionais à natureza da atividade, aos riscos regulatórios envolvidos e à potencial exposição da CONECTAE a sanções administrativas e judiciais.
 
 CLÁUSULA 13 — ADEQUAÇÃO REGULATÓRIA E ATUALIZAÇÃO NORMATIVA
 
 13.1. As Partes reconhecem que a atividade objeto deste contrato está sujeita à legislação de proteção de dados pessoais e às normas, guias, recomendações e decisões da Autoridade Nacional de Proteção de Dados (ANPD).
 
-13.2. A LEADBAY poderá promover a atualização das cláusulas estritamente necessárias para assegurar a conformidade legal, sem alterar a natureza econômica do contrato, respeitados os princípios da boa-fé e da proporcionalidade.
+13.2. A CONECTAE poderá promover a atualização das cláusulas estritamente necessárias para assegurar a conformidade legal, sem alterar a natureza econômica do contrato, respeitados os princípios da boa-fé e da proporcionalidade.
 
 13.3. As alterações serão comunicadas ao PARCEIRO, que deverá manifestar concordância expressa ou, alternativamente, adequar seus procedimentos, hipótese que será interpretada como aceite tácito, no prazo máximo de 15 (quinze) dias, sob pena de suspensão automática do acesso à plataforma.
 
-13.4. A recusa ou omissão do PARCEIRO autoriza a rescisão imediata do contrato, sem ônus para a LEADBAY.
+13.4. A recusa ou omissão do PARCEIRO autoriza a rescisão imediata do contrato, sem ônus para a CONECTAE.
 
 CLÁUSULA 14 — RESCISÃO IMEDIATA E EFEITOS
 
-14.1. O presente contrato poderá ser rescindido imediata e unilateralmente pela LEADBAY, independentemente de aviso prévio ou indenização, nas seguintes hipóteses:
+14.1. O presente contrato poderá ser rescindido imediata e unilateralmente pela CONECTAE, independentemente de aviso prévio ou indenização, nas seguintes hipóteses:
 
 a) violação à LGPD ou ao DPA;
 
@@ -195,7 +195,7 @@ b) obrigação de eliminação ou anonimização integral dos dados, no prazo m�
 
 c) manutenção das obrigações de confidencialidade, responsabilidade, indenização e cooperação regulatória.
 
-14.3. A rescisão não prejudica o direito da LEADBAY de apurar infrações, aplicar penalidades e buscar indenização por perdas e danos.
+14.3. A rescisão não prejudica o direito da CONECTAE de apurar infrações, aplicar penalidades e buscar indenização por perdas e danos.
 
 CLÁUSULA 15 — VIGÊNCIA E SOBREVIVÊNCIA
 
@@ -215,19 +215,19 @@ e) foro e legislação aplicável.
 
 CLÁUSULA 16 — FORO
 
-16.1. Fica eleito o foro da comarca do domicílio da LEADBAY, com renúncia expressa a qualquer outro, por mais privilegiado que seja, para dirimir quaisquer controvérsias oriundas deste contrato.`;
+16.1. Fica eleito o foro da comarca do domicílio da CONECTAE, com renúncia expressa a qualquer outro, por mais privilegiado que seja, para dirimir quaisquer controvérsias oriundas deste contrato.`;
 
 export const DPA_TERMS = `ACORDO DE TRATAMENTO DE DADOS PESSOAIS
 (DATA PROCESSING AGREEMENT – DPA)
 
-Este Acordo de Tratamento de Dados Pessoais ("DPA") é celebrado entre LEADBAY e o PARCEIRO, como Anexo I e parte integrante do Contrato de Parceria Comercial para Aquisição e Uso de Leads, regulando o tratamento de dados pessoais realizado no contexto da intermediação de contatos comerciais, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
+Este Acordo de Tratamento de Dados Pessoais ("DPA") é celebrado entre CONECTAE e o PARCEIRO, como Anexo I e parte integrante do Contrato de Parceria Comercial para Aquisição e Uso de Leads, regulando o tratamento de dados pessoais realizado no contexto da intermediação de contatos comerciais, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD).
 
 
 CLÁUSULA 1 — OBJETO E ESCOPO
 
 1.1. O presente DPA tem por objeto regular as responsabilidades, obrigações, limites e medidas de governança aplicáveis ao tratamento de dados pessoais realizado pelas Partes no contexto do contrato principal.
 
-1.2. Este DPA aplica-se exclusivamente aos dados pessoais disponibilizados pela LEADBAY ao PARCEIRO na forma de leads, não abrangendo dados obtidos por outras fontes ou tratados fora do escopo contratual.
+1.2. Este DPA aplica-se exclusivamente aos dados pessoais disponibilizados pela CONECTAE ao PARCEIRO na forma de leads, não abrangendo dados obtidos por outras fontes ou tratados fora do escopo contratual.
 
 
 CLÁUSULA 2 — DEFINIÇÕES
@@ -241,7 +241,7 @@ c) Incidente de Segurança: qualquer evento que resulte em acesso não autorizad
 
 CLÁUSULA 3 — PAPÉIS DAS PARTES
 
-3.1. A LEADBAY atua como Controladora de Dados Pessoais exclusivamente no âmbito da coleta, organização, qualificação, armazenamento temporário e disponibilização limitada dos leads.
+3.1. A CONECTAE atua como Controladora de Dados Pessoais exclusivamente no âmbito da coleta, organização, qualificação, armazenamento temporário e disponibilização limitada dos leads.
 
 3.2. O PARCEIRO, a partir do recebimento dos dados, passa a atuar como CONTROLADOR INDEPENDENTE, sendo integralmente responsável pelo tratamento posterior realizado.
 
@@ -254,7 +254,7 @@ CLÁUSULA 3 — PAPÉIS DAS PARTES
 
 CLÁUSULA 4 — BASE LEGAL
 
-4.1. O tratamento realizado pela LEADBAY fundamenta-se no consentimento livre, informado, específico e inequívoco do titular, nos termos do art. 7º, I, da LGPD.
+4.1. O tratamento realizado pela CONECTAE fundamenta-se no consentimento livre, informado, específico e inequívoco do titular, nos termos do art. 7º, I, da LGPD.
 
 4.2. O PARCEIRO compromete-se a tratar os dados exclusivamente dentro do escopo do consentimento obtido, sendo vedada a invocação de base legal diversa para fins de contato comercial, sem novo consentimento válido.
 
@@ -296,7 +296,7 @@ CLÁUSULA 7 — PRAZO DE RETENÇÃO E ELIMINAÇÃO
 • proceder à anonimização irreversível,
 salvo obrigação legal que justifique retenção diversa.
 
-7.3. A LEADBAY poderá exigir comprovação documental da eliminação.
+7.3. A CONECTAE poderá exigir comprovação documental da eliminação.
 
 
 CLÁUSULA 8 — SEGURANÇA DA INFORMAÇÃO E MEDIDAS PROPORCIONAIS
@@ -317,7 +317,7 @@ CLÁUSULA 8 — SEGURANÇA DA INFORMAÇÃO E MEDIDAS PROPORCIONAIS
 
 CLÁUSULA 9 — INCIDENTES DE SEGURANÇA
 
-9.1. O PARCEIRO deverá comunicar à LEADBAY, de forma imediata e no prazo máximo de 48 (quarenta e oito) horas a contar do conhecimento, a ocorrência de qualquer incidente de segurança que possa acarretar risco ou dano relevante aos titulares dos dados pessoais recebidos por meio da plataforma, nos termos do artigo 48 da Lei nº 13.709/2018 (LGPD).
+9.1. O PARCEIRO deverá comunicar à CONECTAE, de forma imediata e no prazo máximo de 48 (quarenta e oito) horas a contar do conhecimento, a ocorrência de qualquer incidente de segurança que possa acarretar risco ou dano relevante aos titulares dos dados pessoais recebidos por meio da plataforma, nos termos do artigo 48 da Lei nº 13.709/2018 (LGPD).
 
 9.2. A comunicação deverá conter, na medida do possível e conforme as informações disponíveis à época, ao menos:
  a) descrição da natureza do incidente;
@@ -325,7 +325,7 @@ CLÁUSULA 9 — INCIDENTES DE SEGURANÇA
  c) medidas técnicas e administrativas adotadas para contenção e mitigação;
  d) avaliação preliminar dos impactos, riscos e potenciais danos aos titulares.
 
-9.3. O PARCEIRO compromete-se a complementar as informações prestadas sempre que houver novos dados relevantes, bem como a cooperar com a LEADBAY na adoção das providências necessárias perante titulares e autoridades competentes.
+9.3. O PARCEIRO compromete-se a complementar as informações prestadas sempre que houver novos dados relevantes, bem como a cooperar com a CONECTAE na adoção das providências necessárias perante titulares e autoridades competentes.
 
 
 CLÁUSULA 10 — DIREITOS DOS TITULARES
@@ -334,14 +334,14 @@ CLÁUSULA 10 — DIREITOS DOS TITULARES
 
 10.2. Sempre que receber solicitação direta de titular relacionada a dados pessoais obtidos por intermédio da plataforma, o PARCEIRO deverá:
 a) atender a solicitação dentro dos prazos legais aplicáveis; e
-b) comunicar a LEADBAY sobre a existência da solicitação, sempre que esta estiver relacionada a dados compartilhados no âmbito da plataforma ou possa gerar impacto regulatório, judicial ou reputacional à LEADBAY.
+b) comunicar a CONECTAE sobre a existência da solicitação, sempre que esta estiver relacionada a dados compartilhados no âmbito da plataforma ou possa gerar impacto regulatório, judicial ou reputacional à CONECTAE.
 
 10.3. O PARCEIRO compromete-se a não adotar qualquer conduta que possa comprometer ou restringir o exercício dos direitos do titular.
 
 
 CLÁUSULA 11 — AUDITORIA E COMPROVAÇÃO
 
-11.1. A LEADBAY poderá, a qualquer tempo, mediante solicitação razoável e proporcional à natureza da operação, requerer do PARCEIRO:
+11.1. A CONECTAE poderá, a qualquer tempo, mediante solicitação razoável e proporcional à natureza da operação, requerer do PARCEIRO:
  a) declarações formais de conformidade com este DPA e com a LGPD;
  b) evidências documentais ou operacionais de exclusão, anonimização ou interrupção do tratamento dos dados pessoais;
  c) comprovação das medidas mínimas de segurança adotadas, compatíveis com sua estrutura operacional.
@@ -351,9 +351,9 @@ CLÁUSULA 11 — AUDITORIA E COMPROVAÇÃO
 
 CLÁUSULA 12 — SUBCONTRATAÇÃO E TRANSFERÊNCIA DE DADOS
 
-12.1. É expressamente vedada a subcontratação, delegação ou compartilhamento dos dados pessoais recebidos com terceiros para fins de tratamento, salvo mediante autorização prévia, expressa e específica da LEADBAY.
+12.1. É expressamente vedada a subcontratação, delegação ou compartilhamento dos dados pessoais recebidos com terceiros para fins de tratamento, salvo mediante autorização prévia, expressa e específica da CONECTAE.
 
-12.2. É vedada a transferência internacional de dados pessoais tratados no âmbito deste contrato, salvo mediante autorização expressa da LEADBAY e observância dos requisitos legais previstos nos artigos 33 e seguintes da LGPD.
+12.2. É vedada a transferência internacional de dados pessoais tratados no âmbito deste contrato, salvo mediante autorização expressa da CONECTAE e observância dos requisitos legais previstos nos artigos 33 e seguintes da LGPD.
 
 
 CLÁUSULA 13 — RESPONSABILIDADE E DIREITO DE REGRESSO
@@ -366,7 +366,7 @@ CLÁUSULA 13 — RESPONSABILIDADE E DIREITO DE REGRESSO
  c) ações judiciais, individuais ou coletivas;
  d) danos materiais, morais, coletivos ou reputacionais decorrentes de seu tratamento de dados pessoais.
 
-13.3. O PARCEIRO obriga-se a ressarcir integralmente a LEADBAY por quaisquer valores despendidos em decorrência dos eventos descritos nesta cláusula, incluindo multas, condenações, acordos, custas processuais e honorários advocatícios, sem prejuízo do exercício do direito de regresso.
+13.3. O PARCEIRO obriga-se a ressarcir integralmente a CONECTAE por quaisquer valores despendidos em decorrência dos eventos descritos nesta cláusula, incluindo multas, condenações, acordos, custas processuais e honorários advocatícios, sem prejuízo do exercício do direito de regresso.
 
 
 CLÁUSULA 14 — VIGÊNCIA E SOBREVIVÊNCIA
@@ -382,11 +382,11 @@ CLÁUSULA 15 — PREVALÊNCIA
 
 CLÁUSULA 16 — NÃO REPRESENTAÇÃO
 
-O PARCEIRO declara que não atua, em nenhuma hipótese, como representante, preposto, agente ou mandatário da LEADBAY perante os titulares dos dados, comprometendo-se a não utilizar o nome, marca ou identidade da LEADBAY em comunicações com titulares, salvo autorização expressa e específica.`;
+O PARCEIRO declara que não atua, em nenhuma hipótese, como representante, preposto, agente ou mandatário da CONECTAE perante os titulares dos dados, comprometendo-se a não utilizar o nome, marca ou identidade da CONECTAE em comunicações com titulares, salvo autorização expressa e específica.`;
 
-export const TERMS_OF_USE = `TERMO DE USO DA PLATAFORMA LEADBAY
+export const TERMS_OF_USE = `TERMO DE USO DA PLATAFORMA CONECTAE
 
-Este Termo de Uso ("Termo") regula o acesso, a aquisição e o uso de leads disponibilizados pela LEADBAY, devendo ser aceito eletronicamente pelo PARCEIRO, pessoa física ou jurídica, como condição indispensável para utilização da plataforma.
+Este Termo de Uso ("Termo") regula o acesso, a aquisição e o uso de leads disponibilizados pela CONECTAE, devendo ser aceito eletronicamente pelo PARCEIRO, pessoa física ou jurídica, como condição indispensável para utilização da plataforma.
 
 O aceite eletrônico implica concordância integral, irrevogável e irretratável, nos termos do art. 107 do Código Civil e da Lei nº 13.709/2018 (LGPD).
 
@@ -417,12 +417,12 @@ CLÁUSULA 2 — ACEITE ELETRÔNICO E VINCULAÇÃO
 • este Termo;
 • o Contrato Principal;
 • o DPA;
-• a Política de Privacidade da LEADBAY.
+• a Política de Privacidade da CONECTAE.
 
 
 CLÁUSULA 3 — PAPEL DAS PARTES (LGPD)
 
-3.1. A LEADBAY atua como Controladora exclusivamente na coleta, qualificação e disponibilização dos leads.
+3.1. A CONECTAE atua como Controladora exclusivamente na coleta, qualificação e disponibilização dos leads.
 
 3.2. O PARCEIRO, a partir do acesso aos dados, passa a atuar como CONTROLADOR INDEPENDENTE, assumindo integral responsabilidade pelo tratamento posterior.
 
@@ -495,7 +495,7 @@ CLÁUSULA 8 — INCIDENTES E COOPERAÇÃO
 
 8.2. O PARCEIRO cooperará integralmente com:
 
-• a LEADBAY;
+• a CONECTAE;
 • titulares;
 • autoridades.
 
@@ -506,14 +506,14 @@ CLÁUSULA 9 — RESPONSABILIDADE, INDENIZAÇÃO E REGRESSO
 
 9.2. Obriga-se a:
 
-• defender a LEADBAY;
+• defender a CONECTAE;
 • indenizar perdas, danos, multas e condenações;
 • ressarcir custos jurídicos e regulatórios.
 
 
-CLÁUSULA 10 — LIMITAÇÃO DE RESPONSABILIDADE DA LEADBAY
+CLÁUSULA 10 — LIMITAÇÃO DE RESPONSABILIDADE DA CONECTAE
 
-10.1. A LEADBAY não se responsabiliza por:
+10.1. A CONECTAE não se responsabiliza por:
 
 • condutas do PARCEIRO;
 • uso indevido dos dados;
@@ -533,12 +533,12 @@ CLÁUSULA 11 — SUSPENSÃO E RESCISÃO
 
 POLÍTICA DE PRIVACIDADE
 
-Esta Política descreve, de forma transparente e detalhada, como a LEADBAY trata dados pessoais no contexto de intermediação de contatos comerciais, em conformidade com a LGPD.
+Esta Política descreve, de forma transparente e detalhada, como a CONECTAE trata dados pessoais no contexto de intermediação de contatos comerciais, em conformidade com a LGPD.
 
 
 1. QUEM SOMOS E COMO ATUAMOS
 
-A LEADBAY atua como plataforma intermediadora, conectando titulares interessados a parceiros comerciais, mediante consentimento válido.
+A CONECTAE atua como plataforma intermediadora, conectando titulares interessados a parceiros comerciais, mediante consentimento válido.
 
 
 2. DADOS COLETADOS
@@ -590,7 +590,7 @@ Você pode:
 
 7. LIMITAÇÃO DE RESPONSABILIDADE
 
-A LEADBAY:
+A CONECTAE:
 
 • não controla o tratamento posterior feito pelos parceiros;
 • não se responsabiliza por condutas individuais após o compartilhamento;

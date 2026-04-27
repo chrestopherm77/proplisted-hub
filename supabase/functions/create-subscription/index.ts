@@ -129,7 +129,7 @@ serve(async (req) => {
               const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
               await fetch(`${ASAAS_BASE_URL}/subscriptions/${oldAny.asaas_subscription_id}`, {
                 method: 'DELETE',
-                headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-System' },
+                headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'Conectae-System' },
               });
             } catch (e) {
               console.error('Falha ao cancelar Asaas subscription:', e);
@@ -197,7 +197,7 @@ serve(async (req) => {
           const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
           await fetch(`${ASAAS_BASE_URL}/subscriptions/${pAny.asaas_subscription_id}`, {
             method: 'DELETE',
-            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'LeadBay-System' },
+            headers: { 'access_token': ASAAS_API_KEY || '', 'User-Agent': 'Conectae-System' },
           });
         } catch (e) {
           console.error('Falha ao cancelar PENDING anterior no Asaas:', e);
@@ -220,7 +220,7 @@ serve(async (req) => {
     // 1. Criar/buscar customer
     let customerId: string | null = null;
     const findResp = await fetch(`${ASAAS_BASE_URL}/customers?cpfCnpj=${cleanCpfCnpj}`, {
-      headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'LeadBay-System' },
+      headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-System' },
     });
     if (findResp.ok) {
       const found = await findResp.json();
@@ -230,7 +230,7 @@ serve(async (req) => {
     if (!customerId) {
       const createResp = await fetch(`${ASAAS_BASE_URL}/customers`, {
         method: 'POST',
-        headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json', 'User-Agent': 'LeadBay-System' },
+        headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json', 'User-Agent': 'Conectae-System' },
         body: JSON.stringify({
           name: customerData.name.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''),
           email: customerData.email,
@@ -271,13 +271,13 @@ serve(async (req) => {
       value: Number(plan.price),
       nextDueDate: nextDueStr,
       cycle: 'MONTHLY',
-      description: `Assinatura ${plan.name} - LeadBay`,
+      description: `Assinatura ${plan.name} - Conectae`,
       externalReference: externalRef,
     };
 
     const subResp = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
       method: 'POST',
-      headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json', 'User-Agent': 'LeadBay-System' },
+      headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json', 'User-Agent': 'Conectae-System' },
       body: JSON.stringify(subPayload),
     });
 
@@ -294,7 +294,7 @@ serve(async (req) => {
     let invoiceUrl: string | null = null;
     try {
       const paymentsResp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${subData.id}/payments`, {
-        headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'LeadBay-System' },
+        headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-System' },
       });
       if (paymentsResp.ok) {
         const paymentsData = await paymentsResp.json();

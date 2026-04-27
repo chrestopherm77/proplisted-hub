@@ -71,7 +71,7 @@ serve(async (req) => {
       items: [{
         name: pkg.name,
         value: Number(pkg.price),
-        description: `${pkg.credits} créditos LeadBay`,
+        description: `${pkg.credits} créditos Conectae`,
         quantity: 1,
       }],
       callback: {
@@ -100,7 +100,7 @@ serve(async (req) => {
       headers: {
         'access_token': ASAAS_API_KEY,
         'Content-Type': 'application/json',
-        'User-Agent': 'LeadBay-System',
+        'User-Agent': 'Conectae-System',
       },
       body: JSON.stringify(checkoutPayload),
     });

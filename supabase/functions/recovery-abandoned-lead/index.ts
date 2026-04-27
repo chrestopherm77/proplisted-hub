@@ -96,7 +96,7 @@ serve(async (req) => {
         const sourceLp = lead.source_lp || '/lp';
         const link = `https://leadbay.com.br${sourceLp}?resume=${lead.session_id}`;
 
-        const messageText = `Olá ${nome}! Tudo bem? 😊\n\nVimos que você não finalizou o cadastro na LeadBay em relação a sua busca por *${objetivo}*.\n\nVou enviar nosso link de cadastro novamente para encontrarmos a melhor solução para você:\n\n👉 ${link}`;
+        const messageText = `Olá ${nome}! Tudo bem? 😊\n\nVimos que você não finalizou o cadastro na Conectae em relação a sua busca por *${objetivo}*.\n\nVou enviar nosso link de cadastro novamente para encontrarmos a melhor solução para você:\n\n👉 ${link}`;
 
         const formattedPhone = formatPhoneForApi(lead.phone);
         const whatsappNumber = `55${formattedPhone}@s.whatsapp.net`;

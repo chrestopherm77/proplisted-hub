@@ -102,7 +102,7 @@ serve(async (req) => {
       });
     }
 
-    const messageText = `🔐 *LeadBay - Código de Verificação*\n\nSeu código é: *${code}*\n\nEste código expira em 5 minutos.`;
+    const messageText = `🔐 *Conectae - Código de Verificação*\n\nSeu código é: *${code}*\n\nEste código expira em 5 minutos.`;
 
     const megaResponse = await fetch(
       'https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text',

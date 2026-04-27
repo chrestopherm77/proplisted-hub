@@ -621,7 +621,7 @@ const generateEmailHTML = (
         
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: ${colors.primary}; font-size: 32px; font-weight: 700; margin: 0;">🏠 LeadBay</h1>
+          <h1 style="color: ${colors.primary}; font-size: 32px; font-weight: 700; margin: 0;">🏠 Conectae</h1>
         </div>
         
         <!-- Hero Card -->
@@ -663,11 +663,11 @@ const generateEmailHTML = (
         <!-- Footer -->
         <div style="text-align: center;">
           <p style="color: ${colors.muted}; font-size: 12px; line-height: 20px; margin: 0 0 16px 0;">
-            Você recebeu este e-mail porque está cadastrado no LeadBay.<br>
-            Para deixar de receber notificações, atualize suas preferências no LeadBay.
+            Você recebeu este e-mail porque está cadastrado no Conectae.<br>
+            Para deixar de receber notificações, atualize suas preferências no Conectae.
           </p>
           <p style="color: ${colors.muted}; font-size: 12px; margin: 0;">
-            © ${new Date().getFullYear()} LeadBay. Todos os direitos reservados.
+            © ${new Date().getFullYear()} Conectae. Todos os direitos reservados.
           </p>
         </div>
         
@@ -742,7 +742,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const email of emails) {
       try {
         const { data, error: sendError } = await resend.emails.send({
-          from: "LeadBay <noreply@leadbay.com.br>",
+          from: "Conectae <noreply@leadbay.com.br>",
           to: [email],
           subject: `🏠 Novo lead em ${city}! Confira agora`,
           html: emailHTML,

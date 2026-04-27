@@ -174,10 +174,10 @@ async function trySendListMessage(
   const megaBody = {
     messageData: {
       to: jid,
-      title: "LeadBay",
+      title: "Conectae",
       text: `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
       buttonText: "LIBERAR MEU ACESSO",
-      description: "LeadBay - Conectando você ao corretor ideal",
+      description: "Conectae - Conectando você ao corretor ideal",
       sections: [
         {
           title: "Confirmação",
