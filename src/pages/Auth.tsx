@@ -123,7 +123,7 @@ export default function Auth() {
           <div className="flex justify-center mb-4">
             <BrandLogo size="lg" />
           </div>
-          <CardTitle className="text-2xl">Entrar no Conectaae Imob</CardTitle>
+          <CardTitle className="text-2xl">Entrar no Conectae Imob</CardTitle>
           <CardDescription>Acesse sua conta para comprar leads</CardDescription>
         </CardHeader>
         <CardContent>

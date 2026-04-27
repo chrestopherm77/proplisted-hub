@@ -194,7 +194,7 @@ export function HomePageEditor() {
             <Card className="p-4 space-y-4">
               <h3 className="font-semibold">Logo e botões do topo</h3>
               <ImageUploadField
-                label="Logo (deixe vazio para usar o logo textual padrão Conectaae imob)"
+                label="Logo (deixe vazio para usar o logo textual padrão Conectae imob)"
                 value={content.header.brand_logo_url}
                 onChange={(url) => update('header', { ...content.header, brand_logo_url: url })}
                 folder="home/logo"
