@@ -262,7 +262,7 @@ export function UsersManagement() {
         </Button>
       </div>
 
-      <div className="overflow-auto">
+      <div className="admin-users-scroll overflow-x-scroll overflow-y-auto border rounded-md" style={{ scrollbarGutter: 'stable' }}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -279,6 +279,7 @@ export function UsersManagement() {
               <TableHead className="min-w-[140px]">Plano</TableHead>
               <TableHead className="min-w-[160px]">Créditos</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="min-w-[140px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
