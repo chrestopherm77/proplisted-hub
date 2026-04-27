@@ -23,6 +23,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ⚠️ Disparo do "Giro do Mercado" para grupos de WhatsApp temporariamente DESATIVADO
+    // a pedido do cliente. Outros disparos (leads, liberação de acesso, etc.) seguem ativos.
+    // Para reativar, basta remover este bloco.
+    console.log("daily-news-broadcast: disparo desativado temporariamente");
+    return new Response(
+      JSON.stringify({ success: true, disabled: true, message: "Broadcast de notícias desativado temporariamente" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
     const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
     if (!MEGA_API_TOKEN) {
       return new Response(JSON.stringify({ error: "MEGA_API_TOKEN não configurado" }), {
