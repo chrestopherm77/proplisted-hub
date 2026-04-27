@@ -58,6 +58,10 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(0 0% 100%)",
         },
+        "brand-green": {
+          DEFAULT: "hsl(var(--brand-green))",
+          foreground: "hsl(var(--brand-green-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

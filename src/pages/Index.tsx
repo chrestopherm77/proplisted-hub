@@ -103,8 +103,7 @@ const Index = () => {
           <div className="container mx-auto px-4 py-16 md:py-28 text-center relative">
             {c.hero.badge_text && (
               <Badge
-                variant="secondary"
-                className="mb-6 px-4 py-1.5 text-xs font-medium ring-glow-primary backdrop-blur-sm bg-background/70 animate-fade-in-up"
+                className="mb-6 px-4 py-1.5 text-xs font-medium bg-brand-green text-brand-green-foreground border-transparent shadow-lg shadow-brand-green/30 hover:bg-brand-green/90 animate-fade-in-up"
               >
                 {c.hero.badge_text}
               </Badge>
