@@ -85,6 +85,7 @@ export function LandingPageEditor() {
         final_cta: { ...DEFAULT_CONTENT.final_cta, ...lp.content?.final_cta },
         socials: { ...DEFAULT_CONTENT.socials, ...lp.content?.socials },
         footer: { ...DEFAULT_CONTENT.footer, ...lp.content?.footer },
+        tracking: { ...DEFAULT_CONTENT.tracking, ...lp.content?.tracking },
         features: lp.content?.features ?? DEFAULT_CONTENT.features,
         floating_ctas: lp.content?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
         sections: lp.content?.sections ?? [],
@@ -506,6 +507,32 @@ export function LandingPageEditor() {
                     onChange={(e) => updateContent('footer', { ...content.footer, cnpj: e.target.value })} />
                   <Input placeholder="Texto de direitos" value={content.footer.rights_text}
                     onChange={(e) => updateContent('footer', { ...content.footer, rights_text: e.target.value })} />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* PIXEL & RASTREAMENTO */}
+              <AccordionItem value="tracking" className="border rounded-md px-3">
+                <AccordionTrigger>Pixel & Rastreamento</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <div>
+                    <Label>ID do Pixel do Facebook (Meta Pixel)</Label>
+                    <Input
+                      value={content.tracking?.facebook_pixel_id ?? ''}
+                      placeholder="Ex: 1234567890123456"
+                      inputMode="numeric"
+                      maxLength={20}
+                      onChange={(e) => {
+                        const onlyDigits = e.target.value.replace(/\D/g, '').slice(0, 20);
+                        updateContent('tracking', {
+                          ...(content.tracking ?? {}),
+                          facebook_pixel_id: onlyDigits,
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cole apenas o ID numérico do seu pixel (15 a 16 dígitos). O script será carregado automaticamente quando alguém abrir a sua LP. Deixe em branco para desativar.
+                    </p>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
