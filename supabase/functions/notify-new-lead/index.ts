@@ -689,11 +689,44 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // CORS restriction limits which domains can call this endpoint
 
-    const { leadId, city, uf, intention, description, formData } =
-      await req.json();
+    const body = await req.json();
+    let { leadId, city, uf, intention, description, formData } = body || {};
 
-    if (!leadId || !city || !intention) {
-      console.error("Missing required fields:", { leadId, city, intention });
+    if (!leadId) {
+      console.error("Missing leadId");
+      return new Response(
+        JSON.stringify({ error: "Missing leadId" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // If only leadId was provided, fetch the rest from the DB (used by manual admin activation)
+    if (!city || !intention || !formData) {
+      const supabaseUrl0 = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey0 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb0 = createClient(supabaseUrl0, supabaseServiceKey0);
+      const { data: leadRow, error: leadErr } = await sb0
+        .from("leads")
+        .select("id, description, form_data")
+        .eq("id", leadId)
+        .single();
+      if (leadErr || !leadRow) {
+        console.error("Lead not found:", leadId, leadErr);
+        return new Response(
+          JSON.stringify({ error: "Lead not found" }),
+          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      formData = (leadRow.form_data || {}) as Record<string, any>;
+      description = description || leadRow.description;
+      intention = intention || (formData?.intention as string);
+      const flow = (formData?.[String(intention).toLowerCase()] || {}) as Record<string, any>;
+      city = city || flow.city;
+      uf = uf || flow.uf;
+    }
+
+    if (!city || !intention) {
+      console.error("Missing required fields after lookup:", { leadId, city, intention });
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
