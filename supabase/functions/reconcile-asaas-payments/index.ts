@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         // Asaas API: search by externalReference
         const url = `${ASAAS_BASE_URL}/payments?externalReference=${encodeURIComponent(ext)}&limit=10`;
         const resp = await fetch(url, {
-          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'LeadBay-Reconcile' },
+          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-Reconcile' },
         });
         if (!resp.ok) {
           results.push({ type: 'credit_purchase', id: cp.id, external_reference: ext, asaas_status: null, action: 'ERROR', message: `HTTP ${resp.status}` });
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       try {
         const url = `${ASAAS_BASE_URL}/payments?externalReference=${encodeURIComponent(ext)}&limit=10`;
         const resp = await fetch(url, {
-          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'LeadBay-Reconcile' },
+          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-Reconcile' },
         });
         if (!resp.ok) {
           results.push({ type: 'lead_purchase', id: p.id, external_reference: ext, asaas_status: null, action: 'ERROR', message: `HTTP ${resp.status}` });

@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     }
 
     const message =
-      `☀️ *Bom dia, time Leadbay!*\n\n` +
+      `☀️ *Bom dia, time Conectae!*\n\n` +
       `📰 *Giro do Mercado Imobiliário*\n\n` +
       `Confira as notícias que estão movimentando o mercado imobiliário hoje e saia na frente da concorrência:\n\n` +
       `✅ Tendências de preços\n` +

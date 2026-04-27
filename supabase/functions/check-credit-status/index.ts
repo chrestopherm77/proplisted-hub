@@ -96,7 +96,7 @@ serve(async (req) => {
       {
         headers: {
           'access_token': ASAAS_API_KEY,
-          'User-Agent': 'LeadBay-CreditCheck',
+          'User-Agent': 'Conectae-CreditCheck',
         },
       }
     );

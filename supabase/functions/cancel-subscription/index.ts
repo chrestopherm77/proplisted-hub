@@ -57,7 +57,7 @@ serve(async (req) => {
       if (ASAAS_API_KEY) {
         const delResp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${sub.asaas_subscription_id}`, {
           method: 'DELETE',
-          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'LeadBay-System' },
+          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-System' },
         });
         if (!delResp.ok) {
           const t = await delResp.text();

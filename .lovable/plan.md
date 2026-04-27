@@ -1,116 +1,54 @@
-## Sistema de Chamados / Suporte (Chat)
+# Renomear LeadBay → Conectae
 
-Criar um sistema onde o usuário logado abre um **chamado** (reclamação, sugestão, dúvida) através de um chat flutuante. O admin vê todos os chamados num painel novo, abre cada um, conversa em tempo real e tem o WhatsApp/email do usuário num clique.
+Vou trocar todas as ocorrências do nome **"LeadBay" / "Leadbay" / "LEADBAY"** para **"Conectae" / "CONECTAE"** em textos visíveis ao usuário (mensagens WhatsApp, e-mails, contratos, notificações, títulos, headers).
 
----
+## O que NÃO será alterado (proposital)
 
-## 1. Banco de dados (migração)
+Conforme suas respostas:
+- **URLs** (`leadbay.com.br`, `www.leadbay.com.br`) — mantidas em CORS, links de WhatsApp/e-mail e geocoder. Você troca depois quando o DNS propagar.
+- **Remetente de e-mail** (`noreply@leadbay.com.br`) — mantido até você ajustar o Resend.
+- **`User-Agent`** das chamadas internas para Asaas/Nominatim — pode trocar mas não impacta usuário; vou trocar para `Conectae-...` por consistência (não afeta funcionalidade).
+- **`assets/leadbay-logo.png`** — não renomeio o arquivo (já existe `conectae-logo.png` em uso). Apenas removo a importação não usada se for o caso.
 
-### Tabela `support_tickets`
-| coluna | tipo | descrição |
-|---|---|---|
-| `id` | uuid PK | |
-| `user_id` | uuid (FK perfil) | autor |
-| `subject` | text | assunto curto (auto-gerado da 1ª mensagem se vazio) |
-| `category` | text | `RECLAMACAO` \| `SUGESTAO` \| `DUVIDA` \| `OUTRO` |
-| `status` | text | `OPEN` \| `IN_PROGRESS` \| `RESOLVED` \| `CLOSED` (default `OPEN`) |
-| `last_message_at` | timestamptz | para ordenação |
-| `unread_by_admin` | boolean | badge no admin |
-| `unread_by_user` | boolean | badge no chat do usuário |
-| `created_at` / `updated_at` | timestamptz | |
+## Mapa de alterações por arquivo
 
-### Tabela `support_messages`
-| coluna | tipo | descrição |
-|---|---|---|
-| `id` | uuid PK | |
-| `ticket_id` | uuid (FK tickets, ON DELETE CASCADE) | |
-| `sender_id` | uuid | quem mandou |
-| `sender_role` | text | `USER` ou `ADMIN` |
-| `body` | text | conteúdo (pode ser vazio se só anexo) |
-| `attachments` | jsonb | `[{ url, name, size, type }]` |
-| `created_at` | timestamptz | |
+### Mensagens WhatsApp / textos visíveis
+- `supabase/functions/daily-news-broadcast/index.ts` — "time Leadbay" → "time Conectae".
+- `supabase/functions/recovery-abandoned-lead/index.ts` — "cadastro na LeadBay" → "cadastro na Conectae".
+- `supabase/functions/send-lead-confirmation/index.ts` — `title: "LeadBay"` e descrição → "Conectae".
+- `src/components/leadform/LeadFormWizard.tsx` — `User-Agent: 'LeadBay/1.0'` → `Conectae/1.0`.
+- `src/pages/Launches.tsx` — texto "Vim do site da leadbay..." → "Vim do site da Conectae...".
 
-### RLS
-- `support_tickets`: usuário SELECT/INSERT/UPDATE só os seus próprios; admin (`MASTER_ADMIN`) tem ALL.
-- `support_messages`: usuário SELECT/INSERT só onde `ticket.user_id = auth.uid()`; admin ALL.
-- Trigger AFTER INSERT em `support_messages` que atualiza `last_message_at`, alterna `unread_by_admin`/`unread_by_user` conforme `sender_role`, e gera `subject` da 1ª mensagem se NULL.
+### E-mails (HTML)
+- `supabase/functions/notify-new-lead/index.ts` — header "🏠 LeadBay", rodapé "© LeadBay" e textos do corpo.
+- `supabase/functions/send-email-code/index.ts` — header, subject "LeadBay - Código de Verificação", rodapé.
+- `supabase/functions/send-password-reset/index.ts` — header, subject "LeadBay - Recuperação de Senha", rodapé.
+- `supabase/functions/send-promo-blast/index.ts` — header, "Equipe comercial LeadBay", rodapé. (Botão CTA continua apontando para `https://www.leadbay.com.br`.)
+- `supabase/functions/create-credit-purchase/index.ts` — descrição do pagamento "X créditos LeadBay" → "X créditos Conectae".
+- `supabase/functions/create-subscription/index.ts` — "Assinatura {plan} - LeadBay" → "... - Conectae".
 
-### Realtime
-- `ALTER PUBLICATION supabase_realtime ADD TABLE support_tickets, support_messages;`
+### Contratos legais (`src/components/auth/constants/registrationTerms.ts`)
+Substituição global de **LEADBAY → CONECTAE** em todo o arquivo (Contrato de Parceria, DPA, Termos de Uso, Política de Privacidade), incluindo:
+- "TERMO DE USO DA PLATAFORMA LEADBAY" → "... CONECTAE".
+- Todas as 50+ menções jurídicas a "LEADBAY".
 
-### Storage
-- Novo bucket público `support-attachments` (imagens/prints até 5 MB). RLS: usuário autenticado pode UPLOAD em pasta `{user_id}/...`; SELECT público (link compartilhável no chat).
+### User-Agent interno (não visível ao usuário, troco por consistência)
+Em todas as edge functions: `LeadBay-Webhook`, `LeadBay-System`, `LeadBay-CreditCheck`, `LeadBay-Reconcile`, `LeadBay/1.0` → versões `Conectae-...`.
 
----
+### Limpeza opcional
+- `src/pages/Index.tsx` — variável `leadbayLogo` é fallback para o logo de parceiro. Renomeio para `defaultLogo` por clareza (sem mudar comportamento).
 
-## 2. Chat flutuante para o usuário
+## Notas técnicas
 
-Novo componente `src/components/support/SupportChatWidget.tsx`, renderizado dentro de `Layout.tsx` (apenas para usuários logados, escondido em rotas `/admin/*` e `/lp*`).
+- Nenhuma migração de banco necessária.
+- Nenhuma alteração em RLS/políticas/secrets.
+- E-mails continuam saindo de `noreply@leadbay.com.br` — funciona normalmente, só o conteúdo (header/rodapé/subject) passa a dizer "Conectae".
+- Contratos: o arquivo é estático (TS const), então usuários novos verão "CONECTAE" imediatamente após o deploy. Usuários antigos aceitaram a versão "LEADBAY" — isso não é alterado historicamente.
 
-**UI:**
-- Botão flutuante redondo no canto inferior direito (ícone `MessageCircle`, badge vermelho se houver `unread_by_user`).
-- Ao clicar: drawer/popover com:
-  - **Lista de chamados** do usuário (status + última mensagem) + botão "Novo chamado".
-  - **Tela do chat:** select de categoria (Reclamação/Sugestão/Dúvida/Outro) ao abrir um novo, balões de mensagem (USER à direita, ADMIN à esquerda), input de texto + botão de anexo (clip).
-  - Topo do chat exibe o e-mail e telefone do próprio usuário em texto pequeno ("Te respondemos por aqui ou no seu WhatsApp: …") — assim ele sabe que esses dados já estão visíveis para o admin sem digitar.
-- Realtime: `subscribe` em `support_messages` filtrado por `ticket_id` para ver respostas do admin instantaneamente.
-- Marca `unread_by_user = false` ao abrir o chat.
-- Anexos: upload para `support-attachments/{user_id}/{ticket_id}/...`, valida tipo (imagem) e tamanho (≤5 MB), insere URL pública no campo `attachments`.
+## Próximos passos (depois desta troca)
 
----
-
-## 3. Painel admin — Chamados
-
-### Sidebar
-Adicionar item **"Chamados"** (`/admin/support`) no grupo **Pessoas** em `AdminLayout.tsx` (ícone `LifeBuoy` ou `MessageSquare`), com badge mostrando total de tickets com `unread_by_admin = true`.
-
-### Rota e página
-- `src/App.tsx`: nova rota `/admin/support` apontando para `<Admin section="support" />`.
-- `src/pages/Admin.tsx`: registrar `support: SupportManagement`.
-- `src/components/admin/SupportManagement.tsx`: layout em duas colunas:
-  - **Esquerda:** lista de tickets ordenados por `last_message_at desc`, com filtros (status, categoria, busca por nome). Cada item mostra: nome do usuário, prévia, data, badge de não lidos.
-  - **Direita:** thread do chat selecionado. Cabeçalho mostra:
-    - Nome, e-mail, telefone do usuário.
-    - Botão **"Abrir WhatsApp"** (`https://wa.me/{phone}` — usar normalização 12 dígitos já existente).
-    - Botão **"Copiar e-mail"**.
-    - Select de status (Aberto / Em andamento / Resolvido / Fechado).
-  - Input para o admin responder + anexar imagem.
-  - Realtime ligado: novas mensagens aparecem na hora; lista re-ordena.
-  - Marca `unread_by_admin = false` ao selecionar o ticket.
-
----
-
-## 4. Comunicação ao usuário e segurança
-
-- Chat só funciona para **usuários autenticados** (não vou criar suporte anônimo nessa primeira versão).
-- Tudo via SDK do Supabase (sem edge function nova): RLS protege os dados.
-- Validação client-side com Zod: `body` máx 2000 chars; anexos só `image/*`, máx 5 MB, máx 5 por mensagem.
-- Sem `dangerouslySetInnerHTML`. URLs renderizadas como `<a target="_blank" rel="noopener noreferrer">`.
-- 100% PT-BR conforme padrão do projeto.
-
----
-
-## Arquivos afetados
-
-**Migração SQL** (tabelas + RLS + trigger + bucket).
-
-**Novos arquivos:**
-- `src/components/support/SupportChatWidget.tsx`
-- `src/components/support/SupportTicketList.tsx`
-- `src/components/support/SupportChatThread.tsx`
-- `src/hooks/useSupportTickets.ts`
-- `src/components/admin/SupportManagement.tsx`
-
-**Editados:**
-- `src/components/Layout.tsx` — montar `<SupportChatWidget />` para usuários logados (fora de rotas admin/LP).
-- `src/components/admin/AdminLayout.tsx` — novo item "Chamados" + badge de não lidos.
-- `src/pages/Admin.tsx` — registrar seção `support`.
-- `src/App.tsx` — rota `/admin/support`.
-
----
-
-## Fora de escopo (posso adicionar depois se quiser)
-
-- Notificação por e-mail (Resend) ou WhatsApp ao admin quando chega mensagem nova.
-- Atribuição de tickets a admins específicos.
-- Suporte para usuários não autenticados (formulário público).
+Quando o domínio `conectae.com.br` estiver propagado, basta me avisar e eu faço uma segunda passada substituindo:
+- URLs em CORS (`ALLOWED_ORIGINS`)
+- Links em mensagens (`https://www.leadbay.com.br/...`)
+- Remetente Resend (`from: "Conectae <noreply@conectae.com.br>"`)
+- E-mail de contato no User-Agent do geocoder

@@ -480,7 +480,7 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
             const { latitude, longitude } = position.coords;
             const res = await fetch(
               `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=pt-BR`,
-              { headers: { 'User-Agent': 'LeadBay/1.0' } }
+              { headers: { 'User-Agent': 'Conectae/1.0' } }
             );
             const data = await res.json();
             const city = data?.address?.city || data?.address?.town || data?.address?.village;

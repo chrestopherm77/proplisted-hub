@@ -78,9 +78,9 @@ const handler = async (req: Request): Promise<Response> => {
     const resetLink = `https://www.leadbay.com.br/reset-password?token=${token}`;
 
     const emailResponse = await resend.emails.send({
-      from: "LeadBay <noreply@leadbay.com.br>",
+      from: "Conectae <noreply@leadbay.com.br>",
       to: [email],
-      subject: "LeadBay - Recuperação de Senha",
+      subject: "Conectae - Recuperação de Senha",
       html: `
         <!DOCTYPE html>
         <html>
@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
             <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #18181b; font-size: 24px; font-weight: 700; margin: 0;">LeadBay</h1>
+              <h1 style="color: #18181b; font-size: 24px; font-weight: 700; margin: 0;">Conectae</h1>
             </div>
             
             <h2 style="color: #18181b; font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 16px;">
@@ -127,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 24px;">
-            © ${new Date().getFullYear()} LeadBay. Todos os direitos reservados.
+            © ${new Date().getFullYear()} Conectae. Todos os direitos reservados.
           </p>
         </body>
         </html>
