@@ -12,7 +12,6 @@ import leadbayLogo from '@/assets/leadbay-logo.png';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useHomeContentOverride } from '@/components/admin/home-page/HomeContentContext';
 import { getLucideIcon } from '@/components/admin/shared/IconPicker';
-import { MobileScrollFeatureCard } from '@/components/ui/mobile-scroll-feature-card';
 import type { HomePlan } from '@/components/admin/home-page/types';
 
 const Index = () => {
@@ -167,7 +166,7 @@ const Index = () => {
             {c.features_section.items.map((f, i) => {
               const Icon = getLucideIcon(f.icon);
               return (
-                <MobileScrollFeatureCard
+                <div
                   key={i}
                   className="group relative rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 hover:border-primary/40 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300"
                 >
@@ -179,7 +178,7 @@ const Index = () => {
                     <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                   </div>
-                </MobileScrollFeatureCard>
+                </div>
               );
             })}
           </div>
