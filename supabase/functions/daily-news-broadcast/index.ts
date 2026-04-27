@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       `✅ Lançamentos e oportunidades\n` +
       `✅ Mudanças regulatórias\n\n` +
       `Informação é a base de toda boa negociação. 💼\n\n` +
-      `👉 Acesse agora: https://www.leadbay.com.br/giro-do-mercado\n\n` +
+      `👉 Acesse agora: https://www.conectaeimob.com.br/giro-do-mercado\n\n` +
       `Bons negócios! 🚀`;
 
     const WHATSAPP_GROUP_IDS = [

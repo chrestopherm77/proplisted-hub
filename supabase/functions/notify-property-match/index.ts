@@ -214,7 +214,7 @@ serve(async (req) => {
         `Acabou de chegar um lead em *${city}* interessado em *${actionLabel}*` +
         `${budgetLabel ? ` na faixa de *${budgetLabel}*` : ""}.\n\n` +
         `Acesse o Marketplace pra ver os detalhes:\n` +
-        `👉 https://www.leadbay.com.br/leads`;
+        `👉 https://www.conectaeimob.com.br/leads`;
 
       const ok = await sendMegaMessage(
         megaUrl,

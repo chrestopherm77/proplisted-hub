@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     if (details) groupMsg += `${details}\n\n`;
     groupMsg += `Seja rápido! Leads recentes têm maior taxa de conversão.\n\n`;
     groupMsg += `Clique abaixo para entrar em contato agora:\n\n`;
-    groupMsg += `👉 https://www.leadbay.com.br/leads`;
+    groupMsg += `👉 https://www.conectaeimob.com.br/leads`;
 
     const WHATSAPP_GROUP_IDS = [
       "120363407964054463@g.us",

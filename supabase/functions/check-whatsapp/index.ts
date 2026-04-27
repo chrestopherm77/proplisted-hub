@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ALLOWED_ORIGINS = [
-  'https://leadbay.com.br',
-  'https://www.leadbay.com.br',
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
   'https://proplisted-hub.lovable.app',
 ];
 

@@ -58,8 +58,8 @@ export const PartnerProvider = ({ children }: { children: ReactNode }) => {
 
       const knownDomains = [
         'localhost',
-        'leadbay.com.br',
-        'www.leadbay.com.br',
+        'conectaeimob.com.br',
+        'www.conectaeimob.com.br',
         'proplisted-hub.lovable.app',
       ];
 

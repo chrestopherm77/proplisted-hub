@@ -275,7 +275,7 @@ O webhook agora implementa múltiplas camadas de segurança:
 {
   'access_token': 'SUA_CHAVE_SANDBOX',
   'Content-Type': 'application/json',
-  'User-Agent': 'LeadBay-System'
+  'User-Agent': 'Conectae-System'
 }
 ```
 

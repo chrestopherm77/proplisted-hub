@@ -1,8 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
-  'https://leadbay.com.br',
-  'https://www.leadbay.com.br',
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
   'https://proplisted-hub.lovable.app',
 ];
 

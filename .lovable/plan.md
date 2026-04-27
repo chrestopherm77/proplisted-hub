@@ -1,54 +1,60 @@
-# Renomear LeadBay → Conectae
 
-Vou trocar todas as ocorrências do nome **"LeadBay" / "Leadbay" / "LEADBAY"** para **"Conectae" / "CONECTAE"** em textos visíveis ao usuário (mensagens WhatsApp, e-mails, contratos, notificações, títulos, headers).
+# Trocar domínio: `leadbay.com.br` → `conectaeimob.com.br`
 
-## O que NÃO será alterado (proposital)
+Mapeei todas as 72 ocorrências do domínio antigo no código. Vou trocar **tudo** para o novo domínio `conectaeimob.com.br` (com `www.conectaeimob.com.br` no fallback, mantendo o staging `proplisted-hub.lovable.app` por enquanto).
 
-Conforme suas respostas:
-- **URLs** (`leadbay.com.br`, `www.leadbay.com.br`) — mantidas em CORS, links de WhatsApp/e-mail e geocoder. Você troca depois quando o DNS propagar.
-- **Remetente de e-mail** (`noreply@leadbay.com.br`) — mantido até você ajustar o Resend.
-- **`User-Agent`** das chamadas internas para Asaas/Nominatim — pode trocar mas não impacta usuário; vou trocar para `Conectae-...` por consistência (não afeta funcionalidade).
-- **`assets/leadbay-logo.png`** — não renomeio o arquivo (já existe `conectae-logo.png` em uso). Apenas removo a importação não usada se for o caso.
+## O que vai mudar
 
-## Mapa de alterações por arquivo
+### 1. CORS de todas as edge functions (24 arquivos)
+A lista `ALLOWED_ORIGINS` em cada função passa a ser:
+```ts
+['https://conectaeimob.com.br', 'https://www.conectaeimob.com.br', 'https://proplisted-hub.lovable.app']
+```
+Funções afetadas: `admin-adjust-credits`, `check-credit-status`, `check-whatsapp`, `create-credit-purchase`, `create-news-post`, `create-payment`, `get-partial-lead`, `list-users`, `merge-or-create-lead`, `notify-new-lead`, `reconcile-asaas-payments`, `redeem-voucher`, `reset-password`, `send-email-code`, `send-financing-whatsapp`, `send-lead-confirmation`, `send-password-reset`, `send-promo-blast`, `send-whatsapp-code`, `validate-coupon`, `verify-email-code`, `verify-whatsapp-code`.
 
-### Mensagens WhatsApp / textos visíveis
-- `supabase/functions/daily-news-broadcast/index.ts` — "time Leadbay" → "time Conectae".
-- `supabase/functions/recovery-abandoned-lead/index.ts` — "cadastro na LeadBay" → "cadastro na Conectae".
-- `supabase/functions/send-lead-confirmation/index.ts` — `title: "LeadBay"` e descrição → "Conectae".
-- `src/components/leadform/LeadFormWizard.tsx` — `User-Agent: 'LeadBay/1.0'` → `Conectae/1.0`.
-- `src/pages/Launches.tsx` — texto "Vim do site da leadbay..." → "Vim do site da Conectae...".
+### 2. Redirects do Asaas (checkout)
+- `supabase/functions/create-credit-purchase/index.ts` — `FRONTEND_URL = 'https://conectaeimob.com.br'` (usado em successUrl, errorUrl, expiredUrl, cancelUrl).
+- `supabase/functions/create-payment/index.ts` — mesmo ajuste em `FRONTEND_URL`.
 
-### E-mails (HTML)
-- `supabase/functions/notify-new-lead/index.ts` — header "🏠 LeadBay", rodapé "© LeadBay" e textos do corpo.
-- `supabase/functions/send-email-code/index.ts` — header, subject "LeadBay - Código de Verificação", rodapé.
-- `supabase/functions/send-password-reset/index.ts` — header, subject "LeadBay - Recuperação de Senha", rodapé.
-- `supabase/functions/send-promo-blast/index.ts` — header, "Equipe comercial LeadBay", rodapé. (Botão CTA continua apontando para `https://www.leadbay.com.br`.)
-- `supabase/functions/create-credit-purchase/index.ts` — descrição do pagamento "X créditos LeadBay" → "X créditos Conectae".
-- `supabase/functions/create-subscription/index.ts` — "Assinatura {plan} - LeadBay" → "... - Conectae".
+### 3. Links em e-mails e mensagens de WhatsApp
+- `daily-news-broadcast` — link "Acesse agora" passa para `https://www.conectaeimob.com.br/giro-do-mercado`.
+- `mega-webhook` (2 ocorrências) — link "👉 https://www.conectaeimob.com.br/leads".
+- `notify-lead-group` — link "👉 https://www.conectaeimob.com.br/leads".
+- `notify-property-match` — link "👉 https://www.conectaeimob.com.br/leads".
+- `notify-group-new-search` — link "https://www.conectaeimob.com.br/property-searches".
+- `recovery-abandoned-lead` — `https://conectaeimob.com.br${sourceLp}?resume=...`.
+- `send-password-reset` — `resetLink = https://www.conectaeimob.com.br/reset-password?token=...`.
+- `send-promo-blast` — botão CTA do e-mail aponta para `https://www.conectaeimob.com.br`.
 
-### Contratos legais (`src/components/auth/constants/registrationTerms.ts`)
-Substituição global de **LEADBAY → CONECTAE** em todo o arquivo (Contrato de Parceria, DPA, Termos de Uso, Política de Privacidade), incluindo:
-- "TERMO DE USO DA PLATAFORMA LEADBAY" → "... CONECTAE".
-- Todas as 50+ menções jurídicas a "LEADBAY".
+### 4. Remetente dos e-mails (Resend)
+Trocar `from: "Conectae <noreply@leadbay.com.br>"` por `from: "Conectae <noreply@conectaeimob.com.br>"` em:
+- `notify-new-lead/index.ts`
+- `send-email-code/index.ts`
+- `send-password-reset/index.ts`
+- `send-promo-blast/index.ts`
 
-### User-Agent interno (não visível ao usuário, troco por consistência)
-Em todas as edge functions: `LeadBay-Webhook`, `LeadBay-System`, `LeadBay-CreditCheck`, `LeadBay-Reconcile`, `LeadBay/1.0` → versões `Conectae-...`.
+**Importante:** para e-mails serem entregues, o domínio `conectaeimob.com.br` precisa estar verificado no Resend (DKIM/SPF/DMARC). Se ainda não estiver, e-mails podem falhar até a verificação. Posso te avisar para verificar isso após o deploy.
 
-### Limpeza opcional
-- `src/pages/Index.tsx` — variável `leadbayLogo` é fallback para o logo de parceiro. Renomeio para `defaultLogo` por clareza (sem mudar comportamento).
+### 5. Front-end
+- `src/contexts/PartnerContext.tsx` — domínios "principais" passam para `conectaeimob.com.br` e `www.conectaeimob.com.br` (controla quando exibir branding Conectae vs. parceiro white-label).
+- `src/pages/Launches.tsx` — texto do WhatsApp: "Vim do site da Conectae...".
 
-## Notas técnicas
+### 6. Texto institucional
+- `src/components/leadform/steps/ContactStep.tsx` — substituir "LEADBAY" por "CONECTAE" nas 6 menções dos termos exibidos no formulário.
 
-- Nenhuma migração de banco necessária.
-- Nenhuma alteração em RLS/políticas/secrets.
-- E-mails continuam saindo de `noreply@leadbay.com.br` — funciona normalmente, só o conteúdo (header/rodapé/subject) passa a dizer "Conectae".
-- Contratos: o arquivo é estático (TS const), então usuários novos verão "CONECTAE" imediatamente após o deploy. Usuários antigos aceitaram a versão "LEADBAY" — isso não é alterado historicamente.
+### 7. User-Agent técnico (não visível ao usuário)
+- `supabase/functions/geocode-properties/index.ts` — `User-Agent: 'Conectae/1.0 (contato@conectaeimob.com.br)'`.
+- `ASAAS_INTEGRATION_GUIDE.md` — atualizar exemplo de `'LeadBay-System'` para `'Conectae-System'`.
 
-## Próximos passos (depois desta troca)
+## O que NÃO vai mudar (proposital)
 
-Quando o domínio `conectae.com.br` estiver propagado, basta me avisar e eu faço uma segunda passada substituindo:
-- URLs em CORS (`ALLOWED_ORIGINS`)
-- Links em mensagens (`https://www.leadbay.com.br/...`)
-- Remetente Resend (`from: "Conectae <noreply@conectae.com.br>"`)
-- E-mail de contato no User-Agent do geocoder
+- **`src/assets/leadbay-logo.png`** e o import `leadbayLogo` em `src/pages/Index.tsx` — é só o **nome do arquivo/variável** do logo de fallback. O logo visível já é o Conectae. Renomear o arquivo poderia quebrar referências históricas; deixo como está (sem impacto visual).
+- **Staging Lovable** (`proplisted-hub.lovable.app`) — mantido em CORS para você poder testar.
+
+## Pós-implementação (você precisa fazer fora do código)
+
+1. **Asaas:** confirmar/atualizar a Webhook URL e quaisquer fallback URLs no painel do Asaas (sandbox e produção) para `https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/asaas-webhook` (essa não muda, mas vale checar) e qualquer URL de retorno cadastrada para `conectaeimob.com.br`.
+2. **Resend:** verificar o domínio `conectaeimob.com.br` (DKIM/SPF/DMARC) antes de e-mails saírem com o novo remetente — caso contrário, posso reverter o `from` para o domínio antigo temporariamente.
+3. **Lovable Custom Domain:** conectar `conectaeimob.com.br` e `www.conectaeimob.com.br` em **Project Settings → Domains** (caso ainda não esteja).
+
+Quer que eu já execute tudo isso?
