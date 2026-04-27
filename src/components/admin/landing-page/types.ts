@@ -110,6 +110,9 @@ export interface LPContent {
     cnpj: string;
     rights_text: string;
   };
+  tracking?: {
+    facebook_pixel_id?: string;
+  };
 }
 
 export interface CustomLandingPage {
@@ -241,5 +244,8 @@ export const DEFAULT_CONTENT: LPContent = {
     company_name: 'Minha Empresa',
     cnpj: '',
     rights_text: 'Todos os direitos reservados',
+  },
+  tracking: {
+    facebook_pixel_id: '',
   },
 };

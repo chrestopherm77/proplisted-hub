@@ -43,6 +43,44 @@ export default function CustomLandingPage() {
     })();
   }, [customSlug]);
 
+  // Injetar Meta Pixel apenas na LP pública (não no preview do admin)
+  const pixelId = (lp?.content as LPContent | undefined)?.tracking?.facebook_pixel_id;
+  useEffect(() => {
+    if (!pixelId || !/^\d{6,20}$/.test(pixelId)) return;
+    const safeId = pixelId.replace(/\D/g, '');
+
+    const script = document.createElement('script');
+    script.setAttribute('data-fb-pixel', safeId);
+    script.innerHTML = `
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '${safeId}');
+      fbq('track', 'PageView');
+    `;
+    document.head.appendChild(script);
+
+    const noscript = document.createElement('noscript');
+    noscript.setAttribute('data-fb-pixel', safeId);
+    const img = document.createElement('img');
+    img.height = 1;
+    img.width = 1;
+    img.style.display = 'none';
+    img.src = `https://www.facebook.com/tr?id=${safeId}&ev=PageView&noscript=1`;
+    noscript.appendChild(img);
+    document.body.appendChild(noscript);
+
+    return () => {
+      script.remove();
+      noscript.remove();
+    };
+  }, [pixelId]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -64,6 +102,7 @@ export default function CustomLandingPage() {
     final_cta: { ...DEFAULT_CONTENT.final_cta, ...(lp.content as LPContent)?.final_cta },
     socials: { ...DEFAULT_CONTENT.socials, ...(lp.content as LPContent)?.socials },
     footer: { ...DEFAULT_CONTENT.footer, ...(lp.content as LPContent)?.footer },
+    tracking: { ...DEFAULT_CONTENT.tracking, ...(lp.content as LPContent)?.tracking },
     features: (lp.content as LPContent)?.features ?? DEFAULT_CONTENT.features,
     floating_ctas:
       (lp.content as LPContent)?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,

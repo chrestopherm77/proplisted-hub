@@ -1,76 +1,63 @@
 ## Objetivo
 
-1. Aumentar o tamanho da logo Conectae no header da landing page.
-2. Substituir o `BrandLogo` (ícone "predinho" + texto "Conectaae imob") pela imagem `conectae-logo.png` em todo o sistema (header LP, sidebar, admin, auth, lead form, thank you, mobile menu).
+Permitir que o admin configure o **Pixel do Facebook (Meta Pixel)** dentro do gerador de Landing Page, e fazer com que esse pixel seja carregado e dispare `PageView` automaticamente quando a LP for acessada publicamente em `/{slug}`.
 
 ---
 
-## Mudanças propostas
+## Mudanças
 
-### 1. Refatorar `src/components/BrandLogo.tsx` para usar a imagem
+### 1. Adicionar campo de tracking no tipo `LPContent`
+Arquivo: `src/components/admin/landing-page/types.ts`
 
-Substituir a lógica atual (ícone Lucide `Building2` + texto) por uma `<img>` da logo Conectae. Mantém:
-- a mesma API (`size`, `className`, `hideIcon`) para não quebrar nenhum chamador,
-- escala generosa por tamanho para a logo ficar visível.
+- Adicionar nova seção opcional `tracking` em `LPContent`:
+  ```ts
+  tracking?: {
+    facebook_pixel_id?: string; // ex: "1234567890123456"
+  };
+  ```
+- Adicionar `tracking: { facebook_pixel_id: '' }` em `DEFAULT_CONTENT`.
 
-```tsx
-import conectaeLogo from '@/assets/conectae-logo.png';
-import { cn } from '@/lib/utils';
+### 2. Adicionar campo no editor da LP
+Arquivo: `src/components/admin/LandingPageEditor.tsx`
 
-interface BrandLogoProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  className?: string;
-  hideIcon?: boolean; // mantido por compatibilidade, ignorado
-}
+- Criar um novo `AccordionItem` chamado **"Pixel & Rastreamento"** (entre as seções de SEO/Footer existentes).
+- Campo único: input de texto para **ID do Pixel do Facebook** com:
+  - `placeholder="Ex: 1234567890123456"`
+  - Texto auxiliar explicando: "Cole apenas o ID numérico do seu pixel (15-16 dígitos). O script será carregado automaticamente."
+  - Validação client-side: aceitar apenas dígitos (strip de não-numéricos no `onChange`), máx. 20 caracteres.
+- Salvar em `content.tracking.facebook_pixel_id`.
+- Garantir hidratação no `useEffect` de carregamento (merge com `DEFAULT_CONTENT.tracking`).
 
-const SIZE_MAP = {
-  sm: 'h-8',         // antes ~text-base
-  md: 'h-12',        // antes text-xl  → bem maior
-  lg: 'h-16',        // antes text-2xl
-  xl: 'h-20 md:h-24',// antes text-3xl/4xl
-};
+### 3. Injetar o pixel apenas na LP pública
+Arquivo: `src/pages/CustomLandingPage.tsx`
 
-export const BrandLogo = ({ size = 'md', className }: BrandLogoProps) => (
-  <img
-    src={conectaeLogo}
-    alt="Conectae"
-    className={cn('w-auto object-contain select-none', SIZE_MAP[size], className)}
-    draggable={false}
-  />
-);
-```
+- Após carregar a LP, se `content.tracking?.facebook_pixel_id` existir e for válido (regex `/^\d{6,20}$/`):
+  - Em um `useEffect`, injetar dinamicamente o snippet do Meta Pixel no `<head>`:
+    ```js
+    !function(f,b,e,v,n,t,s){...fbq init...}(...);
+    fbq('init', '<PIXEL_ID>');
+    fbq('track', 'PageView');
+    ```
+  - Adicionar também o `<noscript><img src="https://www.facebook.com/tr?id=<PIXEL_ID>&ev=PageView&noscript=1"/></noscript>` no `<body>` (não no head — regra HTML5).
+  - No cleanup do `useEffect`, remover o script e o noscript injetados para evitar duplicação ao trocar de slug.
+- O pixel **NÃO** será injetado no preview do admin (renderer continua intocado), evitando contagem indevida.
 
-Como o componente já é importado em todos os lugares relevantes, a troca propaga automaticamente para:
-- Header da Landing Page (`src/pages/Index.tsx`) — `size="md"` → vira `h-12` (≈48px), bem maior que o atual.
-- Sidebar (`src/components/AppSidebar.tsx`) — collapsed `sm` (h-8) / expanded `md` (h-12).
-- Admin (`src/components/admin/AdminLayout.tsx`) — mesmo comportamento.
-- Layout principal (`src/components/Layout.tsx`).
-- Auth (`src/pages/Auth.tsx`) — `size="lg"` (h-16).
-- LeadForm / LeadForm01 / ThankYou / ThankYou01 — `size="lg"` (h-16).
-- MobileMenu — `size="sm"` (h-8).
-- Footer da Landing Page — `size="sm"` (h-8).
-
-### 2. Aumentar a logo no header da Landing Page
-
-Em `src/pages/Index.tsx`, o header hoje usa `<BrandLogo size="md" />`. Após a mudança acima ela já fica `h-12`. Para ficar ainda mais destacada no header (que tem `py-3`), trocamos para `size="lg"`:
-
-```tsx
-<BrandLogo size="lg" />
-```
-
-Isso deixa a logo com altura `h-16` (~64px) no header, ficando bem visível e proporcional.
-
-### 3. Compatibilidade com white-label e logo customizada
-
-- Quando `isWhiteLabel` ou `c.header.brand_logo_url` estiver setado, `Index.tsx` continua usando `<img>` próprio do parceiro/admin (já é o caso hoje) — apenas aumentamos a altura também:
-  - `className="h-14 md:h-16 max-w-[220px] object-contain"` (hoje é `h-10 max-w-[180px]`).
-- Footer mantém logo do parceiro com altura levemente maior: `h-10 max-w-[160px]` (hoje `h-7`).
+### 4. Segurança e validação
+- Sanitizar o `pixel_id` antes de injetar: aceitar apenas dígitos. Nunca interpolar string crua.
+- Não logar o pixel_id no console.
 
 ---
 
 ## Arquivos afetados
 
-- `src/components/BrandLogo.tsx` — refatorar para renderizar `conectae-logo.png` com escala maior por tamanho.
-- `src/pages/Index.tsx` — header: trocar `size="md"` → `size="lg"`; aumentar `<img>` do white-label/custom logo no header e footer.
+- `src/components/admin/landing-page/types.ts` — adicionar `tracking` no `LPContent` e `DEFAULT_CONTENT`.
+- `src/components/admin/LandingPageEditor.tsx` — novo accordion "Pixel & Rastreamento" com input do Facebook Pixel ID.
+- `src/pages/CustomLandingPage.tsx` — `useEffect` que injeta/remove o snippet do Meta Pixel quando há ID configurado.
 
-Nenhuma mudança necessária nos outros chamadores — eles herdam o novo visual automaticamente.
+Nenhuma migração de banco é necessária — `content` já é JSONB e aceita o novo campo opcional. LPs antigas continuam funcionando (campo é opcional).
+
+---
+
+## Observação
+
+Posso, em um passo seguinte, adicionar também suporte a **Google Tag Manager** e **Google Analytics 4 (gtag)** no mesmo accordion "Pixel & Rastreamento" se você quiser — me avise.
