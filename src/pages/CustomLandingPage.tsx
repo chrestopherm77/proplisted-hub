@@ -64,6 +64,7 @@ export default function CustomLandingPage() {
     final_cta: { ...DEFAULT_CONTENT.final_cta, ...(lp.content as LPContent)?.final_cta },
     socials: { ...DEFAULT_CONTENT.socials, ...(lp.content as LPContent)?.socials },
     footer: { ...DEFAULT_CONTENT.footer, ...(lp.content as LPContent)?.footer },
+    tracking: { ...DEFAULT_CONTENT.tracking, ...(lp.content as LPContent)?.tracking },
     features: (lp.content as LPContent)?.features ?? DEFAULT_CONTENT.features,
     floating_ctas:
       (lp.content as LPContent)?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
