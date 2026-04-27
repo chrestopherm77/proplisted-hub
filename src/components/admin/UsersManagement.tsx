@@ -4,10 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search, Download, Coins, Crown, RefreshCw } from 'lucide-react';
+import { Search, Download, Coins, Crown, RefreshCw, Eye, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AdjustCreditsDialog } from './AdjustCreditsDialog';
+import { UserDetailsDialog } from './UserDetailsDialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Profile {
@@ -54,7 +59,30 @@ export function UsersManagement() {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [adjustingProfile, setAdjustingProfile] = useState<Profile | null>(null);
+  const [detailsProfileId, setDetailsProfileId] = useState<string | null>(null);
+  const [deletingProfile, setDeletingProfile] = useState<Profile | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteUser = async () => {
+    if (!deletingProfile) return;
+    setDeleting(true);
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: deletingProfile.id },
+    });
+    setDeleting(false);
+    if (error || (data as any)?.error) {
+      toast({
+        title: 'Erro ao excluir',
+        description: (data as any)?.error || error?.message || 'Falha desconhecida',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setProfiles((prev) => prev.filter((p) => p.id !== deletingProfile.id));
+    toast({ title: 'Usuário excluído', description: 'A conta foi removida. O e-mail e telefone ficam liberados para novo cadastro.' });
+    setDeletingProfile(null);
+  };
 
   useEffect(() => {
     fetchData();
@@ -234,7 +262,7 @@ export function UsersManagement() {
         </Button>
       </div>
 
-      <div className="overflow-auto">
+      <div className="admin-users-scroll overflow-x-scroll overflow-y-auto border rounded-md" style={{ scrollbarGutter: 'stable' }}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -251,6 +279,7 @@ export function UsersManagement() {
               <TableHead className="min-w-[140px]">Plano</TableHead>
               <TableHead className="min-w-[160px]">Créditos</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="min-w-[140px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -315,12 +344,34 @@ export function UsersManagement() {
                       </Badge>
                     </div>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center gap-1 justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => setDetailsProfileId(p.id)}
+                        title="Ver detalhes"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => setDeletingProfile(p)}
+                        title="Excluir usuário"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               );
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={14} className="text-center text-muted-foreground py-8">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
@@ -343,6 +394,45 @@ export function UsersManagement() {
           }}
         />
       )}
+
+      <UserDetailsDialog
+        open={!!detailsProfileId}
+        onOpenChange={(open) => !open && setDetailsProfileId(null)}
+        profileId={detailsProfileId}
+        email={detailsProfileId ? emailMap[detailsProfileId] : undefined}
+        plan={detailsProfileId ? planMap[detailsProfileId] : undefined}
+        onUpdated={(patch) => {
+          if (!detailsProfileId) return;
+          setProfiles((prev) => prev.map((p) => (p.id === detailsProfileId ? { ...p, ...patch } as Profile : p)));
+        }}
+        onDeleted={(id) => {
+          setProfiles((prev) => prev.filter((p) => p.id !== id));
+        }}
+      />
+
+      <AlertDialog open={!!deletingProfile} onOpenChange={(open) => !open && setDeletingProfile(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário definitivamente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. A conta de{' '}
+              <strong>{deletingProfile?.company_name || deletingProfile?.name}</strong> será removida do
+              sistema, junto com seus imóveis, leads do CRM, alertas e histórico. O e-mail e o telefone
+              ficarão liberados — a pessoa poderá se cadastrar novamente como um novo usuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteUser(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Excluindo...</> : 'Sim, excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
