@@ -583,7 +583,7 @@ const generateEmailHTML = (
   sections: EmailSection[],
   leadId: string
 ): string => {
-  const leadUrl = `https://proplisted-hub.lovable.app/leads?leadId=${leadId}`;
+  const leadUrl = `https://www.conectaeimob.com.br/leads?leadId=${leadId}`;
 
   const sectionsHTML = sections
     .map(
