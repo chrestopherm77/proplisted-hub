@@ -4,10 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Search, Download, Coins, Crown, RefreshCw } from 'lucide-react';
+import { Search, Download, Coins, Crown, RefreshCw, Eye, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AdjustCreditsDialog } from './AdjustCreditsDialog';
+import { UserDetailsDialog } from './UserDetailsDialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Profile {
@@ -54,7 +59,30 @@ export function UsersManagement() {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [adjustingProfile, setAdjustingProfile] = useState<Profile | null>(null);
+  const [detailsProfileId, setDetailsProfileId] = useState<string | null>(null);
+  const [deletingProfile, setDeletingProfile] = useState<Profile | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteUser = async () => {
+    if (!deletingProfile) return;
+    setDeleting(true);
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: deletingProfile.id },
+    });
+    setDeleting(false);
+    if (error || (data as any)?.error) {
+      toast({
+        title: 'Erro ao excluir',
+        description: (data as any)?.error || error?.message || 'Falha desconhecida',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setProfiles((prev) => prev.filter((p) => p.id !== deletingProfile.id));
+    toast({ title: 'Usuário excluído', description: 'A conta foi removida. O e-mail e telefone ficam liberados para novo cadastro.' });
+    setDeletingProfile(null);
+  };
 
   useEffect(() => {
     fetchData();
