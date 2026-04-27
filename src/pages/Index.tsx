@@ -9,11 +9,10 @@ import { ArrowRight, Sparkles, Check, Star, Shield, Zap } from 'lucide-react';
 import FakeNotification from '@/components/FakeNotification';
 import { BrandLogo } from '@/components/BrandLogo';
 import leadbayLogo from '@/assets/leadbay-logo.png';
-import dashboardMockup from '@/assets/dashboard-mockup.jpg';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useHomeContentOverride } from '@/components/admin/home-page/HomeContentContext';
 import { getLucideIcon } from '@/components/admin/shared/IconPicker';
-import { ContainerScroll } from '@/components/ui/container-scroll-animation';
+import { MobileScrollFeatureCard } from '@/components/ui/mobile-scroll-feature-card';
 import type { HomePlan } from '@/components/admin/home-page/types';
 
 const Index = () => {
