@@ -120,21 +120,21 @@ Deno.serve(async (req) => {
     console.log(`Lead ${leadId}: verified WhatsApp number is ${verifiedNumber}`);
 
     // Step 2: Try interactive list message
-    const listResult = await trySendListMessage(verifiedNumber, firstName, leadId, instanceKey, MEGA_API_TOKEN);
+    const listResult = await trySendListMessage(verifiedNumber, firstName, leadId, instanceKey, MEGA_API_TOKEN, variant);
 
     if (listResult.success) {
-      console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${listResult.messageId}`);
+      console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId} (variant ${variantIndex}). MsgId: ${listResult.messageId}`);
       await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult.messageId ?? null);
       return new Response(
-        JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId }),
+        JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId, variant: variantIndex }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.warn(`Interactive failed for ${verifiedNumber}: ${listResult.error}. Trying text fallback...`);
 
-    // Step 3: Fallback to plain text
-    const textBody = `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`;
+    // Step 3: Fallback to plain text (mesma variante)
+    const textBody = variant.fallbackText(firstName);
 
     const textResult = await trySendTextMessage(verifiedNumber, textBody, instanceKey, MEGA_API_TOKEN);
     if (textResult.success) {
