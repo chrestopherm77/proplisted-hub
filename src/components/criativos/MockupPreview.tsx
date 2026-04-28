@@ -5,11 +5,21 @@ interface Props {
   imageUrl: string;
   logoUrl?: string | null;
   position: LogoPosition;
+  watermark?: boolean;
+  opacity?: number;
   className?: string;
   onReady?: (dataUrl: string) => void;
 }
 
-export function MockupPreview({ imageUrl, logoUrl, position, className, onReady }: Props) {
+export function MockupPreview({
+  imageUrl,
+  logoUrl,
+  position,
+  watermark = false,
+  opacity = 0.35,
+  className,
+  onReady,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -33,7 +43,9 @@ export function MockupPreview({ imageUrl, logoUrl, position, className, onReady 
       const logo = new Image();
       logo.crossOrigin = 'anonymous';
       logo.onload = () => {
-        const logoMaxW = img.width * 0.18;
+        const isCenterWatermark = watermark && position === 'center';
+        const widthFactor = isCenterWatermark ? 0.45 : 0.18;
+        const logoMaxW = img.width * widthFactor;
         const ratio = logo.width > 0 ? logoMaxW / logo.width : 1;
         const lw = logo.width * ratio;
         const lh = logo.height * ratio;
@@ -42,14 +54,19 @@ export function MockupPreview({ imageUrl, logoUrl, position, className, onReady 
         if (position === 'top-right') { x = img.width - lw - pad; y = pad; }
         if (position === 'bottom-left') { x = pad; y = img.height - lh - pad; }
         if (position === 'bottom-right') { x = img.width - lw - pad; y = img.height - lh - pad; }
+        if (position === 'center') { x = (img.width - lw) / 2; y = (img.height - lh) / 2; }
+
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = watermark ? opacity : 1;
         ctx.drawImage(logo, x, y, lw, lh);
+        ctx.globalAlpha = prevAlpha;
         finish();
       };
       logo.onerror = finish;
       logo.src = logoUrl;
     };
     img.src = imageUrl;
-  }, [imageUrl, logoUrl, position, onReady]);
+  }, [imageUrl, logoUrl, position, watermark, opacity, onReady]);
 
   return <canvas ref={canvasRef} className={className} />;
 }
