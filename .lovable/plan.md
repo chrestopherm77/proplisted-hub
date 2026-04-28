@@ -1,55 +1,69 @@
-## O que será feito
+## Problema
 
-Três melhorias na aba **Admin → Usuários**:
+Na tela `/reset-password`, ao enviar o formulário com e-mail + nova senha, está sendo exibido o toast "Erro ao redefinir senha".
 
-### 1. Excluir usuário do sistema
-- Nova edge function `admin-delete-user` (valida `MASTER_ADMIN`) que remove o usuário do `auth.users` usando o service role (`auth.admin.deleteUser`).
-- A exclusão remove a conta totalmente — o e-mail/telefone fica liberado e a pessoa pode se cadastrar de novo normalmente, recebendo um novo `id` e o plano Conexão grátis ativado pelo trigger `handle_new_user`.
-- Limpeza prévia de dados que poderiam bloquear o re-cadastro:
-  - `DELETE FROM profiles WHERE id = user_id` (libera o telefone para o trigger `check_phone_limit`).
-  - Limpa registros que referenciam o `user_id` em tabelas sem cascade (purchases, credit_transactions, user_subscriptions, user_roles, lead_crm_status, creatives, properties, launches, alertas, etc.) para evitar lixo.
-- Botão "Excluir" na coluna de ações da tabela com `AlertDialog` de confirmação ("Esta ação é irreversível. O usuário será removido e poderá se cadastrar novamente.").
+## Diagnóstico
 
-### 2. Barra de rolagem horizontal sempre visível
-- A tabela hoje usa `overflow-auto` — a scrollbar só aparece ao passar o mouse em alguns SOs.
-- Trocar para um wrapper com `overflow-x-scroll` + classes utilitárias forçando `scrollbar` visível (ou estilo CSS leve em `index.css` para esse contêiner) para que a barra fique permanentemente visível na parte de baixo.
+Investigando o fluxo:
 
-### 3. Modal de detalhes do usuário
-- Clicar na linha (ou em um botão "Ver") abre um `Dialog` com **todas as informações** do perfil:
-  - Dados pessoais/empresa (nome, e-mail, telefone, CPF/CNPJ, tipo, profissão, registros CRECI/CAU/CREA, RT em PJ).
-  - Endereço completo.
-  - Plano atual + status, créditos, código de indicação, indicado por, data de cadastro.
-  - Resumo: nº de leads comprados, nº de imóveis cadastrados, último login.
-- Ações disponíveis dentro do modal:
-  - Ajustar créditos (reaproveita `AdjustCreditsDialog`).
-  - Ativar/inativar conta.
-  - Excluir usuário (com confirmação).
-  - Copiar e-mail/telefone.
+1. **Token criado com sucesso** — `password_reset_tokens` tem o registro de `beltramicapital@gmail.com` (criado às 11:56, válido por 1h, ainda não usado).
+2. **Edge function `reset-password` não está sendo executada** — não há nenhum log de invocação recente (nem sucesso, nem erro). Isso significa que a chamada `supabase.functions.invoke("reset-password", ...)` está falhando antes mesmo de atingir a função.
+3. **Causa raiz: CORS bloqueando a origem do preview Lovable.**
 
-## Detalhes técnicos
-
-**Arquivos novos**
-- `supabase/functions/admin-delete-user/index.ts` — recebe `{ user_id }`, valida JWT + `MASTER_ADMIN`, executa cleanup + `auth.admin.deleteUser`. CORS restrito como nas outras admin functions.
-- `src/components/admin/UserDetailsDialog.tsx` — modal com todas as infos + ações.
-
-**Arquivos editados**
-- `src/components/admin/UsersManagement.tsx`:
-  - Nova coluna "Ações" com botões Ver / Excluir.
-  - Linha clicável abre `UserDetailsDialog`.
-  - Wrapper da tabela com scrollbar horizontal sempre visível.
-  - Função `deleteUser` que invoca a edge function e remove o perfil do estado local.
-
-**Cleanup SQL no edge function** (ordem segura):
-```
-DELETE lead_crm_status, creatives, properties, launches, lead_alerts,
-       launch_alerts, property_search_alerts, property_search_offers,
-       property_searches, credit_transactions, credit_purchases,
-       purchases, user_subscriptions, user_roles, login_history,
-       coupon_usages, voucher_redemptions, news_likes, news_comments,
-       support_tickets/messages, profiles  WHERE user_id/id = ?
-auth.admin.deleteUser(user_id)
+A função `supabase/functions/reset-password/index.ts` tem `ALLOWED_ORIGINS` fixo:
+```ts
+const ALLOWED_ORIGINS = [
+  'https://conectaeimob.com.br',
+  'https://www.conectaeimob.com.br',
+  'https://proplisted-hub.lovable.app',
+];
 ```
 
-**Re-cadastro permitido**: como removemos a linha de `profiles` (que guarda o telefone) e a conta do `auth.users`, o trigger `check_phone_limit` e a unicidade de e-mail liberam o novo registro normalmente.
+Mas o usuário está testando a partir de `https://id-preview--cb8760c6-...lovable.app` (preview do Lovable), que NÃO está na lista. O preflight OPTIONS recebe `Access-Control-Allow-Origin` com a origem padrão (`conectaeimob.com.br`), o navegador rejeita, a chamada falha sem chegar à função, e o frontend mostra "Erro ao redefinir senha".
 
-Posso prosseguir com a implementação?
+Mesmo problema potencial em produção se o usuário acessar via custom domain de white label de um parceiro (subdomínios diferentes).
+
+Adicionalmente, no frontend (`src/pages/ResetPassword.tsx` linhas 58-66): qualquer falha de rede cai no `toast.error("Erro ao redefinir senha")` genérico, sem detalhar a causa real (ex: "Failed to fetch" / CORS).
+
+## Plano de Correção
+
+### 1. Edge function `supabase/functions/reset-password/index.ts`
+- Substituir a lista fixa `ALLOWED_ORIGINS` por uma checagem que aceite:
+  - Os domínios principais (`conectaeimob.com.br`, `www.conectaeimob.com.br`)
+  - Qualquer subdomínio `*.lovable.app` (preview e published do Lovable)
+  - Os domínios de white label cadastrados em `partners` (campo `custom_domain`, se aplicável) — opcionalmente liberar via regex segura.
+- Garantir que `Access-Control-Allow-Methods: POST, OPTIONS` esteja no header.
+- Adicionar `console.log` no início do handler para confirmar invocação em produção.
+- Redeploy da função.
+
+### 2. Mesma correção em `supabase/functions/send-password-reset/index.ts`
+- Tem exatamente o mesmo padrão `ALLOWED_ORIGINS`. Aplicar o mesmo helper de CORS para evitar o mesmo problema na hora de SOLICITAR o reset.
+
+### 3. Frontend `src/pages/ResetPassword.tsx`
+- Logar `error` completo no console para diagnóstico futuro.
+- Quando `error?.message` indicar falha de rede ("Failed to fetch"), exibir mensagem mais clara: "Não foi possível conectar ao servidor. Tente novamente."
+- Manter o restante do fluxo (já trata `data?.error` corretamente).
+
+## Detalhes Técnicos
+
+CORS dinâmico sugerido (em ambas as funções):
+```ts
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowed =
+    /^https:\/\/([a-z0-9-]+\.)*conectaeimob\.com\.br$/i.test(origin) ||
+    /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/i.test(origin);
+  return {
+    'Access-Control-Allow-Origin': allowed ? origin : 'https://www.conectaeimob.com.br',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+```
+
+Isso mantém o nível de segurança (só aceita domínios próprios + Lovable), mas libera previews e published do Lovable, resolvendo o erro reportado.
+
+## Resultado Esperado
+
+- O usuário consegue concluir o reset de senha tanto no domínio de produção quanto no preview Lovable.
+- Em caso de erro real, mensagem mais clara aparece ao invés do genérico "Erro ao redefinir senha".

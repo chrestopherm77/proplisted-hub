@@ -56,7 +56,13 @@ export default function ResetPassword() {
       });
 
       if (error) {
-        toast.error("Erro ao redefinir senha. Tente novamente.");
+        console.error("reset-password invoke error:", error);
+        const msg = String(error?.message || '').toLowerCase();
+        if (msg.includes('failed to fetch') || msg.includes('network')) {
+          toast.error("Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.");
+        } else {
+          toast.error("Erro ao redefinir senha. Tente novamente.");
+        }
         return;
       }
 
