@@ -63,6 +63,42 @@ async function findWhatsAppNumber(
   return null;
 }
 
+// ============= Variantes de copy para revezamento =============
+type MessageVariant = {
+  interactiveText: (firstName: string) => string;
+  buttonText: string;
+  rowTitle: string;
+  rowDescription: string;
+  fallbackText: (firstName: string) => string;
+};
+
+const MESSAGE_VARIANTS: MessageVariant[] = [
+  // Variante 1 (original)
+  {
+    interactiveText: (n) => `${n}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
+    buttonText: "LIBERAR MEU ACESSO",
+    rowTitle: "Liberar meu acesso",
+    rowDescription: "Libero meu perfil e ativo a busca por corretores",
+    fallbackText: (n) => `${n}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
+  },
+  // Variante 2 (nova)
+  {
+    interactiveText: (n) => `${n}, suas preferências foram enviadas para nossa rede!\n\nCentenas de profissionais da região acabam de ser notificados. Eles analisarão quais imóveis em suas carteiras são mais aderentes ao seu perfil e, em breve, até 5 corretores que possuem os melhores imóveis entrarão em contato.\n\nPara ativar sua busca:\n\n1️⃣ Clique abaixo para liberar seu perfil no sistema.\n\n2️⃣ Aguarde o contato: nos próximos dias, esses especialistas falarão diretamente com você para apresentar as melhores oportunidades.`,
+    buttonText: "LIBERAR MEU ACESSO",
+    rowTitle: "Liberar meu acesso",
+    rowDescription: "Libero meu perfil no sistema",
+    fallbackText: (n) => `${n}, suas preferências foram enviadas para nossa rede!\n\nCentenas de profissionais da região acabam de ser notificados. Eles analisarão quais imóveis em suas carteiras são mais aderentes ao seu perfil e, em breve, até 5 corretores que possuem os melhores imóveis entrarão em contato.\n\nPara ativar sua busca:\n\n1️⃣ Responda *SIM* para liberar seu perfil no sistema.\n\n2️⃣ Aguarde o contato: nos próximos dias, esses especialistas falarão diretamente com você para apresentar as melhores oportunidades.`,
+  },
+  // Variante 3 (nova)
+  {
+    interactiveText: (n) => `Tudo pronto, ${n}!\n\nNeste momento, diversos profissionais estão avaliando sua busca. Para garantir assertividade, apenas os 5 corretores que identificarem os imóveis mais compatíveis com seus critérios falarão com você.\n\nSiga os passos:\n\n1️⃣ Toque no botão abaixo para confirmar seu interesse e liberar o acesso.\n\n2️⃣ Fique atento: em breve, os especialistas com as melhores opções entrarão em contato para te ajudar na sua conquista.`,
+    buttonText: "ATIVAR MINHA BUSCA",
+    rowTitle: "Ativar minha busca",
+    rowDescription: "Confirmo meu interesse e libero o acesso",
+    fallbackText: (n) => `Tudo pronto, ${n}!\n\nNeste momento, diversos profissionais estão avaliando sua busca. Para garantir assertividade, apenas os 5 corretores que identificarem os imóveis mais compatíveis com seus critérios falarão com você.\n\nSiga os passos:\n\n1️⃣ Responda *SIM* para confirmar seu interesse e liberar o acesso.\n\n2️⃣ Fique atento: em breve, os especialistas com as melhores opções entrarão em contato para te ajudar na sua conquista.`,
+  },
+];
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
