@@ -46,7 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { Plus, Search, Home, Building2, Store, TreePine, Landmark, Building, MessageCircle, MapPin, Eye, Link2, Bell, ExternalLink, Trash2, Check, ChevronsUpDown, Loader2, Megaphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -190,6 +190,31 @@ const PropertySearches = () => {
   const [filterModality, setFilterModality] = useState('');
   const [selectedSearch, setSelectedSearch] = useState<PropertySearch | null>(null);
   const [sendingOffer, setSendingOffer] = useState(false);
+  const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
+
+  const handleBroadcastSearch = async (s: any) => {
+    setBroadcastingId(s.id);
+    try {
+      const { error } = await supabase.functions.invoke('notify-group-new-search', {
+        body: {
+          state: s.state,
+          city: s.city,
+          operationType: s.operation_type,
+          propertyType: s.property_type,
+          zone: s.zone,
+          neighborhood: s.neighborhood,
+          valueMax: s.value_max ? String(s.value_max) : undefined,
+        },
+      });
+      if (error) throw error;
+      toast({ title: 'Disparado!', description: 'Notificação enviada aos grupos do WhatsApp.' });
+    } catch (err: any) {
+      console.error('Broadcast error:', err);
+      toast({ title: 'Erro ao disparar', description: err?.message || 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setBroadcastingId(null);
+    }
+  };
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
 
   // Offer modal state
@@ -772,6 +797,23 @@ const PropertySearches = () => {
                               onClick={() => openOfferModal(s)}
                             >
                               <MessageCircle className="h-4 w-4" /> Enviar Oferta
+                            </Button>
+                          )}
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 border-primary text-primary hover:bg-primary/10"
+                              disabled={broadcastingId === s.id}
+                              onClick={() => handleBroadcastSearch(s)}
+                              title="Re-disparar notificação aos grupos do WhatsApp"
+                            >
+                              {broadcastingId === s.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Megaphone className="h-4 w-4" />
+                              )}
+                              Disparar no grupo
                             </Button>
                           )}
                           {(s.user_id === user!.id || isAdmin) && (
