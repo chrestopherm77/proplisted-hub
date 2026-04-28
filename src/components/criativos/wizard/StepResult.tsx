@@ -133,6 +133,8 @@ export function StepResult({ slots, brandLogo, creativeId }: Props) {
               imageUrl={m.url!}
               logoUrl={brandLogo}
               position={m.position}
+              watermark={m.watermark}
+              opacity={m.opacity}
               className="w-full h-auto block"
             />
             <CardContent className="p-2">
