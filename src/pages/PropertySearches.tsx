@@ -190,6 +190,31 @@ const PropertySearches = () => {
   const [filterModality, setFilterModality] = useState('');
   const [selectedSearch, setSelectedSearch] = useState<PropertySearch | null>(null);
   const [sendingOffer, setSendingOffer] = useState(false);
+  const [broadcastingId, setBroadcastingId] = useState<string | null>(null);
+
+  const handleBroadcastSearch = async (s: any) => {
+    setBroadcastingId(s.id);
+    try {
+      const { error } = await supabase.functions.invoke('notify-group-new-search', {
+        body: {
+          state: s.state,
+          city: s.city,
+          operationType: s.operation_type,
+          propertyType: s.property_type,
+          zone: s.zone,
+          neighborhood: s.neighborhood,
+          valueMax: s.value_max ? String(s.value_max) : undefined,
+        },
+      });
+      if (error) throw error;
+      toast({ title: 'Disparado!', description: 'Notificação enviada aos grupos do WhatsApp.' });
+    } catch (err: any) {
+      console.error('Broadcast error:', err);
+      toast({ title: 'Erro ao disparar', description: err?.message || 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setBroadcastingId(null);
+    }
+  };
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
 
   // Offer modal state
