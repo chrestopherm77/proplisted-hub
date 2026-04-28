@@ -29,7 +29,7 @@ export function PJCompanyTypeStep({ value, onChange }: PJCompanyTypeStepProps) {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Tipo de Empresa</h2>
         <p className="text-muted-foreground mt-2">
-          Qual é o tipo da empresa?
+          Selecione o tipo da empresa (obrigatório)
         </p>
       </div>
       

@@ -13,7 +13,7 @@ interface PFProfessionalDataStepProps {
 export function PFProfessionalDataStep({ formData, onChange, errors }: PFProfessionalDataStepProps) {
   const profession = formData.profession;
 
-  if (profession === 'NONE' || !profession) {
+  if (!profession) {
     return null;
   }
 

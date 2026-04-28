@@ -1,35 +1,65 @@
-## Roleta de copies na confirmação WhatsApp
+## Objetivo
 
-Hoje a função `send-lead-confirmation` envia sempre a **mesma copy** (interactive list message com botão "LIBERAR MEU ACESSO") para todo lead novo. Vamos adicionar **mais 2 versões** e fazer um revezamento aleatório a cada disparo.
+Garantir que **todos os campos** do cadastro multi-step sejam obrigatórios, com ênfase em CRECI / CAU / CREA. Eliminar o "atalho" da opção **Outro / Sem registro** que hoje permite PF concluir o cadastro sem nenhum registro profissional.
 
-### Como vai funcionar
+## Diagnóstico do que já está obrigatório (e o que não está)
 
-A cada novo lead, o sistema sorteia 1 das 3 copies (distribuição uniforme) e envia. O botão e a estrutura interativa permanecem — muda apenas o texto, o título do botão e o título da linha selecionável.
+Hoje, em `src/components/auth/MultiStepSignup.tsx`:
 
-### As 3 versões
+- **Step 2 (Dados Gerais PF/PJ):** nome/razão social, CPF/CNPJ, UF, cidade, bairro, endereço, e-mail e telefone — **todos já obrigatórios e validados** (CPF, CNPJ, e-mail, telefone). OK.
+- **Step 3 PF (Profissão):** existe a opção `Outro` (`profession = 'NONE'`) que **pula** o passo de registro profissional, indo direto pra credenciais com 4 etapas no total. Isto contradiz a regra do projeto (PF restrito a Corretor / Arquiteto / Engenheiro).
+- **Step 4 PF Profissional:** CRECI/CAU/CREA + UF já são obrigatórios — **mas só são exigidos se o usuário não escolheu "Outro"**.
+- **Step 4 PJ:** CRECI PJ / CREA PJ + UF, nome do RT, CPF do RT (e CREA do RT na Construtora) já obrigatórios. OK.
+- **Step Credenciais:** senha, confirmação e os 3 contratos já obrigatórios. OK.
+- **Indicação (`referralCode`):** opcional — manter assim (confirmado pelo usuário).
 
-**Versão 1 (atual — mantém)**
-- Texto: "{Nome}, suas preferências foram recebidas..."
-- Botão: `LIBERAR MEU ACESSO`
-- Row title: `Liberar meu acesso`
+Portanto, o gap real é:
 
-**Versão 2 (nova)**
-- Texto: "{Nome}, suas preferências foram enviadas para nossa rede! Centenas de profissionais da região acabam de ser notificados..."
-- Botão: `LIBERAR MEU ACESSO`
-- Row title: `Liberar meu acesso`
+1. Remover a opção "Outro" do PF.
+2. Eliminar todo código que tratava `profession === 'NONE'` (cálculo de steps, labels e validação).
+3. Pequeno reforço opcional de UX para deixar visualmente claro que tudo é obrigatório.
 
-**Versão 3 (nova)**
-- Texto: "Tudo pronto, {Nome}! Neste momento, diversos profissionais estão avaliando sua busca..."
-- Botão: `ATIVAR MINHA BUSCA`
-- Row title: `Ativar minha busca`
+## Mudanças
 
-### Detalhes técnicos
+### 1. `src/components/auth/steps/PFProfessionStep.tsx`
+- Remover o item `NONE` do array `professions` — ficam apenas Corretor, Arquiteto e Engenheiro.
+- Ajustar o grid para 3 cards (`sm:grid-cols-3`) para layout limpo.
 
-Arquivo único alterado: `supabase/functions/send-lead-confirmation/index.ts`
+### 2. `src/types/signup.ts`
+- Atualizar o type `Profession` para `'CORRETOR' | 'ARQUITETO' | 'ENGENHEIRO'` (remover `'NONE'`).
+- Não mexer em `initialFormData` (já é `null`).
 
-1. Criar um array `MESSAGE_VARIANTS` com 3 objetos: `{ interactiveText, buttonText, rowTitle, rowDescription, fallbackText }`. Cada uma é uma função `(firstName) => string` para interpolar o nome.
-2. Sortear uma variante via `Math.floor(Math.random() * MESSAGE_VARIANTS.length)`.
-3. Passar a variante escolhida para `trySendListMessage` (que hoje tem texto/botão hardcoded) e para o fallback `trySendTextMessage`.
-4. Logar qual variante foi enviada (`variant_index`) para conseguirmos auditar a distribuição depois nos logs.
+### 3. `src/components/auth/MultiStepSignup.tsx`
+- `getTotalSteps()`: PF agora **sempre** tem 5 steps (remover o ramo `=== 'NONE' ? 4 : 5`).
+- `getStepLabels()`: remover o caso `profession === 'NONE'` que retornava 4 labels.
+- `isStepComplete()` no step 4: remover o ramo `personType === 'PF' && profession === 'NONE'` que pulava direto para credenciais.
+- `validateStep()` no step 4 PF: o guard `formData.profession !== 'NONE'` deixa de existir — sempre valida CRECI/CAU/CREA conforme a profissão.
+- `isCredentialsStep`: remover a condição `formData.profession === 'NONE' && currentStep === 4`. Credenciais será sempre o step 5 para PF.
+- `handleSubmit()`: remover o `else` implícito do `'NONE'` no metadata (já não existe a opção).
 
-Sem mudanças em frontend, banco, ou demais funções. O fluxo de `isOnWhatsApp` → list → fallback texto continua igual; só o conteúdo é parametrizado.
+### 4. Reforço de UX (pequeno)
+- Em `PFProfessionStep` e `PJCompanyTypeStep`, adicionar abaixo do título uma linha discreta: "Selecione uma opção (obrigatório)".
+- Nos inputs de CRECI/CAU/CREA dos steps profissionais (`PFProfessionalDataStep` e `PJProfessionalDataStep`), adicionar asterisco visual (`*`) nas labels de todos os campos para deixar explícito que são obrigatórios. (A validação já existe; é só clareza visual.)
+
+## Detalhes técnicos
+
+```text
+Antes (PF):
+  Outro (NONE)  -> pula registro -> 4 steps total
+
+Depois (PF):
+  Apenas Corretor / Arquiteto / Engenheiro -> sempre 5 steps
+  CRECI/CAU/CREA + UF sempre obrigatórios
+```
+
+Sem mudanças no banco: o handle `handle_new_user` já lida com profissões PF (CORRETOR/ARQUITETO/ENGENHEIRO) e o trigger não depende de `'NONE'`. Usuários antigos com `profession = 'NONE'` no perfil continuam intactos — a mudança vale só para novos cadastros.
+
+## Memória a atualizar
+
+A memória `mem://rules/auth` já diz "PF restricted to Corretor (CRECI), Arquiteto (CAU), Engenheiro (CREA)". Vou adicionar uma linha explicitando que a opção "Outro / Sem registro" **não existe mais no formulário** e que todos os campos do cadastro são obrigatórios, para evitar reintrodução acidental.
+
+## Fora de escopo
+
+- Não tornar o `referralCode` obrigatório (confirmado).
+- Não alterar fluxo de verificação de e-mail nem checagem de telefone (já robustos).
+- Não mexer em `Profile.tsx` (edição posterior do perfil) — a obrigatoriedade pedida é do **cadastro**.

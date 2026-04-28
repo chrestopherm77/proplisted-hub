@@ -38,8 +38,8 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     if (!formData.personType) return 4;
     
     if (formData.personType === 'PF') {
-      // PF: 1.Tipo -> 2.Dados Gerais -> 3.Profissão -> 4.Dados Prof (se aplicável) -> 5.Credenciais
-      return formData.profession === 'NONE' ? 4 : 5;
+      // PF: 1.Tipo -> 2.Dados Gerais -> 3.Profissão -> 4.Dados Prof -> 5.Credenciais
+      return 5;
     } else {
       // PJ: 1.Tipo -> 2.Dados Gerais -> 3.Tipo Empresa -> 4.Dados Prof -> 5.Credenciais
       return 5;
@@ -48,9 +48,6 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
 
   const getStepLabels = () => {
     if (formData.personType === 'PF') {
-      if (formData.profession === 'NONE') {
-        return ['Tipo', 'Dados Pessoais', 'Profissão', 'Credenciais'];
-      }
       return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
     } else if (formData.personType === 'PJ') {
       return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
@@ -124,9 +121,6 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     }
 
     if (currentStep === 4) {
-      if (formData.personType === 'PF' && formData.profession === 'NONE') {
-        return !!(formData.password && formData.confirmPassword && formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
-      }
       if (formData.personType === 'PF') {
         if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
         if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
@@ -217,7 +211,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    if (currentStep === 4 && formData.personType === 'PF' && formData.profession !== 'NONE') {
+    if (currentStep === 4 && formData.personType === 'PF') {
       if (formData.profession === 'CORRETOR') {
         if (!formData.creci.trim()) newErrors.creci = "CRECI é obrigatório";
         if (!formData.creciUf) newErrors.creciUf = "UF é obrigatória";
@@ -254,9 +248,8 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    const isCredentialsStep = 
-      (formData.personType === 'PF' && formData.profession === 'NONE' && currentStep === 4) ||
-      (formData.personType === 'PF' && formData.profession !== 'NONE' && currentStep === 5) ||
+    const isCredentialsStep =
+      (formData.personType === 'PF' && currentStep === 5) ||
       (formData.personType === 'PJ' && currentStep === 5);
 
     if (isCredentialsStep) {
@@ -530,18 +523,6 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
 
     // Step 4
     if (currentStep === 4) {
-      // PF with profession NONE -> go to credentials
-      if (formData.personType === 'PF' && formData.profession === 'NONE') {
-        return (
-          <CredentialsStep
-            formData={formData}
-            onChange={handleFieldChange}
-            errors={errors}
-            referralLocked={!!initialReferralCode}
-          />
-        );
-      }
-      
       // PF with profession -> professional data
       if (formData.personType === 'PF') {
         return (
