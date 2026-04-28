@@ -170,7 +170,8 @@ async function trySendListMessage(
   firstName: string,
   leadId: string,
   instanceKey: string,
-  token: string
+  token: string,
+  variant: MessageVariant
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const jid = `${phoneNumber}@s.whatsapp.net`;
   const megaUrl = `https://apinocode01.megaapi.com.br/rest/sendMessage/${instanceKey}/listMessage`;
@@ -179,8 +180,8 @@ async function trySendListMessage(
     messageData: {
       to: jid,
       title: "Conectae",
-      text: `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
-      buttonText: "LIBERAR MEU ACESSO",
+      text: variant.interactiveText(firstName),
+      buttonText: variant.buttonText,
       description: "Conectae - Conectando você ao corretor ideal",
       sections: [
         {
@@ -188,8 +189,8 @@ async function trySendListMessage(
           rows: [
             {
               rowId: `confirm_${leadId}`,
-              title: "Liberar meu acesso",
-              description: "Libero meu perfil e ativo a busca por corretores"
+              title: variant.rowTitle,
+              description: variant.rowDescription
             }
           ]
         }
