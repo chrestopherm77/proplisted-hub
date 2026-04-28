@@ -4,18 +4,17 @@ import { Resend } from "resend";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const ALLOWED_ORIGINS = [
-  'https://conectaeimob.com.br',
-  'https://www.conectaeimob.com.br',
-  'https://proplisted-hub.lovable.app',
-];
-
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowed =
+    /^https:\/\/([a-z0-9-]+\.)*conectaeimob\.com\.br$/i.test(origin) ||
+    /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/i.test(origin) ||
+    /^https:\/\/([a-z0-9-]+\.)*lovableproject\.com$/i.test(origin);
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': allowed ? origin : 'https://www.conectaeimob.com.br',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
   };
 }
 
