@@ -195,18 +195,38 @@ const PropertySearches = () => {
   const handleBroadcastSearch = async (s: any) => {
     setBroadcastingId(s.id);
     try {
-      const { error } = await supabase.functions.invoke('notify-group-new-search', {
-        body: {
-          state: s.state,
-          city: s.city,
-          operationType: s.operation_type,
-          propertyType: s.property_type,
-          zone: s.zone,
-          neighborhood: s.neighborhood,
-          valueMax: s.value_max ? String(s.value_max) : undefined,
-        },
+      const payload = {
+        state: s.state || undefined,
+        city: s.city,
+        operationType: s.operation_type,
+        propertyType: s.property_type,
+        zone: s.zone || undefined,
+        neighborhood: s.neighborhood || undefined,
+        valueMax: s.value_max != null ? String(s.value_max) : undefined,
+      };
+
+      if (!payload.city || !payload.operationType || !payload.propertyType) {
+        toast({
+          title: 'Dados incompletos',
+          description: 'Esta procura está sem cidade, operação ou tipo de imóvel.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('notify-group-new-search', {
+        body: payload,
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Broadcast invoke error:', error, 'data:', data);
+        throw new Error(
+          (data as any)?.error
+            ? typeof (data as any).error === 'string'
+              ? (data as any).error
+              : JSON.stringify((data as any).error)
+            : error.message,
+        );
+      }
       toast({ title: 'Disparado!', description: 'Notificação enviada aos grupos do WhatsApp.' });
     } catch (err: any) {
       console.error('Broadcast error:', err);
