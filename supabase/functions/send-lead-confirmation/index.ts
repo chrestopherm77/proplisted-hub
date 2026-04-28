@@ -98,7 +98,11 @@ Deno.serve(async (req) => {
     const instanceKey = "megacode-Mj46Nd4U5tP";
     const firstName = name.trim().split(' ')[0];
 
-    console.log(`Processing lead ${leadId}: phone=${phone}, 12-digit=${phone12}, 13-digit=${phone13}`);
+    // Sorteia 1 das 3 variantes de copy (revezamento)
+    const variantIndex = Math.floor(Math.random() * MESSAGE_VARIANTS.length);
+    const variant = MESSAGE_VARIANTS[variantIndex];
+
+    console.log(`Processing lead ${leadId}: phone=${phone}, 12-digit=${phone12}, 13-digit=${phone13}, variant=${variantIndex}`);
 
     // Step 1: Find which number format is on WhatsApp
     const verifiedNumber = await findWhatsAppNumber(phone12, phone13, instanceKey, MEGA_API_TOKEN);
