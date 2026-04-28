@@ -1,65 +1,43 @@
-## Objetivo
+## Adicionar marca d'água nos mockups de criativos
 
-Garantir que **todos os campos** do cadastro multi-step sejam obrigatórios, com ênfase em CRECI / CAU / CREA. Eliminar o "atalho" da opção **Outro / Sem registro** que hoje permite PF concluir o cadastro sem nenhum registro profissional.
+Hoje, no painel de Criativos, ao subir as imagens secundárias (mockups), o usuário escolhe a logo em 1 dos 4 cantos com opacidade 100%. Vamos adicionar:
 
-## Diagnóstico do que já está obrigatório (e o que não está)
+1. **Toggle "Marca d'água"** por mockup (logo fica translúcida).
+2. **Nova posição "centro"** — disponível tanto no modo normal quanto marca d'água (faz mais sentido como marca d'água, mas liberamos as duas).
+3. **Slider de opacidade** quando marca d'água estiver ativa (padrão 35%).
+4. **Tamanho maior** quando logo estiver no centro como marca d'água (~45% da largura, vs 18% nos cantos).
 
-Hoje, em `src/components/auth/MultiStepSignup.tsx`:
+### Arquivos alterados
 
-- **Step 2 (Dados Gerais PF/PJ):** nome/razão social, CPF/CNPJ, UF, cidade, bairro, endereço, e-mail e telefone — **todos já obrigatórios e validados** (CPF, CNPJ, e-mail, telefone). OK.
-- **Step 3 PF (Profissão):** existe a opção `Outro` (`profession = 'NONE'`) que **pula** o passo de registro profissional, indo direto pra credenciais com 4 etapas no total. Isto contradiz a regra do projeto (PF restrito a Corretor / Arquiteto / Engenheiro).
-- **Step 4 PF Profissional:** CRECI/CAU/CREA + UF já são obrigatórios — **mas só são exigidos se o usuário não escolheu "Outro"**.
-- **Step 4 PJ:** CRECI PJ / CREA PJ + UF, nome do RT, CPF do RT (e CREA do RT na Construtora) já obrigatórios. OK.
-- **Step Credenciais:** senha, confirmação e os 3 contratos já obrigatórios. OK.
-- **Indicação (`referralCode`):** opcional — manter assim (confirmado pelo usuário).
+**`src/components/criativos/LogoPositionPicker.tsx`**
+- Estender `LogoPosition` para incluir `'center'`.
+- Adicionar 5ª área clicável central (sobreposta ao centro da imagem).
+- Aceitar props novas: `watermark: boolean`, `opacity: number`, `onToggleWatermark`, `onOpacityChange`.
+- Renderizar toggle "Marca d'água" + slider de opacidade abaixo do picker.
+- Quando `watermark=true`, renderizar logo selecionada com `opacity` aplicada e tamanho ampliado se posição for `center`.
 
-Portanto, o gap real é:
+**`src/components/criativos/MockupPreview.tsx`** (renderização final no canvas)
+- Receber `watermark` e `opacity`.
+- Aplicar `ctx.globalAlpha = watermark ? opacity : 1` antes do `drawImage` da logo, e restaurar depois.
+- Suporte à posição `center`: calcular `x = (img.width - lw) / 2`, `y = (img.height - lh) / 2`.
+- Quando `watermark && position === 'center'`, usar `logoMaxW = img.width * 0.45` (logo grande como marca d'água clássica). Demais casos mantêm 18%.
 
-1. Remover a opção "Outro" do PF.
-2. Eliminar todo código que tratava `profession === 'NONE'` (cálculo de steps, labels e validação).
-3. Pequeno reforço opcional de UX para deixar visualmente claro que tudo é obrigatório.
+**`src/components/criativos/wizard/StepImages.tsx`**
+- Estender `ImageSlot`: adicionar `watermark: boolean` e `opacity: number` (defaults: `false`, `0.35`).
+- Passar e atualizar esses campos via `LogoPositionPicker`.
+- Atualizar texto de ajuda: "Clique nos cantos ou no centro para posicionar a logo. Ative 'Marca d'água' para deixar translúcida."
 
-## Mudanças
+**Inicialização dos slots** (procurar onde `ImageSlot[]` é criado — provavelmente em `GenerateCreative.tsx`)
+- Adicionar `watermark: false, opacity: 0.35` ao default de cada slot novo.
 
-### 1. `src/components/auth/steps/PFProfessionStep.tsx`
-- Remover o item `NONE` do array `professions` — ficam apenas Corretor, Arquiteto e Engenheiro.
-- Ajustar o grid para 3 cards (`sm:grid-cols-3`) para layout limpo.
+### Detalhes técnicos
 
-### 2. `src/types/signup.ts`
-- Atualizar o type `Profession` para `'CORRETOR' | 'ARQUITETO' | 'ENGENHEIRO'` (remover `'NONE'`).
-- Não mexer em `initialFormData` (já é `null`).
+- `LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'`
+- Slider: shadcn `Slider` (já existe), range 10–80%.
+- Toggle: shadcn `Switch` (já existe).
+- Nada muda no banco — esses estados vivem apenas no wizard até a geração final do mockup (canvas → upload).
 
-### 3. `src/components/auth/MultiStepSignup.tsx`
-- `getTotalSteps()`: PF agora **sempre** tem 5 steps (remover o ramo `=== 'NONE' ? 4 : 5`).
-- `getStepLabels()`: remover o caso `profession === 'NONE'` que retornava 4 labels.
-- `isStepComplete()` no step 4: remover o ramo `personType === 'PF' && profession === 'NONE'` que pulava direto para credenciais.
-- `validateStep()` no step 4 PF: o guard `formData.profession !== 'NONE'` deixa de existir — sempre valida CRECI/CAU/CREA conforme a profissão.
-- `isCredentialsStep`: remover a condição `formData.profession === 'NONE' && currentStep === 4`. Credenciais será sempre o step 5 para PF.
-- `handleSubmit()`: remover o `else` implícito do `'NONE'` no metadata (já não existe a opção).
+### Fora de escopo
 
-### 4. Reforço de UX (pequeno)
-- Em `PFProfessionStep` e `PJCompanyTypeStep`, adicionar abaixo do título uma linha discreta: "Selecione uma opção (obrigatório)".
-- Nos inputs de CRECI/CAU/CREA dos steps profissionais (`PFProfessionalDataStep` e `PJProfessionalDataStep`), adicionar asterisco visual (`*`) nas labels de todos os campos para deixar explícito que são obrigatórios. (A validação já existe; é só clareza visual.)
-
-## Detalhes técnicos
-
-```text
-Antes (PF):
-  Outro (NONE)  -> pula registro -> 4 steps total
-
-Depois (PF):
-  Apenas Corretor / Arquiteto / Engenheiro -> sempre 5 steps
-  CRECI/CAU/CREA + UF sempre obrigatórios
-```
-
-Sem mudanças no banco: o handle `handle_new_user` já lida com profissões PF (CORRETOR/ARQUITETO/ENGENHEIRO) e o trigger não depende de `'NONE'`. Usuários antigos com `profession = 'NONE'` no perfil continuam intactos — a mudança vale só para novos cadastros.
-
-## Memória a atualizar
-
-A memória `mem://rules/auth` já diz "PF restricted to Corretor (CRECI), Arquiteto (CAU), Engenheiro (CREA)". Vou adicionar uma linha explicitando que a opção "Outro / Sem registro" **não existe mais no formulário** e que todos os campos do cadastro são obrigatórios, para evitar reintrodução acidental.
-
-## Fora de escopo
-
-- Não tornar o `referralCode` obrigatório (confirmado).
-- Não alterar fluxo de verificação de e-mail nem checagem de telefone (já robustos).
-- Não mexer em `Profile.tsx` (edição posterior do perfil) — a obrigatoriedade pedida é do **cadastro**.
+- Não muda a imagem principal (gerada por IA) — marca d'água continua só nos secundários.
+- Não muda o fluxo do `MyBrand` nem o upload de logo.
