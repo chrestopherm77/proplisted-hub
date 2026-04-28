@@ -375,9 +375,8 @@ const PropertySearches = () => {
     }
     setSendingLink(true);
 
-    const { data: myProfile } = await supabase.from('profiles').select('name, phone').eq('id', user.id).single();
+    const { data: myProfile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
     const myName = myProfile?.name ?? 'Corretor';
-    const myPhone = myProfile?.phone ?? '';
 
     await supabase.rpc('increment_offer_count', { p_search_id: offerModalSearch.id });
 
@@ -386,21 +385,22 @@ const PropertySearches = () => {
       { onConflict: 'search_id,user_id' }
     );
 
-    // Notify owner via WhatsApp
-    try {
-      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-offer-whatsapp', {
-        body: {
-          searchId: offerModalSearch.id,
-          offerUserName: myName,
-          offerUserPhone: myPhone,
-          offerLink: offerLink.trim(),
-        },
-      });
-      if (notifyError) console.error('Offer notification error:', notifyError);
-      else console.log('Offer notification result:', notifyResult);
-    } catch (e) {
-      console.error('Offer notification exception:', e);
+    // Buscar telefone do anunciante e abrir WhatsApp do corretor com mensagem pronta
+    const { data: phone } = await supabase.rpc('get_profile_phone', { p_user_id: offerModalSearch.user_id });
+
+    if (!phone) {
+      toast({ title: 'Erro', description: 'Não foi possível obter o contato do anunciante.', variant: 'destructive' });
+      setSendingLink(false);
+      return;
     }
+
+    const clean = (phone as string).replace(/\D/g, '');
+    const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+    const typeName = propertyTypeLabels[offerModalSearch.property_type] ?? offerModalSearch.property_type;
+    const msg = encodeURIComponent(
+      `Olá! Vi sua procura de ${typeName} em ${offerModalSearch.city} no Conectae Imob e tenho um imóvel que pode interessar.\n\n🔗 Link do anúncio: ${offerLink.trim()}\n\nPodemos conversar?`
+    );
+    window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
     setSearches(prev => prev.map(s => s.id === offerModalSearch.id ? { ...s, offer_count: (s.offer_count ?? 0) + 1 } : s));
     if (selectedSearch?.id === offerModalSearch.id) {
@@ -409,7 +409,7 @@ const PropertySearches = () => {
     fetchMyOffers();
     setSendingLink(false);
     setOfferModalSearch(null);
-    toast({ title: 'Oferta enviada!', description: 'Seu link foi registrado e o proprietário foi notificado.' });
+    toast({ title: 'Oferta registrada!', description: 'Continue a conversa pelo WhatsApp.' });
   };
 
   const handleSaveAlert = async () => {
@@ -977,12 +977,12 @@ const PropertySearches = () => {
                     </div>
                   </div>
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
                     disabled={sendingLink || !offerLink.trim()}
                     onClick={handleSendLink}
                   >
-                    <Link2 className="h-4 w-4" />
-                    {sendingLink ? 'Enviando...' : 'Enviar Link'}
+                    <MessageCircle className="h-4 w-4" />
+                    {sendingLink ? 'Abrindo...' : 'Entrar em contato'}
                   </Button>
                 </div>
               </div>
