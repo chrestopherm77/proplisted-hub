@@ -799,6 +799,23 @@ const PropertySearches = () => {
                               <MessageCircle className="h-4 w-4" /> Enviar Oferta
                             </Button>
                           )}
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 border-primary text-primary hover:bg-primary/10"
+                              disabled={broadcastingId === s.id}
+                              onClick={() => handleBroadcastSearch(s)}
+                              title="Re-disparar notificação aos grupos do WhatsApp"
+                            >
+                              {broadcastingId === s.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Megaphone className="h-4 w-4" />
+                              )}
+                              Disparar no grupo
+                            </Button>
+                          )}
                           {(s.user_id === user!.id || isAdmin) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
