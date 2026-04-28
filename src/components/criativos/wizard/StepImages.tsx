@@ -11,6 +11,8 @@ import { LogoPositionPicker, type LogoPosition } from '../LogoPositionPicker';
 export interface ImageSlot {
   url: string | null;
   position: LogoPosition;
+  watermark: boolean;
+  opacity: number;
 }
 
 interface Props {
@@ -56,6 +58,18 @@ export function StepImages({ slots, setSlots, brandLogo }: Props) {
     setSlots(next);
   };
 
+  const setWatermark = (idx: number, v: boolean) => {
+    const next = [...slots];
+    next[idx] = { ...next[idx], watermark: v };
+    setSlots(next);
+  };
+
+  const setOpacity = (idx: number, v: number) => {
+    const next = [...slots];
+    next[idx] = { ...next[idx], opacity: v };
+    setSlots(next);
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -92,6 +106,10 @@ export function StepImages({ slots, setSlots, brandLogo }: Props) {
                       logoUrl={brandLogo}
                       position={slot.position}
                       onChange={(p) => setPosition(idx, p)}
+                      watermark={slot.watermark}
+                      opacity={slot.opacity}
+                      onToggleWatermark={(v) => setWatermark(idx, v)}
+                      onOpacityChange={(v) => setOpacity(idx, v)}
                     />
                   )}
                   <Button
@@ -129,7 +147,7 @@ export function StepImages({ slots, setSlots, brandLogo }: Props) {
               />
               {!isPrincipal && slot.url && (
                 <div className="p-2 text-xs text-center text-muted-foreground">
-                  Clique nos cantos para posicionar a logo
+                  Clique nos cantos ou no centro. Ative "Marca d'água" para deixar translúcida.
                 </div>
               )}
             </Card>

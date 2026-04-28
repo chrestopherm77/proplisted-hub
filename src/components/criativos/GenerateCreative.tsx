@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const TOTAL_STEPS = 4;
 const CREATIVE_COST = 10;
 const initialSlots = (): ImageSlot[] =>
-  Array.from({ length: 8 }, () => ({ url: null, position: 'bottom-right' as const }));
+  Array.from({ length: 8 }, () => ({ url: null, position: 'bottom-right' as const, watermark: false, opacity: 0.35 }));
 
 export function GenerateCreative({ onDone }: { onDone: () => void }) {
   const { user } = useAuth();
