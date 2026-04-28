@@ -1,69 +1,72 @@
-## Problema
+## Problemas Identificados
 
-Na tela `/reset-password`, ao enviar o formulário com e-mail + nova senha, está sendo exibido o toast "Erro ao redefinir senha".
-
-## Diagnóstico
-
-Investigando o fluxo:
-
-1. **Token criado com sucesso** — `password_reset_tokens` tem o registro de `beltramicapital@gmail.com` (criado às 11:56, válido por 1h, ainda não usado).
-2. **Edge function `reset-password` não está sendo executada** — não há nenhum log de invocação recente (nem sucesso, nem erro). Isso significa que a chamada `supabase.functions.invoke("reset-password", ...)` está falhando antes mesmo de atingir a função.
-3. **Causa raiz: CORS bloqueando a origem do preview Lovable.**
-
-A função `supabase/functions/reset-password/index.ts` tem `ALLOWED_ORIGINS` fixo:
+### 1. Balcão de Parceria envia para apenas 2 grupos
+A função `notify-group-new-search` (que dispara quando alguém publica uma nova procura no balcão) envia para apenas 2 grupos:
 ```ts
-const ALLOWED_ORIGINS = [
-  'https://conectaeimob.com.br',
-  'https://www.conectaeimob.com.br',
-  'https://proplisted-hub.lovable.app',
+const WHATSAPP_GROUP_IDS = [
+  "120363407964054463@g.us",
+  "120363426047592689@g.us",
 ];
 ```
 
-Mas o usuário está testando a partir de `https://id-preview--cb8760c6-...lovable.app` (preview do Lovable), que NÃO está na lista. O preflight OPTIONS recebe `Access-Control-Allow-Origin` com a origem padrão (`conectaeimob.com.br`), o navegador rejeita, a chamada falha sem chegar à função, e o frontend mostra "Erro ao redefinir senha".
+As outras funções de notificação (`notify-lead-group`, `daily-news-broadcast`, `mega-webhook`) já enviam para 3 grupos, incluindo `"120363410244397205@g.us"`. O terceiro grupo simplesmente não foi adicionado nesta função.
 
-Mesmo problema potencial em produção se o usuário acessar via custom domain de white label de um parceiro (subdomínios diferentes).
+### 2. Botão "Enviar Link" precisa virar "Entrar em contato"
+Hoje, no modal de oferta (`src/pages/PropertySearches.tsx`):
+- A pessoa cola o link do anúncio
+- Clica em **"Enviar Link"**
+- O link é registrado e enviado por WhatsApp pelo bot (Mega API) para o anunciante
 
-Adicionalmente, no frontend (`src/pages/ResetPassword.tsx` linhas 58-66): qualquer falha de rede cai no `toast.error("Erro ao redefinir senha")` genérico, sem detalhar a causa real (ex: "Failed to fetch" / CORS).
+O usuário quer mudar o fluxo:
+- A pessoa cola o link do anúncio (continua igual)
+- Clica em **"Entrar em contato"**
+- Em vez de a Mega API enviar a mensagem, abre o WhatsApp Web/App do próprio corretor (`wa.me/...`) com a mensagem pronta contendo apresentação + **link do anúncio embutido no corpo**
+- O link continua salvo em `property_search_offers.offer_link` para aparecer no card "Ofertas Recebidas"
 
 ## Plano de Correção
 
-### 1. Edge function `supabase/functions/reset-password/index.ts`
-- Substituir a lista fixa `ALLOWED_ORIGINS` por uma checagem que aceite:
-  - Os domínios principais (`conectaeimob.com.br`, `www.conectaeimob.com.br`)
-  - Qualquer subdomínio `*.lovable.app` (preview e published do Lovable)
-  - Os domínios de white label cadastrados em `partners` (campo `custom_domain`, se aplicável) — opcionalmente liberar via regex segura.
-- Garantir que `Access-Control-Allow-Methods: POST, OPTIONS` esteja no header.
-- Adicionar `console.log` no início do handler para confirmar invocação em produção.
-- Redeploy da função.
-
-### 2. Mesma correção em `supabase/functions/send-password-reset/index.ts`
-- Tem exatamente o mesmo padrão `ALLOWED_ORIGINS`. Aplicar o mesmo helper de CORS para evitar o mesmo problema na hora de SOLICITAR o reset.
-
-### 3. Frontend `src/pages/ResetPassword.tsx`
-- Logar `error` completo no console para diagnóstico futuro.
-- Quando `error?.message` indicar falha de rede ("Failed to fetch"), exibir mensagem mais clara: "Não foi possível conectar ao servidor. Tente novamente."
-- Manter o restante do fluxo (já trata `data?.error` corretamente).
-
-## Detalhes Técnicos
-
-CORS dinâmico sugerido (em ambas as funções):
+### 1. `supabase/functions/notify-group-new-search/index.ts`
+Adicionar o terceiro grupo no array `WHATSAPP_GROUP_IDS`:
 ```ts
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  const allowed =
-    /^https:\/\/([a-z0-9-]+\.)*conectaeimob\.com\.br$/i.test(origin) ||
-    /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/i.test(origin);
-  return {
-    'Access-Control-Allow-Origin': allowed ? origin : 'https://www.conectaeimob.com.br',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
+const WHATSAPP_GROUP_IDS = [
+  "120363407964054463@g.us",
+  "120363426047592689@g.us",
+  "120363410244397205@g.us",
+];
 ```
+Redeploy da função.
 
-Isso mantém o nível de segurança (só aceita domínios próprios + Lovable), mas libera previews e published do Lovable, resolvendo o erro reportado.
+### 2. `src/pages/PropertySearches.tsx` — Refatorar o handler do modal
+- Renomear o botão para **"Entrar em contato"** com ícone `MessageCircle` (verde, estilo WhatsApp).
+- Remover a chamada para `supabase.functions.invoke('notify-offer-whatsapp', ...)` neste fluxo.
+- Manter:
+  - `increment_offer_count` (para contagem)
+  - `upsert` em `property_search_offers` salvando `offer_name` + `offer_link` (para aparecer no card)
+- Substituir o disparo via Mega API por:
+  - Buscar o telefone do anunciante via `supabase.rpc('get_profile_phone', { p_user_id: search.user_id })`
+  - Normalizar para formato `55DDDNNNNNNNN`
+  - Montar mensagem incluindo o link colado:
+    ```
+    Olá! Vi sua procura de {tipo} em {cidade} no Conectae Imob e tenho um imóvel que pode interessar.
+    
+    🔗 Link do anúncio: {offerLink}
+    
+    Podemos conversar?
+    ```
+  - `window.open('https://wa.me/{fullPhone}?text={msgEncoded}', '_blank')` para redirecionar o corretor ao WhatsApp já com a conversa pronta.
+- Manter validação `if (!offerLink.trim()) return;` (link do anúncio é obrigatório).
+- Renomear estado `sendingLink` → `sendingContact` (ou manter, é interno).
+- Toast de sucesso: `"Oferta registrada! Continue a conversa pelo WhatsApp."`
+
+### 3. Limpeza opcional
+A edge function `notify-offer-whatsapp` deixa de ser chamada por este fluxo, mas será mantida (pode ser usada em outros pontos no futuro). Sem alteração nela.
+
+## Arquivos Afetados
+
+- `supabase/functions/notify-group-new-search/index.ts` (adicionar terceiro grupo + redeploy)
+- `src/pages/PropertySearches.tsx` (refatorar `handleSendLink` e botão do modal)
 
 ## Resultado Esperado
 
-- O usuário consegue concluir o reset de senha tanto no domínio de produção quanto no preview Lovable.
-- Em caso de erro real, mensagem mais clara aparece ao invés do genérico "Erro ao redefinir senha".
+1. Toda nova procura publicada no balcão dispara notificação para os **3 grupos** de WhatsApp.
+2. No modal de oferta, ao colar o link e clicar em **"Entrar em contato"**, o corretor é redirecionado para o WhatsApp do anunciante com a mensagem pronta contendo o link do anúncio. A oferta também fica registrada no card "Ofertas Recebidas" da procura.

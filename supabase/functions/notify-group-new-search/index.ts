@@ -92,6 +92,7 @@ serve(async (req) => {
     const WHATSAPP_GROUP_IDS = [
       "120363407964054463@g.us",
       "120363426047592689@g.us",
+      "120363410244397205@g.us",
     ];
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
 
