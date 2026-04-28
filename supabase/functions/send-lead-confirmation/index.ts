@@ -63,6 +63,42 @@ async function findWhatsAppNumber(
   return null;
 }
 
+// ============= Variantes de copy para revezamento =============
+type MessageVariant = {
+  interactiveText: (firstName: string) => string;
+  buttonText: string;
+  rowTitle: string;
+  rowDescription: string;
+  fallbackText: (firstName: string) => string;
+};
+
+const MESSAGE_VARIANTS: MessageVariant[] = [
+  // Variante 1 (original)
+  {
+    interactiveText: (n) => `${n}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
+    buttonText: "LIBERAR MEU ACESSO",
+    rowTitle: "Liberar meu acesso",
+    rowDescription: "Libero meu perfil e ativo a busca por corretores",
+    fallbackText: (n) => `${n}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
+  },
+  // Variante 2 (nova)
+  {
+    interactiveText: (n) => `${n}, suas preferências foram enviadas para nossa rede!\n\nCentenas de profissionais da região acabam de ser notificados. Eles analisarão quais imóveis em suas carteiras são mais aderentes ao seu perfil e, em breve, até 5 corretores que possuem os melhores imóveis entrarão em contato.\n\nPara ativar sua busca:\n\n1️⃣ Clique abaixo para liberar seu perfil no sistema.\n\n2️⃣ Aguarde o contato: nos próximos dias, esses especialistas falarão diretamente com você para apresentar as melhores oportunidades.`,
+    buttonText: "LIBERAR MEU ACESSO",
+    rowTitle: "Liberar meu acesso",
+    rowDescription: "Libero meu perfil no sistema",
+    fallbackText: (n) => `${n}, suas preferências foram enviadas para nossa rede!\n\nCentenas de profissionais da região acabam de ser notificados. Eles analisarão quais imóveis em suas carteiras são mais aderentes ao seu perfil e, em breve, até 5 corretores que possuem os melhores imóveis entrarão em contato.\n\nPara ativar sua busca:\n\n1️⃣ Responda *SIM* para liberar seu perfil no sistema.\n\n2️⃣ Aguarde o contato: nos próximos dias, esses especialistas falarão diretamente com você para apresentar as melhores oportunidades.`,
+  },
+  // Variante 3 (nova)
+  {
+    interactiveText: (n) => `Tudo pronto, ${n}!\n\nNeste momento, diversos profissionais estão avaliando sua busca. Para garantir assertividade, apenas os 5 corretores que identificarem os imóveis mais compatíveis com seus critérios falarão com você.\n\nSiga os passos:\n\n1️⃣ Toque no botão abaixo para confirmar seu interesse e liberar o acesso.\n\n2️⃣ Fique atento: em breve, os especialistas com as melhores opções entrarão em contato para te ajudar na sua conquista.`,
+    buttonText: "ATIVAR MINHA BUSCA",
+    rowTitle: "Ativar minha busca",
+    rowDescription: "Confirmo meu interesse e libero o acesso",
+    fallbackText: (n) => `Tudo pronto, ${n}!\n\nNeste momento, diversos profissionais estão avaliando sua busca. Para garantir assertividade, apenas os 5 corretores que identificarem os imóveis mais compatíveis com seus critérios falarão com você.\n\nSiga os passos:\n\n1️⃣ Responda *SIM* para confirmar seu interesse e liberar o acesso.\n\n2️⃣ Fique atento: em breve, os especialistas com as melhores opções entrarão em contato para te ajudar na sua conquista.`,
+  },
+];
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
@@ -98,7 +134,11 @@ Deno.serve(async (req) => {
     const instanceKey = "megacode-Mj46Nd4U5tP";
     const firstName = name.trim().split(' ')[0];
 
-    console.log(`Processing lead ${leadId}: phone=${phone}, 12-digit=${phone12}, 13-digit=${phone13}`);
+    // Sorteia 1 das 3 variantes de copy (revezamento)
+    const variantIndex = Math.floor(Math.random() * MESSAGE_VARIANTS.length);
+    const variant = MESSAGE_VARIANTS[variantIndex];
+
+    console.log(`Processing lead ${leadId}: phone=${phone}, 12-digit=${phone12}, 13-digit=${phone13}, variant=${variantIndex}`);
 
     // Step 1: Find which number format is on WhatsApp
     const verifiedNumber = await findWhatsAppNumber(phone12, phone13, instanceKey, MEGA_API_TOKEN);
@@ -116,21 +156,21 @@ Deno.serve(async (req) => {
     console.log(`Lead ${leadId}: verified WhatsApp number is ${verifiedNumber}`);
 
     // Step 2: Try interactive list message
-    const listResult = await trySendListMessage(verifiedNumber, firstName, leadId, instanceKey, MEGA_API_TOKEN);
+    const listResult = await trySendListMessage(verifiedNumber, firstName, leadId, instanceKey, MEGA_API_TOKEN, variant);
 
     if (listResult.success) {
-      console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId}. MsgId: ${listResult.messageId}`);
+      console.log(`Interactive message sent to ${verifiedNumber} for lead ${leadId} (variant ${variantIndex}). MsgId: ${listResult.messageId}`);
       await updateLeadStatus(sb, leadId, "sent_interactive", null, listResult.messageId ?? null);
       return new Response(
-        JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId }),
+        JSON.stringify({ success: true, delivery_status: "sent_interactive", messageId: listResult.messageId, variant: variantIndex }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.warn(`Interactive failed for ${verifiedNumber}: ${listResult.error}. Trying text fallback...`);
 
-    // Step 3: Fallback to plain text
-    const textBody = `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Responda *SIM* para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`;
+    // Step 3: Fallback to plain text (mesma variante)
+    const textBody = variant.fallbackText(firstName);
 
     const textResult = await trySendTextMessage(verifiedNumber, textBody, instanceKey, MEGA_API_TOKEN);
     if (textResult.success) {
@@ -166,7 +206,8 @@ async function trySendListMessage(
   firstName: string,
   leadId: string,
   instanceKey: string,
-  token: string
+  token: string,
+  variant: MessageVariant
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const jid = `${phoneNumber}@s.whatsapp.net`;
   const megaUrl = `https://apinocode01.megaapi.com.br/rest/sendMessage/${instanceKey}/listMessage`;
@@ -175,8 +216,8 @@ async function trySendListMessage(
     messageData: {
       to: jid,
       title: "Conectae",
-      text: `${firstName}, suas preferências foram recebidas.\n\nCentenas de profissionais em sua região serão notificados, e até 5 corretores que possuem as melhores opções para o seu perfil entrarão em contato.\n\nPrepare-se para o atendimento:\n\n1️⃣ Clique abaixo para liberar seu perfil e ativar a busca.\n\n2️⃣ Fique atento: nos próximos dias, esses especialistas falarão diretamente com você.`,
-      buttonText: "LIBERAR MEU ACESSO",
+      text: variant.interactiveText(firstName),
+      buttonText: variant.buttonText,
       description: "Conectae - Conectando você ao corretor ideal",
       sections: [
         {
@@ -184,8 +225,8 @@ async function trySendListMessage(
           rows: [
             {
               rowId: `confirm_${leadId}`,
-              title: "Liberar meu acesso",
-              description: "Libero meu perfil e ativo a busca por corretores"
+              title: variant.rowTitle,
+              description: variant.rowDescription
             }
           ]
         }
