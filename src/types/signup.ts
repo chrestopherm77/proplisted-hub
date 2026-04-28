@@ -1,6 +1,6 @@
 export type PersonType = 'PF' | 'PJ';
 export type CompanyType = 'IMOBILIARIA' | 'CONSTRUTORA';
-export type Profession = 'CORRETOR' | 'ARQUITETO' | 'ENGENHEIRO' | 'NONE';
+export type Profession = 'CORRETOR' | 'ARQUITETO' | 'ENGENHEIRO';
 
 export interface SignupFormData {
   // Tipo de pessoa

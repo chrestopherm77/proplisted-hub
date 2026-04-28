@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Profession } from "@/types/signup";
-import { UserCheck, Compass, HardHat, User } from "lucide-react";
+import { UserCheck, Compass, HardHat } from "lucide-react";
 
 interface PFProfessionStepProps {
   value: Profession | null;
@@ -27,12 +27,6 @@ const professions = [
     description: 'Profissional com CREA',
     icon: HardHat,
   },
-  {
-    value: 'NONE' as Profession,
-    label: 'Outro',
-    description: 'Sem registro profissional',
-    icon: User,
-  },
 ];
 
 export function PFProfessionStep({ value, onChange }: PFProfessionStepProps) {
@@ -41,11 +35,11 @@ export function PFProfessionStep({ value, onChange }: PFProfessionStepProps) {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Atuação Profissional</h2>
         <p className="text-muted-foreground mt-2">
-          Você atua como algum profissional regulamentado?
+          Selecione sua profissão regulamentada (obrigatório)
         </p>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {professions.map((profession) => {
           const Icon = profession.icon;
           return (
