@@ -276,11 +276,31 @@ export function LandingPageEditor() {
                       onChange={(e) => updateContent('hero', { ...content.hero, cta_label: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Link do botão CTA</Label>
-                    <Input value={content.hero.cta_url}
-                      placeholder="https://wa.me/55..."
-                      onChange={(e) => updateContent('hero', { ...content.hero, cta_url: e.target.value })} />
+                    <Label>Tipo do botão</Label>
+                    <Select
+                      value={content.hero.cta_mode || 'link'}
+                      onValueChange={(v) => updateContent('hero', { ...content.hero, cta_mode: v as 'link' | 'form' })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="link">Link direto (URL)</SelectItem>
+                        <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {(content.hero.cta_mode || 'link') === 'link' && (
+                    <div>
+                      <Label>Link do botão CTA</Label>
+                      <Input value={content.hero.cta_url}
+                        placeholder="https://wa.me/55..."
+                        onChange={(e) => updateContent('hero', { ...content.hero, cta_url: e.target.value })} />
+                    </div>
+                  )}
+                  {content.hero.cta_mode === 'form' && (
+                    <p className="text-xs text-muted-foreground">
+                      Configure os campos no item <strong>"Formulário de Cadastro"</strong> abaixo.
+                    </p>
+                  )}
                 </AccordionContent>
               </AccordionItem>
 
