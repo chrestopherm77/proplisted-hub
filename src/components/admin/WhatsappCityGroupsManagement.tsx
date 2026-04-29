@@ -17,9 +17,10 @@ interface Row {
   city: string;
   uf: string;
   is_active: boolean;
+  invite_url: string | null;
 }
 
-const empty = { id: '', group_jid: '', group_label: '', city: '', uf: '', is_active: true };
+const empty: Row = { id: '', group_jid: '', group_label: '', city: '', uf: '', is_active: true, invite_url: '' };
 
 export function WhatsappCityGroupsManagement() {
   const { toast } = useToast();
