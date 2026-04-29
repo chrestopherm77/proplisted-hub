@@ -56,6 +56,11 @@ export function WhatsappCityGroupsManagement() {
       toast({ title: 'Preencha todos os campos', variant: 'destructive' });
       return;
     }
+    const inviteTrim = (form.invite_url || '').trim();
+    if (inviteTrim && !inviteTrim.startsWith('https://chat.whatsapp.com/')) {
+      toast({ title: 'Link de convite inválido', description: 'Deve começar com https://chat.whatsapp.com/', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     const payload = {
       group_jid: form.group_jid.trim(),
@@ -63,6 +68,7 @@ export function WhatsappCityGroupsManagement() {
       city: form.city.trim(),
       uf: form.uf.trim().toUpperCase(),
       is_active: form.is_active,
+      invite_url: inviteTrim || null,
     };
     const { error } = form.id
       ? await supabase.from('whatsapp_city_groups').update(payload).eq('id', form.id)
