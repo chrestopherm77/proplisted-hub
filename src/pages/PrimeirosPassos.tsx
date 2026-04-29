@@ -40,6 +40,7 @@ export default function PrimeirosPassos() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -48,7 +49,7 @@ export default function PrimeirosPassos() {
 
   useEffect(() => {
     const load = async () => {
-      const [mainRes, listRes] = await Promise.all([
+      const [mainRes, listRes, profileRes] = await Promise.all([
         supabase
           .from('onboarding_video')
           .select('video_url, video_type, title, description')
@@ -60,9 +61,25 @@ export default function PrimeirosPassos() {
           .eq('is_active', true)
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: true }),
+        supabase
+          .from('profiles')
+          .select('address_city, address_uf')
+          .eq('id', user!.id)
+          .maybeSingle(),
       ]);
       setMain((mainRes.data as MainVideo) ?? null);
       setPlaylist((listRes.data as PlaylistItem[]) ?? []);
+
+      const city = (profileRes.data as { address_city?: string | null } | null)?.address_city;
+      const uf = (profileRes.data as { address_uf?: string | null } | null)?.address_uf;
+      if (city && uf) {
+        const { data: invite } = await supabase.rpc('get_invite_url_for_city', {
+          p_city: city,
+          p_uf: uf,
+        });
+        setInviteUrl((invite as string | null) || null);
+      }
+
       setLoading(false);
     };
     if (user) load();
