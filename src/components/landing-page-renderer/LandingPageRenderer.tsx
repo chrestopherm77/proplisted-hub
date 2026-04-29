@@ -75,15 +75,25 @@ export function LandingPageRenderer({ theme, content }: Props) {
               {content.header.brand_name}
             </span>
           )}
-          <Button
-            size="lg"
-            asChild
-            style={{ backgroundColor: theme.primary, color: '#fff' }}
-          >
-            <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+          {content.hero.cta_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
               {content.hero.cta_label}
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
+              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+                {content.hero.cta_label}
+              </a>
+            </Button>
+          )}
         </div>
       </header>
 
