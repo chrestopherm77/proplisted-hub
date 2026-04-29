@@ -92,23 +92,23 @@ export default function PrimeirosPassos() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">{selected.title}</h1>
+      <div className="mx-auto py-4 md:py-8 px-0 md:px-4 max-w-none md:max-w-7xl">
+        <div className="text-center mb-6 md:mb-8 px-4">
+          <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-3">{selected.title}</h1>
           {selected.description && (
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
               {selected.description}
             </p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Player principal */}
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden shadow-lg">
-              <CardContent className="p-3 md:p-4">
+            <Card className="overflow-hidden rounded-none md:rounded-lg border-0 md:border shadow-none md:shadow-lg">
+              <CardContent className="p-0 md:p-4">
                 {loading ? (
-                  <div className="aspect-video w-full rounded-lg bg-muted flex items-center justify-center">
+                  <div className="aspect-video w-full md:rounded-lg bg-muted flex items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
@@ -123,7 +123,7 @@ export default function PrimeirosPassos() {
           </div>
 
           {/* Playlist */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 px-4 md:px-0">
             <h2 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
               Próximos vídeos
             </h2>
@@ -132,7 +132,7 @@ export default function PrimeirosPassos() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="space-y-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-2">
+              <div className="space-y-0 md:space-y-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-2 -mx-4 md:mx-0">
                 {/* Item destaque (vídeo principal) */}
                 {main?.video_url && (
                   <PlaylistCard
@@ -158,7 +158,7 @@ export default function PrimeirosPassos() {
                   />
                 ))}
                 {!main?.video_url && playlist.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-8 px-4">
                     Nenhum vídeo disponível ainda.
                   </p>
                 )}
@@ -167,7 +167,7 @@ export default function PrimeirosPassos() {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto px-4 md:px-0">
           <Button
             size="lg"
             variant="default"
@@ -219,12 +219,12 @@ function PlaylistCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-lg border transition-all hover:bg-accent/50 group ${
-        active ? 'border-primary bg-accent/30' : 'border-border'
+      className={`w-full text-left transition-all hover:bg-accent/50 group border-b md:border md:rounded-lg ${
+        active ? 'md:border-primary bg-accent/30' : 'border-border'
       }`}
     >
-      <div className="flex gap-3 p-2">
-        <div className="w-28 aspect-video rounded bg-muted overflow-hidden flex-shrink-0 relative">
+      <div className="flex gap-3 p-3 md:p-2">
+        <div className="w-36 md:w-28 aspect-video rounded bg-muted overflow-hidden flex-shrink-0 relative">
           {computedThumb ? (
             <img
               src={computedThumb}
