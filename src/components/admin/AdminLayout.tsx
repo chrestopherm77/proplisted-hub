@@ -36,6 +36,7 @@ import {
   PlayCircle,
   Video,
   LifeBuoy,
+  MessageSquare,
 } from 'lucide-react';
 
 interface AdminNavItem {
