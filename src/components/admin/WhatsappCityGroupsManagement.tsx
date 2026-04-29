@@ -124,9 +124,18 @@ export function WhatsappCityGroupsManagement() {
         <Card className="p-6 text-center text-muted-foreground">Nenhum mapeamento cadastrado.</Card>
       ) : (
         <div className="space-y-4">
-          {Object.entries(grouped).map(([label, items]) => (
+          {Object.entries(grouped).map(([label, items]) => {
+            const invite = items.find(i => i.invite_url)?.invite_url;
+            return (
             <Card key={label} className="p-4">
-              <div className="font-semibold mb-3">{label}</div>
+              <div className="font-semibold mb-1">{label}</div>
+              {invite ? (
+                <a href={invite} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline break-all mb-3 inline-block">
+                  {invite}
+                </a>
+              ) : (
+                <div className="text-xs text-muted-foreground mb-3">Sem link de convite</div>
+              )}
               <div className="space-y-2">
                 {items.map(r => (
                   <div key={r.id} className="flex items-center justify-between border rounded p-2">
@@ -144,7 +153,8 @@ export function WhatsappCityGroupsManagement() {
                 ))}
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
