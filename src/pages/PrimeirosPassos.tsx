@@ -1,132 +1,173 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { PlayCircle, ShoppingBag, Coins, Loader2 } from 'lucide-react';
+import { VideoPlayer } from '@/components/onboarding/VideoPlayer';
 
-interface OnboardingVideo {
+interface MainVideo {
   video_url: string | null;
   video_type: 'url' | 'mp4';
   title: string | null;
   description: string | null;
 }
 
-function getYouTubeId(url: string): string | null {
-  const m = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
-  );
-  return m ? m[1] : null;
+interface PlaylistItem {
+  id: string;
+  title: string;
+  topic: string | null;
+  video_url: string;
+  video_type: 'url' | 'mp4';
+  thumbnail_url: string | null;
+  description: string | null;
 }
 
-function getVimeoId(url: string): string | null {
-  const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  return m ? m[1] : null;
+interface SelectedVideo {
+  url: string | null;
+  type: 'url' | 'mp4';
+  title: string;
+  description: string | null;
 }
 
 export default function PrimeirosPassos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [video, setVideo] = useState<OnboardingVideo | null>(null);
+  const [main, setMain] = useState<MainVideo | null>(null);
+  const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
+    if (!user) navigate('/auth');
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('onboarding_video')
-        .select('video_url, video_type, title, description')
-        .limit(1)
-        .maybeSingle();
-      setVideo((data as OnboardingVideo) ?? null);
+      const [mainRes, listRes] = await Promise.all([
+        supabase
+          .from('onboarding_video')
+          .select('video_url, video_type, title, description')
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('onboarding_videos')
+          .select('id, title, topic, video_url, video_type, thumbnail_url, description')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true }),
+      ]);
+      setMain((mainRes.data as MainVideo) ?? null);
+      setPlaylist((listRes.data as PlaylistItem[]) ?? []);
       setLoading(false);
     };
     if (user) load();
   }, [user]);
 
-  const renderPlayer = () => {
-    if (!video?.video_url) {
-      return (
-        <div className="aspect-video w-full rounded-lg bg-muted flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border">
-          <PlayCircle className="h-16 w-16 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground text-center px-4">
-            Vídeo em breve. O administrador irá adicioná-lo em breve.
-          </p>
-        </div>
-      );
+  const selected: SelectedVideo = useMemo(() => {
+    if (selectedId) {
+      const item = playlist.find((p) => p.id === selectedId);
+      if (item) {
+        return {
+          url: item.video_url,
+          type: item.video_type,
+          title: item.title,
+          description: item.description,
+        };
+      }
     }
-
-    if (video.video_type === 'mp4') {
-      return (
-        <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
-          <video
-            controls
-            className="w-full h-full"
-            src={video.video_url}
-            preload="metadata"
-          >
-            Seu navegador não suporta vídeo HTML5.
-          </video>
-        </div>
-      );
-    }
-
-    // URL externa: YouTube ou Vimeo
-    const yt = getYouTubeId(video.video_url);
-    const vm = getVimeoId(video.video_url);
-    let embedSrc = video.video_url;
-    if (yt) embedSrc = `https://www.youtube.com/embed/${yt}`;
-    else if (vm) embedSrc = `https://player.vimeo.com/video/${vm}`;
-
-    return (
-      <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
-        <iframe
-          src={embedSrc}
-          title={video.title || 'Primeiros Passos'}
-          className="w-full h-full"
-          frameBorder={0}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
-    );
-  };
+    return {
+      url: main?.video_url ?? null,
+      type: main?.video_type ?? 'url',
+      title: main?.title || 'Bem-vindo ao Conecta&Imob!',
+      description:
+        main?.description ||
+        'Assista ao vídeo abaixo e descubra como aproveitar ao máximo a plataforma.',
+    };
+  }, [selectedId, playlist, main]);
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            {video?.title || 'Bem-vindo ao Conecta&Imob!'}
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {video?.description ||
-              'Assista ao vídeo abaixo e descubra como aproveitar ao máximo a plataforma.'}
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">{selected.title}</h1>
+          {selected.description && (
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              {selected.description}
+            </p>
+          )}
         </div>
 
-        <Card className="overflow-hidden shadow-lg">
-          <CardContent className="p-4 md:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Player principal */}
+          <div className="lg:col-span-2">
+            <Card className="overflow-hidden shadow-lg">
+              <CardContent className="p-3 md:p-4">
+                {loading ? (
+                  <div className="aspect-video w-full rounded-lg bg-muted flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <VideoPlayer
+                    url={selected.url}
+                    type={selected.type}
+                    title={selected.title}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Playlist */}
+          <div className="lg:col-span-1">
+            <h2 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+              Próximos vídeos
+            </h2>
             {loading ? (
-              <div className="aspect-video w-full rounded-lg bg-muted flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              renderPlayer()
+              <div className="space-y-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-2">
+                {/* Item destaque (vídeo principal) */}
+                {main?.video_url && (
+                  <PlaylistCard
+                    title={main.title || 'Boas-vindas'}
+                    topic="Destaque"
+                    thumb={null}
+                    type={main.video_type}
+                    url={main.video_url}
+                    active={!selectedId}
+                    onClick={() => setSelectedId(null)}
+                  />
+                )}
+                {playlist.map((p) => (
+                  <PlaylistCard
+                    key={p.id}
+                    title={p.title}
+                    topic={p.topic}
+                    thumb={p.thumbnail_url}
+                    type={p.video_type}
+                    url={p.video_url}
+                    active={selectedId === p.id}
+                    onClick={() => setSelectedId(p.id)}
+                  />
+                ))}
+                {!main?.video_url && playlist.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum vídeo disponível ainda.
+                  </p>
+                )}
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
           <Button
             size="lg"
             variant="default"
@@ -146,11 +187,69 @@ export default function PrimeirosPassos() {
             Comprar Créditos
           </Button>
         </div>
-
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Você pode rever este vídeo a qualquer momento clicando na sua foto de perfil no canto superior direito.
-        </p>
       </div>
     </Layout>
+  );
+}
+
+function PlaylistCard({
+  title,
+  topic,
+  thumb,
+  type,
+  url,
+  active,
+  onClick,
+}: {
+  title: string;
+  topic: string | null;
+  thumb: string | null;
+  type: 'url' | 'mp4';
+  url: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  // Fallback automático para Vimeo se thumb não vier
+  const vimeoMatch = !thumb && type === 'url' && url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const ytMatch = !thumb && type === 'url' && url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+  const computedThumb =
+    thumb ||
+    (ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg` : null);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left rounded-lg border transition-all hover:bg-accent/50 group ${
+        active ? 'border-primary bg-accent/30' : 'border-border'
+      }`}
+    >
+      <div className="flex gap-3 p-2">
+        <div className="w-28 aspect-video rounded bg-muted overflow-hidden flex-shrink-0 relative">
+          {computedThumb ? (
+            <img
+              src={computedThumb}
+              alt={title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-muted">
+              <PlayCircle className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity">
+            <PlayCircle className="h-8 w-8 text-white" />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0 py-1">
+          {topic && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mb-1">
+              {topic}
+            </Badge>
+          )}
+          <p className="text-sm font-medium leading-snug line-clamp-2">{title}</p>
+        </div>
+      </div>
+    </button>
   );
 }
