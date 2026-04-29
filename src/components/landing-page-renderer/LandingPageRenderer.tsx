@@ -1,11 +1,16 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle } from 'lucide-react';
+import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle, Loader2 } from 'lucide-react';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import type { LPContent, LPSection, LPTheme } from '@/components/admin/landing-page/types';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { LPContent, LPCTAForm, LPCTAMode, LPSection, LPTheme } from '@/components/admin/landing-page/types';
 
 interface Props {
   theme: LPTheme;
