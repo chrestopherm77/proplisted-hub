@@ -121,7 +121,7 @@ export default function PrimeirosPassos() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Player principal */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
             <Card className="overflow-hidden rounded-none md:rounded-lg border-0 md:border shadow-none md:shadow-lg">
               <CardContent className="p-0 md:p-4">
                 {loading ? (
@@ -137,6 +137,31 @@ export default function PrimeirosPassos() {
                 )}
               </CardContent>
             </Card>
+
+            {inviteUrl && (
+              <Card className="mx-4 md:mx-0 border-2 border-[#25D366]/40 bg-[#25D366]/5">
+                <CardContent className="p-4 md:p-5 flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full bg-[#25D366] text-white p-2 flex-shrink-0">
+                      <MessageCircle className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm md:text-base font-medium leading-snug">
+                      Entre no grupo para ficar por dentro das buscas de imóveis na sua região
+                    </p>
+                  </div>
+                  <Button
+                    asChild
+                    className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white"
+                    size="lg"
+                  >
+                    <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="mr-2 h-5 w-5" />
+                      Entrar no grupo do WhatsApp
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Playlist */}
