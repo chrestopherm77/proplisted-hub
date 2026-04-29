@@ -12,7 +12,6 @@ import { PropertyCard } from '@/components/portal/PropertyCard';
 import { PropertyMap } from '@/components/portal/PropertyMap';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PROPERTY_TYPES, OPERATION_TYPES, ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
-import { PROPERTY_TYPES as _ } from '@/lib/propertyUtils';
 import { PROPERTY_TYPES, OPERATION_TYPES } from '@/lib/propertyUtils';
 
 interface Property {
