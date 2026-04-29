@@ -99,6 +99,7 @@ export interface LPContent {
     subtitle: string;
     cta_label: string;
     cta_url: string;
+    cta_mode?: LPCTAMode;
   };
   features: LPFeature[];
   media: LPMedia;
@@ -115,8 +116,14 @@ export interface LPContent {
     subtitle: string;
     button_label: string;
     button_url: string;
+    button_mode?: LPCTAMode;
   };
-  floating_ctas: LPFloatingCTA[];
+  /** Configuração compartilhada do formulário aberto pelos CTAs com mode='form'. */
+  cta_form?: LPCTAForm;
+  /** Único botão flutuante (legado: floating_ctas[]). */
+  floating_cta?: LPFloatingCTA;
+  /** @deprecated mantido para retrocompat. Use floating_cta. */
+  floating_ctas?: LPFloatingCTA[];
   socials: {
     instagram: string;
     linkedin: string;
