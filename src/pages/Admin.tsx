@@ -39,7 +39,8 @@ type Section =
   | 'home-page'
   | 'onboarding-video'
   | 'public-videos'
-  | 'support';
+  | 'support'
+  | 'whatsapp-groups';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
