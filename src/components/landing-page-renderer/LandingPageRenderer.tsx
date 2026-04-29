@@ -30,9 +30,23 @@ function getIcon(name: string) {
 
 export function LandingPageRenderer({ theme, content }: Props) {
   const finalCtaRef = useRef<HTMLDivElement>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const scrollToFinalCta = () => {
     finalCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const ctaForm = content.cta_form;
+  const openForm = () => {
+    if (ctaForm && ctaForm.fields?.length) setFormOpen(true);
+    else scrollToFinalCta();
+  };
+
+  const handleCtaClick = (mode: LPCTAMode | undefined, url: string) => (e: React.MouseEvent) => {
+    if (mode === 'form') {
+      e.preventDefault();
+      openForm();
+    }
   };
 
   const styleVars = {
@@ -44,6 +58,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
   } as React.CSSProperties;
 
   const ytId = content.media?.type === 'youtube' ? extractYoutubeId(content.media.url) : null;
+  const floating = content.floating_cta;
 
   return (
     <div
