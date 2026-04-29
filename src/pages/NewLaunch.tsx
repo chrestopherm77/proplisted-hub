@@ -282,6 +282,12 @@ const NewLaunch = () => {
         }).catch(err => console.error('notify-launch-alert-match error:', err));
       } catch {}
 
+      // Fire-and-forget: disparo em grupo de WhatsApp por cidade
+      try {
+        supabase.functions.invoke('notify-launch-group', { body: { launchId } })
+          .catch(err => console.error('notify-launch-group error:', err));
+      } catch {}
+
       toast({ title: 'Lançamento publicado com sucesso!' });
       navigate('/launches');
     } catch (err: any) {
