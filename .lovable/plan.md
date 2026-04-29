@@ -1,27 +1,55 @@
-## Objetivo
-Garantir que após o cadastro (plano Free) **e** após pagamento de planos pagos, o usuário seja redirecionado para `/primeiros-passos`.
+## Nova seção Admin: "Link Público"
 
-## Estado atual
-- **Cadastro (plano Free)**: já redireciona para `/primeiros-passos` corretamente (`MultiStepSignup.tsx` linha 463). Nenhuma mudança necessária aqui.
-- **Pagamento de plano pago**: o `CheckoutSuccess.tsx` redireciona para `/my-leads` quando `type !== 'credits'`. Precisa mudar para `/primeiros-passos`.
-- **Compra de créditos avulsos**: redireciona para `/leads`. **Manter como está** (não é assinatura de plano).
+Criar uma nova área no painel admin onde você faz upload de vídeos e cada um gera uma página pública (link compartilhável) para qualquer pessoa assistir, sem login.
 
-## Mudanças
+### O que será feito
 
-### `src/pages/CheckoutSuccess.tsx`
-Trocar o destino de planos pagos de `/my-leads` para `/primeiros-passos`:
+**1. Tabela no banco** (`public_videos`)
+Armazena os vídeos publicados com:
+- `id`, `slug` (usado na URL pública, ex: `/v/meu-video`)
+- `title` (título exibido na página)
+- `description` (opcional)
+- `video_url`, `video_type` (`mp4` ou `url` — YouTube/Vimeo)
+- `is_active`, `view_count`, timestamps
 
-1. **Linha 145** — countdown de redirecionamento:
-   - De: `const target = isCredits ? '/leads' : '/my-leads';`
-   - Para: `const target = isCredits ? '/leads' : '/primeiros-passos';`
+RLS: SELECT público apenas dos ativos; INSERT/UPDATE/DELETE apenas para `MASTER_ADMIN` (via `has_role`).
 
-2. **Linha 159** — destino do botão e label:
-   - `redirectTarget`: `isCredits ? '/leads' : '/primeiros-passos'`
-   - `redirectLabel`: `isCredits ? 'Ver leads disponíveis' : 'Ir para Primeiros Passos'`
+**2. Reutilização do storage**
+Usa o bucket `onboarding-videos` (já público) com prefixo `public/` para os arquivos MP4. Sem precisar criar bucket novo.
 
-A lógica de polling, créditos avulsos e botões de fallback (linha 206 — "Ir para leads disponíveis" no caso de pagamento de créditos não confirmado) permanecem inalterados.
+**3. Nova página admin** — `/admin/public-videos`
+- Item no menu lateral, grupo "Conteúdo", ícone `Video` (entre "Primeiros Passos" e os demais).
+- Lista os vídeos cadastrados em cards com: thumbnail/ícone, título, slug, status, contador de views, botão para copiar o link público, editar e excluir.
+- Botão "Adicionar vídeo" abre dialog com:
+  - Título (obrigatório)
+  - Slug (auto-gerado a partir do título; editável; validado para `[a-z0-9-]`)
+  - Descrição
+  - Origem: URL (YouTube/Vimeo) **ou** Upload MP4/WebM (até 100MB)
+  - Switch "Ativo"
+- Botão "Copiar link" copia a URL completa (`window.location.origin + /v/<slug>`).
 
-## Resumo do fluxo final
-- Cadastro Free → `/primeiros-passos` (já funciona)
-- Pagamento de plano pago confirmado → `/primeiros-passos` (novo)
-- Compra de créditos avulsos confirmada → `/leads` (mantido)
+**4. Nova página pública** — `/v/:slug`
+- Acessível sem login.
+- Layout limpo: header com logo da marca, título grande, descrição, player de vídeo (16:9, ocupa quase toda a tela em mobile, centrado em desktop), `lang="pt-BR"`.
+- Reutiliza o componente `VideoPlayer` existente (já trata MP4/YouTube/Vimeo).
+- Incrementa `view_count` ao carregar (via RPC `increment_public_video_view`).
+- Se slug não existe ou está inativo → mostra mensagem amigável "Vídeo não disponível".
+
+### Detalhes técnicos
+
+- **Migração SQL**: cria tabela `public_videos`, RLS, função `increment_public_video_view(p_slug text)` (SECURITY DEFINER) e índice em `slug`.
+- **Rotas a adicionar em `src/App.tsx`**:
+  - `/admin/public-videos` → `<Admin section="public-videos" />`
+  - `/v/:slug` → `<PublicVideoPage />` (registrar **antes** do catch-all `/:customSlug`)
+- **Arquivos novos**:
+  - `src/components/admin/PublicVideosManagement.tsx` (lista + dialog de criação/edição + upload).
+  - `src/pages/PublicVideo.tsx` (página pública).
+- **Arquivos editados**:
+  - `src/App.tsx` (rotas).
+  - `src/pages/Admin.tsx` (registra `'public-videos': PublicVideosManagement`).
+  - `src/components/admin/AdminLayout.tsx` (item de menu no grupo "Conteúdo").
+  - `src/lib/reservedSlugs.ts` e o trigger `validate_landing_page_slug` (adicionar `'v'` aos reservados, para não conflitar com landing pages customizadas).
+
+### Resultado para você
+
+No admin, item **"Link Público"**. Cria 2 vídeos, cada um com seu título e slug, copia o link (ex: `proplisted-hub.lovable.app/v/treinamento-1`) e envia. Quem abrir vê a página com o título e o vídeo tocando direto, sem login.

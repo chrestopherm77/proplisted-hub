@@ -1527,6 +1527,48 @@ export type Database = {
         }
         Relationships: []
       }
+      public_videos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          slug: string
+          title: string
+          updated_at: string
+          video_type: string
+          video_url: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+          video_type?: string
+          video_url: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+          video_type?: string
+          video_url?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       purchases: {
         Row: {
           amount: number
@@ -2042,6 +2084,10 @@ export type Database = {
       }
       increment_offer_count: {
         Args: { p_search_id: string }
+        Returns: undefined
+      }
+      increment_public_video_view: {
+        Args: { p_slug: string }
         Returns: undefined
       }
       increment_purchase_count: {

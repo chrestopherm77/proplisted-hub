@@ -16,6 +16,7 @@ import { LandingPagesManagement } from '@/components/admin/LandingPagesManagemen
 import { LandingPageEditor } from '@/components/admin/LandingPageEditor';
 import { HomePageEditor } from '@/components/admin/home-page/HomePageEditor';
 import { OnboardingVideoManagement } from '@/components/admin/OnboardingVideoManagement';
+import { PublicVideosManagement } from '@/components/admin/PublicVideosManagement';
 import { SupportManagement } from '@/components/admin/SupportManagement';
 
 type Section =
@@ -36,6 +37,7 @@ type Section =
   | 'landing-page-editor'
   | 'home-page'
   | 'onboarding-video'
+  | 'public-videos'
   | 'support';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
@@ -56,6 +58,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'landing-page-editor': LandingPageEditor,
   'home-page': HomePageEditor,
   'onboarding-video': OnboardingVideoManagement,
+  'public-videos': PublicVideosManagement,
   support: SupportManagement,
 };
 
