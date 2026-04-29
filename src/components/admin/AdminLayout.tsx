@@ -67,6 +67,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
   { title: 'Link Público', url: '/admin/public-videos', icon: Video, group: 'Conteúdo' },
+  { title: 'Grupos WhatsApp', url: '/admin/whatsapp-groups', icon: MessageSquare, group: 'Conteúdo' },
 ];
 
 const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Conteúdo'];
