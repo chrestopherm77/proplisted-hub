@@ -18,6 +18,7 @@ import { HomePageEditor } from '@/components/admin/home-page/HomePageEditor';
 import { OnboardingVideoManagement } from '@/components/admin/OnboardingVideoManagement';
 import { PublicVideosManagement } from '@/components/admin/PublicVideosManagement';
 import { SupportManagement } from '@/components/admin/SupportManagement';
+import { WhatsappCityGroupsManagement } from '@/components/admin/WhatsappCityGroupsManagement';
 
 type Section =
   | 'dashboard'
