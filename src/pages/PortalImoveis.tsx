@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Loader2, Building2, List, Map as MapIcon } from 'lucide-react';
+import { Search, Plus, Loader2, Building2, List, Map as MapIcon, X } from 'lucide-react';
 import { PropertyCard } from '@/components/portal/PropertyCard';
 import { PropertyMap } from '@/components/portal/PropertyMap';
-import { PROPERTY_TYPES, OPERATION_TYPES } from '@/lib/propertyUtils';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
+import { PROPERTY_TYPES, OPERATION_TYPES, ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
+
 
 interface Property {
   id: string;
@@ -42,8 +44,15 @@ const PortalImoveis = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [opFilter, setOpFilter] = useState('ALL');
+  const [stateFilter, setStateFilter] = useState('ALL');
+  const [cityFilter, setCityFilter] = useState('ALL');
+  const [zoneFilter, setZoneFilter] = useState('ALL');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  const { states, cities, fetchCities } = useIBGELocation();
 
   useEffect(() => {
     if (authLoading) return;
@@ -53,6 +62,13 @@ const PortalImoveis = () => {
     }
     fetchProperties();
   }, [authLoading, user]);
+
+  useEffect(() => {
+    if (stateFilter && stateFilter !== 'ALL') {
+      fetchCities(stateFilter);
+    }
+    setCityFilter('ALL');
+  }, [stateFilter, fetchCities]);
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -64,12 +80,52 @@ const PortalImoveis = () => {
     setLoading(false);
   };
 
+  const minNum = useMemo(() => parseCurrencyInput(priceMin), [priceMin]);
+  const maxNum = useMemo(() => parseCurrencyInput(priceMax), [priceMax]);
+
+  const hasAnyFilter =
+    !!search ||
+    typeFilter !== 'ALL' ||
+    opFilter !== 'ALL' ||
+    stateFilter !== 'ALL' ||
+    cityFilter !== 'ALL' ||
+    zoneFilter !== 'ALL' ||
+    !!priceMin ||
+    !!priceMax;
+
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter('ALL');
+    setOpFilter('ALL');
+    setStateFilter('ALL');
+    setCityFilter('ALL');
+    setZoneFilter('ALL');
+    setPriceMin('');
+    setPriceMax('');
+  };
+
   const filtered = useMemo(() => {
     return properties.filter((p) => {
       if (tab === 'mine' && p.user_id !== user?.id) return false;
       if (tab === 'all' && !p.is_active) return false;
       if (typeFilter !== 'ALL' && p.property_type !== typeFilter) return false;
       if (opFilter !== 'ALL' && p.operation_type !== opFilter) return false;
+      if (stateFilter !== 'ALL' && p.state !== stateFilter) return false;
+      if (cityFilter !== 'ALL' && p.city !== cityFilter) return false;
+      if (zoneFilter !== 'ALL' && (p.zone || '') !== zoneFilter) return false;
+
+      if (minNum != null || maxNum != null) {
+        // Define o preço a comparar conforme a operação selecionada
+        let price: number | null = null;
+        if (opFilter === 'RENT') price = p.price_rent;
+        else if (opFilter === 'SALE' || opFilter === 'BOTH') price = p.price_sale;
+        else price = p.price_sale ?? p.price_rent;
+
+        if (price == null) return false;
+        if (minNum != null && price < minNum) return false;
+        if (maxNum != null && price > maxNum) return false;
+      }
+
       if (search) {
         const q = search.toLowerCase();
         const hay = `${p.title || ''} ${p.reference_code} ${p.city} ${p.neighborhood || ''}`.toLowerCase();
@@ -77,7 +133,7 @@ const PortalImoveis = () => {
       }
       return true;
     });
-  }, [properties, tab, typeFilter, opFilter, search, user?.id]);
+  }, [properties, tab, typeFilter, opFilter, stateFilter, cityFilter, zoneFilter, minNum, maxNum, search, user?.id]);
 
   return (
     <Layout>
@@ -130,16 +186,27 @@ const PortalImoveis = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="relative sm:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por código, bairro, cidade..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Select value={stateFilter} onValueChange={setStateFilter}>
+            <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
+            <SelectContent className="z-[1100] max-h-72">
+              <SelectItem value="ALL">Todos os estados</SelectItem>
+              {states.map((s) => (
+                <SelectItem key={s.sigla} value={s.sigla}>{s.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={cityFilter} onValueChange={setCityFilter} disabled={stateFilter === 'ALL'}>
+            <SelectTrigger>
+              <SelectValue placeholder={stateFilter === 'ALL' ? 'Selecione o estado' : 'Cidade'} />
+            </SelectTrigger>
+            <SelectContent className="z-[1100] max-h-72">
+              <SelectItem value="ALL">Todas as cidades</SelectItem>
+              {cities.map((c) => (
+                <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent className="z-[1100]">
@@ -150,15 +217,57 @@ const PortalImoveis = () => {
             </SelectContent>
           </Select>
           <Select value={opFilter} onValueChange={setOpFilter}>
-            <SelectTrigger><SelectValue placeholder="Operação" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Objetivo" /></SelectTrigger>
             <SelectContent className="z-[1100]">
-              <SelectItem value="ALL">Todas operações</SelectItem>
+              <SelectItem value="ALL">Todos objetivos</SelectItem>
               {OPERATION_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Select value={zoneFilter} onValueChange={setZoneFilter}>
+            <SelectTrigger><SelectValue placeholder="Zona" /></SelectTrigger>
+            <SelectContent className="z-[1100]">
+              <SelectItem value="ALL">Todas as zonas</SelectItem>
+              {ZONE_OPTIONS.map((z) => (
+                <SelectItem key={z} value={z}>{z}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Valor mínimo"
+            value={priceMin}
+            onChange={(e) => setPriceMin(formatCurrencyInput(e.target.value))}
+            inputMode="numeric"
+          />
+          <Input
+            placeholder="Valor máximo"
+            value={priceMax}
+            onChange={(e) => setPriceMax(formatCurrencyInput(e.target.value))}
+            inputMode="numeric"
+          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar código, bairro..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        {hasAnyFilter && (
+          <div className="mb-6 flex justify-end">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
+              <X className="h-4 w-4" />
+              Limpar filtros
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-16">
