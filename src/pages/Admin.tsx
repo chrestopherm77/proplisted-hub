@@ -62,6 +62,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'onboarding-video': OnboardingVideoManagement,
   'public-videos': PublicVideosManagement,
   support: SupportManagement,
+  'whatsapp-groups': WhatsappCityGroupsManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
