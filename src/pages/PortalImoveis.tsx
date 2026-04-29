@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Loader2, Building2, List, Map as MapIcon } from 'lucide-react';
+import { Search, Plus, Loader2, Building2, List, Map as MapIcon, X } from 'lucide-react';
 import { PropertyCard } from '@/components/portal/PropertyCard';
 import { PropertyMap } from '@/components/portal/PropertyMap';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
+import { ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
 import { PROPERTY_TYPES, OPERATION_TYPES } from '@/lib/propertyUtils';
 
 interface Property {
