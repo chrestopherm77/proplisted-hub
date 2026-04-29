@@ -31,9 +31,27 @@ export interface LPMedia {
   caption: string;
 }
 
+export type LPCTAMode = 'link' | 'form';
+
+export interface LPCTAFormField {
+  id: string;
+  label: string;
+  type: 'text' | 'email' | 'phone';
+  required: boolean;
+}
+
+export interface LPCTAForm {
+  intro_text: string;
+  submit_label: string;
+  redirect_url: string;
+  fields: LPCTAFormField[];
+}
+
 export interface LPFloatingCTA {
   label: string;
   enabled: boolean;
+  mode?: LPCTAMode;
+  url?: string;
 }
 
 // ===== Seções dinâmicas =====
