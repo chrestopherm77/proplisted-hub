@@ -258,17 +258,29 @@ export function LandingPageRenderer({ theme, content }: Props) {
           {content.final_cta.subtitle && (
             <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">{content.final_cta.subtitle}</p>
           )}
-          <Button
-            size="lg"
-            asChild
-            className="text-lg px-10 h-14"
-            style={{ backgroundColor: theme.accent, color: '#fff' }}
-          >
-            <a href={content.final_cta.button_url} target="_blank" rel="noopener noreferrer">
+          {content.final_cta.button_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              className="text-lg px-10 h-14"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
               {content.final_cta.button_label}
               <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              className="text-lg px-10 h-14"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
+              <a href={content.final_cta.button_url} target="_blank" rel="noopener noreferrer">
+                {content.final_cta.button_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+            </Button>
+          )}
         </div>
       </section>
 
