@@ -480,31 +480,159 @@ export function LandingPageEditor() {
                     onChange={(e) => updateContent('final_cta', { ...content.final_cta, subtitle: e.target.value })} />
                   <Input placeholder="Texto do botão" value={content.final_cta.button_label}
                     onChange={(e) => updateContent('final_cta', { ...content.final_cta, button_label: e.target.value })} />
-                  <Input placeholder="Link do botão (https://wa.me/...)" value={content.final_cta.button_url}
-                    onChange={(e) => updateContent('final_cta', { ...content.final_cta, button_url: e.target.value })} />
+                  <div>
+                    <Label>Tipo do botão</Label>
+                    <Select
+                      value={content.final_cta.button_mode || 'link'}
+                      onValueChange={(v) => updateContent('final_cta', { ...content.final_cta, button_mode: v as 'link' | 'form' })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="link">Link direto (URL)</SelectItem>
+                        <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(content.final_cta.button_mode || 'link') === 'link' && (
+                    <Input placeholder="Link do botão (https://wa.me/...)" value={content.final_cta.button_url}
+                      onChange={(e) => updateContent('final_cta', { ...content.final_cta, button_url: e.target.value })} />
+                  )}
                 </AccordionContent>
               </AccordionItem>
 
-              {/* FLOATING CTAs */}
-              <AccordionItem value="floating" className="border rounded-md px-3">
-                <AccordionTrigger>CTAs flutuantes (rolam até CTA final)</AccordionTrigger>
+              {/* FORMULÁRIO DE CADASTRO (compartilhado pelos CTAs com modo Formulário) */}
+              <AccordionItem value="cta_form" className="border rounded-md px-3">
+                <AccordionTrigger>Formulário de Cadastro</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
-                  {content.floating_ctas.map((c, i) => (
-                    <Card key={i} className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold">Botão {i + 1}</span>
-                        <Switch checked={c.enabled} onCheckedChange={(v) => {
-                          const arr = [...content.floating_ctas]; arr[i] = { ...c, enabled: v };
-                          updateContent('floating_ctas', arr);
-                        }} />
+                  <p className="text-xs text-muted-foreground">
+                    Este formulário é aberto quando qualquer botão CTA estiver no modo "Formulário".
+                  </p>
+                  <div>
+                    <Label>Mensagem no topo do formulário (opcional)</Label>
+                    <Input
+                      value={content.cta_form?.intro_text || ''}
+                      placeholder="Ex: Preencha para entrar no grupo"
+                      onChange={(e) => updateContent('cta_form', { ...content.cta_form!, intro_text: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Texto do botão de envio</Label>
+                    <Input
+                      value={content.cta_form?.submit_label || ''}
+                      placeholder="Ex: Quero entrar no grupo"
+                      onChange={(e) => updateContent('cta_form', { ...content.cta_form!, submit_label: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Redirecionar após cadastro (link do grupo, etc.)</Label>
+                    <Input
+                      value={content.cta_form?.redirect_url || ''}
+                      placeholder="https://chat.whatsapp.com/..."
+                      onChange={(e) => updateContent('cta_form', { ...content.cta_form!, redirect_url: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Campos do formulário</Label>
+                    {(content.cta_form?.fields || []).map((f, i) => {
+                      const fields = content.cta_form!.fields;
+                      const update = (patch: Partial<typeof f>) => {
+                        const arr = [...fields]; arr[i] = { ...f, ...patch };
+                        updateContent('cta_form', { ...content.cta_form!, fields: arr });
+                      };
+                      return (
+                        <Card key={f.id} className="p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold">Campo {i + 1}</span>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              const arr = fields.filter((_, idx) => idx !== i);
+                              updateContent('cta_form', { ...content.cta_form!, fields: arr });
+                            }}><Trash2 className="h-3 w-3" /></Button>
+                          </div>
+                          <Input value={f.label} placeholder="Rótulo do campo (ex: Nome)"
+                            onChange={(e) => update({ label: e.target.value })} />
+                          <div className="flex gap-2 items-center">
+                            <Select value={f.type} onValueChange={(v) => update({ type: v as 'text'|'email'|'phone' })}>
+                              <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="text">Texto</SelectItem>
+                                <SelectItem value="phone">Telefone</SelectItem>
+                                <SelectItem value="email">E-mail</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <label className="flex items-center gap-2 text-xs whitespace-nowrap">
+                              <Switch checked={f.required} onCheckedChange={(v) => update({ required: v })} />
+                              Obrigatório
+                            </label>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const newField = {
+                        id: `f_${Date.now().toString(36)}`,
+                        label: 'Novo campo',
+                        type: 'text' as const,
+                        required: false,
+                      };
+                      updateContent('cta_form', {
+                        ...content.cta_form!,
+                        fields: [...(content.cta_form?.fields || []), newField],
+                      });
+                    }}>
+                      <Plus className="h-3 w-3" /> Adicionar campo
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* FLOATING CTA (único, centralizado) */}
+              <AccordionItem value="floating" className="border rounded-md px-3">
+                <AccordionTrigger>Botão flutuante (rodapé fixo)</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <Card className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Botão flutuante</span>
+                      <label className="flex items-center gap-2 text-xs">
+                        Ativado
+                        <Switch
+                          checked={!!content.floating_cta?.enabled}
+                          onCheckedChange={(v) => updateContent('floating_cta', { ...(content.floating_cta || { label: '', mode: 'link', url: '' }), enabled: v })}
+                        />
+                      </label>
+                    </div>
+                    <div>
+                      <Label>Texto do botão</Label>
+                      <Input
+                        value={content.floating_cta?.label || ''}
+                        placeholder="Ex: Quero Falar Agora"
+                        onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, mode: 'link' }), label: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Tipo do botão</Label>
+                      <Select
+                        value={content.floating_cta?.mode || 'link'}
+                        onValueChange={(v) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '' }), mode: v as 'link' | 'form' })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="link">Link direto (URL)</SelectItem>
+                          <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(content.floating_cta?.mode || 'link') === 'link' && (
+                      <div>
+                        <Label>Link</Label>
+                        <Input
+                          value={content.floating_cta?.url || ''}
+                          placeholder="https://wa.me/55..."
+                          onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '', mode: 'link' }), url: e.target.value })}
+                        />
                       </div>
-                      <Input value={c.label} placeholder="Texto do botão"
-                        onChange={(e) => {
-                          const arr = [...content.floating_ctas]; arr[i] = { ...c, label: e.target.value };
-                          updateContent('floating_ctas', arr);
-                        }} />
-                    </Card>
-                  ))}
+                    )}
+                  </Card>
                 </AccordionContent>
               </AccordionItem>
 
