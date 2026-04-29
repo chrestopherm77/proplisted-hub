@@ -20,7 +20,7 @@ interface OnboardingVideo {
   description: string | null;
 }
 
-const MAX_BYTES = 100 * 1024 * 1024;
+const MAX_BYTES = 250 * 1024 * 1024;
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(
@@ -76,7 +76,7 @@ export function OnboardingVideoManagement() {
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error('Arquivo muito grande. Máximo 100MB.');
+      toast.error('Arquivo muito grande. Máximo 250MB.');
       return;
     }
     setUploading(true);
@@ -262,7 +262,7 @@ export function OnboardingVideoManagement() {
                       ) : (
                         <Upload className="mr-2 h-4 w-4" />
                       )}
-                      {uploading ? 'Enviando...' : 'Selecionar (MP4/WebM, até 100MB)'}
+                      {uploading ? 'Enviando...' : 'Selecionar (MP4/WebM, até 250MB)'}
                     </Button>
                     {videoUrl && videoType === 'mp4' && (
                       <p className="text-xs text-muted-foreground truncate">

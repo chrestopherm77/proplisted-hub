@@ -43,7 +43,7 @@ interface PlaylistVideo {
   is_active: boolean;
 }
 
-const MAX_BYTES = 100 * 1024 * 1024;
+const MAX_BYTES = 250 * 1024 * 1024;
 
 async function fetchVimeoThumb(url: string): Promise<string | null> {
   try {
@@ -129,7 +129,7 @@ export function OnboardingPlaylistManager() {
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error('Arquivo muito grande. Máximo 100MB.');
+      toast.error('Arquivo muito grande. Máximo 250MB.');
       return;
     }
     setUploading(true);
@@ -405,7 +405,7 @@ export function OnboardingPlaylistManager() {
                   ) : (
                     <Upload className="mr-2 h-4 w-4" />
                   )}
-                  {uploading ? 'Enviando...' : 'Selecionar (MP4/WebM, até 100MB)'}
+                  {uploading ? 'Enviando...' : 'Selecionar (MP4/WebM, até 250MB)'}
                 </Button>
                 {videoUrl && (
                   <p className="text-xs text-muted-foreground truncate">
