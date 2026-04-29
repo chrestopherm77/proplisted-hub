@@ -109,17 +109,29 @@ export function LandingPageRenderer({ theme, content }: Props) {
           {content.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
-          <Button
-            size="lg"
-            asChild
-            className="text-base md:text-lg px-8 h-12"
-            style={{ backgroundColor: theme.primary, color: '#fff' }}
-          >
-            <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+          {content.hero.cta_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              className="text-base md:text-lg px-8 h-12"
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
               {content.hero.cta_label}
               <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              className="text-base md:text-lg px-8 h-12"
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
+              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+                {content.hero.cta_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+            </Button>
+          )}
         </div>
       </section>
 
