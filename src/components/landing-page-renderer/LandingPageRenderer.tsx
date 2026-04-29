@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { LPContent, LPCTAForm, LPCTAMode, LPSection, LPTheme } from '@/components/admin/landing-page/types';
+import type { LPContent, LPCTAForm, LPSection, LPTheme } from '@/components/admin/landing-page/types';
 
 interface Props {
   theme: LPTheme;
