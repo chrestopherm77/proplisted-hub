@@ -92,23 +92,23 @@ export default function PrimeirosPassos() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">{selected.title}</h1>
+      <div className="mx-auto py-4 md:py-8 px-0 md:px-4 max-w-none md:max-w-7xl">
+        <div className="text-center mb-6 md:mb-8 px-4">
+          <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-3">{selected.title}</h1>
           {selected.description && (
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
               {selected.description}
             </p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Player principal */}
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden shadow-lg">
-              <CardContent className="p-3 md:p-4">
+            <Card className="overflow-hidden rounded-none md:rounded-lg border-0 md:border shadow-none md:shadow-lg">
+              <CardContent className="p-0 md:p-4">
                 {loading ? (
-                  <div className="aspect-video w-full rounded-lg bg-muted flex items-center justify-center">
+                  <div className="aspect-video w-full md:rounded-lg bg-muted flex items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
@@ -123,7 +123,7 @@ export default function PrimeirosPassos() {
           </div>
 
           {/* Playlist */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 px-4 md:px-0">
             <h2 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
               Próximos vídeos
             </h2>
