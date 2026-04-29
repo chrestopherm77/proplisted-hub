@@ -7,36 +7,29 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const refFromUrl = (searchParams.get('ref') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
   const planFromUrl = (searchParams.get('plan') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
 
-  // Se vier ?ref= ou ?plan=, abre direto no signup
-  const [isLogin, setIsLogin] = useState(!refFromUrl && !planFromUrl);
+  // Compatibilidade: se chegar em /auth com ?ref= ou ?plan=, redireciona pra /cadastro
+  useEffect(() => {
+    if (refFromUrl || planFromUrl) {
+      const params = new URLSearchParams();
+      if (refFromUrl) params.set('ref', refFromUrl);
+      if (planFromUrl) params.set('plan', planFromUrl);
+      navigate(`/cadastro?${params.toString()}`, { replace: true });
+    }
+  }, [refFromUrl, planFromUrl, navigate]);
+
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // Persiste o plano escolhido na LP (sessionStorage), de modo que o pós-cadastro
-  // saiba para onde mandar o usuário (Planos com checkout aberto).
-  useEffect(() => {
-    if (planFromUrl) {
-      import('@/lib/pendingPlan').then(({ setPendingPlan }) => setPendingPlan(planFromUrl));
-    }
-  }, [planFromUrl]);
-
-  useEffect(() => {
-    if (refFromUrl || planFromUrl) setIsLogin(false);
-  }, [refFromUrl, planFromUrl]);
+  const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +43,6 @@ export default function Auth() {
 
       if (error) throw error;
 
-      // Check if user is active
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_active')
@@ -67,7 +59,6 @@ export default function Auth() {
         return;
       }
 
-      // Record login history
       await supabase.from('login_history').insert({ user_id: data.user.id } as any);
 
       toast({
@@ -75,12 +66,8 @@ export default function Auth() {
         description: 'Bem-vindo de volta.',
       });
 
-      // Se o usuário veio de um CTA de plano, decidir o destino:
-      // - Se já tem assinatura ATIVA nesse plano (ex.: o trigger já ativou "conexao"
-      //   no signup), não faz sentido reabrir o checkout — vai direto pra /leads.
-      // - Caso contrário, abre /planos?plan=slug pra concluir a contratação.
       const { getPendingPlan, clearPendingPlan } = await import('@/lib/pendingPlan');
-      const pending = planFromUrl || getPendingPlan();
+      const pending = getPendingPlan();
       if (pending) {
         clearPendingPlan();
         try {
@@ -103,7 +90,7 @@ export default function Auth() {
             }
           }
         } catch {
-          /* segue fluxo padrão se a verificação falhar */
+          /* segue fluxo padrão */
         }
         navigate(`/planos?plan=${pending}`);
       } else {
@@ -126,21 +113,6 @@ export default function Auth() {
     }
   };
 
-  // Show multi-step signup
-  if (!isLogin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
-        <div className="w-full max-w-lg">
-          <div className="flex justify-center mb-6">
-            <BrandLogo size="lg" />
-          </div>
-          <MultiStepSignup onSwitchToLogin={() => setIsLogin(true)} initialReferralCode={refFromUrl} />
-        </div>
-      </div>
-    );
-  }
-
-  // Login form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
       <Card className="w-full max-w-md">
@@ -180,7 +152,7 @@ export default function Auth() {
           <div className="mt-4 text-center space-y-2">
             <button
               type="button"
-              onClick={() => setIsLogin(false)}
+              onClick={() => navigate('/cadastro')}
               className="text-primary hover:underline text-sm"
             >
               Não tem conta? Cadastre-se
