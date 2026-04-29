@@ -1,94 +1,61 @@
-
-# Disparo em grupo do WhatsApp por cidade
+# Botão fixo de grupo do WhatsApp em /primeiros-passos por cidade
 
 ## O que muda
 
-Hoje os 3 grupos atuais recebem TODO disparo de novo lead, novo balcão de parceria e re-disparo manual — independente de onde o lead está. A partir desta mudança, cada grupo passa a estar associado a **cidades específicas** (cidade + UF), e o disparo só vai para o grupo cuja lista contém a cidade do lead/imóvel/lançamento/procura.
+1. A tabela `whatsapp_city_groups` ganha uma nova coluna `invite_url` (link público do WhatsApp tipo `https://chat.whatsapp.com/...`). Hoje só tem `group_jid` (usado pelas edge functions de disparo). O `invite_url` é o link humano que o corretor abre para entrar no grupo.
 
-Adicionalmente, criaremos disparos em grupo (que hoje não existem) para **novo Lançamento** e **novo Imóvel no Portal**, também roteados por cidade.
+2. Na tela `/primeiros-passos`, **entre o player principal e a playlist** (no mobile e desktop), aparece um card destacado com:
+   - Texto: *"Entre no grupo para ficar por dentro das buscas de imóveis na sua região"*
+   - Botão verde "Entrar no grupo do WhatsApp" → abre o `invite_url` do grupo da cidade do corretor (`profile.address_city` + `profile.address_uf`).
+   - Se a cidade do corretor **não tem grupo mapeado** ou o `invite_url` está vazio → o card **não aparece** (silencioso).
 
-Cidades sem mapeamento → **não recebem disparo em grupo** (continuam normalmente as notificações individuais por alerta de match).
+3. A tela de admin `Grupos de WhatsApp por Cidade` ganha um campo **"Link de convite (invite_url)"** no formulário, exibido junto do JID e do rótulo. O agrupamento por grupo continua igual (várias cidades por grupo).
 
-## Configuração inicial dos grupos
+## Configuração inicial
 
-```text
-Grupo Ribeirão Preto (já existe — passa a ser exclusivo dessa cidade):
-  - Ribeirão Preto / SP
-  Grupo IDs:
-    120363407964054463@g.us
-    120363426047592689@g.us
-    120363410244397205@g.us
+- Grupo Ribeirão Preto (SP) → `invite_url = https://chat.whatsapp.com/DpzEZJcOHidL2cspXByufQ?mode=hqctcla`
+- Grupo MG Histórico (Tiradentes/Barbacena/São João del Rei) → `invite_url = https://chat.whatsapp.com/IMJu3N0WHl67rdy9jhRscn?mode=gi_t`
 
-Grupo MG Histórico (novo):
-  - Tiradentes / MG
-  - Barbacena / MG
-  - São João del Rei / MG
-  Grupo ID:
-    120363409744685071@g.us
-```
+Aplicado em todas as linhas existentes desses dois grupos via `UPDATE` baseado no `group_jid`.
 
 ## Banco de dados
 
-Nova tabela `whatsapp_city_groups` (admin-only via RLS):
-
-```text
-id            uuid PK
-group_jid     text   ex. "120363407964054463@g.us"
-group_label   text   ex. "Ribeirão Preto - SP"
-city          text   ex. "Ribeirão Preto"  (case-insensitive na busca)
-uf            text   ex. "SP"
-is_active     bool   default true
-created_at    timestamptz
-unique (group_jid, city, uf)
+**Migração SQL**:
+```sql
+ALTER TABLE public.whatsapp_city_groups
+  ADD COLUMN invite_url text;
 ```
 
-Função `get_groups_for_city(p_city text, p_uf text) returns text[]` (SECURITY DEFINER) — retorna todos os `group_jid` ativos cuja `(city, uf)` (normalizados: trim + lower + sem acento) batem com a entrada. Usada pelas edge functions.
+**Update de dados** (via insert tool):
+- `UPDATE whatsapp_city_groups SET invite_url='https://chat.whatsapp.com/DpzEZJcOHidL2cspXByufQ?mode=hqctcla' WHERE group_jid IN (3 JIDs de Ribeirão);`
+- `UPDATE whatsapp_city_groups SET invite_url='https://chat.whatsapp.com/IMJu3N0WHl67rdy9jhRscn?mode=gi_t' WHERE group_jid='120363409744685071@g.us';`
 
-Seed: insere os 4 mapeamentos acima.
+**Nova função RPC** `get_invite_url_for_city(p_city text, p_uf text) returns text` (SECURITY DEFINER, STABLE) — retorna o primeiro `invite_url` ativo (não-nulo) que bate com a cidade/UF normalizadas (mesma lógica `immutable_unaccent_lower` já usada em `get_groups_for_city`). Retorna `NULL` se não houver.
 
-## Edge functions afetadas
+## Frontend
 
-Cada uma deixa de ter os JIDs hardcoded e passa a chamar `get_groups_for_city` com a cidade/UF do payload. Se o array vier vazio, faz `console.log` "Cidade X/UF sem grupo mapeado — disparo ignorado" e retorna `success:true, skipped:true` (não é erro).
+**`src/pages/PrimeirosPassos.tsx`**
+- Buscar `profile.address_city` / `profile.address_uf` do usuário logado (via `supabase.from('profiles').select(...).eq('id', user.id)`).
+- Chamar a RPC `get_invite_url_for_city` com esses valores.
+- Renderizar um novo componente `WhatsappGroupCTA` **entre o `<Card>` do player (lg:col-span-2) e a coluna da playlist no mobile**, e **no desktop** acima da playlist (ou ocupando a largura do player abaixo dele). Solução simples: renderizar logo após o bloco do player, antes do bloco da playlist no DOM — no desktop fica embaixo do player na coluna esquerda; no mobile fica naturalmente entre o player e a playlist (ordem do DOM).
+- Card visualmente: fundo verde claro / borda verde, ícone do WhatsApp (lucide `MessageCircle`), texto + botão `<Button asChild><a href={invite_url} target="_blank" rel="noopener noreferrer">`.
+- Não renderiza se `invite_url` for null/vazio.
 
-1. **`mega-webhook`** (novo lead pelo formulário) — extrai `city`/`uf` do `flow` (sell/buy/build/rent), igual já faz para `notify-property-match`.
-2. **`notify-lead-group`** (re-disparo manual pelo admin) — extrai `city`/`uf` de `lead.form_data[intention.toLowerCase()]`.
-3. **`notify-group-new-search`** (Balcão de Parceria — nova procura) — `city` e `state` já vêm no body; passa a usar.
-4. **`notify-launch-group`** (NOVA) — chamada por `NewLaunch.tsx` após insert; recebe `launchId`, busca `city`/`state` da tabela `launches`, monta mensagem com dados do lançamento + link `/lancamentos/<id>`, dispara nos grupos da cidade.
-5. **`notify-property-group`** (NOVA) — chamada por `NewProperty.tsx` após insert; recebe `propertyId`, busca `city`/`state` da tabela `properties`, monta mensagem com tipo, operação, bairro, valor, área, foto principal + link `/imovel/<reference_code>`, dispara nos grupos da cidade.
+**`src/components/admin/WhatsappCityGroupsManagement.tsx`**
+- Adicionar campo `invite_url` na interface `Row` e no `empty`.
+- Novo `<Input>` no Dialog: "Link de convite do grupo (https://chat.whatsapp.com/...)". Validação: se preenchido, deve começar com `https://chat.whatsapp.com/`.
+- Mostrar o invite_url ao lado do JID no header de cada grupo (com link clicável "Abrir convite").
+- Salvar/atualizar `invite_url` no insert/update.
 
-Continuam **inalteradas** (não viram por cidade): `daily-news-broadcast` (broadcast geral diário), `notify-alert-match`, `notify-launch-alert-match`, `notify-property-match` (todas individuais via WhatsApp pessoal, não grupo).
+## Comportamento garantido
 
-## Frontend — disparo nas criações novas
-
-- `src/pages/NewLaunch.tsx` — após insert do lançamento, fire-and-forget invoca `notify-launch-group` (paralelo ao `notify-launch-alert-match` que já existe).
-- `src/pages/NewProperty.tsx` — após insert do imóvel, fire-and-forget invoca `notify-property-group`.
-
-## Tela de Admin
-
-Nova aba/seção em `src/pages/Admin.tsx` chamada **"Grupos de WhatsApp por Cidade"** (componente `src/components/admin/WhatsappCityGroupsManagement.tsx`):
-
-- Lista paginada agrupada por `group_label`/`group_jid` mostrando cidades+UF associadas.
-- Botão "Novo mapeamento": form com campos `Group JID`, `Rótulo do grupo`, `Cidade` (autocomplete IBGE via `useIBGELocation`), `UF`, `Ativo`.
-- Editar/desativar/excluir linha.
-- Validação: JID precisa terminar em `@g.us`; não permite duplicata `(group_jid, city, uf)`.
-
-Acesso restrito por `has_role('MASTER_ADMIN')` no RLS e checagem no front.
+- Disparo automático em grupos pelas edge functions continua usando `group_jid` (inalterado).
+- Card de convite só aparece se a cidade do corretor tem mapeamento ativo com `invite_url` preenchido.
+- Admin pode atualizar o link a qualquer momento sem mudar código.
+- Mesma cidade aparecendo em múltiplas linhas (ex.: Ribeirão tem 3 JIDs) → retorna apenas 1 invite_url (o primeiro encontrado), evitando mostrar 3 botões.
 
 ## Resumo de arquivos
 
-**Migração SQL**
-- Tabela `whatsapp_city_groups` + RLS + função `get_groups_for_city` + seed dos 4 mapeamentos.
-
-**Edge functions**
-- Editar: `mega-webhook`, `notify-lead-group`, `notify-group-new-search`.
-- Criar: `notify-launch-group`, `notify-property-group`.
-
-**Frontend**
-- Editar: `src/pages/NewLaunch.tsx`, `src/pages/NewProperty.tsx`, `src/pages/Admin.tsx`.
-- Criar: `src/components/admin/WhatsappCityGroupsManagement.tsx`.
-
-## Comportamento garantido
-- Visualização no app continua **global** (corretor vê tudo de qualquer cidade).
-- Apenas o **disparo no grupo** é roteado.
-- Cidade sem mapeamento → silencioso (nenhum grupo recebe; sem erro).
-- Notificações individuais por alerta de match continuam exatamente como hoje.
+**Migração SQL**: adicionar coluna + função RPC.
+**Update de dados**: preencher invite_url dos 4 mapeamentos existentes.
+**Editar**: `src/pages/PrimeirosPassos.tsx`, `src/components/admin/WhatsappCityGroupsManagement.tsx`, `src/integrations/supabase/types.ts` (regenerado automaticamente).

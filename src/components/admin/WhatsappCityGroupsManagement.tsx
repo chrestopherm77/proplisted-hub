@@ -17,9 +17,10 @@ interface Row {
   city: string;
   uf: string;
   is_active: boolean;
+  invite_url: string | null;
 }
 
-const empty = { id: '', group_jid: '', group_label: '', city: '', uf: '', is_active: true };
+const empty: Row = { id: '', group_jid: '', group_label: '', city: '', uf: '', is_active: true, invite_url: '' };
 
 export function WhatsappCityGroupsManagement() {
   const { toast } = useToast();
@@ -55,6 +56,11 @@ export function WhatsappCityGroupsManagement() {
       toast({ title: 'Preencha todos os campos', variant: 'destructive' });
       return;
     }
+    const inviteTrim = (form.invite_url || '').trim();
+    if (inviteTrim && !inviteTrim.startsWith('https://chat.whatsapp.com/')) {
+      toast({ title: 'Link de convite inválido', description: 'Deve começar com https://chat.whatsapp.com/', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     const payload = {
       group_jid: form.group_jid.trim(),
@@ -62,6 +68,7 @@ export function WhatsappCityGroupsManagement() {
       city: form.city.trim(),
       uf: form.uf.trim().toUpperCase(),
       is_active: form.is_active,
+      invite_url: inviteTrim || null,
     };
     const { error } = form.id
       ? await supabase.from('whatsapp_city_groups').update(payload).eq('id', form.id)
@@ -117,9 +124,18 @@ export function WhatsappCityGroupsManagement() {
         <Card className="p-6 text-center text-muted-foreground">Nenhum mapeamento cadastrado.</Card>
       ) : (
         <div className="space-y-4">
-          {Object.entries(grouped).map(([label, items]) => (
+          {Object.entries(grouped).map(([label, items]) => {
+            const invite = items.find(i => i.invite_url)?.invite_url;
+            return (
             <Card key={label} className="p-4">
-              <div className="font-semibold mb-3">{label}</div>
+              <div className="font-semibold mb-1">{label}</div>
+              {invite ? (
+                <a href={invite} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline break-all mb-3 inline-block">
+                  {invite}
+                </a>
+              ) : (
+                <div className="text-xs text-muted-foreground mb-3">Sem link de convite</div>
+              )}
               <div className="space-y-2">
                 {items.map(r => (
                   <div key={r.id} className="flex items-center justify-between border rounded p-2">
@@ -137,7 +153,8 @@ export function WhatsappCityGroupsManagement() {
                 ))}
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -162,6 +179,17 @@ export function WhatsappCityGroupsManagement() {
                 onChange={e => setForm({ ...form, group_label: e.target.value })}
                 placeholder="MG Histórico"
               />
+            </div>
+            <div>
+              <Label>Link de convite do grupo</Label>
+              <Input
+                value={form.invite_url || ''}
+                onChange={e => setForm({ ...form, invite_url: e.target.value })}
+                placeholder="https://chat.whatsapp.com/..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Link público mostrado ao corretor em "Primeiros Passos". Aplicado automaticamente a todas as cidades deste grupo.
+              </p>
             </div>
             <LocationSelector
               uf={form.uf}
