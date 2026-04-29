@@ -224,6 +224,7 @@ export const DEFAULT_CONTENT: LPContent = {
       'Conecte-se com clientes prontos para comprar ou vender imóveis. Aumente suas vendas com leads verificados.',
     cta_label: 'Quero Começar',
     cta_url: 'https://wa.me/5500000000000',
+    cta_mode: 'link',
   },
   features: [
     {
@@ -259,11 +260,19 @@ export const DEFAULT_CONTENT: LPContent = {
     subtitle: 'Junte-se a milhares de corretores que já confiam na nossa plataforma.',
     button_label: 'Começar Agora',
     button_url: 'https://wa.me/5500000000000',
+    button_mode: 'link',
   },
-  floating_ctas: [
-    { label: 'Quero Falar Agora', enabled: true },
-    { label: 'Fale Conosco', enabled: true },
-  ],
+  cta_form: {
+    intro_text: 'Preencha seus dados para participar',
+    submit_label: 'Quero participar',
+    redirect_url: '',
+    fields: [
+      { id: 'name', label: 'Nome completo', type: 'text', required: true },
+      { id: 'phone', label: 'WhatsApp', type: 'phone', required: true },
+      { id: 'email', label: 'E-mail', type: 'email', required: false },
+    ],
+  },
+  floating_cta: { label: 'Quero Falar Agora', enabled: true, mode: 'link', url: '' },
   socials: { instagram: '', linkedin: '', youtube: '', facebook: '' },
   footer: {
     company_name: 'Minha Empresa',
