@@ -1,43 +1,93 @@
-## Adicionar marca d'água nos mockups de criativos
+## Galeria de vídeos em Primeiros Passos
 
-Hoje, no painel de Criativos, ao subir as imagens secundárias (mockups), o usuário escolhe a logo em 1 dos 4 cantos com opacidade 100%. Vamos adicionar:
+Hoje a página `/primeiros-passos` mostra **um único vídeo** vindo da tabela singleton `onboarding_video`. Vamos evoluir para uma estrutura de **playlist**: um vídeo principal grande à esquerda e uma lista de vídeos secundários à direita (com thumbnail, título e topico), onde clicar troca o vídeo principal — estilo YouTube/Vimeo Showcase.
 
-1. **Toggle "Marca d'água"** por mockup (logo fica translúcida).
-2. **Nova posição "centro"** — disponível tanto no modo normal quanto marca d'água (faz mais sentido como marca d'água, mas liberamos as duas).
-3. **Slider de opacidade** quando marca d'água estiver ativa (padrão 35%).
-4. **Tamanho maior** quando logo estiver no centro como marca d'água (~45% da largura, vs 18% nos cantos).
+Foco em **Vimeo** (também aceita YouTube e MP4 já existentes, sem regressão).
 
-### Arquivos alterados
+### Banco de dados (migração)
 
-**`src/components/criativos/LogoPositionPicker.tsx`**
-- Estender `LogoPosition` para incluir `'center'`.
-- Adicionar 5ª área clicável central (sobreposta ao centro da imagem).
-- Aceitar props novas: `watermark: boolean`, `opacity: number`, `onToggleWatermark`, `onOpacityChange`.
-- Renderizar toggle "Marca d'água" + slider de opacidade abaixo do picker.
-- Quando `watermark=true`, renderizar logo selecionada com `opacity` aplicada e tamanho ampliado se posição for `center`.
+Nova tabela `onboarding_videos` (plural, lista) — convive com `onboarding_video` (singleton, vira o "vídeo de entrada / destaque"):
 
-**`src/components/criativos/MockupPreview.tsx`** (renderização final no canvas)
-- Receber `watermark` e `opacity`.
-- Aplicar `ctx.globalAlpha = watermark ? opacity : 1` antes do `drawImage` da logo, e restaurar depois.
-- Suporte à posição `center`: calcular `x = (img.width - lw) / 2`, `y = (img.height - lh) / 2`.
-- Quando `watermark && position === 'center'`, usar `logoMaxW = img.width * 0.45` (logo grande como marca d'água clássica). Demais casos mantêm 18%.
+```
+onboarding_videos
+- id (uuid, pk)
+- title (text, obrigatório) — ex: "Como comprar leads"
+- topic (text, opcional) — chip/categoria curto, ex: "Leads", "Criativos"
+- video_url (text, obrigatório)
+- video_type (text: 'url' | 'mp4', default 'url')
+- thumbnail_url (text, opcional) — preenchido automaticamente para Vimeo via API pública
+- description (text, opcional)
+- sort_order (int, default 0)
+- is_active (bool, default true)
+- created_at, updated_at, updated_by
+```
 
-**`src/components/criativos/wizard/StepImages.tsx`**
-- Estender `ImageSlot`: adicionar `watermark: boolean` e `opacity: number` (defaults: `false`, `0.35`).
-- Passar e atualizar esses campos via `LogoPositionPicker`.
-- Atualizar texto de ajuda: "Clique nos cantos ou no centro para posicionar a logo. Ative 'Marca d'água' para deixar translúcida."
+RLS:
+- `SELECT` para `authenticated` quando `is_active = true`
+- `ALL` para `MASTER_ADMIN` (mesmo padrão de `onboarding_video`)
 
-**Inicialização dos slots** (procurar onde `ImageSlot[]` é criado — provavelmente em `GenerateCreative.tsx`)
-- Adicionar `watermark: false, opacity: 0.35` ao default de cada slot novo.
+A tabela `onboarding_video` **continua existindo** e representa o vídeo "Boas-vindas / destaque" (carregado por padrão como vídeo principal ao abrir a página). Sem breaking changes.
+
+### Admin — `OnboardingVideoManagement.tsx`
+
+Reorganizar em **2 abas (shadcn `Tabs`)**:
+
+1. **"Vídeo principal"** — UI atual intocada (singleton `onboarding_video`).
+2. **"Vídeos da playlist"** — nova UI CRUD para `onboarding_videos`:
+   - Lista em cards reordenáveis (drag handle simples com setas ↑/↓ atualizando `sort_order`).
+   - Botão "Adicionar vídeo" abre dialog com:
+     - Título (obrigatório)
+     - Tópico (opcional, chip)
+     - Tipo: URL (Vimeo/YouTube) ou MP4
+     - URL ou upload (reutiliza bucket `onboarding-videos`)
+     - Descrição (opcional)
+     - Toggle ativo
+   - Ao salvar URL do Vimeo, buscar thumbnail via `https://vimeo.com/api/oembed.json?url=<url>` (endpoint público, sem chave) e gravar `thumbnail_url`. Para YouTube, usar `https://img.youtube.com/vi/<id>/hqdefault.jpg`. Para MP4, deixar `thumbnail_url` null (UI usa placeholder).
+   - Editar/remover por linha.
+
+### Página pública — `src/pages/PrimeirosPassos.tsx`
+
+Nova layout em grid `lg:grid-cols-3`:
+
+```text
++-----------------------------+----------------+
+|                             | [thumb] Tópico |
+|       VÍDEO PRINCIPAL       | Título do v.1  |
+|       (player grande)       +----------------+
+|         16:9 player         | [thumb] Tópico |
+|                             | Título do v.2  |
++-----------------------------+----------------+
+| Título + descrição abaixo   | [thumb] ...    |
++-----------------------------+----------------+
+```
+
+Comportamento:
+- Carrega `onboarding_video` (singleton) → vira o **vídeo selecionado por padrão**.
+- Carrega `onboarding_videos` ordenado por `sort_order` → renderiza lista lateral.
+- Estado local `selectedVideo`. Clicar num item da lista substitui o player principal e atualiza título/descrição abaixo.
+- Cada item da lista mostra: thumbnail (16:9, `aspect-video`), badge do tópico, título em 2 linhas, ícone de play sobreposto no hover.
+- Mobile (`<lg`): lista vira carrossel horizontal abaixo do player ou stack vertical scrollável (max-height ~70vh).
+- Botões "Ir para Meus Leads" / "Comprar Créditos" continuam embaixo.
+
+Player único reutilizável (componente interno `VideoPlayer`) que suporta `mp4` / `youtube` / `vimeo` (mesma lógica de `getYouTubeId` + `getVimeoId` já existente).
 
 ### Detalhes técnicos
 
-- `LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'`
-- Slider: shadcn `Slider` (já existe), range 10–80%.
-- Toggle: shadcn `Switch` (já existe).
-- Nada muda no banco — esses estados vivem apenas no wizard até a geração final do mockup (canvas → upload).
+- Vimeo embed: `https://player.vimeo.com/video/<ID>` (já implementado no `renderPlayer` atual — só extrair em componente reutilizável).
+- Vimeo oEmbed (server-side desnecessário; CORS está aberto): `fetch('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(url))` retorna `thumbnail_url` em alta resolução. Chamado no admin no momento de salvar.
+- Tipos do Supabase (`src/integrations/supabase/types.ts`) regeram automaticamente após a migração.
+- Sem alterações em rotas, auth, navegação ou bucket de storage.
+
+### Arquivos alterados/criados
+
+- **Migração SQL**: criar tabela `onboarding_videos` + RLS + trigger `updated_at`.
+- **`src/components/admin/OnboardingVideoManagement.tsx`**: envolver UI atual em `Tabs`, adicionar aba "Playlist" com CRUD.
+- **Novo `src/components/admin/OnboardingPlaylistManager.tsx`**: lista + dialog de criar/editar + reordenação + lookup oEmbed do Vimeo.
+- **`src/pages/PrimeirosPassos.tsx`**: novo layout grid com player + lista lateral; estado de seleção; carregamento das duas tabelas.
+- **Novo `src/components/onboarding/VideoPlayer.tsx`** (opcional, mas limpa o código): componente reutilizável para mp4/youtube/vimeo.
 
 ### Fora de escopo
 
-- Não muda a imagem principal (gerada por IA) — marca d'água continua só nos secundários.
-- Não muda o fluxo do `MyBrand` nem o upload de logo.
+- Não mexer em autenticação, rotas, ou outras partes do admin.
+- Não criar Vimeo Showcase API ou integração paga (apenas oEmbed público).
+- Sem analytics de quais vídeos foram assistidos (pode ser feito depois).
