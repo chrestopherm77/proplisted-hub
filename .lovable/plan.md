@@ -1,93 +1,86 @@
-## Galeria de vídeos em Primeiros Passos
 
-Hoje a página `/primeiros-passos` mostra **um único vídeo** vindo da tabela singleton `onboarding_video`. Vamos evoluir para uma estrutura de **playlist**: um vídeo principal grande à esquerda e uma lista de vídeos secundários à direita (com thumbnail, título e topico), onde clicar troca o vídeo principal — estilo YouTube/Vimeo Showcase.
+## Objetivo
 
-Foco em **Vimeo** (também aceita YouTube e MP4 já existentes, sem regressão).
+Dar destaque à logo da marca do anunciante na página pública do imóvel (a "página de afiliado" que abre quando alguém clica em anunciar/visualizar) e modernizar o design — mantendo o background atual (`/images/portal-bg.jpg`).
 
-### Banco de dados (migração)
+Arquivo afetado: `src/pages/PublicPropertyLP.tsx`.
 
-Nova tabela `onboarding_videos` (plural, lista) — convive com `onboarding_video` (singleton, vira o "vídeo de entrada / destaque"):
+## Mudanças no Layout
 
+### 1. Header com logo grande e em destaque
+- Substituir o header compacto atual por um **hero header** com a logo bem maior:
+  - Logo: `h-16 md:h-24` (hoje é `h-8`) — em um "card" branco/translúcido com sombra suave e borda arredondada, para a logo se destacar mesmo sobre fundos coloridos.
+  - Nome da marca em fonte maior (`text-xl md:text-2xl`) ao lado da logo.
+  - Quando não houver logo, mostrar um placeholder elegante com ícone grande + nome.
+- Header fica `sticky` com leve `backdrop-blur` e gradiente sutil usando a `primary_color` da marca (quando existir) na borda inferior.
+
+### 2. Faixa hero com logo em destaque (acima da galeria)
+- Adicionar uma seção "apresentação da marca" entre o header e a galeria:
+  - Logo grande centralizada (`h-20 md:h-28`) sobre um card translúcido.
+  - Nome da marca + tagline curta ("Apresenta este imóvel" ou similar).
+  - Linha decorativa com a cor primária da marca.
+- Isso garante que a logo apareça **duas vezes** (header + hero), reforçando a marca do afiliado.
+
+### 3. Card lateral "Fale com o corretor" reformulado
+- Logo no topo do card aumenta de `h-10 w-10` para `h-16 w-auto` em destaque centralizado.
+- Avatar/nome do corretor com tipografia maior.
+- Botão WhatsApp maior, com ícone proeminente.
+
+### 4. Refino visual geral (mesmo background)
+- Manter `bg-fixed bg-cover` com `/images/portal-bg.jpg`.
+- Cards com `rounded-2xl`, sombras mais suaves (`shadow-xl`) e `backdrop-blur-md`.
+- Título do imóvel em `text-3xl md:text-4xl font-bold`.
+- Preço em destaque com `text-3xl md:text-4xl` e badge da operação (Venda/Aluguel) maior.
+- Características (quartos, banheiros, vagas) viram **chips/pills** com ícone + número, estilo mais moderno.
+- Footer mantém marca do portal mas com a logo do afiliado pequena ao lado.
+
+## Detalhes técnicos
+
+```tsx
+// Header com logo destacada
+<header className="sticky top-0 z-40 backdrop-blur-md bg-card/80 border-b-2"
+        style={primaryColor ? { borderBottomColor: primaryColor } : undefined}>
+  <div className="container mx-auto px-4 py-4 max-w-6xl flex items-center justify-between gap-4">
+    <div className="flex items-center gap-4">
+      {brandLogo ? (
+        <div className="bg-white rounded-xl p-2 shadow-md">
+          <img src={brandLogo} alt={brandName || 'Logo'}
+               className="h-12 md:h-16 w-auto object-contain" />
+        </div>
+      ) : (
+        <div className="h-12 md:h-16 w-12 md:w-16 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Building2 className="h-8 w-8" style={primaryColor ? { color: primaryColor } : undefined} />
+        </div>
+      )}
+      <div>
+        <p className="font-bold text-lg md:text-2xl leading-tight">{brandName || 'Imóvel'}</p>
+        <p className="text-xs text-muted-foreground">Apresenta este imóvel</p>
+      </div>
+    </div>
+    <Badge variant="secondary" className="text-sm">Ref: {property.reference_code}</Badge>
+  </div>
+</header>
+
+// Hero com logo grande (entre header e galeria)
+<section className="container mx-auto px-4 pt-8 pb-4 max-w-6xl">
+  <div className="bg-card/90 backdrop-blur-md rounded-2xl shadow-xl p-6 md:p-8 text-center">
+    {brandLogo && (
+      <img src={brandLogo} alt={brandName || 'Logo'}
+           className="mx-auto h-20 md:h-28 w-auto object-contain mb-4" />
+    )}
+    <h2 className="text-xl md:text-2xl font-semibold">{brandName}</h2>
+    <div className="h-1 w-16 mx-auto mt-3 rounded-full"
+         style={{ backgroundColor: primaryColor || 'hsl(var(--primary))' }} />
+  </div>
+</section>
 ```
-onboarding_videos
-- id (uuid, pk)
-- title (text, obrigatório) — ex: "Como comprar leads"
-- topic (text, opcional) — chip/categoria curto, ex: "Leads", "Criativos"
-- video_url (text, obrigatório)
-- video_type (text: 'url' | 'mp4', default 'url')
-- thumbnail_url (text, opcional) — preenchido automaticamente para Vimeo via API pública
-- description (text, opcional)
-- sort_order (int, default 0)
-- is_active (bool, default true)
-- created_at, updated_at, updated_by
-```
 
-RLS:
-- `SELECT` para `authenticated` quando `is_active = true`
-- `ALL` para `MASTER_ADMIN` (mesmo padrão de `onboarding_video`)
+- Largura do container aumenta de `max-w-5xl` para `max-w-6xl` para acomodar o novo layout.
+- Todas as alterações de cor continuam respeitando `primary_color` e `secondary_color` da marca quando definidos.
+- 100% PT-BR mantido. Sem mudanças em rotas, banco ou auth.
 
-A tabela `onboarding_video` **continua existindo** e representa o vídeo "Boas-vindas / destaque" (carregado por padrão como vídeo principal ao abrir a página). Sem breaking changes.
+## Não inclui
 
-### Admin — `OnboardingVideoManagement.tsx`
-
-Reorganizar em **2 abas (shadcn `Tabs`)**:
-
-1. **"Vídeo principal"** — UI atual intocada (singleton `onboarding_video`).
-2. **"Vídeos da playlist"** — nova UI CRUD para `onboarding_videos`:
-   - Lista em cards reordenáveis (drag handle simples com setas ↑/↓ atualizando `sort_order`).
-   - Botão "Adicionar vídeo" abre dialog com:
-     - Título (obrigatório)
-     - Tópico (opcional, chip)
-     - Tipo: URL (Vimeo/YouTube) ou MP4
-     - URL ou upload (reutiliza bucket `onboarding-videos`)
-     - Descrição (opcional)
-     - Toggle ativo
-   - Ao salvar URL do Vimeo, buscar thumbnail via `https://vimeo.com/api/oembed.json?url=<url>` (endpoint público, sem chave) e gravar `thumbnail_url`. Para YouTube, usar `https://img.youtube.com/vi/<id>/hqdefault.jpg`. Para MP4, deixar `thumbnail_url` null (UI usa placeholder).
-   - Editar/remover por linha.
-
-### Página pública — `src/pages/PrimeirosPassos.tsx`
-
-Nova layout em grid `lg:grid-cols-3`:
-
-```text
-+-----------------------------+----------------+
-|                             | [thumb] Tópico |
-|       VÍDEO PRINCIPAL       | Título do v.1  |
-|       (player grande)       +----------------+
-|         16:9 player         | [thumb] Tópico |
-|                             | Título do v.2  |
-+-----------------------------+----------------+
-| Título + descrição abaixo   | [thumb] ...    |
-+-----------------------------+----------------+
-```
-
-Comportamento:
-- Carrega `onboarding_video` (singleton) → vira o **vídeo selecionado por padrão**.
-- Carrega `onboarding_videos` ordenado por `sort_order` → renderiza lista lateral.
-- Estado local `selectedVideo`. Clicar num item da lista substitui o player principal e atualiza título/descrição abaixo.
-- Cada item da lista mostra: thumbnail (16:9, `aspect-video`), badge do tópico, título em 2 linhas, ícone de play sobreposto no hover.
-- Mobile (`<lg`): lista vira carrossel horizontal abaixo do player ou stack vertical scrollável (max-height ~70vh).
-- Botões "Ir para Meus Leads" / "Comprar Créditos" continuam embaixo.
-
-Player único reutilizável (componente interno `VideoPlayer`) que suporta `mp4` / `youtube` / `vimeo` (mesma lógica de `getYouTubeId` + `getVimeoId` já existente).
-
-### Detalhes técnicos
-
-- Vimeo embed: `https://player.vimeo.com/video/<ID>` (já implementado no `renderPlayer` atual — só extrair em componente reutilizável).
-- Vimeo oEmbed (server-side desnecessário; CORS está aberto): `fetch('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(url))` retorna `thumbnail_url` em alta resolução. Chamado no admin no momento de salvar.
-- Tipos do Supabase (`src/integrations/supabase/types.ts`) regeram automaticamente após a migração.
-- Sem alterações em rotas, auth, navegação ou bucket de storage.
-
-### Arquivos alterados/criados
-
-- **Migração SQL**: criar tabela `onboarding_videos` + RLS + trigger `updated_at`.
-- **`src/components/admin/OnboardingVideoManagement.tsx`**: envolver UI atual em `Tabs`, adicionar aba "Playlist" com CRUD.
-- **Novo `src/components/admin/OnboardingPlaylistManager.tsx`**: lista + dialog de criar/editar + reordenação + lookup oEmbed do Vimeo.
-- **`src/pages/PrimeirosPassos.tsx`**: novo layout grid com player + lista lateral; estado de seleção; carregamento das duas tabelas.
-- **Novo `src/components/onboarding/VideoPlayer.tsx`** (opcional, mas limpa o código): componente reutilizável para mp4/youtube/vimeo.
-
-### Fora de escopo
-
-- Não mexer em autenticação, rotas, ou outras partes do admin.
-- Não criar Vimeo Showcase API ou integração paga (apenas oEmbed público).
-- Sem analytics de quais vídeos foram assistidos (pode ser feito depois).
+- Sem mudanças no banco de dados.
+- Sem alterar o background (`portal-bg.jpg` permanece).
+- Sem mudar o `LandingPageRenderer.tsx` (este é o page builder customizado, fluxo diferente).
