@@ -8,6 +8,7 @@ export const PROPERTY_TYPES = [
   { value: 'GALPAO', label: 'Galpão' },
   { value: 'SITIO', label: 'Sítio' },
   { value: 'CHACARA', label: 'Chácara' },
+  { value: 'AREA_DE_LAZER', label: 'Área de Lazer' },
 ];
 
 export const OPERATION_TYPES = [

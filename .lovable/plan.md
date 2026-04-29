@@ -1,55 +1,42 @@
-## Nova seção Admin: "Link Público"
+## Ajustes no Portal de Imóveis
 
-Criar uma nova área no painel admin onde você faz upload de vídeos e cada um gera uma página pública (link compartilhável) para qualquer pessoa assistir, sem login.
+### 1. Novo tipo de imóvel: "Área de Lazer"
 
-### O que será feito
+Adicionar a opção **Área de Lazer** à lista global de tipos de imóvel, para que apareça no formulário "Novo Anúncio" (`/portal-imoveis/novo`) e em todos os filtros/labels do app que usam essa lista.
 
-**1. Tabela no banco** (`public_videos`)
-Armazena os vídeos publicados com:
-- `id`, `slug` (usado na URL pública, ex: `/v/meu-video`)
-- `title` (título exibido na página)
-- `description` (opcional)
-- `video_url`, `video_type` (`mp4` ou `url` — YouTube/Vimeo)
-- `is_active`, `view_count`, timestamps
+**Arquivo:** `src/lib/propertyUtils.ts`
+- Acrescentar `{ value: 'AREA_DE_LAZER', label: 'Área de Lazer' }` em `PROPERTY_TYPES` (após "Chácara").
 
-RLS: SELECT público apenas dos ativos; INSERT/UPDATE/DELETE apenas para `MASTER_ADMIN` (via `has_role`).
+Como o `<Select>` em `NewProperty.tsx` e em `PortalImoveis.tsx` já mapeia `PROPERTY_TYPES`, e `getPropertyTypeLabel()` é usada nos cards para renderizar o rótulo, o novo tipo aparecerá automaticamente no formulário, nos filtros e nos cards sem mudanças adicionais.
 
-**2. Reutilização do storage**
-Usa o bucket `onboarding-videos` (já público) com prefixo `public/` para os arquivos MP4. Sem precisar criar bucket novo.
+### 2. Filtros completos no Portal de Imóveis (estilo Balcão de Parceria)
 
-**3. Nova página admin** — `/admin/public-videos`
-- Item no menu lateral, grupo "Conteúdo", ícone `Video` (entre "Primeiros Passos" e os demais).
-- Lista os vídeos cadastrados em cards com: thumbnail/ícone, título, slug, status, contador de views, botão para copiar o link público, editar e excluir.
-- Botão "Adicionar vídeo" abre dialog com:
-  - Título (obrigatório)
-  - Slug (auto-gerado a partir do título; editável; validado para `[a-z0-9-]`)
-  - Descrição
-  - Origem: URL (YouTube/Vimeo) **ou** Upload MP4/WebM (até 100MB)
-  - Switch "Ativo"
-- Botão "Copiar link" copia a URL completa (`window.location.origin + /v/<slug>`).
+Hoje `src/pages/PortalImoveis.tsx` só tem: busca por texto, Tipo e Operação. Vamos expandir para o mesmo padrão do Balcão (`PropertySearches.tsx`):
 
-**4. Nova página pública** — `/v/:slug`
-- Acessível sem login.
-- Layout limpo: header com logo da marca, título grande, descrição, player de vídeo (16:9, ocupa quase toda a tela em mobile, centrado em desktop), `lang="pt-BR"`.
-- Reutiliza o componente `VideoPlayer` existente (já trata MP4/YouTube/Vimeo).
-- Incrementa `view_count` ao carregar (via RPC `increment_public_video_view`).
-- Se slug não existe ou está inativo → mostra mensagem amigável "Vídeo não disponível".
+**Novos filtros (em uma faixa de filtros responsiva):**
+- Estado (UF) — `Select` carregado via `useIBGELocation`
+- Cidade — `Select` carregado quando UF é escolhida (com opção "Todas")
+- Tipo de imóvel — já existe (manter)
+- Objetivo / Operação — já existe (manter, renomear label visual para "Objetivo")
+- Zona — `Select` com `ZONE_OPTIONS` (Norte, Sul, Leste, Oeste, Centro, Rural)
+- Valor mínimo — `Input` com máscara de moeda (`formatCurrencyInput` / `parseCurrencyInput`)
+- Valor máximo — `Input` com máscara de moeda
+- Busca por texto livre — manter (código, bairro, etc.)
+- Botão **"Limpar filtros"** quando houver algum filtro ativo
 
-### Detalhes técnicos
+**Lógica de filtragem (`useMemo` existente):**
+- Estado: `p.state === filterState`
+- Cidade: `p.city === filterCity`
+- Zona: `p.zone === filterZone`
+- Valor: comparar contra `p.price_sale` quando operação for SALE/BOTH, e `p.price_rent` quando for RENT; se não houver operação selecionada, usar `price_sale ?? price_rent`. Aplicar `>= min` e `<= max` quando preenchidos.
 
-- **Migração SQL**: cria tabela `public_videos`, RLS, função `increment_public_video_view(p_slug text)` (SECURITY DEFINER) e índice em `slug`.
-- **Rotas a adicionar em `src/App.tsx`**:
-  - `/admin/public-videos` → `<Admin section="public-videos" />`
-  - `/v/:slug` → `<PublicVideoPage />` (registrar **antes** do catch-all `/:customSlug`)
-- **Arquivos novos**:
-  - `src/components/admin/PublicVideosManagement.tsx` (lista + dialog de criação/edição + upload).
-  - `src/pages/PublicVideo.tsx` (página pública).
-- **Arquivos editados**:
-  - `src/App.tsx` (rotas).
-  - `src/pages/Admin.tsx` (registra `'public-videos': PublicVideosManagement`).
-  - `src/components/admin/AdminLayout.tsx` (item de menu no grupo "Conteúdo").
-  - `src/lib/reservedSlugs.ts` e o trigger `validate_landing_page_slug` (adicionar `'v'` aos reservados, para não conflitar com landing pages customizadas).
+### Layout
 
-### Resultado para você
+Manter o card de filtros logo abaixo do header. Em telas grandes: grid de 4 colunas (UF | Cidade | Tipo | Objetivo) na primeira linha + (Zona | Valor mín | Valor máx | Busca) na segunda. Em mobile: empilhado.
 
-No admin, item **"Link Público"**. Cria 2 vídeos, cada um com seu título e slug, copia o link (ex: `proplisted-hub.lovable.app/v/treinamento-1`) e envia. Quem abrir vê a página com o título e o vídeo tocando direto, sem login.
+### Arquivos a editar
+
+- `src/lib/propertyUtils.ts` — adicionar "Área de Lazer" em `PROPERTY_TYPES`.
+- `src/pages/PortalImoveis.tsx` — novos states de filtros, `useIBGELocation`, novos `Select`/`Input` no JSX, lógica adicional no `useMemo`, botão "Limpar filtros".
+
+Sem mudanças no banco de dados (todas as colunas necessárias — `state`, `city`, `zone`, `price_sale`, `price_rent`, `property_type`, `operation_type` — já existem em `properties`).
