@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { PartnerProvider } from "./contexts/PartnerContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Cadastro from "./pages/Cadastro";
 import Leads from "./pages/Leads";
 import MyLeads from "./pages/MyLeads";
 import Cart from "./pages/Cart";
@@ -73,6 +74,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/my-leads" element={<MyLeads />} />
           <Route path="/cart" element={<Cart />} />

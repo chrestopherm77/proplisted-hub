@@ -78,7 +78,7 @@ const STATUS_VARIANT: Record<TicketStatus, 'default' | 'secondary' | 'outline'> 
   CLOSED: 'outline',
 };
 
-const HIDDEN_PREFIXES = ['/admin', '/lp', '/auth', '/reset-password'];
+const HIDDEN_PREFIXES = ['/admin', '/lp', '/auth', '/cadastro', '/reset-password'];
 
 export function SupportChatWidget() {
   const { user } = useAuth();
