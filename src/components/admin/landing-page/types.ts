@@ -31,9 +31,27 @@ export interface LPMedia {
   caption: string;
 }
 
+export type LPCTAMode = 'link' | 'form';
+
+export interface LPCTAFormField {
+  id: string;
+  label: string;
+  type: 'text' | 'email' | 'phone';
+  required: boolean;
+}
+
+export interface LPCTAForm {
+  intro_text: string;
+  submit_label: string;
+  redirect_url: string;
+  fields: LPCTAFormField[];
+}
+
 export interface LPFloatingCTA {
   label: string;
   enabled: boolean;
+  mode?: LPCTAMode;
+  url?: string;
 }
 
 // ===== Seções dinâmicas =====
@@ -81,6 +99,7 @@ export interface LPContent {
     subtitle: string;
     cta_label: string;
     cta_url: string;
+    cta_mode?: LPCTAMode;
   };
   features: LPFeature[];
   media: LPMedia;
@@ -97,8 +116,14 @@ export interface LPContent {
     subtitle: string;
     button_label: string;
     button_url: string;
+    button_mode?: LPCTAMode;
   };
-  floating_ctas: LPFloatingCTA[];
+  /** Configuração compartilhada do formulário aberto pelos CTAs com mode='form'. */
+  cta_form?: LPCTAForm;
+  /** Único botão flutuante (legado: floating_ctas[]). */
+  floating_cta?: LPFloatingCTA;
+  /** @deprecated mantido para retrocompat. Use floating_cta. */
+  floating_ctas?: LPFloatingCTA[];
   socials: {
     instagram: string;
     linkedin: string;
@@ -199,6 +224,7 @@ export const DEFAULT_CONTENT: LPContent = {
       'Conecte-se com clientes prontos para comprar ou vender imóveis. Aumente suas vendas com leads verificados.',
     cta_label: 'Quero Começar',
     cta_url: 'https://wa.me/5500000000000',
+    cta_mode: 'link',
   },
   features: [
     {
@@ -234,11 +260,19 @@ export const DEFAULT_CONTENT: LPContent = {
     subtitle: 'Junte-se a milhares de corretores que já confiam na nossa plataforma.',
     button_label: 'Começar Agora',
     button_url: 'https://wa.me/5500000000000',
+    button_mode: 'link',
   },
-  floating_ctas: [
-    { label: 'Quero Falar Agora', enabled: true },
-    { label: 'Fale Conosco', enabled: true },
-  ],
+  cta_form: {
+    intro_text: 'Preencha seus dados para participar',
+    submit_label: 'Quero participar',
+    redirect_url: '',
+    fields: [
+      { id: 'name', label: 'Nome completo', type: 'text', required: true },
+      { id: 'phone', label: 'WhatsApp', type: 'phone', required: true },
+      { id: 'email', label: 'E-mail', type: 'email', required: false },
+    ],
+  },
+  floating_cta: { label: 'Quero Falar Agora', enabled: true, mode: 'link', url: '' },
   socials: { instagram: '', linkedin: '', youtube: '', facebook: '' },
   footer: {
     company_name: 'Minha Empresa',

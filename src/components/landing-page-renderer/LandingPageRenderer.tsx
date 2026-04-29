@@ -1,11 +1,16 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle } from 'lucide-react';
+import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle, Loader2 } from 'lucide-react';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import type { LPContent, LPSection, LPTheme } from '@/components/admin/landing-page/types';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { LPContent, LPCTAForm, LPSection, LPTheme } from '@/components/admin/landing-page/types';
 
 interface Props {
   theme: LPTheme;
@@ -25,10 +30,20 @@ function getIcon(name: string) {
 
 export function LandingPageRenderer({ theme, content }: Props) {
   const finalCtaRef = useRef<HTMLDivElement>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const scrollToFinalCta = () => {
     finalCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  const ctaForm = content.cta_form;
+  const openForm = () => {
+    if (ctaForm && ctaForm.fields?.length) setFormOpen(true);
+    else scrollToFinalCta();
+  };
+
+
+
 
   const styleVars = {
     '--lp-primary': theme.primary,
@@ -39,6 +54,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
   } as React.CSSProperties;
 
   const ytId = content.media?.type === 'youtube' ? extractYoutubeId(content.media.url) : null;
+  const floating = content.floating_cta;
 
   return (
     <div
@@ -55,15 +71,25 @@ export function LandingPageRenderer({ theme, content }: Props) {
               {content.header.brand_name}
             </span>
           )}
-          <Button
-            size="lg"
-            asChild
-            style={{ backgroundColor: theme.primary, color: '#fff' }}
-          >
-            <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+          {content.hero.cta_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
               {content.hero.cta_label}
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
+              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+                {content.hero.cta_label}
+              </a>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -79,17 +105,29 @@ export function LandingPageRenderer({ theme, content }: Props) {
           {content.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
-          <Button
-            size="lg"
-            asChild
-            className="text-base md:text-lg px-8 h-12"
-            style={{ backgroundColor: theme.primary, color: '#fff' }}
-          >
-            <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+          {content.hero.cta_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              className="text-base md:text-lg px-8 h-12"
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
               {content.hero.cta_label}
               <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              className="text-base md:text-lg px-8 h-12"
+              style={{ backgroundColor: theme.primary, color: '#fff' }}
+            >
+              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
+                {content.hero.cta_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+            </Button>
+          )}
         </div>
       </section>
 
@@ -216,17 +254,29 @@ export function LandingPageRenderer({ theme, content }: Props) {
           {content.final_cta.subtitle && (
             <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">{content.final_cta.subtitle}</p>
           )}
-          <Button
-            size="lg"
-            asChild
-            className="text-lg px-10 h-14"
-            style={{ backgroundColor: theme.accent, color: '#fff' }}
-          >
-            <a href={content.final_cta.button_url} target="_blank" rel="noopener noreferrer">
+          {content.final_cta.button_mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              className="text-lg px-10 h-14"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
               {content.final_cta.button_label}
               <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              asChild
+              className="text-lg px-10 h-14"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
+              <a href={content.final_cta.button_url} target="_blank" rel="noopener noreferrer">
+                {content.final_cta.button_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+            </Button>
+          )}
         </div>
       </section>
 
@@ -278,25 +328,214 @@ export function LandingPageRenderer({ theme, content }: Props) {
         </div>
       </footer>
 
-      {/* Floating CTAs */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {content.floating_ctas.filter((c) => c.enabled && c.label).map((cta, i) => (
-          <Button
-            key={i}
-            size="lg"
-            onClick={scrollToFinalCta}
-            className="shadow-2xl"
-            style={{
-              backgroundColor: i === 0 ? theme.accent : theme.secondary,
-              color: '#fff',
-            }}
-          >
-            {cta.label}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        ))}
-      </div>
+      {/* Floating CTA (único, centralizado) */}
+      {floating?.enabled && floating.label && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          {floating.mode === 'form' ? (
+            <Button
+              size="lg"
+              onClick={openForm}
+              className="shadow-2xl"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
+              {floating.label}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : floating.mode === 'link' && floating.url ? (
+            <Button
+              asChild
+              size="lg"
+              className="shadow-2xl"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
+              <a href={floating.url} target="_blank" rel="noopener noreferrer">
+                {floating.label}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              onClick={scrollToFinalCta}
+              className="shadow-2xl"
+              style={{ backgroundColor: theme.accent, color: '#fff' }}
+            >
+              {floating.label}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Modal de formulário de cadastro */}
+      {ctaForm && (
+        <LeadFormModal
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          form={ctaForm}
+          theme={theme}
+          sourceLp={content.header.brand_name}
+        />
+      )}
     </div>
+  );
+}
+
+// ====== Lead Form Modal ======
+interface LeadFormModalProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  form: LPCTAForm;
+  theme: LPTheme;
+  sourceLp?: string;
+}
+
+function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormModalProps) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const setField = (id: string, v: string) => setValues((p) => ({ ...p, [id]: v }));
+
+  const validateField = (field: typeof form.fields[number], value: string): string | null => {
+    const v = (value || '').trim();
+    if (field.required && !v) return `${field.label} é obrigatório`;
+    if (!v) return null;
+    if (v.length > 200) return `${field.label} muito longo`;
+    if (field.type === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'E-mail inválido';
+    }
+    if (field.type === 'phone') {
+      const digits = v.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) return 'Telefone inválido';
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    for (const f of form.fields) {
+      const err = validateField(f, values[f.id] || '');
+      if (err) { toast.error(err); return; }
+    }
+
+    setSubmitting(true);
+    try {
+      // Detecta campos especiais p/ name / phone / email
+      const findByType = (t: 'text' | 'phone' | 'email') => {
+        const f = form.fields.find((ff) => ff.type === t);
+        return f ? (values[f.id] || '').trim() : '';
+      };
+      const name = findByType('text') || values['name'] || 'Lead LP';
+      const phone = findByType('phone') || values['phone'] || '';
+      const email = findByType('email') || values['email'] || null;
+
+      const formDataPayload: Record<string, string> = {};
+      for (const f of form.fields) {
+        formDataPayload[f.label] = (values[f.id] || '').trim();
+      }
+      formDataPayload['source_lp'] = sourceLp || '';
+
+      const { error } = await supabase.from('lead_submissions').insert({
+        name: name.slice(0, 200),
+        phone: phone.slice(0, 30),
+        email: email ? email.slice(0, 200) : null,
+        intention: 'BUY',
+        form_data: formDataPayload,
+        status: 'PENDING',
+      });
+      if (error) throw error;
+
+      // Pixel
+      try { (window as any).fbq?.('track', 'Lead'); } catch { /* noop */ }
+
+      setSuccess(true);
+
+      if (form.redirect_url) {
+        try {
+          const url = new URL(form.redirect_url);
+          if (url.protocol === 'http:' || url.protocol === 'https:') {
+            setTimeout(() => window.open(url.toString(), '_blank', 'noopener,noreferrer'), 600);
+          }
+        } catch {
+          toast.error('Link de redirecionamento inválido');
+        }
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao enviar. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    onOpenChange(v);
+    if (!v) {
+      setTimeout(() => { setSuccess(false); setValues({}); }, 200);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-md">
+        {success ? (
+          <div className="text-center py-6">
+            <CheckCircle className="h-14 w-14 mx-auto mb-3" style={{ color: theme.accent }} />
+            <DialogTitle className="text-xl mb-2">Cadastro realizado!</DialogTitle>
+            <DialogDescription>
+              {form.redirect_url
+                ? 'Redirecionando você agora...'
+                : 'Recebemos seus dados. Em breve entraremos em contato.'}
+            </DialogDescription>
+            {form.redirect_url && (
+              <Button
+                className="mt-4"
+                onClick={() => window.open(form.redirect_url, '_blank', 'noopener,noreferrer')}
+                style={{ backgroundColor: theme.primary, color: '#fff' }}
+              >
+                Abrir link
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Cadastro</DialogTitle>
+              {form.intro_text && <DialogDescription>{form.intro_text}</DialogDescription>}
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+              {form.fields.map((f) => (
+                <div key={f.id}>
+                  <Label htmlFor={`lp-f-${f.id}`}>
+                    {f.label}{f.required && <span className="text-destructive ml-0.5">*</span>}
+                  </Label>
+                  <Input
+                    id={`lp-f-${f.id}`}
+                    type={f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : 'text'}
+                    inputMode={f.type === 'phone' ? 'tel' : undefined}
+                    required={f.required}
+                    maxLength={200}
+                    value={values[f.id] || ''}
+                    onChange={(e) => setField(f.id, e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="w-full"
+                size="lg"
+                style={{ backgroundColor: theme.primary, color: '#fff' }}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (form.submit_label || 'Enviar')}
+              </Button>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
