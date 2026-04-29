@@ -44,8 +44,15 @@ const PortalImoveis = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [opFilter, setOpFilter] = useState('ALL');
+  const [stateFilter, setStateFilter] = useState('ALL');
+  const [cityFilter, setCityFilter] = useState('ALL');
+  const [zoneFilter, setZoneFilter] = useState('ALL');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  const { states, cities, fetchCities } = useIBGELocation();
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,6 +62,13 @@ const PortalImoveis = () => {
     }
     fetchProperties();
   }, [authLoading, user]);
+
+  useEffect(() => {
+    if (stateFilter && stateFilter !== 'ALL') {
+      fetchCities(stateFilter);
+    }
+    setCityFilter('ALL');
+  }, [stateFilter, fetchCities]);
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -66,12 +80,52 @@ const PortalImoveis = () => {
     setLoading(false);
   };
 
+  const minNum = useMemo(() => parseCurrencyInput(priceMin), [priceMin]);
+  const maxNum = useMemo(() => parseCurrencyInput(priceMax), [priceMax]);
+
+  const hasAnyFilter =
+    !!search ||
+    typeFilter !== 'ALL' ||
+    opFilter !== 'ALL' ||
+    stateFilter !== 'ALL' ||
+    cityFilter !== 'ALL' ||
+    zoneFilter !== 'ALL' ||
+    !!priceMin ||
+    !!priceMax;
+
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter('ALL');
+    setOpFilter('ALL');
+    setStateFilter('ALL');
+    setCityFilter('ALL');
+    setZoneFilter('ALL');
+    setPriceMin('');
+    setPriceMax('');
+  };
+
   const filtered = useMemo(() => {
     return properties.filter((p) => {
       if (tab === 'mine' && p.user_id !== user?.id) return false;
       if (tab === 'all' && !p.is_active) return false;
       if (typeFilter !== 'ALL' && p.property_type !== typeFilter) return false;
       if (opFilter !== 'ALL' && p.operation_type !== opFilter) return false;
+      if (stateFilter !== 'ALL' && p.state !== stateFilter) return false;
+      if (cityFilter !== 'ALL' && p.city !== cityFilter) return false;
+      if (zoneFilter !== 'ALL' && (p.zone || '') !== zoneFilter) return false;
+
+      if (minNum != null || maxNum != null) {
+        // Define o preço a comparar conforme a operação selecionada
+        let price: number | null = null;
+        if (opFilter === 'RENT') price = p.price_rent;
+        else if (opFilter === 'SALE' || opFilter === 'BOTH') price = p.price_sale;
+        else price = p.price_sale ?? p.price_rent;
+
+        if (price == null) return false;
+        if (minNum != null && price < minNum) return false;
+        if (maxNum != null && price > maxNum) return false;
+      }
+
       if (search) {
         const q = search.toLowerCase();
         const hay = `${p.title || ''} ${p.reference_code} ${p.city} ${p.neighborhood || ''}`.toLowerCase();
@@ -79,7 +133,7 @@ const PortalImoveis = () => {
       }
       return true;
     });
-  }, [properties, tab, typeFilter, opFilter, search, user?.id]);
+  }, [properties, tab, typeFilter, opFilter, stateFilter, cityFilter, zoneFilter, minNum, maxNum, search, user?.id]);
 
   return (
     <Layout>
