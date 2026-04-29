@@ -219,12 +219,12 @@ function PlaylistCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-lg border transition-all hover:bg-accent/50 group ${
-        active ? 'border-primary bg-accent/30' : 'border-border'
+      className={`w-full text-left transition-all hover:bg-accent/50 group border-b md:border md:rounded-lg ${
+        active ? 'md:border-primary bg-accent/30' : 'border-border'
       }`}
     >
-      <div className="flex gap-3 p-2">
-        <div className="w-28 aspect-video rounded bg-muted overflow-hidden flex-shrink-0 relative">
+      <div className="flex gap-3 p-3 md:p-2">
+        <div className="w-36 md:w-28 aspect-video rounded bg-muted overflow-hidden flex-shrink-0 relative">
           {computedThumb ? (
             <img
               src={computedThumb}
