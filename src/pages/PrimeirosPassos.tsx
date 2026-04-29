@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { PlayCircle, ShoppingBag, Coins, Loader2 } from 'lucide-react';
+import { PlayCircle, ShoppingBag, Coins, Loader2, MessageCircle } from 'lucide-react';
 import { VideoPlayer } from '@/components/onboarding/VideoPlayer';
 
 interface MainVideo {
