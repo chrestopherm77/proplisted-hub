@@ -1,52 +1,94 @@
-# Separar rotas de Login (/auth) e Cadastro (/cadastro)
 
-## Objetivo
-Hoje o arquivo `src/pages/Auth.tsx` serve **ambos** login e cadastro na rota `/auth`, alternando via state (`isLogin`) e via `?mode=login` / `?ref=` / `?plan=`. Você quer:
+# Disparo em grupo do WhatsApp por cidade
 
-- `/auth` → **somente tela de Login**
-- `/cadastro` → **somente tela de Cadastro multi-step** (a da foto)
+## O que muda
 
-## O que será feito
+Hoje os 3 grupos atuais recebem TODO disparo de novo lead, novo balcão de parceria e re-disparo manual — independente de onde o lead está. A partir desta mudança, cada grupo passa a estar associado a **cidades específicas** (cidade + UF), e o disparo só vai para o grupo cuja lista contém a cidade do lead/imóvel/lançamento/procura.
 
-### 1. Criar nova página `src/pages/Cadastro.tsx`
-Página dedicada ao signup. Renderiza o `MultiStepSignup` (mesmo componente já usado hoje), mantendo:
-- Logo `BrandLogo` no topo
-- Suporte a `?ref=CODIGO` para código de indicação
-- Suporte a `?plan=slug` (persistência via `setPendingPlan`)
-- Link "Já tenho conta" → navega para `/auth`
+Adicionalmente, criaremos disparos em grupo (que hoje não existem) para **novo Lançamento** e **novo Imóvel no Portal**, também roteados por cidade.
 
-### 2. Simplificar `src/pages/Auth.tsx`
-Remover toda a lógica de signup. A página passa a renderizar **apenas** o formulário de login (email + senha + "Esqueci minha senha"). O link "Não tem conta? Cadastre-se" passa a navegar para `/cadastro` (preservando query params `?ref=` e `?plan=` se existirem).
+Cidades sem mapeamento → **não recebem disparo em grupo** (continuam normalmente as notificações individuais por alerta de match).
 
-Se a URL chegar com `?ref=` ou `?plan=` em `/auth`, redireciona automaticamente para `/cadastro?ref=...&plan=...` (compatibilidade com links antigos).
+## Configuração inicial dos grupos
 
-### 3. Registrar rota em `src/App.tsx`
-Adicionar:
-```tsx
-<Route path="/cadastro" element={<Cadastro />} />
+```text
+Grupo Ribeirão Preto (já existe — passa a ser exclusivo dessa cidade):
+  - Ribeirão Preto / SP
+  Grupo IDs:
+    120363407964054463@g.us
+    120363426047592689@g.us
+    120363410244397205@g.us
+
+Grupo MG Histórico (novo):
+  - Tiradentes / MG
+  - Barbacena / MG
+  - São João del Rei / MG
+  Grupo ID:
+    120363409744685071@g.us
 ```
-Manter `/auth` apontando para `Auth` (agora só login).
 
-### 4. Atualizar CTAs de cadastro para apontar a `/cadastro`
-Trocar `navigate('/auth')` por `navigate('/cadastro')` **apenas onde a intenção é signup** (botão "Cadastre-se", CTAs da home):
+## Banco de dados
 
-- `src/pages/Index.tsx`:
-  - `goAuth` (botão principal de cadastro do header) → `/cadastro`
-  - Demais `navigate('/auth?mode=login')` (linha 78, 358, 382) permanecem em `/auth` (são botões "Entrar")
-- `src/components/Layout.tsx` linha 41 (`<Link to="/auth">`) — verificar se é signup ou login; se for "Cadastre-se", trocar para `/cadastro`
+Nova tabela `whatsapp_city_groups` (admin-only via RLS):
 
-Os demais `navigate('/auth')` (proteções de rota em Profile, Leads, BuyCredits, etc.) **permanecem inalterados** — são redirects de "usuário não logado", devem ir para a tela de login.
+```text
+id            uuid PK
+group_jid     text   ex. "120363407964054463@g.us"
+group_label   text   ex. "Ribeirão Preto - SP"
+city          text   ex. "Ribeirão Preto"  (case-insensitive na busca)
+uf            text   ex. "SP"
+is_active     bool   default true
+created_at    timestamptz
+unique (group_jid, city, uf)
+```
 
-### 5. Atualizar `SupportChatWidget`
-Adicionar `/cadastro` à lista `HIDDEN_PREFIXES` em `src/components/support/SupportChatWidget.tsx` para o widget de suporte não aparecer durante o cadastro (mesmo comportamento de `/auth`).
+Função `get_groups_for_city(p_city text, p_uf text) returns text[]` (SECURITY DEFINER) — retorna todos os `group_jid` ativos cuja `(city, uf)` (normalizados: trim + lower + sem acento) batem com a entrada. Usada pelas edge functions.
 
-## Arquivos editados
-- `src/pages/Cadastro.tsx` (novo)
-- `src/pages/Auth.tsx` (remove signup, vira só login)
-- `src/App.tsx` (adiciona rota `/cadastro`)
-- `src/pages/Index.tsx` (CTA de signup → `/cadastro`)
-- `src/components/Layout.tsx` (link de cadastro, se aplicável)
-- `src/components/support/SupportChatWidget.tsx` (esconde widget em `/cadastro`)
+Seed: insere os 4 mapeamentos acima.
 
-## Compatibilidade
-Links antigos como `/auth?ref=ABC123` ou `/auth?plan=conexao` continuam funcionando: o `Auth.tsx` detecta esses params e redireciona automaticamente para `/cadastro?ref=...&plan=...`.
+## Edge functions afetadas
+
+Cada uma deixa de ter os JIDs hardcoded e passa a chamar `get_groups_for_city` com a cidade/UF do payload. Se o array vier vazio, faz `console.log` "Cidade X/UF sem grupo mapeado — disparo ignorado" e retorna `success:true, skipped:true` (não é erro).
+
+1. **`mega-webhook`** (novo lead pelo formulário) — extrai `city`/`uf` do `flow` (sell/buy/build/rent), igual já faz para `notify-property-match`.
+2. **`notify-lead-group`** (re-disparo manual pelo admin) — extrai `city`/`uf` de `lead.form_data[intention.toLowerCase()]`.
+3. **`notify-group-new-search`** (Balcão de Parceria — nova procura) — `city` e `state` já vêm no body; passa a usar.
+4. **`notify-launch-group`** (NOVA) — chamada por `NewLaunch.tsx` após insert; recebe `launchId`, busca `city`/`state` da tabela `launches`, monta mensagem com dados do lançamento + link `/lancamentos/<id>`, dispara nos grupos da cidade.
+5. **`notify-property-group`** (NOVA) — chamada por `NewProperty.tsx` após insert; recebe `propertyId`, busca `city`/`state` da tabela `properties`, monta mensagem com tipo, operação, bairro, valor, área, foto principal + link `/imovel/<reference_code>`, dispara nos grupos da cidade.
+
+Continuam **inalteradas** (não viram por cidade): `daily-news-broadcast` (broadcast geral diário), `notify-alert-match`, `notify-launch-alert-match`, `notify-property-match` (todas individuais via WhatsApp pessoal, não grupo).
+
+## Frontend — disparo nas criações novas
+
+- `src/pages/NewLaunch.tsx` — após insert do lançamento, fire-and-forget invoca `notify-launch-group` (paralelo ao `notify-launch-alert-match` que já existe).
+- `src/pages/NewProperty.tsx` — após insert do imóvel, fire-and-forget invoca `notify-property-group`.
+
+## Tela de Admin
+
+Nova aba/seção em `src/pages/Admin.tsx` chamada **"Grupos de WhatsApp por Cidade"** (componente `src/components/admin/WhatsappCityGroupsManagement.tsx`):
+
+- Lista paginada agrupada por `group_label`/`group_jid` mostrando cidades+UF associadas.
+- Botão "Novo mapeamento": form com campos `Group JID`, `Rótulo do grupo`, `Cidade` (autocomplete IBGE via `useIBGELocation`), `UF`, `Ativo`.
+- Editar/desativar/excluir linha.
+- Validação: JID precisa terminar em `@g.us`; não permite duplicata `(group_jid, city, uf)`.
+
+Acesso restrito por `has_role('MASTER_ADMIN')` no RLS e checagem no front.
+
+## Resumo de arquivos
+
+**Migração SQL**
+- Tabela `whatsapp_city_groups` + RLS + função `get_groups_for_city` + seed dos 4 mapeamentos.
+
+**Edge functions**
+- Editar: `mega-webhook`, `notify-lead-group`, `notify-group-new-search`.
+- Criar: `notify-launch-group`, `notify-property-group`.
+
+**Frontend**
+- Editar: `src/pages/NewLaunch.tsx`, `src/pages/NewProperty.tsx`, `src/pages/Admin.tsx`.
+- Criar: `src/components/admin/WhatsappCityGroupsManagement.tsx`.
+
+## Comportamento garantido
+- Visualização no app continua **global** (corretor vê tudo de qualquer cidade).
+- Apenas o **disparo no grupo** é roteado.
+- Cidade sem mapeamento → silencioso (nenhum grupo recebe; sem erro).
+- Notificações individuais por alerta de match continuam exatamente como hoje.
