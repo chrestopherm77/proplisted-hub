@@ -75,20 +75,25 @@ export function LandingPageEditor() {
       setSlug(lp.slug);
       setIsPublished(lp.is_published);
       setTheme({ ...DEFAULT_THEME, ...lp.theme });
+      const raw = lp.content || ({} as LPContent);
+      const legacyFloating = raw.floating_ctas?.[0];
       setContent({
         ...DEFAULT_CONTENT,
-        ...lp.content,
-        header: { ...DEFAULT_CONTENT.header, ...lp.content?.header },
-        hero: { ...DEFAULT_CONTENT.hero, ...lp.content?.hero },
-        media: { ...DEFAULT_CONTENT.media, ...lp.content?.media },
-        social_proof: { ...DEFAULT_CONTENT.social_proof, ...lp.content?.social_proof },
-        final_cta: { ...DEFAULT_CONTENT.final_cta, ...lp.content?.final_cta },
-        socials: { ...DEFAULT_CONTENT.socials, ...lp.content?.socials },
-        footer: { ...DEFAULT_CONTENT.footer, ...lp.content?.footer },
-        tracking: { ...DEFAULT_CONTENT.tracking, ...lp.content?.tracking },
-        features: lp.content?.features ?? DEFAULT_CONTENT.features,
-        floating_ctas: lp.content?.floating_ctas ?? DEFAULT_CONTENT.floating_ctas,
-        sections: lp.content?.sections ?? [],
+        ...raw,
+        header: { ...DEFAULT_CONTENT.header, ...raw.header },
+        hero: { ...DEFAULT_CONTENT.hero, ...raw.hero },
+        media: { ...DEFAULT_CONTENT.media, ...raw.media },
+        social_proof: { ...DEFAULT_CONTENT.social_proof, ...raw.social_proof },
+        final_cta: { ...DEFAULT_CONTENT.final_cta, ...raw.final_cta },
+        socials: { ...DEFAULT_CONTENT.socials, ...raw.socials },
+        footer: { ...DEFAULT_CONTENT.footer, ...raw.footer },
+        tracking: { ...DEFAULT_CONTENT.tracking, ...raw.tracking },
+        cta_form: { ...DEFAULT_CONTENT.cta_form!, ...raw.cta_form },
+        features: raw.features ?? DEFAULT_CONTENT.features,
+        floating_cta: raw.floating_cta ?? (legacyFloating
+          ? { ...legacyFloating, mode: 'link', url: '' }
+          : DEFAULT_CONTENT.floating_cta),
+        sections: raw.sections ?? [],
       });
       setLoading(false);
     })();
