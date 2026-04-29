@@ -132,7 +132,7 @@ export default function PrimeirosPassos() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="space-y-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-2">
+              <div className="space-y-0 md:space-y-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-2 -mx-4 md:mx-0">
                 {/* Item destaque (vídeo principal) */}
                 {main?.video_url && (
                   <PlaylistCard
@@ -158,7 +158,7 @@ export default function PrimeirosPassos() {
                   />
                 ))}
                 {!main?.video_url && playlist.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-8 px-4">
                     Nenhum vídeo disponível ainda.
                   </p>
                 )}
