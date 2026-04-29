@@ -142,7 +142,7 @@ export default function CheckoutSuccess() {
   useEffect(() => {
     if (isCredits && !confirmed) return;
 
-    const target = isCredits ? '/leads' : '/my-leads';
+    const target = isCredits ? '/leads' : '/primeiros-passos';
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -156,8 +156,8 @@ export default function CheckoutSuccess() {
     return () => clearInterval(timer);
   }, [navigate, isCredits, confirmed]);
 
-  const redirectTarget = isCredits ? '/leads' : '/my-leads';
-  const redirectLabel = isCredits ? 'Ver leads disponíveis' : 'Acompanhar meu pedido';
+  const redirectTarget = isCredits ? '/leads' : '/primeiros-passos';
+  const redirectLabel = isCredits ? 'Ver leads disponíveis' : 'Ir para Primeiros Passos';
 
   return (
     <Layout>
