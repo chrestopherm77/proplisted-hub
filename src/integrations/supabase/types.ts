@@ -2029,6 +2029,7 @@ export type Database = {
           group_jid: string
           group_label: string
           id: string
+          invite_url: string | null
           is_active: boolean
           uf: string
           updated_at: string
@@ -2039,6 +2040,7 @@ export type Database = {
           group_jid: string
           group_label: string
           id?: string
+          invite_url?: string | null
           is_active?: boolean
           uf: string
           updated_at?: string
@@ -2049,6 +2051,7 @@ export type Database = {
           group_jid?: string
           group_label?: string
           id?: string
+          invite_url?: string | null
           is_active?: boolean
           uf?: string
           updated_at?: string
@@ -2105,6 +2108,10 @@ export type Database = {
       get_groups_for_city: {
         Args: { p_city: string; p_uf: string }
         Returns: string[]
+      }
+      get_invite_url_for_city: {
+        Args: { p_city: string; p_uf: string }
+        Returns: string
       }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
