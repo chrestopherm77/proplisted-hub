@@ -41,6 +41,7 @@ import Planos from "./pages/Planos";
 import CustomLandingPage from "./pages/CustomLandingPage";
 import PrimeirosPassos from "./pages/PrimeirosPassos";
 import Indicar from "./pages/Indicar";
+import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,7 @@ const App = () => {
           <Route path="/admin/landing-pages/:id" element={<Admin section="landing-page-editor" />} />
           <Route path="/admin/home-page" element={<Admin section="home-page" />} />
           <Route path="/admin/onboarding-video" element={<Admin section="onboarding-video" />} />
+          <Route path="/admin/public-videos" element={<Admin section="public-videos" />} />
           <Route path="/admin/support" element={<Admin section="support" />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
@@ -123,6 +125,7 @@ const App = () => {
           <Route path="/planos" element={<Planos />} />
           <Route path="/primeiros-passos" element={<PrimeirosPassos />} />
           <Route path="/indicar" element={<Indicar />} />
+          <Route path="/v/:slug" element={<PublicVideo />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
           <Route path="/:customSlug" element={<CustomLandingPage />} />

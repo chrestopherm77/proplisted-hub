@@ -34,6 +34,7 @@ import {
   ArrowLeft,
   Globe,
   PlayCircle,
+  Video,
   LifeBuoy,
 } from 'lucide-react';
 
@@ -64,6 +65,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
+  { title: 'Link Público', url: '/admin/public-videos', icon: Video, group: 'Conteúdo' },
 ];
 
 const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Conteúdo'];
