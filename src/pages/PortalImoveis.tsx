@@ -186,16 +186,27 @@ const PortalImoveis = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="relative sm:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por código, bairro, cidade..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Select value={stateFilter} onValueChange={setStateFilter}>
+            <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
+            <SelectContent className="z-[1100] max-h-72">
+              <SelectItem value="ALL">Todos os estados</SelectItem>
+              {states.map((s) => (
+                <SelectItem key={s.sigla} value={s.sigla}>{s.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={cityFilter} onValueChange={setCityFilter} disabled={stateFilter === 'ALL'}>
+            <SelectTrigger>
+              <SelectValue placeholder={stateFilter === 'ALL' ? 'Selecione o estado' : 'Cidade'} />
+            </SelectTrigger>
+            <SelectContent className="z-[1100] max-h-72">
+              <SelectItem value="ALL">Todas as cidades</SelectItem>
+              {cities.map((c) => (
+                <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent className="z-[1100]">
@@ -206,15 +217,57 @@ const PortalImoveis = () => {
             </SelectContent>
           </Select>
           <Select value={opFilter} onValueChange={setOpFilter}>
-            <SelectTrigger><SelectValue placeholder="Operação" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Objetivo" /></SelectTrigger>
             <SelectContent className="z-[1100]">
-              <SelectItem value="ALL">Todas operações</SelectItem>
+              <SelectItem value="ALL">Todos objetivos</SelectItem>
               {OPERATION_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Select value={zoneFilter} onValueChange={setZoneFilter}>
+            <SelectTrigger><SelectValue placeholder="Zona" /></SelectTrigger>
+            <SelectContent className="z-[1100]">
+              <SelectItem value="ALL">Todas as zonas</SelectItem>
+              {ZONE_OPTIONS.map((z) => (
+                <SelectItem key={z} value={z}>{z}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Valor mínimo"
+            value={priceMin}
+            onChange={(e) => setPriceMin(formatCurrencyInput(e.target.value))}
+            inputMode="numeric"
+          />
+          <Input
+            placeholder="Valor máximo"
+            value={priceMax}
+            onChange={(e) => setPriceMax(formatCurrencyInput(e.target.value))}
+            inputMode="numeric"
+          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar código, bairro..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        {hasAnyFilter && (
+          <div className="mb-6 flex justify-end">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
+              <X className="h-4 w-4" />
+              Limpar filtros
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-16">
