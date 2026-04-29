@@ -1,34 +1,27 @@
 ## Objetivo
+Garantir que após o cadastro (plano Free) **e** após pagamento de planos pagos, o usuário seja redirecionado para `/primeiros-passos`.
 
-No mobile, a página "Primeiros Passos" deve ter o vídeo principal ocupando toda a largura da tela (como o player do YouTube mobile), e a playlist abaixo em formato de lista vertical compacta — também ocupando toda a largura, sem padding lateral do container.
+## Estado atual
+- **Cadastro (plano Free)**: já redireciona para `/primeiros-passos` corretamente (`MultiStepSignup.tsx` linha 463). Nenhuma mudança necessária aqui.
+- **Pagamento de plano pago**: o `CheckoutSuccess.tsx` redireciona para `/my-leads` quando `type !== 'credits'`. Precisa mudar para `/primeiros-passos`.
+- **Compra de créditos avulsos**: redireciona para `/leads`. **Manter como está** (não é assinatura de plano).
 
-## Mudanças em `src/pages/PrimeirosPassos.tsx`
+## Mudanças
 
-1. **Container responsivo**
-   - Remover `px-4` e `max-w-7xl` no mobile; aplicar apenas a partir de `md`.
-   - Estrutura: `px-0 md:px-4` e `max-w-none md:max-w-7xl`.
-   - Título e descrição ganham padding interno próprio (`px-4`) para não colarem na borda.
+### `src/pages/CheckoutSuccess.tsx`
+Trocar o destino de planos pagos de `/my-leads` para `/primeiros-passos`:
 
-2. **Card do player principal (mobile full-bleed)**
-   - Remover bordas arredondadas, borda e padding do `Card` no mobile: `rounded-none md:rounded-lg border-0 md:border shadow-none md:shadow-lg`.
-   - `CardContent` com `p-0 md:p-4` para o vídeo encostar nas laterais.
-   - O `VideoPlayer` (aspect-video) já se adapta — vai ocupar 100% da largura da tela.
-   - Título/descrição do vídeo selecionado movidos para BAIXO do player no mobile (estilo YouTube), mantendo o título atual no topo apenas em desktop. Alternativa mais simples: manter o bloco de título atual mas adicionar `px-4` para respeitar margem em mobile.
+1. **Linha 145** — countdown de redirecionamento:
+   - De: `const target = isCredits ? '/leads' : '/my-leads';`
+   - Para: `const target = isCredits ? '/leads' : '/primeiros-passos';`
 
-3. **Playlist mobile estilo YouTube**
-   - No mobile, a playlist vira uma lista vertical full-width logo abaixo do player.
-   - `PlaylistCard`: remover `rounded-lg` e `border` no mobile, usar apenas `border-b` para separar itens (estilo lista YouTube). Em desktop, manter o card atual.
-   - Aumentar levemente a thumb no mobile (`w-32` ou `w-36`) para ficar mais legível.
-   - Manter o scroll interno apenas em desktop (`lg:max-h-[560px] lg:overflow-y-auto`); no mobile, lista flui na página.
+2. **Linha 159** — destino do botão e label:
+   - `redirectTarget`: `isCredits ? '/leads' : '/primeiros-passos'`
+   - `redirectLabel`: `isCredits ? 'Ver leads disponíveis' : 'Ir para Primeiros Passos'`
 
-4. **Botões de ação inferiores**
-   - Adicionar `px-4` no wrapper para não colarem nas bordas no mobile.
+A lógica de polling, créditos avulsos e botões de fallback (linha 206 — "Ir para leads disponíveis" no caso de pagamento de créditos não confirmado) permanecem inalterados.
 
-## Resultado esperado
-
-- Mobile: player full-width sem margens, playlist em lista contínua abaixo (estilo app YouTube).
-- Desktop: layout atual (grid 2/1 com player + sidebar) preservado.
-
-## Arquivos afetados
-
-- `src/pages/PrimeirosPassos.tsx` (apenas classes Tailwind; sem mudança de lógica)
+## Resumo do fluxo final
+- Cadastro Free → `/primeiros-passos` (já funciona)
+- Pagamento de plano pago confirmado → `/primeiros-passos` (novo)
+- Compra de créditos avulsos confirmada → `/leads` (mantido)
