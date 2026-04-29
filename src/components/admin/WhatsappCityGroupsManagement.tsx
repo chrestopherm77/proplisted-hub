@@ -180,6 +180,17 @@ export function WhatsappCityGroupsManagement() {
                 placeholder="MG Histórico"
               />
             </div>
+            <div>
+              <Label>Link de convite do grupo</Label>
+              <Input
+                value={form.invite_url || ''}
+                onChange={e => setForm({ ...form, invite_url: e.target.value })}
+                placeholder="https://chat.whatsapp.com/..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Link público mostrado ao corretor em "Primeiros Passos". Aplicado automaticamente a todas as cidades deste grupo.
+              </p>
+            </div>
             <LocationSelector
               uf={form.uf}
               city={form.city}
