@@ -11,7 +11,8 @@ import { Search, Plus, Loader2, Building2, List, Map as MapIcon, X } from 'lucid
 import { PropertyCard } from '@/components/portal/PropertyCard';
 import { PropertyMap } from '@/components/portal/PropertyMap';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
-import { ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
+import { PROPERTY_TYPES, OPERATION_TYPES, ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
+import { PROPERTY_TYPES as _ } from '@/lib/propertyUtils';
 import { PROPERTY_TYPES, OPERATION_TYPES } from '@/lib/propertyUtils';
 
 interface Property {
