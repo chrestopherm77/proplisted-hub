@@ -48,7 +48,7 @@ const Index = () => {
     );
   }
 
-  const goAuth = () => navigate('/auth');
+  const goAuth = () => navigate('/cadastro');
   const scrollToPlans = () => {
     document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
