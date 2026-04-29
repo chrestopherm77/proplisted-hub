@@ -253,6 +253,12 @@ const NewProperty = () => {
       console.warn('[geocode] dispatch error', e);
     }
 
+    // Fire-and-forget: disparo em grupo de WhatsApp por cidade
+    try {
+      supabase.functions.invoke('notify-property-group', { body: { propertyId: data.id } })
+        .catch(err => console.error('notify-property-group error:', err));
+    } catch {}
+
     navigate(`/portal-imoveis/${data.id}`);
   };
 

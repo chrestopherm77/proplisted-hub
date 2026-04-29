@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,14 +90,29 @@ serve(async (req) => {
     message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
     message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.conectaeimob.com.br/property-searches`;
 
-    const WHATSAPP_GROUP_IDS = [
-      "120363407964054463@g.us",
-      "120363426047592689@g.us",
-      "120363410244397205@g.us",
-    ];
+    // Buscar grupos por cidade/UF (roteamento dinâmico)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: groupsData, error: groupsError } = await supabase
+      .rpc("get_groups_for_city", { p_city: city, p_uf: state || "" });
+
+    if (groupsError) {
+      console.error("Error fetching groups:", groupsError);
+    }
+    const WHATSAPP_GROUP_IDS: string[] = (groupsData as string[] | null) || [];
+
+    if (WHATSAPP_GROUP_IDS.length === 0) {
+      console.log(`Cidade "${city}/${state}" sem grupo mapeado — disparo ignorado`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: "no_groups_for_city" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
 
-    console.log(`Sending group notification for new search in ${city} to ${WHATSAPP_GROUP_IDS.length} groups`);
+    console.log(`Sending group notification for new search in ${city}/${state} to ${WHATSAPP_GROUP_IDS.length} groups`);
     const results: Record<string, boolean> = {};
     for (const groupId of WHATSAPP_GROUP_IDS) {
       const megaBody = { messageData: { to: groupId, text: message } };

@@ -2022,6 +2022,39 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_city_groups: {
+        Row: {
+          city: string
+          created_at: string
+          group_jid: string
+          group_label: string
+          id: string
+          is_active: boolean
+          uf: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          group_jid: string
+          group_label: string
+          id?: string
+          is_active?: boolean
+          uf: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          group_jid?: string
+          group_label?: string
+          id?: string
+          is_active?: boolean
+          uf?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_verification_codes: {
         Row: {
           code: string
@@ -2069,6 +2102,10 @@ export type Database = {
         Returns: Json
       }
       generate_referral_code: { Args: never; Returns: string }
+      get_groups_for_city: {
+        Args: { p_city: string; p_uf: string }
+        Returns: string[]
+      }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
       grant_referral_bonus_if_eligible: {
@@ -2082,6 +2119,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      immutable_unaccent_lower: { Args: { p: string }; Returns: string }
       increment_offer_count: {
         Args: { p_search_id: string }
         Returns: undefined
@@ -2115,6 +2153,7 @@ export type Database = {
         }
         Returns: Json
       }
+      unaccent: { Args: { "": string }; Returns: string }
       validate_signup_metadata: { Args: { meta: Json }; Returns: undefined }
     }
     Enums: {

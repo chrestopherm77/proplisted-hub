@@ -121,11 +121,19 @@ Deno.serve(async (req) => {
     groupMsg += `Clique abaixo para entrar em contato agora:\n\n`;
     groupMsg += `👉 https://www.conectaeimob.com.br/leads`;
 
-    const WHATSAPP_GROUP_IDS = [
-      "120363407964054463@g.us",
-      "120363426047592689@g.us",
-      "120363410244397205@g.us",
-    ];
+    // Roteamento por cidade
+    const { data: groupsData, error: groupsErr } = await supabase
+      .rpc("get_groups_for_city", { p_city: city || "", p_uf: uf || "" });
+    if (groupsErr) console.error("get_groups_for_city error:", groupsErr);
+    const WHATSAPP_GROUP_IDS: string[] = (groupsData as string[] | null) || [];
+
+    if (WHATSAPP_GROUP_IDS.length === 0) {
+      console.log(`Cidade "${city}/${uf}" sem grupo mapeado — disparo ignorado para lead ${leadId}`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: "no_groups_for_city" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
 
     const results: Array<{ groupId: string; success: boolean; details: string }> = [];

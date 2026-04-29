@@ -235,13 +235,14 @@ Deno.serve(async (req) => {
         groupMsg += `👉 https://www.conectaeimob.com.br/leads`;
 
         const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
-        if (MEGA_API_TOKEN) {
+        // Roteamento por cidade
+        const { data: groupsData, error: groupsErr } = await supabase
+          .rpc("get_groups_for_city", { p_city: (flow?.city as string) || "", p_uf: (flow?.uf as string) || "" });
+        if (groupsErr) console.error(`[lead ${leadId}] get_groups_for_city error:`, groupsErr);
+        const WHATSAPP_GROUP_IDS: string[] = (groupsData as string[] | null) || [];
+
+        if (MEGA_API_TOKEN && WHATSAPP_GROUP_IDS.length > 0) {
           const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
-          const WHATSAPP_GROUP_IDS = [
-            "120363407964054463@g.us",
-            "120363426047592689@g.us",
-            "120363410244397205@g.us",
-          ];
 
           for (const groupId of WHATSAPP_GROUP_IDS) {
             const megaBody = { messageData: { to: groupId, text: groupMsg } };
@@ -276,6 +277,8 @@ Deno.serve(async (req) => {
             // delay between groups
             await new Promise((r) => setTimeout(r, 700));
           }
+        } else if (WHATSAPP_GROUP_IDS.length === 0) {
+          console.log(`[lead ${leadId}] Cidade "${flow?.city}/${flow?.uf}" sem grupo mapeado — disparo ignorado`);
         }
       }
     } catch (groupErr) {
