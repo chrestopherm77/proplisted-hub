@@ -42,12 +42,8 @@ export function LandingPageRenderer({ theme, content }: Props) {
     else scrollToFinalCta();
   };
 
-  const handleCtaClick = (mode: LPCTAMode | undefined, url: string) => (e: React.MouseEvent) => {
-    if (mode === 'form') {
-      e.preventDefault();
-      openForm();
-    }
-  };
+
+
 
   const styleVars = {
     '--lp-primary': theme.primary,
