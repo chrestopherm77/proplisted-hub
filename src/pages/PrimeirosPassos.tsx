@@ -167,7 +167,7 @@ export default function PrimeirosPassos() {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto px-4 md:px-0">
           <Button
             size="lg"
             variant="default"
