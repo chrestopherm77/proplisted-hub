@@ -339,16 +339,26 @@ const NewProperty = () => {
     navigate(`/portal-imoveis/${savedId}`);
   };
 
+  if (loadingProperty) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="mb-4">
+        <Button variant="ghost" onClick={() => navigate(isEditMode ? `/portal-imoveis/${editId}` : '/portal-imoveis')} className="mb-4">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Publicar Imóvel</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">{isEditMode ? 'Editar Imóvel' : 'Publicar Imóvel'}</h1>
 
-        {!limitsLoading && plan && (
+        {!isEditMode && !limitsLoading && plan && (
           <Alert className={cn('mb-4', !propertyGate.allowed && 'border-destructive/50 bg-destructive/5')}>
             <Crown className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
