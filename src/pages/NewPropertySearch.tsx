@@ -95,6 +95,8 @@ const NewPropertySearch = () => {
   const [valueMin, setValueMin] = useState('');
   const [valueMax, setValueMax] = useState('');
   const [parkingSpots, setParkingSpots] = useState('');
+  const [condominium, setCondominium] = useState('');
+  const [floor, setFloor] = useState('');
   const [observation, setObservation] = useState('');
 
   useEffect(() => {
@@ -176,6 +178,8 @@ const NewPropertySearch = () => {
       value_min: valueMin.trim() || null,
       value_max: valueMax.trim() || null,
       parking_spots: config.hasParking ? (parkingSpots.trim() || null) : null,
+      condominium: condominium.trim() || null,
+      floor: floor.trim() || null,
       observation: observation.trim() || null,
       house_type: selected.type === 'CASA' ? houseType : null,
       rural_type: selected.type === 'RURAL' ? ruralType : null,
@@ -473,6 +477,25 @@ const NewPropertySearch = () => {
                 </div>
               </div>
             )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Condomínio</Label>
+                <Input
+                  value={condominium}
+                  onChange={(e) => setCondominium(e.target.value)}
+                  placeholder="Nome do condomínio"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Andar</Label>
+                <Input
+                  value={floor}
+                  onChange={(e) => setFloor(e.target.value)}
+                  placeholder="Ex: 5º andar"
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label>Observação</Label>
