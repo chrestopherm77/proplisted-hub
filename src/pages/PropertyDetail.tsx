@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, MapPin, Loader2, Download, Megaphone, Link as LinkIcon,
-  MessageCircle, BedDouble, Bath, Car, Ruler, Home, Trash2,
+  MessageCircle, BedDouble, Bath, Car, Ruler, Home, Trash2, Pencil,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyGallery } from '@/components/portal/PropertyGallery';
@@ -243,11 +243,22 @@ const PropertyDetail = () => {
         style={{ backgroundImage: 'url(/images/portal-bg.jpg)' }}
       >
         <div className="container mx-auto px-4 py-6 max-w-5xl">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="bg-background/80 backdrop-blur-sm">
               <ArrowLeft className="h-4 w-4" /> Voltar
             </Button>
-            <Badge className="text-sm bg-foreground/80 text-background backdrop-blur-sm border-0">Ref: {property.reference_code}</Badge>
+            <div className="flex items-center gap-2">
+              {isOwner && (
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate(`/portal-imoveis/${property.id}/editar`)}
+                  className="bg-background/80 backdrop-blur-sm"
+                >
+                  <Pencil className="h-4 w-4" /> Editar
+                </Button>
+              )}
+              <Badge className="text-sm bg-foreground/80 text-background backdrop-blur-sm border-0">Ref: {property.reference_code}</Badge>
+            </div>
           </div>
 
         <PropertyGallery photos={photos} />
