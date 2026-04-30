@@ -460,7 +460,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       // pendingPlan que tenha vindo da LP para não vazar para futuros logins.
       const { clearPendingPlan } = await import('@/lib/pendingPlan');
       clearPendingPlan();
-      setTimeout(() => { window.location.href = '/primeiros-passos'; }, 800);
+      setTimeout(() => { window.location.href = '/cadastro-realizado'; }, 800);
     } catch (error: any) {
       toast.error("Erro ao criar conta. Tente novamente.");
     } finally {

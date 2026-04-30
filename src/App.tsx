@@ -41,6 +41,7 @@ import PublicPropertyLP from "./pages/PublicPropertyLP";
 import Planos from "./pages/Planos";
 import CustomLandingPage from "./pages/CustomLandingPage";
 import PrimeirosPassos from "./pages/PrimeirosPassos";
+import CadastroRealizado from "./pages/CadastroRealizado";
 import Indicar from "./pages/Indicar";
 import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
@@ -127,6 +128,7 @@ const App = () => {
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           <Route path="/planos" element={<Planos />} />
           <Route path="/primeiros-passos" element={<PrimeirosPassos />} />
+          <Route path="/cadastro-realizado" element={<CadastroRealizado />} />
           <Route path="/indicar" element={<Indicar />} />
           <Route path="/v/:slug" element={<PublicVideo />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
