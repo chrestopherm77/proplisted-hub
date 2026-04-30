@@ -224,7 +224,8 @@ const NewProperty = () => {
     e.preventDefault();
     if (!user) return;
 
-    if (!propertyGate.allowed) {
+    // Limite só se aplica em criação
+    if (!isEditMode && !propertyGate.allowed) {
       setShowLimitDialog(true);
       return;
     }
@@ -247,8 +248,7 @@ const NewProperty = () => {
     }
 
     setSaving(true);
-    const payload = {
-      user_id: user.id,
+    const payload: any = {
       property_type: propertyType,
       operation_type: operationType,
       status: status || null,
@@ -271,30 +271,48 @@ const NewProperty = () => {
       additional_info: additionalInfo || null,
       photos: photos as any,
       accept_affiliation: acceptAffiliation,
-      is_active: true,
     };
 
-    const { data, error } = await supabase.from('properties').insert(payload as any).select('id').single();
-    setSaving(false);
-
-    if (error) {
-      console.error(error);
-      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
-      return;
+    let savedId: string;
+    if (isEditMode) {
+      const { error } = await supabase
+        .from('properties')
+        .update(payload)
+        .eq('id', editId!)
+        .eq('user_id', user.id);
+      setSaving(false);
+      if (error) {
+        console.error(error);
+        toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+        return;
+      }
+      savedId = editId!;
+      toast({ title: 'Imóvel atualizado!', description: 'As alterações foram publicadas.' });
+    } else {
+      payload.user_id = user.id;
+      payload.is_active = true;
+      const { data, error } = await supabase
+        .from('properties')
+        .insert(payload)
+        .select('id')
+        .single();
+      setSaving(false);
+      if (error || !data) {
+        console.error(error);
+        toast({ title: 'Erro ao salvar', description: error?.message, variant: 'destructive' });
+        return;
+      }
+      savedId = data.id;
+      toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
     }
 
-    toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
-
     // Geocode em background via fetch + keepalive — sobrevive ao navigate.
-    // Trigger no banco já enfileirou em pending_geocodes como rede de segurança;
-    // este disparo apenas tenta resolver imediato.
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       if (accessToken && supabaseUrl) {
-        // Fire-and-forget com keepalive: o request continua mesmo após navigate
         fetch(`${supabaseUrl}/functions/v1/geocode-properties`, {
           method: 'POST',
           keepalive: true,
@@ -303,20 +321,22 @@ const NewProperty = () => {
             Authorization: `Bearer ${accessToken}`,
             apikey: anonKey,
           },
-          body: JSON.stringify({ property_id: data.id }),
+          body: JSON.stringify({ property_id: savedId }),
         }).catch((e) => console.warn('[geocode] fetch failed', e));
       }
     } catch (e) {
       console.warn('[geocode] dispatch error', e);
     }
 
-    // Fire-and-forget: disparo em grupo de WhatsApp por cidade
-    try {
-      supabase.functions.invoke('notify-property-group', { body: { propertyId: data.id } })
-        .catch(err => console.error('notify-property-group error:', err));
-    } catch {}
+    // Notificação em grupo apenas em criação
+    if (!isEditMode) {
+      try {
+        supabase.functions.invoke('notify-property-group', { body: { propertyId: savedId } })
+          .catch(err => console.error('notify-property-group error:', err));
+      } catch {}
+    }
 
-    navigate(`/portal-imoveis/${data.id}`);
+    navigate(`/portal-imoveis/${savedId}`);
   };
 
   return (
