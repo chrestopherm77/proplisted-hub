@@ -653,10 +653,10 @@ const NewProperty = () => {
           </Card>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate('/portal-imoveis')}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => navigate(isEditMode ? `/portal-imoveis/${editId}` : '/portal-imoveis')}>Cancelar</Button>
             <Button type="submit" disabled={saving} size="lg">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Publicar imóvel
+              {isEditMode ? 'Salvar alterações' : 'Publicar imóvel'}
             </Button>
           </div>
         </form>
