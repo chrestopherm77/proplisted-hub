@@ -1661,6 +1661,66 @@ export type Database = {
           },
         ]
       }
+      signup_progress: {
+        Row: {
+          company_type: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          email: string | null
+          form_data: Json
+          id: string
+          name: string | null
+          person_type: string | null
+          phone: string | null
+          profession: string | null
+          session_id: string
+          step_label: string | null
+          total_steps: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_type?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          email?: string | null
+          form_data?: Json
+          id?: string
+          name?: string | null
+          person_type?: string | null
+          phone?: string | null
+          profession?: string | null
+          session_id: string
+          step_label?: string | null
+          total_steps?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_type?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          email?: string | null
+          form_data?: Json
+          id?: string
+          name?: string | null
+          person_type?: string | null
+          phone?: string | null
+          profession?: string | null
+          session_id?: string
+          step_label?: string | null
+          total_steps?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscription_payments: {
         Row: {
           amount: number
@@ -2161,6 +2221,10 @@ export type Database = {
         Returns: Json
       }
       unaccent: { Args: { "": string }; Returns: string }
+      upsert_signup_progress: {
+        Args: { p_payload: Json; p_session_id: string }
+        Returns: undefined
+      }
       validate_signup_metadata: { Args: { meta: Json }; Returns: undefined }
     }
     Enums: {
