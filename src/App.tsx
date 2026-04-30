@@ -125,6 +125,7 @@ const App = () => {
           <Route path="/criativos" element={<Criativos />} />
           <Route path="/portal-imoveis" element={<PortalImoveis />} />
           <Route path="/portal-imoveis/novo" element={<NewProperty />} />
+          <Route path="/portal-imoveis/:id/editar" element={<NewProperty />} />
           <Route path="/portal-imoveis/:id" element={<PropertyDetail />} />
           <Route path="/imovel/:slug" element={<PublicPropertyLP />} />
           <Route path="/planos" element={<Planos />} />

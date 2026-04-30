@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +36,8 @@ import {
 const NewProperty = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const { states, cities, fetchCities, loadingCities } = useIBGELocation();
   const { can, plan, loading: limitsLoading } = useSubscriptionLimits();
@@ -43,6 +45,7 @@ const NewProperty = () => {
   const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [loadingProperty, setLoadingProperty] = useState(isEditMode);
   const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
 
   // Form fields
@@ -79,6 +82,60 @@ const NewProperty = () => {
     if (authLoading) return;
     if (!user) navigate('/auth');
   }, [authLoading, user]);
+
+  // Carrega dados existentes para edição
+  useEffect(() => {
+    if (!isEditMode || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', editId!)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !data) {
+        toast({ title: 'Imóvel não encontrado', variant: 'destructive' });
+        navigate('/portal-imoveis');
+        return;
+      }
+      if (data.user_id !== user.id) {
+        toast({ title: 'Você não tem permissão para editar este imóvel', variant: 'destructive' });
+        navigate(`/portal-imoveis/${editId}`);
+        return;
+      }
+
+      const p: any = data;
+      setPropertyType(p.property_type || '');
+      setOperationType(p.operation_type || 'SALE');
+      setStatus(p.status || '');
+      setStateUf(p.state || '');
+      setCity(p.city || '');
+      setZone(p.zone || '');
+      setNeighborhood(p.neighborhood || '');
+      setAddress(p.address || '');
+      setBedrooms(p.bedrooms != null ? String(p.bedrooms) : '');
+      setSuites(p.suites != null ? String(p.suites) : '');
+      setBathrooms(p.bathrooms != null ? String(p.bathrooms) : '');
+      setParkingSpots(p.parking_spots != null ? String(p.parking_spots) : '');
+      setAreaUseful(p.area_useful != null ? String(p.area_useful) : '');
+      setAreaTotal(p.area_total != null ? String(p.area_total) : '');
+      setPriceSale(p.price_sale != null ? formatCurrencyInput(String(Math.round(Number(p.price_sale) * 100))) : '');
+      setPriceRent(p.price_rent != null ? formatCurrencyInput(String(Math.round(Number(p.price_rent) * 100))) : '');
+      setCondoFee(p.condo_fee != null ? formatCurrencyInput(String(Math.round(Number(p.condo_fee) * 100))) : '');
+      setIptu(p.iptu != null ? formatCurrencyInput(String(Math.round(Number(p.iptu) * 100))) : '');
+      const am = p.amenities && typeof p.amenities === 'object' ? p.amenities : {};
+      setCondoAmenities((am as any).condo || {});
+      setPropertyFeatures((am as any).property || {});
+      setAdditionalInfo(p.additional_info || '');
+      setAcceptAffiliation(p.accept_affiliation !== false);
+      setPhotos(Array.isArray(p.photos) ? (p.photos as PropertyPhoto[]) : []);
+      setLoadingProperty(false);
+    })();
+    return () => { cancelled = true; };
+  }, [isEditMode, editId, user]);
 
   useEffect(() => {
     if (stateUf) fetchCities(stateUf);
@@ -167,7 +224,8 @@ const NewProperty = () => {
     e.preventDefault();
     if (!user) return;
 
-    if (!propertyGate.allowed) {
+    // Limite só se aplica em criação
+    if (!isEditMode && !propertyGate.allowed) {
       setShowLimitDialog(true);
       return;
     }
@@ -190,8 +248,7 @@ const NewProperty = () => {
     }
 
     setSaving(true);
-    const payload = {
-      user_id: user.id,
+    const payload: any = {
       property_type: propertyType,
       operation_type: operationType,
       status: status || null,
@@ -214,30 +271,48 @@ const NewProperty = () => {
       additional_info: additionalInfo || null,
       photos: photos as any,
       accept_affiliation: acceptAffiliation,
-      is_active: true,
     };
 
-    const { data, error } = await supabase.from('properties').insert(payload as any).select('id').single();
-    setSaving(false);
-
-    if (error) {
-      console.error(error);
-      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
-      return;
+    let savedId: string;
+    if (isEditMode) {
+      const { error } = await supabase
+        .from('properties')
+        .update(payload)
+        .eq('id', editId!)
+        .eq('user_id', user.id);
+      setSaving(false);
+      if (error) {
+        console.error(error);
+        toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+        return;
+      }
+      savedId = editId!;
+      toast({ title: 'Imóvel atualizado!', description: 'As alterações foram publicadas.' });
+    } else {
+      payload.user_id = user.id;
+      payload.is_active = true;
+      const { data, error } = await supabase
+        .from('properties')
+        .insert(payload)
+        .select('id')
+        .single();
+      setSaving(false);
+      if (error || !data) {
+        console.error(error);
+        toast({ title: 'Erro ao salvar', description: error?.message, variant: 'destructive' });
+        return;
+      }
+      savedId = data.id;
+      toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
     }
 
-    toast({ title: 'Imóvel publicado!', description: 'Seu anúncio já está disponível.' });
-
     // Geocode em background via fetch + keepalive — sobrevive ao navigate.
-    // Trigger no banco já enfileirou em pending_geocodes como rede de segurança;
-    // este disparo apenas tenta resolver imediato.
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       if (accessToken && supabaseUrl) {
-        // Fire-and-forget com keepalive: o request continua mesmo após navigate
         fetch(`${supabaseUrl}/functions/v1/geocode-properties`, {
           method: 'POST',
           keepalive: true,
@@ -246,32 +321,44 @@ const NewProperty = () => {
             Authorization: `Bearer ${accessToken}`,
             apikey: anonKey,
           },
-          body: JSON.stringify({ property_id: data.id }),
+          body: JSON.stringify({ property_id: savedId }),
         }).catch((e) => console.warn('[geocode] fetch failed', e));
       }
     } catch (e) {
       console.warn('[geocode] dispatch error', e);
     }
 
-    // Fire-and-forget: disparo em grupo de WhatsApp por cidade
-    try {
-      supabase.functions.invoke('notify-property-group', { body: { propertyId: data.id } })
-        .catch(err => console.error('notify-property-group error:', err));
-    } catch {}
+    // Notificação em grupo apenas em criação
+    if (!isEditMode) {
+      try {
+        supabase.functions.invoke('notify-property-group', { body: { propertyId: savedId } })
+          .catch(err => console.error('notify-property-group error:', err));
+      } catch {}
+    }
 
-    navigate(`/portal-imoveis/${data.id}`);
+    navigate(`/portal-imoveis/${savedId}`);
   };
+
+  if (loadingProperty) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <Button variant="ghost" onClick={() => navigate('/portal-imoveis')} className="mb-4">
+        <Button variant="ghost" onClick={() => navigate(isEditMode ? `/portal-imoveis/${editId}` : '/portal-imoveis')} className="mb-4">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Publicar Imóvel</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">{isEditMode ? 'Editar Imóvel' : 'Publicar Imóvel'}</h1>
 
-        {!limitsLoading && plan && (
+        {!isEditMode && !limitsLoading && plan && (
           <Alert className={cn('mb-4', !propertyGate.allowed && 'border-destructive/50 bg-destructive/5')}>
             <Crown className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
@@ -566,10 +653,10 @@ const NewProperty = () => {
           </Card>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate('/portal-imoveis')}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => navigate(isEditMode ? `/portal-imoveis/${editId}` : '/portal-imoveis')}>Cancelar</Button>
             <Button type="submit" disabled={saving} size="lg">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Publicar imóvel
+              {isEditMode ? 'Salvar alterações' : 'Publicar imóvel'}
             </Button>
           </div>
         </form>
