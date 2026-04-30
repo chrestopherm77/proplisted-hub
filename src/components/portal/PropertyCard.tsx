@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Home, BedDouble, Car, Ruler, ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Home, BedDouble, Car, Ruler, ImageIcon, Pencil } from 'lucide-react';
 import {
   getPropertyTypeLabel,
   getOperationLabel,
@@ -13,6 +14,7 @@ import {
 interface PropertyCardProps {
   property: {
     id: string;
+    user_id?: string;
     reference_code: string;
     title: string | null;
     property_type: string;
@@ -28,9 +30,12 @@ interface PropertyCardProps {
     price_rent: number | null;
     photos: PropertyPhoto[] | unknown;
   };
+  currentUserId?: string | null;
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, currentUserId }: PropertyCardProps) {
+  const navigate = useNavigate();
+  const isOwner = !!currentUserId && property.user_id === currentUserId;
   const photos = Array.isArray(property.photos) ? (property.photos as PropertyPhoto[]) : [];
   const cover = getCoverPhoto(photos);
   const price = property.operation_type === 'RENT' ? property.price_rent : property.price_sale;
@@ -62,6 +67,22 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <Badge className="absolute top-2 right-2" variant="secondary">
             {getOperationLabel(property.operation_type)}
           </Badge>
+          {isOwner && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="absolute bottom-2 right-2 h-8 gap-1 shadow-md bg-background/95 hover:bg-background"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate(`/portal-imoveis/${property.id}/editar`);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
+          )}
         </div>
 
         <div className="p-4 flex flex-col flex-1 gap-2">
