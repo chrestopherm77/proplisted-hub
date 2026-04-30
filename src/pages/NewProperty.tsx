@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +36,8 @@ import {
 const NewProperty = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const { toast } = useToast();
   const { states, cities, fetchCities, loadingCities } = useIBGELocation();
   const { can, plan, loading: limitsLoading } = useSubscriptionLimits();
@@ -43,6 +45,7 @@ const NewProperty = () => {
   const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [loadingProperty, setLoadingProperty] = useState(isEditMode);
   const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
 
   // Form fields
@@ -79,6 +82,60 @@ const NewProperty = () => {
     if (authLoading) return;
     if (!user) navigate('/auth');
   }, [authLoading, user]);
+
+  // Carrega dados existentes para edição
+  useEffect(() => {
+    if (!isEditMode || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', editId!)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !data) {
+        toast({ title: 'Imóvel não encontrado', variant: 'destructive' });
+        navigate('/portal-imoveis');
+        return;
+      }
+      if (data.user_id !== user.id) {
+        toast({ title: 'Você não tem permissão para editar este imóvel', variant: 'destructive' });
+        navigate(`/portal-imoveis/${editId}`);
+        return;
+      }
+
+      const p: any = data;
+      setPropertyType(p.property_type || '');
+      setOperationType(p.operation_type || 'SALE');
+      setStatus(p.status || '');
+      setStateUf(p.state || '');
+      setCity(p.city || '');
+      setZone(p.zone || '');
+      setNeighborhood(p.neighborhood || '');
+      setAddress(p.address || '');
+      setBedrooms(p.bedrooms != null ? String(p.bedrooms) : '');
+      setSuites(p.suites != null ? String(p.suites) : '');
+      setBathrooms(p.bathrooms != null ? String(p.bathrooms) : '');
+      setParkingSpots(p.parking_spots != null ? String(p.parking_spots) : '');
+      setAreaUseful(p.area_useful != null ? String(p.area_useful) : '');
+      setAreaTotal(p.area_total != null ? String(p.area_total) : '');
+      setPriceSale(p.price_sale != null ? formatCurrencyInput(String(Math.round(Number(p.price_sale) * 100))) : '');
+      setPriceRent(p.price_rent != null ? formatCurrencyInput(String(Math.round(Number(p.price_rent) * 100))) : '');
+      setCondoFee(p.condo_fee != null ? formatCurrencyInput(String(Math.round(Number(p.condo_fee) * 100))) : '');
+      setIptu(p.iptu != null ? formatCurrencyInput(String(Math.round(Number(p.iptu) * 100))) : '');
+      const am = p.amenities && typeof p.amenities === 'object' ? p.amenities : {};
+      setCondoAmenities((am as any).condo || {});
+      setPropertyFeatures((am as any).property || {});
+      setAdditionalInfo(p.additional_info || '');
+      setAcceptAffiliation(p.accept_affiliation !== false);
+      setPhotos(Array.isArray(p.photos) ? (p.photos as PropertyPhoto[]) : []);
+      setLoadingProperty(false);
+    })();
+    return () => { cancelled = true; };
+  }, [isEditMode, editId, user]);
 
   useEffect(() => {
     if (stateUf) fetchCities(stateUf);
