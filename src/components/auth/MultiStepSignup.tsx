@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepIndicator } from "./StepIndicator";
@@ -16,6 +16,7 @@ import { validateCPF, validateCNPJ, validateEmail, validatePhone, validatePasswo
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { trackSignupProgress, markSignupCompleted } from "@/lib/signupTracking";
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
@@ -33,6 +34,21 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   const [emailVerified, setEmailVerified] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
+
+  // Rastrear progresso do cadastro a cada mudança (debounced no helper)
+  useEffect(() => {
+    const labels = (() => {
+      if (formData.personType === 'PF') return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
+      if (formData.personType === 'PJ') return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
+      return ['Tipo', 'Dados', 'Detalhes', 'Credenciais'];
+    })();
+    const total = formData.personType ? 5 : 4;
+    trackSignupProgress(formData, {
+      currentStep,
+      stepLabel: labels[currentStep - 1],
+      totalSteps: total,
+    });
+  }, [formData, currentStep]);
 
   const getTotalSteps = () => {
     if (!formData.personType) return 4;
@@ -454,6 +470,15 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
 
       toast.success("Cadastro realizado com sucesso! Bem-vindo!");
+
+      // Marcar progresso como concluído
+      if (signUpData?.user?.id) {
+        try {
+          await markSignupCompleted(signUpData.user.id, formData, getTotalSteps());
+        } catch (e) {
+          console.warn('[signup-tracking] markCompleted falhou:', e);
+        }
+      }
 
       // Após o cadastro, o trigger handle_new_user já ativa o plano grátis "Conexão"
       // automaticamente. Sempre vamos para Primeiros Passos — limpamos qualquer
