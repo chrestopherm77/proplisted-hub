@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Star, Loader2, GripVertical } from 'lucide-react';
+import { Upload, X, Star, Loader2, GripVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -148,12 +148,22 @@ export function PropertyPhotosUpload({ userId, photos, onChange, max = 30 }: Pro
                 onDrop={() => handleDrop(realIdx)}
                 className="relative aspect-square rounded-lg overflow-hidden border bg-muted group"
               >
-                <img src={p.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+              <img src={p.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
                 {p.is_cover && (
                   <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1">
                     <Star className="h-3 w-3 fill-current" /> Capa
                   </div>
                 )}
+                {/* Botão de lixeira sempre visível (mobile-friendly) */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removePhoto(realIdx); }}
+                  className="absolute top-1 right-1 z-10 rounded-full bg-destructive text-destructive-foreground p-1.5 shadow-md hover:bg-destructive/90 transition-colors"
+                  title="Remover foto"
+                  aria-label="Remover foto"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
                   {!p.is_cover && (
                     <Button
