@@ -1435,7 +1435,9 @@ export type Database = {
         Row: {
           bedrooms: string | null
           city: string
+          condominium: string | null
           created_at: string | null
+          floor: string | null
           headline: string | null
           house_type: string | null
           id: string
@@ -1459,7 +1461,9 @@ export type Database = {
         Insert: {
           bedrooms?: string | null
           city: string
+          condominium?: string | null
           created_at?: string | null
+          floor?: string | null
           headline?: string | null
           house_type?: string | null
           id?: string
@@ -1483,7 +1487,9 @@ export type Database = {
         Update: {
           bedrooms?: string | null
           city?: string
+          condominium?: string | null
           created_at?: string | null
+          floor?: string | null
           headline?: string | null
           house_type?: string | null
           id?: string
