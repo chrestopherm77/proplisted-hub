@@ -10,6 +10,7 @@ import { PJCompanyTypeStep } from "./steps/PJCompanyTypeStep";
 import { PFProfessionalDataStep } from "./steps/PFProfessionalDataStep";
 import { PJProfessionalDataStep } from "./steps/PJProfessionalDataStep";
 import { CredentialsStep } from "./steps/CredentialsStep";
+import { TermsStep } from "./steps/TermsStep";
 import { EmailVerificationModal } from "./EmailVerificationModal";
 import { SignupFormData, initialFormData, PersonType, CompanyType, Profession } from "@/types/signup";
 import { validateCPF, validateCNPJ, validateEmail, validatePhone, validatePassword } from "@/lib/validators";
@@ -38,11 +39,11 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   // Rastrear progresso do cadastro a cada mudança (debounced no helper)
   useEffect(() => {
     const labels = (() => {
-      if (formData.personType === 'PF') return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
-      if (formData.personType === 'PJ') return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
-      return ['Tipo', 'Dados', 'Detalhes', 'Credenciais'];
+      if (formData.personType === 'PF') return ['Tipo', 'Profissão', 'Senha', 'Registro', 'Dados Pessoais', 'Contratos'];
+      if (formData.personType === 'PJ') return ['Tipo', 'Tipo Empresa', 'Senha', 'Registros', 'Dados Empresa', 'Contratos'];
+      return ['Tipo', 'Detalhes', 'Senha', 'Registros', 'Dados', 'Contratos'];
     })();
-    const total = formData.personType ? 5 : 4;
+    const total = formData.personType ? 6 : 6;
     trackSignupProgress(formData, {
       currentStep,
       stepLabel: labels[currentStep - 1],
@@ -50,25 +51,15 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     });
   }, [formData, currentStep]);
 
-  const getTotalSteps = () => {
-    if (!formData.personType) return 4;
-    
-    if (formData.personType === 'PF') {
-      // PF: 1.Tipo -> 2.Dados Gerais -> 3.Profissão -> 4.Dados Prof -> 5.Credenciais
-      return 5;
-    } else {
-      // PJ: 1.Tipo -> 2.Dados Gerais -> 3.Tipo Empresa -> 4.Dados Prof -> 5.Credenciais
-      return 5;
-    }
-  };
+  const getTotalSteps = () => 6;
 
   const getStepLabels = () => {
     if (formData.personType === 'PF') {
-      return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
+      return ['Tipo', 'Profissão', 'Senha', 'Registro', 'Dados Pessoais', 'Contratos'];
     } else if (formData.personType === 'PJ') {
-      return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
+      return ['Tipo', 'Tipo Empresa', 'Senha', 'Registros', 'Dados Empresa', 'Contratos'];
     }
-    return ['Tipo', 'Dados', 'Detalhes', 'Credenciais'];
+    return ['Tipo', 'Detalhes', 'Senha', 'Registros', 'Dados', 'Contratos'];
   };
 
   const handleFieldChange = (field: keyof SignupFormData, value: string | boolean) => {
@@ -100,11 +91,43 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   };
 
   const isStepComplete = (): boolean => {
+    // 1: Tipo PF/PJ
     if (currentStep === 1) {
       return !!formData.personType;
     }
 
+    // 2: Profissão / Tipo Empresa
     if (currentStep === 2) {
+      if (formData.personType === 'PF') return !!formData.profession;
+      if (formData.personType === 'PJ') return !!formData.companyType;
+      return false;
+    }
+
+    // 3: Senha
+    if (currentStep === 3) {
+      return !!(formData.password && formData.confirmPassword);
+    }
+
+    // 4: Registro Profissional
+    if (currentStep === 4) {
+      if (formData.personType === 'PF') {
+        if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
+        if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
+        if (formData.profession === 'ENGENHEIRO') return !!(formData.crea.trim() && formData.creaUf);
+      }
+      if (formData.personType === 'PJ') {
+        if (formData.companyType === 'IMOBILIARIA') {
+          return !!(formData.creciPj.trim() && formData.creciPjUf && formData.rtName.trim() && formData.rtCpf.trim());
+        }
+        if (formData.companyType === 'CONSTRUTORA') {
+          return !!(formData.creaPj.trim() && formData.creaPjUf && formData.rtName.trim() && formData.rtCrea.trim() && formData.rtCreaUf && formData.rtCpf.trim());
+        }
+      }
+      return false;
+    }
+
+    // 5: Dados Pessoais e Contato
+    if (currentStep === 5) {
       if (formData.personType === 'PF') {
         return !!(
           formData.name.trim() &&
@@ -130,31 +153,9 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    if (currentStep === 3) {
-      if (formData.personType === 'PF') return !!formData.profession;
-      if (formData.personType === 'PJ') return !!formData.companyType;
-      return false;
-    }
-
-    if (currentStep === 4) {
-      if (formData.personType === 'PF') {
-        if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
-        if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
-        if (formData.profession === 'ENGENHEIRO') return !!(formData.crea.trim() && formData.creaUf);
-      }
-      if (formData.personType === 'PJ') {
-        if (formData.companyType === 'IMOBILIARIA') {
-          return !!(formData.creciPj.trim() && formData.creciPjUf && formData.rtName.trim() && formData.rtCpf.trim());
-        }
-        if (formData.companyType === 'CONSTRUTORA') {
-          return !!(formData.creaPj.trim() && formData.creaPjUf && formData.rtName.trim() && formData.rtCrea.trim() && formData.rtCreaUf && formData.rtCpf.trim());
-        }
-      }
-      return false;
-    }
-
-    if (currentStep === 5) {
-      return !!(formData.password && formData.confirmPassword && formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
+    // 6: Contratos
+    if (currentStep === 6) {
+      return !!(formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
     }
 
     return false;
@@ -171,52 +172,6 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     }
 
     if (currentStep === 2) {
-      if (formData.personType === 'PF') {
-        if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
-        if (!formData.cpf.trim()) {
-          newErrors.cpf = "CPF é obrigatório";
-        } else if (!validateCPF(formData.cpf)) {
-          newErrors.cpf = "CPF inválido";
-        }
-        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
-        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
-        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
-        if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
-        if (!formData.email.trim()) {
-          newErrors.email = "E-mail é obrigatório";
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = "E-mail inválido";
-        }
-        if (!formData.phone.trim()) {
-          newErrors.phone = "Telefone é obrigatório";
-        } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = "Telefone inválido";
-        }
-      } else {
-        if (!formData.companyName.trim()) newErrors.companyName = "Razão Social é obrigatória";
-        if (!formData.cnpj.trim()) {
-          newErrors.cnpj = "CNPJ é obrigatório";
-        } else if (!validateCNPJ(formData.cnpj)) {
-          newErrors.cnpj = "CNPJ inválido";
-        }
-        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
-        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
-        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
-        if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
-        if (!formData.email.trim()) {
-          newErrors.email = "E-mail é obrigatório";
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = "E-mail inválido";
-        }
-        if (!formData.phone.trim()) {
-          newErrors.phone = "Telefone é obrigatório";
-        } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = "Telefone inválido";
-        }
-      }
-    }
-
-    if (currentStep === 3) {
       if (formData.personType === 'PF' && !formData.profession) {
         toast.error("Selecione uma opção");
         return false;
@@ -224,6 +179,16 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       if (formData.personType === 'PJ' && !formData.companyType) {
         toast.error("Selecione o tipo de empresa");
         return false;
+      }
+    }
+
+    if (currentStep === 3) {
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.valid) {
+        newErrors.password = passwordValidation.message;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "As senhas não conferem";
       }
     }
 
@@ -264,18 +229,39 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    const isCredentialsStep =
-      (formData.personType === 'PF' && currentStep === 5) ||
-      (formData.personType === 'PJ' && currentStep === 5);
+    if (currentStep === 5) {
+      if (formData.personType === 'PF') {
+        if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
+        if (!formData.cpf.trim()) {
+          newErrors.cpf = "CPF é obrigatório";
+        } else if (!validateCPF(formData.cpf)) {
+          newErrors.cpf = "CPF inválido";
+        }
+      } else {
+        if (!formData.companyName.trim()) newErrors.companyName = "Razão Social é obrigatória";
+        if (!formData.cnpj.trim()) {
+          newErrors.cnpj = "CNPJ é obrigatório";
+        } else if (!validateCNPJ(formData.cnpj)) {
+          newErrors.cnpj = "CNPJ inválido";
+        }
+      }
+      if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
+      if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
+      if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
+      if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
+      if (!formData.email.trim()) {
+        newErrors.email = "E-mail é obrigatório";
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = "E-mail inválido";
+      }
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Telefone é obrigatório";
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = "Telefone inválido";
+      }
+    }
 
-    if (isCredentialsStep) {
-      const passwordValidation = validatePassword(formData.password);
-      if (!passwordValidation.valid) {
-        newErrors.password = passwordValidation.message;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "As senhas não conferem";
-      }
+    if (currentStep === 6) {
       if (!formData.acceptedContract) {
         newErrors.acceptedContract = "Você deve aceitar o Contrato de Parceria";
       }
@@ -319,8 +305,8 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
 
     const totalSteps = getTotalSteps();
     
-    // If on step 2, check phone availability before proceeding
-    if (currentStep === 2) {
+    // No passo 5 (Dados Pessoais), verificar telefone e e-mail antes de avançar
+    if (currentStep === 5) {
       try {
         const { data: isAvailable, error } = await supabase.rpc('check_phone_availability', {
           p_phone: formData.phone,
@@ -346,13 +332,13 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
         return;
       }
 
-      // If email not verified, send code
+      // Se e-mail ainda não verificado, envia código
       if (!emailVerified) {
         await sendEmailVerificationCode();
         return;
       }
     }
-    
+
     if (currentStep < totalSteps) {
       setCurrentStep(prev => prev + 1);
     } else {
@@ -494,7 +480,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   };
 
   const renderCurrentStep = () => {
-    // Step 1: Person Type Selection
+    // 1: Tipo PF/PJ
     if (currentStep === 1) {
       return (
         <PersonTypeStep
@@ -504,8 +490,58 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       );
     }
 
-    // Step 2: General Data
+    // 2: Profissão / Tipo Empresa
     if (currentStep === 2) {
+      if (formData.personType === 'PF') {
+        return (
+          <PFProfessionStep
+            value={formData.profession}
+            onChange={handleProfessionChange}
+          />
+        );
+      } else {
+        return (
+          <PJCompanyTypeStep
+            value={formData.companyType}
+            onChange={handleCompanyTypeChange}
+          />
+        );
+      }
+    }
+
+    // 3: Senha
+    if (currentStep === 3) {
+      return (
+        <CredentialsStep
+          formData={formData}
+          onChange={handleFieldChange}
+          errors={errors}
+        />
+      );
+    }
+
+    // 4: Registro Profissional
+    if (currentStep === 4) {
+      if (formData.personType === 'PF') {
+        return (
+          <PFProfessionalDataStep
+            formData={formData}
+            onChange={handleFieldChange}
+            errors={errors}
+          />
+        );
+      }
+      return (
+        <PJProfessionalDataStep
+          formData={formData}
+          onChange={handleFieldChange}
+          errors={errors}
+        />
+      );
+    }
+
+    // 5: Dados Pessoais e Contato
+    if (currentStep === 5) {
       if (formData.personType === 'PF') {
         return (
           <PFGeneralDataStep
@@ -527,52 +563,10 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    // Step 3: Profession/Company Type
-    if (currentStep === 3) {
-      if (formData.personType === 'PF') {
-        return (
-          <PFProfessionStep
-            value={formData.profession}
-            onChange={handleProfessionChange}
-          />
-        );
-      } else {
-        return (
-          <PJCompanyTypeStep
-            value={formData.companyType}
-            onChange={handleCompanyTypeChange}
-          />
-        );
-      }
-    }
-
-    // Step 4
-    if (currentStep === 4) {
-      // PF with profession -> professional data
-      if (formData.personType === 'PF') {
-        return (
-          <PFProfessionalDataStep
-            formData={formData}
-            onChange={handleFieldChange}
-            errors={errors}
-          />
-        );
-      }
-      
-      // PJ -> professional data
+    // 6: Contratos
+    if (currentStep === 6) {
       return (
-        <PJProfessionalDataStep
-          formData={formData}
-          onChange={handleFieldChange}
-          errors={errors}
-        />
-      );
-    }
-
-    // Step 5: Credentials (for PF with profession or PJ)
-    if (currentStep === 5) {
-      return (
-        <CredentialsStep
+        <TermsStep
           formData={formData}
           onChange={handleFieldChange}
           errors={errors}
@@ -627,7 +621,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
                 </>
               ) : isLastStep ? (
                 "Finalizar Cadastro"
-              ) : currentStep === 2 && !emailVerified ? (
+              ) : currentStep === 5 && !emailVerified ? (
                 "Verificar E-mail"
               ) : (
                 <>
