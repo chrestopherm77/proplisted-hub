@@ -305,8 +305,8 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
 
     const totalSteps = getTotalSteps();
     
-    // If on step 2, check phone availability before proceeding
-    if (currentStep === 2) {
+    // No passo 5 (Dados Pessoais), verificar telefone e e-mail antes de avançar
+    if (currentStep === 5) {
       try {
         const { data: isAvailable, error } = await supabase.rpc('check_phone_availability', {
           p_phone: formData.phone,
@@ -332,13 +332,13 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
         return;
       }
 
-      // If email not verified, send code
+      // Se e-mail ainda não verificado, envia código
       if (!emailVerified) {
         await sendEmailVerificationCode();
         return;
       }
     }
-    
+
     if (currentStep < totalSteps) {
       setCurrentStep(prev => prev + 1);
     } else {
