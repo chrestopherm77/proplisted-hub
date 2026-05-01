@@ -10,6 +10,7 @@ import { PJCompanyTypeStep } from "./steps/PJCompanyTypeStep";
 import { PFProfessionalDataStep } from "./steps/PFProfessionalDataStep";
 import { PJProfessionalDataStep } from "./steps/PJProfessionalDataStep";
 import { CredentialsStep } from "./steps/CredentialsStep";
+import { TermsStep } from "./steps/TermsStep";
 import { EmailVerificationModal } from "./EmailVerificationModal";
 import { SignupFormData, initialFormData, PersonType, CompanyType, Profession } from "@/types/signup";
 import { validateCPF, validateCNPJ, validateEmail, validatePhone, validatePassword } from "@/lib/validators";
