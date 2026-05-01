@@ -480,7 +480,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   };
 
   const renderCurrentStep = () => {
-    // Step 1: Person Type Selection
+    // 1: Tipo PF/PJ
     if (currentStep === 1) {
       return (
         <PersonTypeStep
@@ -490,8 +490,58 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       );
     }
 
-    // Step 2: General Data
+    // 2: Profissão / Tipo Empresa
     if (currentStep === 2) {
+      if (formData.personType === 'PF') {
+        return (
+          <PFProfessionStep
+            value={formData.profession}
+            onChange={handleProfessionChange}
+          />
+        );
+      } else {
+        return (
+          <PJCompanyTypeStep
+            value={formData.companyType}
+            onChange={handleCompanyTypeChange}
+          />
+        );
+      }
+    }
+
+    // 3: Senha
+    if (currentStep === 3) {
+      return (
+        <CredentialsStep
+          formData={formData}
+          onChange={handleFieldChange}
+          errors={errors}
+        />
+      );
+    }
+
+    // 4: Registro Profissional
+    if (currentStep === 4) {
+      if (formData.personType === 'PF') {
+        return (
+          <PFProfessionalDataStep
+            formData={formData}
+            onChange={handleFieldChange}
+            errors={errors}
+          />
+        );
+      }
+      return (
+        <PJProfessionalDataStep
+          formData={formData}
+          onChange={handleFieldChange}
+          errors={errors}
+        />
+      );
+    }
+
+    // 5: Dados Pessoais e Contato
+    if (currentStep === 5) {
       if (formData.personType === 'PF') {
         return (
           <PFGeneralDataStep
@@ -513,52 +563,10 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    // Step 3: Profession/Company Type
-    if (currentStep === 3) {
-      if (formData.personType === 'PF') {
-        return (
-          <PFProfessionStep
-            value={formData.profession}
-            onChange={handleProfessionChange}
-          />
-        );
-      } else {
-        return (
-          <PJCompanyTypeStep
-            value={formData.companyType}
-            onChange={handleCompanyTypeChange}
-          />
-        );
-      }
-    }
-
-    // Step 4
-    if (currentStep === 4) {
-      // PF with profession -> professional data
-      if (formData.personType === 'PF') {
-        return (
-          <PFProfessionalDataStep
-            formData={formData}
-            onChange={handleFieldChange}
-            errors={errors}
-          />
-        );
-      }
-      
-      // PJ -> professional data
+    // 6: Contratos
+    if (currentStep === 6) {
       return (
-        <PJProfessionalDataStep
-          formData={formData}
-          onChange={handleFieldChange}
-          errors={errors}
-        />
-      );
-    }
-
-    // Step 5: Credentials (for PF with profession or PJ)
-    if (currentStep === 5) {
-      return (
-        <CredentialsStep
+        <TermsStep
           formData={formData}
           onChange={handleFieldChange}
           errors={errors}
