@@ -91,11 +91,43 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   };
 
   const isStepComplete = (): boolean => {
+    // 1: Tipo PF/PJ
     if (currentStep === 1) {
       return !!formData.personType;
     }
 
+    // 2: Profissão / Tipo Empresa
     if (currentStep === 2) {
+      if (formData.personType === 'PF') return !!formData.profession;
+      if (formData.personType === 'PJ') return !!formData.companyType;
+      return false;
+    }
+
+    // 3: Senha
+    if (currentStep === 3) {
+      return !!(formData.password && formData.confirmPassword);
+    }
+
+    // 4: Registro Profissional
+    if (currentStep === 4) {
+      if (formData.personType === 'PF') {
+        if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
+        if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
+        if (formData.profession === 'ENGENHEIRO') return !!(formData.crea.trim() && formData.creaUf);
+      }
+      if (formData.personType === 'PJ') {
+        if (formData.companyType === 'IMOBILIARIA') {
+          return !!(formData.creciPj.trim() && formData.creciPjUf && formData.rtName.trim() && formData.rtCpf.trim());
+        }
+        if (formData.companyType === 'CONSTRUTORA') {
+          return !!(formData.creaPj.trim() && formData.creaPjUf && formData.rtName.trim() && formData.rtCrea.trim() && formData.rtCreaUf && formData.rtCpf.trim());
+        }
+      }
+      return false;
+    }
+
+    // 5: Dados Pessoais e Contato
+    if (currentStep === 5) {
       if (formData.personType === 'PF') {
         return !!(
           formData.name.trim() &&
@@ -121,31 +153,9 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    if (currentStep === 3) {
-      if (formData.personType === 'PF') return !!formData.profession;
-      if (formData.personType === 'PJ') return !!formData.companyType;
-      return false;
-    }
-
-    if (currentStep === 4) {
-      if (formData.personType === 'PF') {
-        if (formData.profession === 'CORRETOR') return !!(formData.creci.trim() && formData.creciUf);
-        if (formData.profession === 'ARQUITETO') return !!(formData.cau.trim() && formData.cauUf);
-        if (formData.profession === 'ENGENHEIRO') return !!(formData.crea.trim() && formData.creaUf);
-      }
-      if (formData.personType === 'PJ') {
-        if (formData.companyType === 'IMOBILIARIA') {
-          return !!(formData.creciPj.trim() && formData.creciPjUf && formData.rtName.trim() && formData.rtCpf.trim());
-        }
-        if (formData.companyType === 'CONSTRUTORA') {
-          return !!(formData.creaPj.trim() && formData.creaPjUf && formData.rtName.trim() && formData.rtCrea.trim() && formData.rtCreaUf && formData.rtCpf.trim());
-        }
-      }
-      return false;
-    }
-
-    if (currentStep === 5) {
-      return !!(formData.password && formData.confirmPassword && formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
+    // 6: Contratos
+    if (currentStep === 6) {
+      return !!(formData.acceptedContract && formData.acceptedDPA && formData.acceptedTermsOfUse);
     }
 
     return false;
@@ -162,52 +172,6 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     }
 
     if (currentStep === 2) {
-      if (formData.personType === 'PF') {
-        if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
-        if (!formData.cpf.trim()) {
-          newErrors.cpf = "CPF é obrigatório";
-        } else if (!validateCPF(formData.cpf)) {
-          newErrors.cpf = "CPF inválido";
-        }
-        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
-        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
-        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
-        if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
-        if (!formData.email.trim()) {
-          newErrors.email = "E-mail é obrigatório";
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = "E-mail inválido";
-        }
-        if (!formData.phone.trim()) {
-          newErrors.phone = "Telefone é obrigatório";
-        } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = "Telefone inválido";
-        }
-      } else {
-        if (!formData.companyName.trim()) newErrors.companyName = "Razão Social é obrigatória";
-        if (!formData.cnpj.trim()) {
-          newErrors.cnpj = "CNPJ é obrigatório";
-        } else if (!validateCNPJ(formData.cnpj)) {
-          newErrors.cnpj = "CNPJ inválido";
-        }
-        if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
-        if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
-        if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
-        if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
-        if (!formData.email.trim()) {
-          newErrors.email = "E-mail é obrigatório";
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = "E-mail inválido";
-        }
-        if (!formData.phone.trim()) {
-          newErrors.phone = "Telefone é obrigatório";
-        } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = "Telefone inválido";
-        }
-      }
-    }
-
-    if (currentStep === 3) {
       if (formData.personType === 'PF' && !formData.profession) {
         toast.error("Selecione uma opção");
         return false;
@@ -215,6 +179,16 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       if (formData.personType === 'PJ' && !formData.companyType) {
         toast.error("Selecione o tipo de empresa");
         return false;
+      }
+    }
+
+    if (currentStep === 3) {
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.valid) {
+        newErrors.password = passwordValidation.message;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "As senhas não conferem";
       }
     }
 
@@ -255,18 +229,39 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
       }
     }
 
-    const isCredentialsStep =
-      (formData.personType === 'PF' && currentStep === 5) ||
-      (formData.personType === 'PJ' && currentStep === 5);
+    if (currentStep === 5) {
+      if (formData.personType === 'PF') {
+        if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
+        if (!formData.cpf.trim()) {
+          newErrors.cpf = "CPF é obrigatório";
+        } else if (!validateCPF(formData.cpf)) {
+          newErrors.cpf = "CPF inválido";
+        }
+      } else {
+        if (!formData.companyName.trim()) newErrors.companyName = "Razão Social é obrigatória";
+        if (!formData.cnpj.trim()) {
+          newErrors.cnpj = "CNPJ é obrigatório";
+        } else if (!validateCNPJ(formData.cnpj)) {
+          newErrors.cnpj = "CNPJ inválido";
+        }
+      }
+      if (!formData.addressUf) newErrors.addressUf = "Estado é obrigatório";
+      if (!formData.addressCity) newErrors.addressCity = "Cidade é obrigatória";
+      if (!formData.addressNeighborhood.trim()) newErrors.addressNeighborhood = "Bairro é obrigatório";
+      if (!formData.address.trim()) newErrors.address = "Endereço é obrigatório";
+      if (!formData.email.trim()) {
+        newErrors.email = "E-mail é obrigatório";
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = "E-mail inválido";
+      }
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Telefone é obrigatório";
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = "Telefone inválido";
+      }
+    }
 
-    if (isCredentialsStep) {
-      const passwordValidation = validatePassword(formData.password);
-      if (!passwordValidation.valid) {
-        newErrors.password = passwordValidation.message;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "As senhas não conferem";
-      }
+    if (currentStep === 6) {
       if (!formData.acceptedContract) {
         newErrors.acceptedContract = "Você deve aceitar o Contrato de Parceria";
       }
