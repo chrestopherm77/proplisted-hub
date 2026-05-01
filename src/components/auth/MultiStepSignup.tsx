@@ -39,11 +39,11 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
   // Rastrear progresso do cadastro a cada mudança (debounced no helper)
   useEffect(() => {
     const labels = (() => {
-      if (formData.personType === 'PF') return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
-      if (formData.personType === 'PJ') return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
-      return ['Tipo', 'Dados', 'Detalhes', 'Credenciais'];
+      if (formData.personType === 'PF') return ['Tipo', 'Profissão', 'Senha', 'Registro', 'Dados Pessoais', 'Contratos'];
+      if (formData.personType === 'PJ') return ['Tipo', 'Tipo Empresa', 'Senha', 'Registros', 'Dados Empresa', 'Contratos'];
+      return ['Tipo', 'Detalhes', 'Senha', 'Registros', 'Dados', 'Contratos'];
     })();
-    const total = formData.personType ? 5 : 4;
+    const total = formData.personType ? 6 : 6;
     trackSignupProgress(formData, {
       currentStep,
       stepLabel: labels[currentStep - 1],
@@ -51,25 +51,15 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
     });
   }, [formData, currentStep]);
 
-  const getTotalSteps = () => {
-    if (!formData.personType) return 4;
-    
-    if (formData.personType === 'PF') {
-      // PF: 1.Tipo -> 2.Dados Gerais -> 3.Profissão -> 4.Dados Prof -> 5.Credenciais
-      return 5;
-    } else {
-      // PJ: 1.Tipo -> 2.Dados Gerais -> 3.Tipo Empresa -> 4.Dados Prof -> 5.Credenciais
-      return 5;
-    }
-  };
+  const getTotalSteps = () => 6;
 
   const getStepLabels = () => {
     if (formData.personType === 'PF') {
-      return ['Tipo', 'Dados Pessoais', 'Profissão', 'Registro', 'Credenciais'];
+      return ['Tipo', 'Profissão', 'Senha', 'Registro', 'Dados Pessoais', 'Contratos'];
     } else if (formData.personType === 'PJ') {
-      return ['Tipo', 'Dados Empresa', 'Tipo Empresa', 'Registros', 'Credenciais'];
+      return ['Tipo', 'Tipo Empresa', 'Senha', 'Registros', 'Dados Empresa', 'Contratos'];
     }
-    return ['Tipo', 'Dados', 'Detalhes', 'Credenciais'];
+    return ['Tipo', 'Detalhes', 'Senha', 'Registros', 'Dados', 'Contratos'];
   };
 
   const handleFieldChange = (field: keyof SignupFormData, value: string | boolean) => {
