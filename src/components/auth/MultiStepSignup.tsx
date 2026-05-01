@@ -621,7 +621,7 @@ export function MultiStepSignup({ onSwitchToLogin, initialReferralCode }: MultiS
                 </>
               ) : isLastStep ? (
                 "Finalizar Cadastro"
-              ) : currentStep === 2 && !emailVerified ? (
+              ) : currentStep === 5 && !emailVerified ? (
                 "Verificar E-mail"
               ) : (
                 <>
