@@ -13,6 +13,19 @@ export function GoogleAuthButton({ label = "Continuar com Google", className }: 
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
+    // O broker OAuth do Lovable só funciona em domínios .lovable.app e domínios customizados.
+    // No preview de desenvolvimento (*.lovableproject.com) o callback /~oauth/callback
+    // não é interceptado e cai no 404 do React Router.
+    const host = window.location.hostname;
+    const isDevPreview = host.endsWith(".lovableproject.com");
+    if (isDevPreview) {
+      toast.error(
+        "Login com Google não funciona no preview de desenvolvimento. Teste no app publicado (proplisted-hub.lovable.app) ou no seu domínio.",
+        { duration: 6000 },
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
