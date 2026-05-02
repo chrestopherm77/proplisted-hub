@@ -16,6 +16,7 @@ import { ProfileProfessionalCard } from '@/components/profile/ProfileProfessiona
 import { ProfilePasswordCard } from '@/components/profile/ProfilePasswordCard';
 import { MyBrandCard } from '@/components/profile/MyBrandCard';
 import { MySubscriptionCard } from '@/components/profile/MySubscriptionCard';
+import { CompleteProfileBanner } from '@/components/profile/CompleteProfileBanner';
 
 interface ProfileState {
   person_type: string;
@@ -153,6 +154,9 @@ const Profile = () => {
     <Layout>
       <PasswordRecoveryModal isOpen={isRecoveryModalOpen} onClose={handleCloseRecoveryModal} />
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+        {/* Banner Completar Cadastro */}
+        <CompleteProfileBanner />
+
         {/* Minha Assinatura */}
         <MySubscriptionCard />
 

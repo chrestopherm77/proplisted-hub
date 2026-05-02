@@ -1129,10 +1129,12 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean
+          last_completion_reminder_at: string | null
           name: string
           person_type: string | null
           phone: string
           profession: string | null
+          profile_completed: boolean
           referral_code: string | null
           referral_credits_granted: boolean
           referred_by: string | null
@@ -1171,10 +1173,12 @@ export type Database = {
           email?: string | null
           id: string
           is_active?: boolean
+          last_completion_reminder_at?: string | null
           name: string
           person_type?: string | null
           phone: string
           profession?: string | null
+          profile_completed?: boolean
           referral_code?: string | null
           referral_credits_granted?: boolean
           referred_by?: string | null
@@ -1213,10 +1217,12 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          last_completion_reminder_at?: string | null
           name?: string
           person_type?: string | null
           phone?: string
           profession?: string | null
+          profile_completed?: boolean
           referral_code?: string | null
           referral_credits_granted?: boolean
           referred_by?: string | null
@@ -2209,6 +2215,7 @@ export type Database = {
           new_count: number
         }[]
       }
+      mark_profile_complete: { Args: { p_user_id: string }; Returns: Json }
       purchase_lead_with_credits: {
         Args: { p_lead_id: string; p_user_id: string }
         Returns: Json
@@ -2225,6 +2232,10 @@ export type Database = {
           p_voucher_id: string
         }
         Returns: Json
+      }
+      touch_completion_reminder: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
       upsert_signup_progress: {
