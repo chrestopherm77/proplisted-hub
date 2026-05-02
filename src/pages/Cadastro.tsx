@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MultiStepSignup } from '@/components/auth/MultiStepSignup';
+import { SimpleSignup } from '@/components/auth/SimpleSignup';
 
 export default function Cadastro() {
   const [searchParams] = useSearchParams();
@@ -16,8 +16,6 @@ export default function Cadastro() {
     .replace(/[^a-z0-9-]/g, '')
     .slice(0, 40);
 
-  // Persiste o plano escolhido (sessionStorage) para que o pós-cadastro
-  // saiba para onde mandar o usuário (Planos com checkout aberto).
   useEffect(() => {
     if (planFromUrl) {
       import('@/lib/pendingPlan').then(({ setPendingPlan }) => setPendingPlan(planFromUrl));
@@ -30,7 +28,7 @@ export default function Cadastro() {
         <div className="flex justify-center mb-6">
           <BrandLogo size="lg" />
         </div>
-        <MultiStepSignup
+        <SimpleSignup
           onSwitchToLogin={() => navigate('/auth')}
           initialReferralCode={refFromUrl}
         />

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { BrandLogo } from '@/components/BrandLogo';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
