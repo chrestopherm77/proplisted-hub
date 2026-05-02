@@ -25,6 +25,10 @@ export default function CadastroRealizado() {
       n.queue=[]}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
       fbq('init','1603394050952329');
       fbq('track','PageView');
+      if (!sessionStorage.getItem('lead_fired')) {
+        fbq('track','Lead', {}, { eventID: crypto.randomUUID() });
+        sessionStorage.setItem('lead_fired','true');
+      }
     `;
     document.head.appendChild(inline);
 
