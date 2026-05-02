@@ -135,7 +135,9 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
       // Resgata indicação se houver
       const code = (initialReferralCode || "").toUpperCase().trim();
       if (code && data?.user?.id) {
-        await supabase.rpc("redeem_referral", { p_user_id: data.user.id, p_referral_code: code }).catch(() => {});
+        try {
+          await supabase.rpc("redeem_referral", { p_user_id: data.user.id, p_referral_code: code });
+        } catch { /* ignore */ }
       }
 
       toast.success("Cadastro realizado com sucesso!");
