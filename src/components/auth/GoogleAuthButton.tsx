@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { lovableExternal } from "@/integrations/lovable/external-auth";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -18,28 +18,35 @@ export function GoogleAuthButton({
   const handleClick = async () => {
     setLoading(true);
     try {
-      const result = await lovableExternal.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      // Usa o cliente OAuth gerenciado do backend (Lovable Cloud).
+      // O broker autoriza automaticamente *.lovable.app e os domínios
+      // personalizados registrados no projeto. Para domínios externos
+      // (Vercel/GitHub Pages) é necessário cadastrar o domínio como
+      // domínio personalizado do projeto OU configurar credenciais
+      // Google próprias no painel de autenticação do backend.
+      const redirectTo = `${window.location.origin}/cadastro-realizado`;
+
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: redirectTo,
         extraParams: { prompt: "select_account" },
       });
 
       if (result.error) {
         console.error("[GoogleAuth] error", result.error);
         toast.error(
-          "Não foi possível entrar com Google. Verifique se o domínio está autorizado e tente novamente.",
-          { duration: 6000 },
+          "Não foi possível entrar com Google neste domínio. Cadastre o domínio como domínio personalizado do projeto ou configure suas credenciais Google.",
+          { duration: 7000 },
         );
         setLoading(false);
         return;
       }
 
       if (result.redirected) {
-        // O navegador está sendo redirecionado para o Google.
+        // Navegador redirecionando para o Google.
         return;
       }
 
-      // Sessão criada com sucesso → vai para a página de cadastro concluído,
-      // que depois encaminha para os primeiros passos.
+      // Sessão já criada — vai para a página de cadastro concluído.
       window.location.href = "/cadastro-realizado";
     } catch (e) {
       console.error("[GoogleAuth] exception", e);
