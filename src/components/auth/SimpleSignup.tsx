@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { validateEmail, validatePhone, validatePassword, formatPhone } from "@/lib/validators";
 import { UF_OPTIONS } from "@/types/signup";
 import { GoogleAuthButton } from "./GoogleAuthButton";
-import { Loader2, User, Phone, MapPin, Building2, Mail, IdCard, Lock, Eye, EyeOff, ChevronsUpDown, Check } from "lucide-react";
+import { Loader2, User, Phone, MapPin, Building2, Mail, IdCard, Lock, Eye, EyeOff, ChevronsUpDown, Check, CheckCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackSignupProgress, markSignupCompleted } from "@/lib/signupTracking";
 import type { SignupFormData } from "@/types/signup";
@@ -43,6 +43,8 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [openCity, setOpenCity] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [isCheckingWa, setIsCheckingWa] = useState(false);
 
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
 
@@ -91,18 +93,47 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
     setCity("");
   };
 
+  const handlePhoneChange = (v: string) => {
+    setPhone(formatPhone(v));
+    if (phoneVerified) setPhoneVerified(false);
+  };
+
+  const handleCheckWhatsApp = async () => {
+    if (!phone || !validatePhone(phone)) {
+      setErrors((prev) => ({ ...prev, phone: "Telefone inválido" }));
+      return;
+    }
+    setIsCheckingWa(true);
+    setErrors((prev) => ({ ...prev, phone: "" }));
+    try {
+      const { data, error } = await supabase.functions.invoke("check-whatsapp", { body: { phone } });
+      if (error) throw new Error(error.message);
+      if (data?.exists) {
+        setPhoneVerified(true);
+        toast.success("WhatsApp verificado com sucesso!");
+      } else {
+        setErrors((prev) => ({ ...prev, phone: "Este número não possui WhatsApp ativo" }));
+        toast.error("Este número não possui WhatsApp ativo");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao verificar WhatsApp");
+    } finally {
+      setIsCheckingWa(false);
+    }
+  };
+
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Nome é obrigatório";
     if (!phone.trim()) e.phone = "Telefone é obrigatório";
     else if (!validatePhone(phone)) e.phone = "Telefone inválido";
+    if (!phoneVerified) e.phone = "Valide seu WhatsApp antes de continuar";
     if (!uf) e.uf = "Estado é obrigatório";
     if (!city) e.city = "Cidade é obrigatória";
     if (!email.trim()) e.email = "E-mail é obrigatório";
     else if (!validateEmail(email)) e.email = "E-mail inválido";
-    // CRECI opcional, mas se preencher tem que ter UF
-    if (creci.trim() && !creciUf) e.creciUf = "UF do CRECI é obrigatória";
-    if (creciUf && !creci.trim()) e.creci = "Número do CRECI é obrigatório";
+    if (!creci.trim()) e.creci = "CRECI é obrigatório";
+    if (!creciUf) e.creciUf = "UF do CRECI é obrigatória";
 
     const pwd = validatePassword(password);
     if (!pwd.valid) e.password = pwd.message;
@@ -142,13 +173,11 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         phone,
         address_uf: uf,
         address_city: city,
-        profession: creci.trim() ? "CORRETOR" : "",
+        profession: "CORRETOR",
+        creci: creci.trim(),
+        creci_uf: creciUf,
         referral_code: (initialReferralCode || "").toUpperCase().trim(),
       };
-      if (creci.trim()) {
-        metadata.creci = creci.trim();
-        metadata.creci_uf = creciUf;
-      }
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -213,10 +242,27 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
           {/* Telefone */}
           <div className="space-y-2">
             <Label htmlFor="phone" className="flex items-center gap-2"><Phone className="w-4 h-4" /> Telefone (WhatsApp) *</Label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
+            <Input id="phone" value={phone} onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="(11) 91234-5678"
+              disabled={phoneVerified}
               className={errors.phone ? "border-destructive" : ""} />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+            {!phoneVerified ? (
+              <Button type="button" variant="outline" className="w-full gap-2"
+                onClick={handleCheckWhatsApp}
+                disabled={isCheckingWa || !phone || !validatePhone(phone)}>
+                {isCheckingWa ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Verificando WhatsApp...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Validar WhatsApp</>
+                )}
+              </Button>
+            ) : (
+              <div className="flex items-center justify-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-md border border-green-200 dark:border-green-900 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span className="font-medium">WhatsApp verificado</span>
+              </div>
+            )}
           </div>
 
           {/* Estado / Cidade */}
@@ -283,13 +329,13 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
           {/* CRECI */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="creci" className="flex items-center gap-2"><IdCard className="w-4 h-4" /> CRECI <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+              <Label htmlFor="creci" className="flex items-center gap-2"><IdCard className="w-4 h-4" /> CRECI *</Label>
               <Input id="creci" value={creci} onChange={(e) => setCreci(e.target.value)}
                 placeholder="Número" className={errors.creci ? "border-destructive" : ""} />
               {errors.creci && <p className="text-sm text-destructive">{errors.creci}</p>}
             </div>
             <div className="space-y-2">
-              <Label>UF</Label>
+              <Label>UF *</Label>
               <Select value={creciUf} onValueChange={setCreciUf}>
                 <SelectTrigger className={errors.creciUf ? "border-destructive" : ""}>
                   <SelectValue placeholder="UF" />
@@ -332,8 +378,8 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
             {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando conta...</> : "Criar conta"}
+          <Button type="submit" className="w-full" disabled={loading || !phoneVerified}>
+            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando conta...</> : !phoneVerified ? "Valide seu WhatsApp para continuar" : "Criar conta"}
           </Button>
         </form>
 

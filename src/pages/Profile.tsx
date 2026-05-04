@@ -68,6 +68,21 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(defaultProfile);
+  const [initialProfile, setInitialProfile] = useState<ProfileState>(defaultProfile);
+
+  const FIELD_LABELS: Partial<Record<keyof ProfileState, string>> = {
+    name: 'Nome', cpf: 'CPF', profession: 'Profissão',
+    company_name: 'Razão Social', cnpj: 'CNPJ', company_type: 'Tipo de Empresa',
+    phone: 'Telefone', address: 'Endereço', address_uf: 'Estado',
+    address_city: 'Cidade', address_neighborhood: 'Bairro',
+    creci: 'CRECI', creci_uf: 'UF do CRECI', cau: 'CAU', cau_uf: 'UF do CAU',
+    crea: 'CREA', crea_uf: 'UF do CREA',
+    creci_pj: 'CRECI PJ', creci_pj_uf: 'UF do CRECI PJ',
+    crea_pj: 'CREA PJ', crea_pj_uf: 'UF do CREA PJ',
+    rt_name: 'Nome do RT', rt_cpf: 'CPF do RT',
+    rt_crea: 'CREA do RT', rt_crea_uf: 'UF do CREA do RT',
+    rt_cau: 'CAU do RT', rt_cau_uf: 'UF do CAU do RT',
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,6 +119,7 @@ const Profile = () => {
           if (data[key] != null) mapped[key] = data[key] as string;
         }
         setProfile(mapped);
+        setInitialProfile(mapped);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -119,6 +135,21 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
+
+    // Bloqueia remoção de dados já preenchidos
+    for (const key of Object.keys(FIELD_LABELS) as (keyof ProfileState)[]) {
+      const wasFilled = (initialProfile[key] || '').toString().trim().length > 0;
+      const nowEmpty = !(profile[key] || '').toString().trim();
+      if (wasFilled && nowEmpty) {
+        toast({
+          title: "Não é possível remover",
+          description: `O campo "${FIELD_LABELS[key]}" não pode ser deixado em branco. Você pode atualizá-lo, mas não removê-lo.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -131,6 +162,7 @@ const Profile = () => {
 
       if (error) throw error;
 
+      setInitialProfile(profile);
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" });
     } catch (error) {
       console.error('Error saving profile:', error);
