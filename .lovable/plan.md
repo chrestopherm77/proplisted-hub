@@ -1,35 +1,57 @@
-## Objetivo
+# Plano
 
-Comprimir e converter as fotos do Portal de Imóveis para **WebP** no navegador antes do upload, reduzindo o tamanho em pelo menos ~50% sem perda visual relevante.
+## 1. Validação de WhatsApp no cadastro do sistema (`SimpleSignup.tsx`)
 
-## Mudanças
+Replicar o fluxo do formulário público (`/lp` → `ContactStep.tsx`):
 
-### 1. Novo helper `src/lib/imageCompression.ts`
+- Adicionar estado `phoneVerified` + `isCheckingWhatsApp`.
+- Após o usuário digitar o telefone, exibir um botão **"Validar WhatsApp"** logo abaixo do campo.
+- Ao clicar, chamar a edge function existente `check-whatsapp` com `{ phone }`.
+  - Se `exists === true` → marcar como verificado, mostrar badge verde "WhatsApp verificado com sucesso!" e travar o campo telefone (disabled).
+  - Se não → mostrar erro "Este número não possui WhatsApp ativo".
+- Se o usuário editar o telefone depois, resetar `phoneVerified` para `false`.
+- No `validate()` e no `handleSubmit`, **bloquear o envio** se `phoneVerified` for `false` (toast: "Valide seu WhatsApp antes de continuar").
+- O botão "Criar conta" fica desabilitado enquanto o WhatsApp não estiver verificado.
 
-Função `compressImage(file, opts)` que:
+## 2. Tornar TODOS os campos do cadastro obrigatórios
 
-- Carrega a imagem em um `<img>` via `URL.createObjectURL`.
-- Redimensiona via `<canvas>` para no máximo `1920px` no maior lado (preservando proporção).
-- Re-encoda em **WebP** com qualidade inicial `0.82`.
-- Se o resultado não ficar ≥50% menor que o original, tenta qualidades decrescentes (0.78 → 0.5) até atingir o alvo.
-- Pula GIF/SVG e arquivos não-imagem (retorna o original).
-- Se o navegador não suportar `image/webp` no `canvas.toBlob` (raro: Safari < 14), faz fallback para JPEG `0.82`.
-- Se mesmo após compressão ficar maior que o original (imagem já otimizada), retorna o arquivo original.
+Hoje no `SimpleSignup` o **CRECI** e **UF do CRECI** são opcionais. Vamos tornar todos os campos visíveis obrigatórios:
 
-### 2. Integrar no `src/components/portal/PropertyPhotosUpload.tsx`
+- Remover o rótulo "(opcional)" do CRECI.
+- Adicionar validação: `creci` obrigatório, `creciUf` obrigatório.
+- Manter as validações já existentes de nome, telefone, UF, cidade, e-mail, senha e confirmação.
+- Atualizar o metadata enviado ao Supabase para sempre incluir `creci`, `creci_uf` e `profession: "CORRETOR"`.
 
-- Importar `compressImage`.
-- No loop de upload, antes de enviar pro Supabase Storage, chamar `compressImage(original, { maxDimension: 1920, initialQuality: 0.82, targetRatio: 0.5, outputType: 'image/webp' })`.
-- Trocar a extensão para `.webp` (ou `.jpg` no fallback) e passar `contentType: file.type` no upload.
-- Atualizar o texto do dropzone: "as imagens são otimizadas e convertidas para WebP automaticamente para carregar mais rápido".
-- Em caso de erro na compressão, fallback para o arquivo original.
+## 3. Bloquear remoção de dados pessoais já preenchidos no Perfil (`src/pages/Profile.tsx` + cards)
 
-### 3. Sem mudanças no banco / storage
+Regra: **se um campo já tem valor salvo no banco, o usuário pode editá-lo, mas não pode deixá-lo vazio**. Isso evita que pessoas "limpem" dados pessoais já fornecidos.
 
-Roda 100% no client. O bucket `properties` já é público; estrutura `photos` (jsonb) não muda. As fotos antigas continuam funcionando normalmente.
+Implementação:
 
-## Detalhes técnicos
+- Guardar um snapshot `initialProfile` logo após `fetchProfile()` (cópia do que veio do banco).
+- Criar helper `isFieldLocked(field)` → retorna `true` se `initialProfile[field]` tinha conteúdo (não vazio/null).
+- No `handleSave`:
+  - Antes de chamar `update`, validar cada campo: se estava preenchido inicialmente e agora está vazio → bloquear o save com toast: "Não é possível remover [campo]. Você pode atualizar para um novo valor, mas não deixar em branco."
+- Nos componentes filhos (`ProfilePersonalCard`, `ProfileLocationCard`, `ProfileProfessionalCard`, e o input de telefone direto em `Profile.tsx`):
+  - Para `Input`: adicionar prop `required` quando o campo veio preenchido (visual) e onChange impede salvar vazio (validação acima cobre).
+  - Para `Select`: não impedimos a UI de trocar valor, mas se o usuário tentar trocar para vazio, o save bloqueia.
+  - Adicionar texto auxiliar discreto abaixo do campo bloqueado: *"Este dado não pode ser removido."*
 
-- WebP normalmente entrega ~25–35% a mais de economia que JPEG na mesma qualidade visual — combinado com o resize para 1920px, fotos de celular (3–8 MB) costumam cair para 80–400 KB.
-- `targetRatio: 0.5` = "tentar chegar em ≤50% do tamanho original".
-- Fallback para JPEG só dispara se `canvas.toBlob('image/webp', ...)` retornar `null`.
+Campos cobertos pelo bloqueio: todos os campos de `ProfileState` (nome, CPF, profissão, empresa, CNPJ, telefone, endereço, UF, cidade, bairro, CRECI/CAU/CREA PF e PJ, dados do RT). E-mail já é não editável.
+
+## 4. Detalhes técnicos
+
+- Reuso da edge function `check-whatsapp` (já existente, usada em `/lp`).
+- `formatPhone` continua sendo usado no input.
+- Não há mudanças de schema do banco.
+- Não há nova RLS.
+
+## Arquivos a editar
+
+- `src/components/auth/SimpleSignup.tsx` — validação WhatsApp + tornar CRECI obrigatório.
+- `src/pages/Profile.tsx` — snapshot + validação de "não pode esvaziar" no `handleSave`.
+- `src/components/profile/ProfilePersonalCard.tsx` — texto auxiliar nos campos bloqueados.
+- `src/components/profile/ProfileLocationCard.tsx` — idem.
+- `src/components/profile/ProfileProfessionalCard.tsx` — idem.
+
+Após sua aprovação, implemento as mudanças.
