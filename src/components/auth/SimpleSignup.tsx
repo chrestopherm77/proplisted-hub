@@ -20,6 +20,8 @@ import { UF_OPTIONS } from "@/types/signup";
 import { GoogleAuthButton } from "./GoogleAuthButton";
 import { Loader2, User, Phone, MapPin, Building2, Mail, IdCard, Lock, Eye, EyeOff, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackSignupProgress, markSignupCompleted } from "@/lib/signupTracking";
+import type { SignupFormData } from "@/types/signup";
 
 interface SimpleSignupProps {
   onSwitchToLogin: () => void;
