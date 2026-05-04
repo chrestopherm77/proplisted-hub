@@ -242,10 +242,27 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
           {/* Telefone */}
           <div className="space-y-2">
             <Label htmlFor="phone" className="flex items-center gap-2"><Phone className="w-4 h-4" /> Telefone (WhatsApp) *</Label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
+            <Input id="phone" value={phone} onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="(11) 91234-5678"
+              disabled={phoneVerified}
               className={errors.phone ? "border-destructive" : ""} />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+            {!phoneVerified ? (
+              <Button type="button" variant="outline" className="w-full gap-2"
+                onClick={handleCheckWhatsApp}
+                disabled={isCheckingWa || !phone || !validatePhone(phone)}>
+                {isCheckingWa ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Verificando WhatsApp...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Validar WhatsApp</>
+                )}
+              </Button>
+            ) : (
+              <div className="flex items-center justify-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-md border border-green-200 dark:border-green-900 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span className="font-medium">WhatsApp verificado</span>
+              </div>
+            )}
           </div>
 
           {/* Estado / Cidade */}
