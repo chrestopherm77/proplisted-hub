@@ -226,24 +226,15 @@ export default function PrimeirosPassos() {
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto px-4 md:px-0">
+        <div className="mt-8 max-w-md mx-auto px-4 md:px-0">
           <Button
             size="lg"
             variant="default"
-            onClick={() => navigate('/my-leads')}
-            className="h-auto py-4"
+            onClick={() => navigate('/leads')}
+            className="h-auto py-4 w-full"
           >
             <ShoppingBag className="mr-2 h-5 w-5" />
-            Ir para Meus Leads
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => navigate('/comprar-creditos')}
-            className="h-auto py-4"
-          >
-            <Coins className="mr-2 h-5 w-5" />
-            Comprar Créditos
+            Ir para página inicial
           </Button>
         </div>
       </div>
