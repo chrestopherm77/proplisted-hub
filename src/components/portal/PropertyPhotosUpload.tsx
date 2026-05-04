@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sortPhotos, type PropertyPhoto } from '@/lib/propertyUtils';
+import { compressImage } from '@/lib/imageCompression';
 
 interface PropertyPhotosUploadProps {
   userId: string;
@@ -34,26 +35,40 @@ export function PropertyPhotosUpload({ userId, photos, onChange, max = 30 }: Pro
       const baseOrder = photos.length;
 
       for (let i = 0; i < arr.length; i++) {
-        const file = arr[i];
-        if (!file.type.startsWith('image/')) {
-          toast({ title: 'Arquivo inválido', description: `${file.name} não é uma imagem.`, variant: 'destructive' });
+        const original = arr[i];
+        if (!original.type.startsWith('image/')) {
+          toast({ title: 'Arquivo inválido', description: `${original.name} não é uma imagem.`, variant: 'destructive' });
           continue;
         }
-        if (file.size > 10 * 1024 * 1024) {
-          toast({ title: 'Arquivo muito grande', description: `${file.name} excede 10MB.`, variant: 'destructive' });
+        if (original.size > 20 * 1024 * 1024) {
+          toast({ title: 'Arquivo muito grande', description: `${original.name} excede 20MB.`, variant: 'destructive' });
           continue;
         }
 
-        const ext = file.name.split('.').pop() || 'jpg';
+        // Comprime + converte para WebP no navegador antes de enviar
+        let file = original;
+        try {
+          file = await compressImage(original, {
+            maxDimension: 1920,
+            initialQuality: 0.82,
+            targetRatio: 0.5,
+            outputType: 'image/webp',
+          });
+        } catch (err) {
+          console.warn('Falha ao comprimir, enviando original:', err);
+        }
+
+        const ext = (file.name.split('.').pop() || 'webp').toLowerCase();
         const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
         const { error: upErr } = await supabase.storage.from('properties').upload(path, file, {
           cacheControl: '3600',
           upsert: false,
+          contentType: file.type,
         });
         if (upErr) {
           console.error(upErr);
-          toast({ title: 'Erro no upload', description: file.name, variant: 'destructive' });
+          toast({ title: 'Erro no upload', description: original.name, variant: 'destructive' });
           continue;
         }
 
@@ -133,7 +148,7 @@ export function PropertyPhotosUpload({ userId, photos, onChange, max = 30 }: Pro
         >
           <Upload className="h-8 w-8 mx-auto mb-2" />
           <p className="text-sm">Clique para adicionar fotos do imóvel</p>
-          <p className="text-xs mt-1">Até {max} fotos · máx. 10MB cada</p>
+          <p className="text-xs mt-1">Até {max} fotos · as imagens são otimizadas e convertidas para WebP automaticamente</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
