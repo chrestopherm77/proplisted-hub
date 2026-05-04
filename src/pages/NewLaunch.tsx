@@ -541,6 +541,9 @@ const NewLaunch = () => {
             <div>
               <Label>Drive (Link)</Label>
               <Input value={driveLink} onChange={e => setDriveLink(e.target.value)} placeholder="https://drive.google.com/..." />
+              <p className="text-xs text-muted-foreground mt-1">
+                ⚠️ O link do Drive precisa estar com permissão pública (qualquer pessoa com o link pode visualizar) para que os corretores consigam abrir.
+              </p>
             </div>
           </CardContent>
         </Card>
