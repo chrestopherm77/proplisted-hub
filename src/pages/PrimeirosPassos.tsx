@@ -47,6 +47,23 @@ export default function PrimeirosPassos() {
     if (!user) navigate('/auth');
   }, [user, authLoading, navigate]);
 
+  // Log "acessou Primeiros Passos" uma vez por sessão do navegador
+  useEffect(() => {
+    if (!user?.id) return;
+    const key = `activity_logged_onboarding_${user.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    supabase
+      .from('user_activity_log' as any)
+      .insert({
+        user_id: user.id,
+        event_type: 'ONBOARDING_VIEW',
+        event_label: 'Acessou os Primeiros Passos',
+        metadata: {},
+      })
+      .then(() => undefined);
+  }, [user?.id]);
+
   useEffect(() => {
     const load = async () => {
       const [mainRes, listRes, profileRes] = await Promise.all([
