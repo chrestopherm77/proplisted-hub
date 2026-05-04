@@ -20,6 +20,7 @@ import { PublicVideosManagement } from '@/components/admin/PublicVideosManagemen
 import { SupportManagement } from '@/components/admin/SupportManagement';
 import { WhatsappCityGroupsManagement } from '@/components/admin/WhatsappCityGroupsManagement';
 import { SignupProgressManagement } from '@/components/admin/SignupProgressManagement';
+import { UserActivityLog } from '@/components/admin/UserActivityLog';
 
 type Section =
   | 'dashboard'
@@ -42,7 +43,8 @@ type Section =
   | 'public-videos'
   | 'support'
   | 'whatsapp-groups'
-  | 'signup-progress';
+  | 'signup-progress'
+  | 'user-activity';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -66,6 +68,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   support: SupportManagement,
   'whatsapp-groups': WhatsappCityGroupsManagement,
   'signup-progress': SignupProgressManagement,
+  'user-activity': UserActivityLog,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {

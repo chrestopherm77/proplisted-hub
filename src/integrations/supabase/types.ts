@@ -1902,6 +1902,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          created_at: string
+          event_label: string
+          event_type: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_label: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_label?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_brands: {
         Row: {
           company_name: string | null
@@ -2214,6 +2241,15 @@ export type Database = {
           max_purchases: number
           new_count: number
         }[]
+      }
+      log_user_activity: {
+        Args: {
+          p_event_label: string
+          p_event_type: string
+          p_metadata?: Json
+          p_user_id: string
+        }
+        Returns: undefined
       }
       mark_profile_complete: { Args: { p_user_id: string }; Returns: Json }
       purchase_lead_with_credits: {

@@ -52,6 +52,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Leads', url: '/admin/leads', icon: Package, group: 'Visão Geral' },
   { title: 'Rastreamento', url: '/admin/tracking', icon: Activity, group: 'Visão Geral' },
   { title: 'Etapas de Cadastro', url: '/admin/signup-progress', icon: ListChecks, group: 'Visão Geral' },
+  { title: 'Atividade dos Usuários', url: '/admin/user-activity', icon: History, group: 'Visão Geral' },
 
   { title: 'Compras (Créditos)', url: '/admin/purchases', icon: CreditCard, group: 'Financeiro' },
   { title: 'Compra de Leads', url: '/admin/lead-purchases', icon: ShoppingCart, group: 'Financeiro' },
