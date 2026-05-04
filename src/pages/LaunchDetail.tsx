@@ -76,12 +76,9 @@ const LaunchDetail = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    if (isAdmin === false && !isConstrutora) { navigate('/'); return; }
-    if (isAdmin || isConstrutora) {
-      fetchLaunch();
-      fetchBrokerName();
-    }
-  }, [id, user, authLoading, isAdmin]);
+    fetchLaunch();
+    fetchBrokerName();
+  }, [id, user, authLoading]);
 
   const fetchBrokerName = async () => {
     if (!user) return;
