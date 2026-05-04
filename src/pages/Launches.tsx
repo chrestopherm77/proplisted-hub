@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save, Megaphone } from 'lucide-react';
+import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save, Megaphone, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildWaLink } from '@/lib/whatsapp';
 
