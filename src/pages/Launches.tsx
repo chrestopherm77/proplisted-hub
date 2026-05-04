@@ -13,6 +13,7 @@ import { buildWaLink } from '@/lib/whatsapp';
 
 interface Launch {
   id: string;
+  user_id: string | null;
   name: string;
   banner_url: string | null;
   logo_url: string | null;
@@ -85,7 +86,7 @@ const Launches = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('launches')
-      .select('id, name, banner_url, logo_url, city, state, zone, price_from, price_max, property_type, size_m2_min, size_m2_max, status, is_active')
+      .select('id, user_id, name, banner_url, logo_url, city, state, zone, price_from, price_max, property_type, size_m2_min, size_m2_max, status, is_active')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
     if (!error && data) setLaunches(data);
