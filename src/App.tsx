@@ -45,6 +45,7 @@ import CadastroRealizado from "./pages/CadastroRealizado";
 import Indicar from "./pages/Indicar";
 import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
+import { PageViewTracker } from "./components/PageViewTracker";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => {
       <BrowserRouter>
         <PartnerProvider>
         <RedirectHandler />
+        <PageViewTracker />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
