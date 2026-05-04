@@ -71,8 +71,7 @@ export function PropertyCard({ property, currentUserId }: PropertyCardProps) {
             <Button
               type="button"
               size="sm"
-              variant="secondary"
-              className="absolute bottom-2 right-2 h-8 gap-1 shadow-md bg-background/95 hover:bg-background"
+              className="absolute bottom-2 right-2 h-8 gap-1 shadow-md bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
