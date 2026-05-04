@@ -178,6 +178,9 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
       }
 
       toast.success("Cadastro realizado com sucesso!");
+      if (data?.user?.id) {
+        try { await markSignupCompleted(data.user.id, buildTrackingData(), 1); } catch { /* ignore */ }
+      }
       const { clearPendingPlan } = await import("@/lib/pendingPlan");
       clearPendingPlan();
       setTimeout(() => { window.location.href = "/cadastro-realizado"; }, 600);
