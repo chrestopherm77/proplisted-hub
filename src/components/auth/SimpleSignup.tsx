@@ -329,7 +329,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
           {/* CRECI */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="creci" className="flex items-center gap-2"><IdCard className="w-4 h-4" /> CRECI <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+              <Label htmlFor="creci" className="flex items-center gap-2"><IdCard className="w-4 h-4" /> CRECI *</Label>
               <Input id="creci" value={creci} onChange={(e) => setCreci(e.target.value)}
                 placeholder="Número" className={errors.creci ? "border-destructive" : ""} />
               {errors.creci && <p className="text-sm text-destructive">{errors.creci}</p>}
