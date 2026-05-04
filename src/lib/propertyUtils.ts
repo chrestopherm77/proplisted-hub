@@ -142,7 +142,6 @@ export const PROPERTY_FEATURES: FeatureGroup[] = [
         label: 'Tipo de Piso',
         options: [
           'Porcelanato',
-          'Vinílico',
           'Madeira Maciça',
           'Laminado/Vinílico',
           'Mármore/Granito',
@@ -159,14 +158,12 @@ export const PROPERTY_FEATURES: FeatureGroup[] = [
           'Ar-condicionado Instalado',
           'Apenas infraestrutura',
           'Sistema Central (Chiller/VRF)',
-          'Não possui',
         ],
       },
       {
         key: 'acoustic',
         label: 'Tratamento Acústico',
         options: [
-          'Janelas com vidro padrão',
           'Janelas com vidro duplo/antirruído',
           'Manta acústica na laje',
           'Forro Acústico Removível',
@@ -184,17 +181,17 @@ export const PROPERTY_FEATURES: FeatureGroup[] = [
       {
         key: 'heating',
         label: 'Aquecimento',
-        options: ['A gás', 'Solar', 'Elétrico', 'Não se aplica'],
+        options: ['A gás', 'Solar', 'Elétrico'],
       },
       {
         key: 'blinds',
         label: 'Persianas/Fechamento',
-        options: ['Manual', 'Automatizada', 'Piso-teto/Fachada de Vidro'],
+        options: ['Automatizada', 'Piso-teto/Fachada de Vidro'],
       },
       {
         key: 'ceiling',
         label: 'Pé-direito',
-        options: ['Padrão', 'Duplo', 'Elevado', 'Pé-direito Industrial (6m+)'],
+        options: ['Duplo', 'Elevado', 'Pé-direito Industrial (6m+)'],
       },
     ],
   },
@@ -218,7 +215,6 @@ export const PROPERTY_FEATURES: FeatureGroup[] = [
         options: [
           'Planejados residenciais',
           'Estações de Trabalho/Mobiliário de Escritório',
-          'Sem armários',
         ],
       },
       {
@@ -230,7 +226,6 @@ export const PROPERTY_FEATURES: FeatureGroup[] = [
           'Micro-ondas embutido',
           'Máquina de lavar louças',
           'Equipamentos de Cozinha Industrial',
-          'Sem equipamentos',
         ],
       },
       {
