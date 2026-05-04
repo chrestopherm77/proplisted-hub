@@ -135,6 +135,21 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
+
+    // Bloqueia remoção de dados já preenchidos
+    for (const key of Object.keys(FIELD_LABELS) as (keyof ProfileState)[]) {
+      const wasFilled = (initialProfile[key] || '').toString().trim().length > 0;
+      const nowEmpty = !(profile[key] || '').toString().trim();
+      if (wasFilled && nowEmpty) {
+        toast({
+          title: "Não é possível remover",
+          description: `O campo "${FIELD_LABELS[key]}" não pode ser deixado em branco. Você pode atualizá-lo, mas não removê-lo.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -147,6 +162,7 @@ const Profile = () => {
 
       if (error) throw error;
 
+      setInitialProfile(profile);
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" });
     } catch (error) {
       console.error('Error saving profile:', error);
