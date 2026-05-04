@@ -1,96 +1,65 @@
-## Mapeamento de Log do Usuário (Admin)
+## Objetivo
 
-Criar uma nova seção no admin que registra e exibe um histórico cronológico de atividades de cada corretor no sistema (cadastro, primeiros passos, balcão, publicações, etc.).
+1. Permitir que o Admin dispare manualmente um lançamento no(s) grupo(s) de WhatsApp (igual ao botão já existente nos leads).
+2. Corrigir a formatação do preço na mensagem do grupo (hoje sai `R$ 55046400`, deve sair `R$ 550.464,00`).
 
-### Como vai funcionar
+## Mudanças
 
-**Tela:** novo item no menu admin "**Atividade dos Usuários**" (`/admin/user-activity`).
+### 1. Corrigir formatação de preço
+**Arquivo:** `supabase/functions/notify-launch-group/index.ts`
 
-Layout em duas partes:
-1. **Lista de corretores** (esquerda) — busca por nome/e-mail/telefone, mostra cada usuário com nº total de eventos e data da última atividade.
-2. **Timeline do usuário selecionado** (direita) — clica num corretor e abre a linha do tempo cronológica reversa: tipo de evento, descrição amigável, e horário (relativo + absoluto no hover).
+Os campos `price_from` / `price_max` são armazenados como string de centavos (ex: `"55046400"` = R$ 550.464,00). Adicionar um helper local `formatBRL` que converte centavos → `R$ 550.464,00` (mesma lógica do `formatCurrency` em `src/pages/Launches.tsx`) e aplicá-lo em `price_from` e `price_max`. Se houver `price_max`, exibir como faixa: `*Faixa de preço:* R$ X – R$ Y`. Caso contrário, manter `*A partir de:* R$ X`.
 
-### Eventos rastreados
+### 2. Botão de disparo no grupo (Admin)
+**Arquivo:** `src/pages/Launches.tsx`
 
-| Categoria | Quando registra |
-|---|---|
-| `SIGNUP` | Ao concluir cadastro |
-| `LOGIN` | Já existe (`login_history`), agregado na timeline |
-| `ONBOARDING_VIEW` | Acessa /primeiros-passos |
-| `LEAD_PURCHASE` | Compra um lead (Balcão) |
-| `CREDIT_PURCHASE` | Compra créditos |
-| `SUBSCRIPTION` | Assina/cancela plano |
-| `PROPERTY_PUBLISHED` | Publica imóvel no Portal |
-| `LAUNCH_PUBLISHED` | Publica lançamento |
-| `PROPERTY_SEARCH_CREATED` | Cria captação no Balcão |
-| `CREATIVE_GENERATED` | Gera criativo |
-| `LEAD_ALERT_CREATED` | Cria alerta de lead |
-| `PROFILE_COMPLETED` | Completa perfil |
-| `SUPPORT_TICKET` | Abre chamado |
+Adicionar, no card de cada lançamento, um botão flutuante "megafone" visível apenas quando `isAdmin === true`. Ao clicar:
+- `event.stopPropagation()` para não abrir o detalhe do lançamento
+- chama `supabase.functions.invoke('notify-launch-group', { body: { launchId: launch.id } })`
+- mostra toast de sucesso/erro (mesmo padrão do botão em `LeadsManagement.tsx`: trata mensagens de instabilidade do MegaAPI)
 
-### Backfill (usuários já cadastrados)
+Também adicionar o mesmo botão em `src/pages/LaunchDetail.tsx` (no header da página, ao lado das ações já existentes), visível só para admin, para conveniência.
 
-Migration popula a tabela com eventos históricos a partir de:
-- `profiles.created_at` → SIGNUP
-- `login_history` → LOGIN
-- `purchases` → LEAD_PURCHASE
-- `credit_purchases` → CREDIT_PURCHASE
-- `properties.created_at` → PROPERTY_PUBLISHED
-- `launches.created_at` → LAUNCH_PUBLISHED
-- `property_searches.created_at` → PROPERTY_SEARCH_CREATED
-- `creatives.created_at` → CREATIVE_GENERATED
-- `lead_alerts.created_at` → LEAD_ALERT_CREATED
+### 3. Backend já está pronto
+A edge function `notify-launch-group` já aceita admin como disparo válido (`launch.user_id !== user.id && !isAdmin` → 403). Nenhuma mudança de permissão necessária — basta corrigir o preço.
 
-Assim a tela já nasce com histórico completo de quem está na base.
+## Detalhes técnicos do helper de preço
 
----
-
-### Detalhes técnicos
-
-**1. Nova tabela `user_activity_log`**
+```ts
+function formatBRL(raw: string | null): string {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return "";
+  const num = parseInt(digits, 10);
+  return `R$ ${(num / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
 ```
-id uuid PK
-user_id uuid (índice)
-event_type text (índice)
-event_label text  -- texto pronto pra exibir em PT-BR
-metadata jsonb    -- ex: { lead_id, property_id, amount }
-created_at timestamptz default now() (índice DESC)
+
+Substitui a linha atual:
 ```
-- RLS: SELECT/INSERT/DELETE apenas para `MASTER_ADMIN`.
-- INSERT também permitido pelo próprio usuário no seu `user_id` (pra logging client-side).
+if (launch.price_from) lines.push(`*A partir de:* R$ ${String(launch.price_from).replace(/^R\$\s*/i, "")}`);
+```
 
-**2. Triggers automáticos** (registro futuro sem mexer em código de feature):
-- `AFTER INSERT ON profiles` → SIGNUP
-- `AFTER INSERT ON login_history` → LOGIN
-- `AFTER INSERT ON purchases` (status PAID) → LEAD_PURCHASE
-- `AFTER INSERT ON credit_purchases` (status PAID) → CREDIT_PURCHASE
-- `AFTER INSERT ON properties` → PROPERTY_PUBLISHED
-- `AFTER INSERT ON launches` → LAUNCH_PUBLISHED
-- `AFTER INSERT ON property_searches` → PROPERTY_SEARCH_CREATED
-- `AFTER INSERT ON creatives` → CREATIVE_GENERATED
-- `AFTER INSERT ON lead_alerts` → LEAD_ALERT_CREATED
-- `AFTER UPDATE ON profiles` quando `profile_completed` vira true → PROFILE_COMPLETED
+Por:
+```
+const pf = formatBRL(launch.price_from);
+const pm = formatBRL(launch.price_max);
+if (pf && pm) lines.push(`*Faixa de preço:* ${pf} – ${pm}`);
+else if (pf) lines.push(`*A partir de:* ${pf}`);
+```
 
-**3. Logging client-side** (eventos que não têm row no banco):
-- `ONBOARDING_VIEW` em `PrimeirosPassos.tsx` (insert na primeira visualização da sessão)
-- `SUPPORT_TICKET` no `SupportChatWidget` quando abre chamado
+## Resultado esperado da mensagem
 
-**4. Backfill** — bloco SQL único na mesma migration que insere os históricos descritos acima.
+```
+🏗️ Novo Lançamento na sua região!
 
-**5. UI** — `src/components/admin/UserActivityLog.tsx`:
-- Query 1: lista de usuários com `count(*)` e `max(created_at)` agregando `user_activity_log` + join `profiles`.
-- Query 2: timeline do user selecionado (paginada, 100 por página).
-- Ícone por tipo, cor por categoria, busca, filtro por tipo de evento.
-- Realtime opcional via canal `user_activity_log`.
+CITTÁ 07
+Tipo: Apartamento
+Local: Quintas de São José - Sul - Ribeirão Preto - SP
+Área: 62 a 82 m²
+Faixa de preço: R$ 550.464,00 – R$ 870.477,00
+Status: Em construção
 
-**6. Plumbing**
-- Adicionar `'user-activity'` ao type `Section` e `COMPONENTS` em `src/pages/Admin.tsx`.
-- Adicionar rota `/admin/user-activity` em `src/App.tsx`.
-- Adicionar item "Atividade dos Usuários" em `ADMIN_NAV` (grupo "Visão Geral", ícone `Activity` ou `History`).
-
-### Arquivos criados/editados
-- **Migration nova**: tabela + RLS + 10 triggers + backfill.
-- **Criar** `src/components/admin/UserActivityLog.tsx`.
-- **Editar** `src/pages/Admin.tsx`, `src/App.tsx`, `src/components/admin/AdminLayout.tsx`.
-- **Editar** `src/pages/PrimeirosPassos.tsx` (log ONBOARDING_VIEW).
-- **Editar** `src/components/support/SupportChatWidget.tsx` (log SUPPORT_TICKET na criação).
+Confira detalhes, tabela e book completo no sistema:
+👉 https://www.conectaeimob.com.br/launches
+```

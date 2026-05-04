@@ -87,7 +87,17 @@ Deno.serve(async (req) => {
       const sz = [launch.size_m2_min, launch.size_m2_max].filter(Boolean).join(" a ");
       lines.push(`*Área:* ${sz} m²`);
     }
-    if (launch.price_from) lines.push(`*A partir de:* R$ ${String(launch.price_from).replace(/^R\$\s*/i, "")}`);
+    const formatBRL = (raw: string | null): string => {
+      if (!raw) return "";
+      const digits = String(raw).replace(/\D/g, "");
+      if (!digits) return "";
+      const num = parseInt(digits, 10);
+      return `R$ ${(num / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    };
+    const pf = formatBRL(launch.price_from);
+    const pm = formatBRL(launch.price_max);
+    if (pf && pm) lines.push(`*Faixa de preço:* ${pf} – ${pm}`);
+    else if (pf) lines.push(`*A partir de:* ${pf}`);
     if (launch.status) lines.push(`*Status:* ${launch.status}`);
 
     let groupMsg = `*🏗️ Novo Lançamento na sua região!*\n\n`;
