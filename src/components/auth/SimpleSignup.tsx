@@ -43,6 +43,8 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [openCity, setOpenCity] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [isCheckingWa, setIsCheckingWa] = useState(false);
 
   const { states, cities, loadingStates, loadingCities, fetchCities, clearCities } = useIBGELocation();
 
