@@ -58,6 +58,7 @@ const EVENT_META: Record<string, { icon: any; color: string; bg: string }> = {
   LEAD_ALERT_CREATED: { icon: Bell, color: "text-cyan-600", bg: "bg-cyan-50" },
   ONBOARDING_VIEW: { icon: Activity, color: "text-teal-600", bg: "bg-teal-50" },
   SUPPORT_TICKET: { icon: Activity, color: "text-rose-600", bg: "bg-rose-50" },
+  PAGE_VIEW: { icon: Activity, color: "text-sky-600", bg: "bg-sky-50" },
 };
 
 function metaFor(type: string) {
@@ -76,6 +77,7 @@ function formatMetadata(m: Record<string, unknown>): string | null {
   if (m.credits !== undefined && m.credits !== null) parts.push(`${m.credits} créditos`);
   if (m.payment_method) parts.push(String(m.payment_method));
   if (m.reference_code) parts.push(String(m.reference_code));
+  if (m.path) parts.push(String(m.path));
   return parts.length ? parts.join(" · ") : null;
 }
 
