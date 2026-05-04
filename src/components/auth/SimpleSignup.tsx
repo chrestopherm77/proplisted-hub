@@ -51,6 +51,41 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
     else clearCities();
   }, [uf, fetchCities, clearCities]);
 
+  // Monta payload do tracking (etapa única)
+  const buildTrackingData = (): SignupFormData => ({
+    personType: "PF",
+    email,
+    phone,
+    address: "",
+    addressUf: uf,
+    addressCity: city,
+    addressNeighborhood: "",
+    name,
+    cpf: "",
+    profession: creci.trim() ? "CORRETOR" : null,
+    creci,
+    creciUf,
+    cau: "", cauUf: "", crea: "", creaUf: "",
+    companyName: "", cnpj: "", companyType: null,
+    creciPj: "", creciPjUf: "", creaPj: "", creaPjUf: "",
+    rtName: "", rtCpf: "", rtCrea: "", rtCreaUf: "", rtCau: "", rtCauUf: "",
+    password: "", confirmPassword: "",
+    acceptedContract: false, acceptedDPA: false, acceptedTermsOfUse: false,
+    referralCode: initialReferralCode || "",
+  });
+
+  // Rastreia "Em preenchimento" sempre que campos relevantes mudam
+  useEffect(() => {
+    const hasAnyData = !!(name.trim() || email.trim() || phone.trim());
+    if (!hasAnyData) return;
+    trackSignupProgress(buildTrackingData(), {
+      currentStep: 1,
+      stepLabel: "Em preenchimento",
+      totalSteps: 1,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, email, phone, uf, city, creci, creciUf]);
+
   const handleUfChange = (newUf: string) => {
     setUf(newUf);
     setCity("");
