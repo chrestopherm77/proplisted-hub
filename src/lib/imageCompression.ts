@@ -69,12 +69,10 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
   const probe = await canvasToBlob(canvas, outputType, o.initialQuality);
   if (!probe && outputType === 'image/webp') {
     outputType = 'image/jpeg';
-    if (o.outputType === 'image/jpeg' === false) {
-      // Se trocamos para JPEG, pinta fundo branco antes de re-tentar
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, tw, th);
-      ctx.drawImage(img, 0, 0, tw, th);
-    }
+    // Pinta fundo branco antes de re-renderizar (JPEG não suporta alpha)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(img, 0, 0, tw, th);
   }
 
   const targetSize = Math.floor(file.size * o.targetRatio);
