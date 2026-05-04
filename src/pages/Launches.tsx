@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save } from 'lucide-react';
+import { Search, Plus, Loader2, Bell, BellOff, Trash2, Save, Megaphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildWaLink } from '@/lib/whatsapp';
 
@@ -350,8 +350,45 @@ const Launches = () => {
               <div
                 key={launch.id}
                 onClick={() => navigate(`/launches/${launch.id}`)}
-                className="bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow cursor-pointer relative"
               >
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="absolute top-2 right-2 z-10 h-8 w-8 p-0 shadow"
+                    title="Disparar lançamento no grupo do WhatsApp"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const { data, error } = await supabase.functions.invoke('notify-launch-group', {
+                          body: { launchId: launch.id },
+                        });
+                        if (error || (data && (data as any).error)) {
+                          const msg = (data as any)?.error || error?.message || 'Erro desconhecido';
+                          throw new Error(msg);
+                        }
+                        if ((data as any)?.skipped) {
+                          toast({ title: 'Cidade sem grupo mapeado', description: 'Nenhum grupo configurado para esta cidade/UF.' });
+                        } else {
+                          toast({ title: '✅ Lançamento enviado ao grupo WhatsApp!' });
+                        }
+                      } catch (err: any) {
+                        const msg: string = err?.message || '';
+                        const isMegaDown = msg.includes('tentativas') || msg.includes('instável') || msg.includes('WhatsApp');
+                        toast({
+                          title: 'Falha ao disparar no grupo',
+                          description: isMegaDown
+                            ? 'A API do WhatsApp está retornando erro. Tente novamente em alguns minutos.'
+                            : (msg || 'Erro desconhecido'),
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
+                  >
+                    <Megaphone className="h-4 w-4" />
+                  </Button>
+                )}
                 <div className="aspect-[16/10] bg-white overflow-hidden relative flex items-center justify-center">
                   {launch.banner_url ? (
                     <img src={launch.banner_url} alt={launch.name} className="w-full h-full object-contain" />
