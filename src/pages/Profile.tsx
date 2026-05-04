@@ -119,6 +119,7 @@ const Profile = () => {
           if (data[key] != null) mapped[key] = data[key] as string;
         }
         setProfile(mapped);
+        setInitialProfile(mapped);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
