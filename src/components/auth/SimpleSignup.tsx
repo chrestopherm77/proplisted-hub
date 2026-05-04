@@ -335,7 +335,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
               {errors.creci && <p className="text-sm text-destructive">{errors.creci}</p>}
             </div>
             <div className="space-y-2">
-              <Label>UF</Label>
+              <Label>UF *</Label>
               <Select value={creciUf} onValueChange={setCreciUf}>
                 <SelectTrigger className={errors.creciUf ? "border-destructive" : ""}>
                   <SelectValue placeholder="UF" />
