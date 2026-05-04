@@ -173,13 +173,11 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         phone,
         address_uf: uf,
         address_city: city,
-        profession: creci.trim() ? "CORRETOR" : "",
+        profession: "CORRETOR",
+        creci: creci.trim(),
+        creci_uf: creciUf,
         referral_code: (initialReferralCode || "").toUpperCase().trim(),
       };
-      if (creci.trim()) {
-        metadata.creci = creci.trim();
-        metadata.creci_uf = creciUf;
-      }
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
