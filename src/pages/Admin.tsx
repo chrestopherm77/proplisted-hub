@@ -20,6 +20,7 @@ import { PublicVideosManagement } from '@/components/admin/PublicVideosManagemen
 import { SupportManagement } from '@/components/admin/SupportManagement';
 import { WhatsappCityGroupsManagement } from '@/components/admin/WhatsappCityGroupsManagement';
 import { SignupProgressManagement } from '@/components/admin/SignupProgressManagement';
+import { UserActivityLog } from '@/components/admin/UserActivityLog';
 
 type Section =
   | 'dashboard'
