@@ -210,6 +210,11 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
       if (data?.user?.id) {
         try { await markSignupCompleted(data.user.id, buildTrackingData(), 1); } catch { /* ignore */ }
       }
+      try {
+        await supabase.functions.invoke("send-welcome-email", {
+          body: { email: email.trim(), name: name.trim() },
+        });
+      } catch (e) { console.error("send-welcome-email failed", e); }
       const { clearPendingPlan } = await import("@/lib/pendingPlan");
       clearPendingPlan();
       setTimeout(() => { window.location.href = "/cadastro-realizado"; }, 600);
