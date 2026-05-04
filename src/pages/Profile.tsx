@@ -68,6 +68,21 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(defaultProfile);
+  const [initialProfile, setInitialProfile] = useState<ProfileState>(defaultProfile);
+
+  const FIELD_LABELS: Partial<Record<keyof ProfileState, string>> = {
+    name: 'Nome', cpf: 'CPF', profession: 'Profissão',
+    company_name: 'Razão Social', cnpj: 'CNPJ', company_type: 'Tipo de Empresa',
+    phone: 'Telefone', address: 'Endereço', address_uf: 'Estado',
+    address_city: 'Cidade', address_neighborhood: 'Bairro',
+    creci: 'CRECI', creci_uf: 'UF do CRECI', cau: 'CAU', cau_uf: 'UF do CAU',
+    crea: 'CREA', crea_uf: 'UF do CREA',
+    creci_pj: 'CRECI PJ', creci_pj_uf: 'UF do CRECI PJ',
+    crea_pj: 'CREA PJ', crea_pj_uf: 'UF do CREA PJ',
+    rt_name: 'Nome do RT', rt_cpf: 'CPF do RT',
+    rt_crea: 'CREA do RT', rt_crea_uf: 'UF do CREA do RT',
+    rt_cau: 'CAU do RT', rt_cau_uf: 'UF do CAU do RT',
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
