@@ -93,18 +93,47 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
     setCity("");
   };
 
+  const handlePhoneChange = (v: string) => {
+    setPhone(formatPhone(v));
+    if (phoneVerified) setPhoneVerified(false);
+  };
+
+  const handleCheckWhatsApp = async () => {
+    if (!phone || !validatePhone(phone)) {
+      setErrors((prev) => ({ ...prev, phone: "Telefone inválido" }));
+      return;
+    }
+    setIsCheckingWa(true);
+    setErrors((prev) => ({ ...prev, phone: "" }));
+    try {
+      const { data, error } = await supabase.functions.invoke("check-whatsapp", { body: { phone } });
+      if (error) throw new Error(error.message);
+      if (data?.exists) {
+        setPhoneVerified(true);
+        toast.success("WhatsApp verificado com sucesso!");
+      } else {
+        setErrors((prev) => ({ ...prev, phone: "Este número não possui WhatsApp ativo" }));
+        toast.error("Este número não possui WhatsApp ativo");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao verificar WhatsApp");
+    } finally {
+      setIsCheckingWa(false);
+    }
+  };
+
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Nome é obrigatório";
     if (!phone.trim()) e.phone = "Telefone é obrigatório";
     else if (!validatePhone(phone)) e.phone = "Telefone inválido";
+    if (!phoneVerified) e.phone = "Valide seu WhatsApp antes de continuar";
     if (!uf) e.uf = "Estado é obrigatório";
     if (!city) e.city = "Cidade é obrigatória";
     if (!email.trim()) e.email = "E-mail é obrigatório";
     else if (!validateEmail(email)) e.email = "E-mail inválido";
-    // CRECI opcional, mas se preencher tem que ter UF
-    if (creci.trim() && !creciUf) e.creciUf = "UF do CRECI é obrigatória";
-    if (creciUf && !creci.trim()) e.creci = "Número do CRECI é obrigatório";
+    if (!creci.trim()) e.creci = "CRECI é obrigatório";
+    if (!creciUf) e.creciUf = "UF do CRECI é obrigatória";
 
     const pwd = validatePassword(password);
     if (!pwd.valid) e.password = pwd.message;
