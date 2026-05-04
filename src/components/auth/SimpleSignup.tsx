@@ -378,8 +378,8 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
             {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando conta...</> : "Criar conta"}
+          <Button type="submit" className="w-full" disabled={loading || !phoneVerified}>
+            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando conta...</> : !phoneVerified ? "Valide seu WhatsApp para continuar" : "Criar conta"}
           </Button>
         </form>
 
