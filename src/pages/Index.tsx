@@ -58,8 +58,9 @@ const Index = () => {
     else navigate(`/auth?plan=${slug}`);
   };
 
-  const isPopular = (slug: string) => slug === 'performance';
-  const isHighlight = (slug: string) => slug === 'elite';
+  const isPopular = (slug: string) => slug === 'elite';
+  const isHighlight = (_slug: string) => false;
+  const PARTNER_WA = 'https://wa.me/5516992456258';
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
