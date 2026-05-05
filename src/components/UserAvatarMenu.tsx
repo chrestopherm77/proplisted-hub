@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle, Gift } from 'lucide-react';
+import { User, Coins, Crown, LogOut, Camera, Trash2, Loader2, PlayCircle, Gift, TrendingUp } from 'lucide-react';
 
 const ALLOWED = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -33,6 +33,7 @@ export function UserAvatarMenu() {
   const [name, setName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isAffiliate, setIsAffiliate] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +49,9 @@ export function UserAvatarMenu() {
       }
     };
     fetchProfile();
+
+    supabase.from('affiliates').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
+      .then(({ data }) => setIsAffiliate(!!data));
 
     const channel = supabase
       .channel('user-avatar-profile')
@@ -220,6 +224,12 @@ export function UserAvatarMenu() {
             <Gift className="mr-2 h-4 w-4 text-primary" />
             <span>Indicar e ganhar</span>
           </DropdownMenuItem>
+          {isAffiliate && (
+            <DropdownMenuItem onClick={() => navigate('/afiliado')}>
+              <TrendingUp className="mr-2 h-4 w-4 text-primary" />
+              <span>Painel de Afiliados</span>
+            </DropdownMenuItem>
+          )}
           {!isPartnerSite && (
             <DropdownMenuItem onClick={() => navigate('/planos')}>
               <Crown className="mr-2 h-4 w-4" />

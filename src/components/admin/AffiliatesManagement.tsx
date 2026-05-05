@@ -10,7 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Copy, Loader2, Pencil, Eye } from 'lucide-react';
+import { Plus, Copy, Loader2, Pencil, Eye, Search } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 interface Affiliate {
   id: string; user_id: string | null; name: string; email: string; code: string;
@@ -27,9 +29,11 @@ export function AffiliatesManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState<Affiliate | null>(null);
   const [editing, setEditing] = useState<Affiliate | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', code: '', commission_percent: 20, is_active: true });
+  const [form, setForm] = useState({ user_id: '' as string, name: '', email: '', code: '', commission_percent: 20, is_active: true });
   const [saving, setSaving] = useState(false);
   const [details, setDetails] = useState<{ refs: any[]; comms: any[] } | null>(null);
+  const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -57,23 +61,47 @@ export function AffiliatesManagement() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => {
+  const loadUsers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .order('name', { ascending: true })
+      .limit(2000);
+    setUsers((data || []) as any);
+  };
+
+  const openCreate = async () => {
     setEditing(null);
-    setForm({ name: '', email: '', code: '', commission_percent: 20, is_active: true });
+    setForm({ user_id: '', name: '', email: '', code: '', commission_percent: 20, is_active: true });
+    if (users.length === 0) await loadUsers();
     setDialogOpen(true);
   };
-  const openEdit = (a: Affiliate) => {
+  const openEdit = async (a: Affiliate) => {
     setEditing(a);
-    setForm({ name: a.name, email: a.email, code: a.code, commission_percent: a.commission_percent, is_active: a.is_active });
+    setForm({ user_id: a.user_id || '', name: a.name, email: a.email, code: a.code, commission_percent: a.commission_percent, is_active: a.is_active });
+    if (users.length === 0) await loadUsers();
     setDialogOpen(true);
   };
 
+  const pickUser = (u: { id: string; name: string; email: string }) => {
+    setForm((f) => ({
+      ...f,
+      user_id: u.id,
+      name: u.name || f.name,
+      email: u.email || f.email,
+      code: f.code || slugify(u.name || u.email),
+    }));
+    setUserPickerOpen(false);
+  };
+
   const handleSave = async () => {
+    if (!form.user_id) { toast.error('Selecione um usuário cadastrado'); return; }
     if (!form.name.trim() || !form.email.trim()) { toast.error('Nome e email obrigatórios'); return; }
     const code = slugify(form.code || form.name);
     if (!code) { toast.error('Código inválido'); return; }
     setSaving(true);
     const payload = {
+      user_id: form.user_id,
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       code,
@@ -179,8 +207,38 @@ export function AffiliatesManagement() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? 'Editar Afiliado' : 'Novo Afiliado'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, code: editing ? form.code : slugify(e.target.value) })} /></div>
-            <div><Label>Email *</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="O usuário deve se cadastrar com este email" /></div>
+            <div>
+              <Label>Usuário cadastrado *</Label>
+              <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    {form.user_id
+                      ? <span className="truncate">{form.name} <span className="text-muted-foreground">— {form.email}</span></span>
+                      : <span className="text-muted-foreground">Selecione um usuário…</span>}
+                    <Search className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar por nome ou email…" />
+                    <CommandList>
+                      <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {users.map((u) => (
+                          <CommandItem key={u.id} value={`${u.name} ${u.email}`} onSelect={() => pickUser(u)}>
+                            <div className="flex flex-col">
+                              <span>{u.name || '(sem nome)'}</span>
+                              <span className="text-xs text-muted-foreground">{u.email}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">A vinculação é feita pelo usuário, não pelo email digitado.</p>
+            </div>
             <div>
               <Label>Código do link</Label>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: slugify(e.target.value) })} placeholder="ex: joao-silva" />
