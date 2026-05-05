@@ -1,37 +1,43 @@
-## Clonar Página Principal no Gerador de LP
+## Ajustes nos planos
 
-LPs existentes serão migradas visualmente para o novo template (opção A confirmada).
+### Mudanças solicitadas
+1. Renomear o plano **Performance (R$ 79,90)** para **Elite**
+2. Remover o plano antigo **Elite (R$ 149,90)** (todos os ciclos: mensal/trim/anual)
+3. **Essencial** vira ilimitado em: solicitações de parceria, ofertas de parceria e imóveis no portal (créditos e criativos seguem 30/mês e 3/mês)
+4. Novo **Elite (R$ 79,90)**: 150 créditos/mês, sem leads inclusos, sem Hot Seat, **com Site Personalizado**
+5. Onde ficava o 4º card (antigo Elite 149), mostrar um card **"Quero ser parceiro"** que abre WhatsApp `https://wa.me/5516992456258`
 
-### Estrutura nova de cada LP (espelha a Home)
-- **Header** — logo, labels de Entrar/Cadastre-se, CTA do header (link ou form)
-- **Hero** — badge, título linha 1 + linha 2 (com destaque), subtítulo, CTA primário e secundário
-- **Funcionalidades** — badge, título, subtítulo, **9 cards** (ícone + título + descrição)
-- **Extras** — **2 cards** destaque (ícone + título + descrição)
-- **Como Funciona** — título, subtítulo, **3 passos**
-- **Stats** — **3 itens** (ícone + valor + label)
-- **Planos** — badge, título, subtítulo, **4 planos** (nome, preço, sufixo, créditos, lista de features, CTA label + url/mode), nota de rodapé
-- **CTA Final** — título, subtítulo, botão (label + url/mode), texto secundário
-- **Footer / Socials / Tracking / Floating CTA / cta_form** — preservados
+### Banco (migration SQL)
+- Apagar todas as linhas com `slug` ou `parent_slug = 'elite'` (planos R$ 149,90 mensal/trim/anual) — não há assinaturas ativas, seguro.
+- `UPDATE subscription_plans` para renomear `performance*` → `elite*` (slugs `elite`, `elite-trimestral`, `elite-anual`; `parent_slug='elite'`; `name` → "ELITE", "ELITE Trimestral", "ELITE Anual").
+- Atualizar features/feature_list do **Elite** (antigo Performance) por ciclo:
+  - `monthly_credits`: 150 (mensal), 450 (trimestral = 150×3), 1800 (anual = 150×12)
+  - `features`: zerar `leads_included` e `hot_seat_per_month`; manter `creatives_per_month: 15`; manter ilimitados.
+  - `feature_list`: remover "Hot Seat 2x mês" e "X leads inclusos"; adicionar "Site Personalizado".
+- Atualizar **Essencial** (todos os ciclos):
+  - `features.partnership_requests`, `partnership_offers`, `portal_properties` → `-1`
+  - `feature_list`: substituir entradas limitadas por "Solicitações de parceria ilimitadas", "Ofertas de parceria ilimitadas", "Imóveis no portal ilimitados".
+- Atualizar `home_page_content.content->'plans_section'->'plans'`:
+  - 3º card vira o novo Elite (slug `elite`, R$ 79,90, 150 créditos, lista atualizada com "Site Personalizado").
+  - 4º card vira `{ slug: 'partner', name: 'Quero ser parceiro', cta: 'Falar no WhatsApp', ... }`.
+  - 2º card (Essencial) atualizado com itens ilimitados.
 
-Tudo persistido por LP no JSON `content` da `custom_landing_pages`. Editar uma LP NÃO afeta a Home real do Conectae.
-
-### Arquivos impactados
-
-**Tipos & defaults**
-- `src/components/admin/landing-page/types.ts` — reescrever `LPContent` e `DEFAULT_CONTENT` com a nova estrutura; adicionar `LPFeatureCard`, `LPExtraCard`, `LPStep`, `LPStat`, `LPPlan`. Manter `LPSection` opcional (legado).
-
-**Renderer**
-- `src/components/landing-page-renderer/LandingPageRenderer.tsx` — copiar JSX de `src/pages/Index.tsx` (header → hero → features → extras → how_it_works → stats → planos → CTA final → footer). CTAs respeitam `mode='link'` (abre URL) ou `mode='form'` (abre modal `cta_form` existente). Preservar floating CTA, socials, tracking.
-
-**Editor admin**
-- `src/components/admin/LandingPageEditor.tsx` — substituir accordions pelos da nova estrutura. Cada item de array editável com `IconPicker` (já existe) + Input/Textarea. Editor de planos com lista de features (add/remove). Preview ao vivo continua via `LandingPageRenderer`.
-
-**Compatibilidade com LPs existentes**
-- Função de merge runtime em `CustomLandingPage.tsx` e no editor preenche campos novos com defaults. Sem rewrite no banco — LPs antigas adotam o novo layout automaticamente.
+### Código
+- `src/components/admin/home-page/types.ts`
+  - Trocar `HomePlan.slug` para `'conexao' | 'essencial' | 'elite' | 'partner'` e `PLAN_SLUGS`.
+  - Atualizar `DEFAULT_HOME_CONTENT.plans_section.plans` (Essencial ilimitado; Elite 79,90 com Site Personalizado; 4º card "Quero ser parceiro" com cta `Falar no WhatsApp`).
+- `src/pages/Index.tsx`
+  - `isPopular`: agora `slug === 'elite'`.
+  - `isHighlight`: remover (ou manter false).
+  - No `.map` dos planos, se `plan.slug === 'partner'`, renderizar card especial sem preço/lista (ícone Handshake + texto curto + botão "Falar no WhatsApp" abrindo `https://wa.me/5516992456258` em nova aba). Os outros 3 seguem o template atual.
+- `src/pages/Planos.tsx`
+  - `paidParents` → `['essencial', 'elite']` (remove `performance`); como agora só há 3 planos pagos visíveis (conexão + essencial + elite), adicionar um 4º card estático "Quero ser parceiro" idêntico ao da home na grade `lg:grid-cols-4`.
+  - `isPopular` muda para `parent === 'elite'`.
+- `src/components/admin/landing-page/types.ts`
+  - Defaults dos planos da LP (linhas 298 e 309): mesmas atualizações do home (Essencial ilimitado; Elite 79,90 com Site Personalizado; 4º vira "Quero ser parceiro").
 
 ### Detalhes técnicos
-- Reusa classes globais do Tailwind/`index.css` (`bg-gradient-primary`, `bg-grid-pattern`, etc.) — funcionam dentro da LP sem ajustes.
-- `LPTheme` mantido mas sem aplicar override forçado nesta etapa (LP herda tokens do Conectae). Override de cores pode ser ligado depois.
-- Cada plano ganha `cta_url` + `cta_mode` para funcionar em LP standalone (sem depender de `/auth`).
-- Logo do header reusa o `uploadFile()` já existente.
-- Sem migration SQL: shape do JSON é flexível, merge resolve em runtime.
+- WhatsApp link gerado direto como `https://wa.me/5516992456258` (12 dígitos, segue regra do projeto).
+- Card "partner" não chama `handlePlanSelect`; usa `<a target="_blank" rel="noopener">`.
+- Não mexer em `subscription_plans.parent_slug = 'performance'` após o rename (vai virar `elite`); índice unique em (slug) requer apagar elite antigo antes do update — a migration faz nessa ordem.
+- Sem alterações em edge functions: `create-subscription` opera por `plan_id`, então o rename não quebra o fluxo.
