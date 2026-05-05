@@ -282,3 +282,110 @@ export default function Planos() {
     </Layout>
   );
 }
+
+// =====================================================================
+// Toggle Mensal/Trimestral/Anual + grid de planos.
+// Mantém Conexão (grátis) sempre visível e troca a variação dos pagos.
+// =====================================================================
+type Cycle = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+interface CycleAndGridProps {
+  plans: PlanCardData[];
+  activePlanId: string | null;
+  submittingPlanId: string | null;
+  pendingPlanId: string | null;
+  pendingInvoiceUrl: string | null;
+  getDisabledReason: (p: PlanCardData) => string | null;
+  isDowngradePlan: (p: PlanCardData) => boolean;
+  onSelect: (p: PlanCardData) => void;
+}
+
+function CycleAndGrid({
+  plans, activePlanId, submittingPlanId, pendingPlanId, pendingInvoiceUrl,
+  getDisabledReason, isDowngradePlan, onSelect,
+}: CycleAndGridProps) {
+  const [cycle, setCycle] = useState<Cycle>('MONTHLY');
+
+  // Conexão (grátis) sempre primeiro
+  const free = plans.find((p) => Number(p.price) === 0);
+
+  // Para cada parent_slug pago, escolhe a variação do ciclo selecionado
+  const paidParents = ['essencial', 'performance', 'elite'];
+  const paidPlans = paidParents
+    .map((parent) => {
+      const matches = plans.filter(
+        (p) => (((p as any).parent_slug ?? p.slug) === parent) && Number(p.price) > 0,
+      );
+      const inCycle = matches.find((p) => ((p as any).billing_cycle ?? 'MONTHLY') === cycle);
+      return inCycle ?? matches.find((p) => ((p as any).billing_cycle ?? 'MONTHLY') === 'MONTHLY');
+    })
+    .filter(Boolean) as PlanCardData[];
+
+  // Mapa de preço mensal para calcular economia em trim/anual
+  const monthlyByParent = new Map<string, number>();
+  for (const p of plans) {
+    if (Number(p.price) > 0 && ((p as any).billing_cycle ?? 'MONTHLY') === 'MONTHLY') {
+      const key = ((p as any).parent_slug ?? p.slug) as string;
+      monthlyByParent.set(key, Number(p.price));
+    }
+  }
+
+  const ordered: PlanCardData[] = [];
+  if (free) ordered.push(free);
+  ordered.push(...paidPlans);
+
+  const cycles: { value: Cycle; label: string }[] = [
+    { value: 'MONTHLY', label: 'Mensal' },
+    { value: 'QUARTERLY', label: 'Trimestral' },
+    { value: 'YEARLY', label: 'Anual' },
+  ];
+
+  return (
+    <>
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-full bg-muted p-1">
+          {cycles.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setCycle(c.value)}
+              className={
+                'px-4 py-1.5 text-sm font-medium rounded-full transition ' +
+                (cycle === c.value
+                  ? 'bg-primary text-primary-foreground shadow'
+                  : 'text-muted-foreground hover:text-foreground')
+              }
+            >
+              {c.label}
+              {c.value === 'YEARLY' && (
+                <span className="ml-2 text-[10px] uppercase tracking-wide text-emerald-600">
+                  até 24% off
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {ordered.map((plan) => {
+          const parent = ((plan as any).parent_slug ?? plan.slug) as string;
+          return (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              monthlyReferencePrice={monthlyByParent.get(parent)}
+              isCurrent={activePlanId === plan.id}
+              isPopular={parent === 'performance'}
+              loading={submittingPlanId === plan.id}
+              pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
+              disabledReason={getDisabledReason(plan)}
+              isDowngrade={isDowngradePlan(plan)}
+              onSelect={onSelect}
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+}
