@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
   Instagram, Linkedin, Youtube, Facebook,
