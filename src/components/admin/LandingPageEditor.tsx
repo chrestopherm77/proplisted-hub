@@ -636,33 +636,29 @@ export function LandingPageEditor() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* FLOATING CTA */}
+              {/* FLOATING WHATSAPP CTA */}
               <AccordionItem value="floating" className="border rounded-md px-3">
-                <AccordionTrigger>Botão flutuante</AccordionTrigger>
+                <AccordionTrigger>Botão flutuante (WhatsApp)</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
-                  <Card className="p-3 space-y-2">
+                  <Card className="p-3 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold">Botão flutuante</span>
-                      <label className="flex items-center gap-2 text-xs">
-                        Ativado
-                        <Switch
-                          checked={!!content.floating_cta?.enabled}
-                          onCheckedChange={(v) => updateContent('floating_cta', { ...(content.floating_cta || { label: '', mode: 'link', url: '' }), enabled: v })}
-                        />
-                      </label>
+                      <span className="text-xs font-semibold">Exibir ícone do WhatsApp</span>
+                      <Switch
+                        checked={!!content.floating_cta?.enabled}
+                        onCheckedChange={(v) => updateContent('floating_cta', { ...(content.floating_cta || { label: 'WhatsApp', mode: 'link', url: '' }), enabled: v })}
+                      />
                     </div>
-                    <Input
-                      value={content.floating_cta?.label || ''}
-                      placeholder="Texto do botão"
-                      onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, mode: 'link' }), label: e.target.value })}
-                    />
-                    <CtaModeFields
-                      mode={content.floating_cta?.mode || 'link'}
-                      url={content.floating_cta?.url || ''}
-                      onChange={(mode, url) =>
-                        updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '' }), mode, url })
-                      }
-                    />
+                    <div>
+                      <Label>Link ou número do WhatsApp</Label>
+                      <Input
+                        value={content.floating_cta?.url || ''}
+                        placeholder="Ex: 5511999998888 ou https://wa.me/5511999998888?text=Olá"
+                        onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: 'WhatsApp' }), mode: 'link', url: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Aceita apenas o telefone (ex: 5511999998888) ou um link completo do WhatsApp. O visitante pode fechar o ícone clicando no X.
+                      </p>
+                    </div>
                   </Card>
                 </AccordionContent>
               </AccordionItem>
