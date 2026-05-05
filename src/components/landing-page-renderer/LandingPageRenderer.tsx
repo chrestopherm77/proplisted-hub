@@ -1,380 +1,466 @@
 import { useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Instagram, Linkedin, Youtube, Facebook, ArrowRight, Star, CheckCircle, Loader2 } from 'lucide-react';
 import {
-  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
-} from '@/components/ui/accordion';
+  Instagram, Linkedin, Youtube, Facebook,
+  ArrowRight, Sparkles, Check, Star, Shield, Zap, CheckCircle, Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { LPContent, LPCTAForm, LPSection, LPTheme } from '@/components/admin/landing-page/types';
+import type { LPContent, LPCTAForm, LPPlan, LPTheme } from '@/components/admin/landing-page/types';
 
 interface Props {
   theme: LPTheme;
   content: LPContent;
 }
 
-function extractYoutubeId(url: string): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? m[1] : null;
-}
-
 function getIcon(name: string) {
-  const I = (LucideIcons as any)[name];
+  const I = (LucideIcons as Record<string, unknown>)[name] as React.ComponentType<{ className?: string }>;
   return I || LucideIcons.CircleDot;
 }
 
 export function LandingPageRenderer({ theme, content }: Props) {
+  const plansRef = useRef<HTMLDivElement>(null);
   const finalCtaRef = useRef<HTMLDivElement>(null);
   const [formOpen, setFormOpen] = useState(false);
 
-  const scrollToFinalCta = () => {
-    finalCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  const scrollToPlans = () =>
+    plansRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const ctaForm = content.cta_form;
   const openForm = () => {
     if (ctaForm && ctaForm.fields?.length) setFormOpen(true);
-    else scrollToFinalCta();
+    else finalCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // Helper para CTA: link/form/scroll
+  const handleCta = (mode: 'link' | 'form' | 'scroll_plans' | undefined, url: string | undefined) => {
+    if (mode === 'form') return openForm();
+    if (mode === 'scroll_plans') return scrollToPlans();
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    else openForm();
+  };
 
-
-
-  const styleVars = {
-    '--lp-primary': theme.primary,
-    '--lp-secondary': theme.secondary,
-    '--lp-bg': theme.background,
-    '--lp-text': theme.text,
-    '--lp-accent': theme.accent,
-  } as React.CSSProperties;
-
-  const ytId = content.media?.type === 'youtube' ? extractYoutubeId(content.media.url) : null;
-  const floating = content.floating_cta;
+  const c = content;
+  const floating = c.floating_cta;
 
   return (
-    <div
-      style={{ ...styleVars, backgroundColor: theme.background, color: theme.text }}
-      className="min-h-screen relative"
-    >
-      {/* Header */}
-      <header className="container mx-auto px-4 py-5 border-b" style={{ borderColor: `${theme.text}15` }}>
-        <div className="flex items-center justify-between">
-          {content.header.logo_url ? (
-            <img src={content.header.logo_url} alt={content.header.brand_name} className="h-10 object-contain" />
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* ===== Header ===== */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          {c.header.logo_url ? (
+            <img
+              src={c.header.logo_url}
+              alt={c.header.brand_name}
+              className="h-14 md:h-16 max-w-[220px] object-contain"
+            />
           ) : (
-            <span className="text-xl font-bold" style={{ color: theme.primary }}>
-              {content.header.brand_name}
-            </span>
+            <span className="text-xl font-bold text-primary">{c.header.brand_name}</span>
           )}
-          {content.hero.cta_mode === 'form' ? (
+          <div className="flex items-center gap-2">
+            {c.header.show_login_button && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:size-default"
+                onClick={() =>
+                  c.header.login_url
+                    ? window.open(c.header.login_url, '_blank', 'noopener,noreferrer')
+                    : openForm()
+                }
+              >
+                {c.header.login_label}
+              </Button>
+            )}
             <Button
-              size="lg"
-              onClick={openForm}
-              style={{ backgroundColor: theme.primary, color: '#fff' }}
+              size="sm"
+              className="md:size-default shadow-lg shadow-primary/20"
+              onClick={() => handleCta(c.header.signup_mode, c.header.signup_url)}
             >
-              {content.hero.cta_label}
+              {c.header.signup_label}
+              <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
-          ) : (
-            <Button
-              size="lg"
-              asChild
-              style={{ backgroundColor: theme.primary, color: '#fff' }}
-            >
-              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
-                {content.hero.cta_label}
-              </a>
-            </Button>
-          )}
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="container mx-auto px-4 py-12 md:py-20 text-center">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
-          {content.hero.title}{' '}
-          {content.hero.highlight && (
-            <span style={{ color: theme.primary }}>{content.hero.highlight}</span>
-          )}
-        </h1>
-        <p className="text-base md:text-xl mb-8 max-w-2xl mx-auto opacity-80 px-4">
-          {content.hero.subtitle}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
-          {content.hero.cta_mode === 'form' ? (
-            <Button
-              size="lg"
-              onClick={openForm}
-              className="text-base md:text-lg px-8 h-12"
-              style={{ backgroundColor: theme.primary, color: '#fff' }}
-            >
-              {content.hero.cta_label}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              asChild
-              className="text-base md:text-lg px-8 h-12"
-              style={{ backgroundColor: theme.primary, color: '#fff' }}
-            >
-              <a href={content.hero.cta_url} target="_blank" rel="noopener noreferrer">
-                {content.hero.cta_label}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
-          )}
-        </div>
-      </section>
+      <main>
+        {/* ===== Hero ===== */}
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-light/60 via-background to-background" />
+          <div className="absolute inset-0 bg-grid-pattern mask-radial-fade opacity-60" />
+          <div className="absolute -top-40 -left-32 w-[28rem] h-[28rem] rounded-full bg-primary/30 blur-3xl animate-float-slow" aria-hidden />
+          <div
+            className="absolute top-20 -right-32 w-[26rem] h-[26rem] rounded-full bg-secondary/25 blur-3xl animate-float-slow"
+            style={{ animationDelay: '3s' }}
+            aria-hidden
+          />
 
-      {/* Features */}
-      {content.features?.length > 0 && (
-        <section className="container mx-auto px-4 py-12 md:py-16">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {content.features.map((f, i) => {
+          <div className="container mx-auto px-4 py-16 md:py-28 text-center relative">
+            {c.hero.badge_text && (
+              <Badge className="mb-6 px-4 py-1.5 text-xs font-medium bg-brand-green text-brand-green-foreground border-transparent shadow-lg shadow-brand-green/30 hover:bg-brand-green/90 animate-fade-in-up">
+                {c.hero.badge_text}
+              </Badge>
+            )}
+            <h1
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-6 tracking-tight animate-fade-in-up"
+              style={{ animationDelay: '0.1s' }}
+            >
+              {c.hero.title_line1}
+              <br className="hidden md:block" />{' '}
+              <span className="text-gradient-primary">{c.hero.title_line2}</span>
+            </h1>
+            <p
+              className="text-base md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed px-2 animate-fade-in-up"
+              style={{ animationDelay: '0.2s' }}
+            >
+              {c.hero.subtitle}
+            </p>
+            <div
+              className="flex flex-col sm:flex-row gap-3 justify-center px-4 animate-fade-in-up"
+              style={{ animationDelay: '0.3s' }}
+            >
+              <Button
+                size="lg"
+                onClick={() => handleCta(c.hero.cta_primary_mode, c.hero.cta_primary_url)}
+                className="text-base px-8 h-12 shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-shadow"
+              >
+                {c.hero.cta_primary_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              {c.hero.cta_secondary_label && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() =>
+                    handleCta(
+                      c.hero.cta_secondary_mode === 'form'
+                        ? 'form'
+                        : c.hero.cta_secondary_mode === 'link'
+                        ? 'link'
+                        : 'scroll_plans',
+                      c.hero.cta_secondary_url,
+                    )
+                  }
+                  className="text-base px-8 h-12 backdrop-blur-sm bg-background/60"
+                >
+                  {c.hero.cta_secondary_label}
+                </Button>
+              )}
+            </div>
+
+            <div
+              className="mt-10 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground animate-fade-in-up"
+              style={{ animationDelay: '0.4s' }}
+            >
+              <span className="flex items-center gap-2"><Star className="h-4 w-4 text-accent fill-accent" /> Avaliação 4.9</span>
+              <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Pagamento seguro</span>
+              <span className="flex items-center gap-2"><Zap className="h-4 w-4 text-secondary" /> Sem cartão para começar</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Funcionalidades ===== */}
+        <section className="container mx-auto px-4 py-16 md:py-24 relative">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            {c.features_section.badge && (
+              <Badge variant="outline" className="mb-3 backdrop-blur-sm bg-primary/5 border-primary/30">
+                {c.features_section.badge}
+              </Badge>
+            )}
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+              {c.features_section.title}
+            </h2>
+            <p className="text-muted-foreground text-base md:text-lg">{c.features_section.subtitle}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+            {c.features_section.items.map((f, i) => {
               const Icon = getIcon(f.icon);
               return (
                 <div
                   key={i}
-                  className="p-6 rounded-xl border shadow-sm"
-                  style={{ borderColor: `${theme.text}15`, backgroundColor: `${theme.background}` }}
+                  className="group relative rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 hover:border-primary/40 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300"
                 >
-                  <div
-                    className="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
-                    style={{ backgroundColor: `${theme.primary}15` }}
-                  >
-                    <Icon className="h-6 w-6" style={{ color: theme.primary }} />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                      <Icon className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                  <p className="text-sm opacity-80 leading-relaxed">{f.description}</p>
                 </div>
               );
             })}
           </div>
-        </section>
-      )}
 
-      {/* Mídia central */}
-      {content.media && content.media.type !== 'none' && content.media.url && (
-        <section className="container mx-auto px-4 py-12 md:py-16">
-          {content.media.caption && (
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-              {content.media.caption}
-            </h2>
-          )}
-          <div className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl bg-black aspect-video">
-            {content.media.type === 'youtube' && ytId && (
-              <iframe
-                src={`https://www.youtube.com/embed/${ytId}`}
-                title="Vídeo"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            )}
-            {content.media.type === 'image' && (
-              <img src={content.media.url} alt="" className="w-full h-full object-cover" />
-            )}
-            {content.media.type === 'video' && (
-              <video src={content.media.url} controls className="w-full h-full" />
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Seções dinâmicas (Como Funciona, Stats, Benefícios, FAQ) */}
-      {content.sections?.map((sec) => (
-        <DynamicSection key={sec.id} section={sec} theme={theme} />
-      ))}
-
-      {/* Prova social */}
-      {(content.social_proof?.testimonials?.length > 0 || content.social_proof?.logos?.length > 0) && (
-        <section className="py-12 md:py-16" style={{ backgroundColor: `${theme.primary}08` }}>
-          <div className="container mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">
-              {content.social_proof.title}
-            </h2>
-            {content.social_proof.subtitle && (
-              <p className="text-center opacity-80 mb-10 max-w-2xl mx-auto">
-                {content.social_proof.subtitle}
-              </p>
-            )}
-
-            {content.social_proof.testimonials.length > 0 && (
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
-                {content.social_proof.testimonials.map((t, i) => (
+          {/* Extras */}
+          {c.extras.length > 0 && (
+            <div className="grid md:grid-cols-2 gap-5 mt-8">
+              {c.extras.map((extra, i) => {
+                const Icon = getIcon(extra.icon);
+                return (
                   <div
                     key={i}
-                    className="p-6 rounded-xl shadow-sm"
-                    style={{ backgroundColor: theme.background, border: `1px solid ${theme.text}15` }}
+                    className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-6 hover:border-primary/50 transition-all"
                   >
-                    <div className="flex gap-1 mb-3">
-                      {Array.from({ length: t.rating || 5 }).map((_, idx) => (
-                        <Star key={idx} className="h-4 w-4 fill-current" style={{ color: theme.accent }} />
-                      ))}
-                    </div>
-                    <p className="text-sm italic mb-4 leading-relaxed">"{t.quote}"</p>
-                    <div className="flex items-center gap-3">
-                      {t.photo_url && (
-                        <img src={t.photo_url} alt={t.name} className="w-10 h-10 rounded-full object-cover" />
-                      )}
+                    <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-primary/10 blur-3xl" />
+                    <div className="relative flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+                        <Icon className="h-7 w-7 text-primary-foreground" />
+                      </div>
                       <div>
-                        <p className="text-sm font-semibold">{t.name}</p>
-                        {t.role && <p className="text-xs opacity-70">{t.role}</p>}
+                        <h3 className="text-lg md:text-xl font-semibold mb-1">{extra.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{extra.desc}</p>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-            {content.social_proof.logos.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-8 opacity-70">
-                {content.social_proof.logos.map((l, i) => (
-                  <img key={i} src={l.image_url} alt={l.name} className="h-10 object-contain" />
-                ))}
-              </div>
+        {/* ===== Como funciona ===== */}
+        <section className="relative bg-muted/40 py-20 border-y border-border overflow-hidden">
+          <div className="absolute inset-0 bg-grid-pattern mask-radial-fade opacity-40" />
+          <div className="container mx-auto px-4 relative">
+            <div className="text-center mb-14">
+              <h2 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight">{c.how_it_works.title}</h2>
+              <p className="text-muted-foreground text-base md:text-lg">{c.how_it_works.subtitle}</p>
+            </div>
+            <div className="relative grid md:grid-cols-3 gap-10 max-w-5xl mx-auto">
+              <div className="hidden md:block absolute top-7 left-[16%] right-[16%] h-px border-t-2 border-dashed border-primary/30 pointer-events-none" />
+              {c.how_it_works.steps.map((s, idx) => (
+                <div key={idx} className="text-center relative">
+                  <div className="w-14 h-14 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-5 text-primary-foreground text-xl font-bold shadow-xl shadow-primary/30 ring-4 ring-background relative z-10">
+                    {idx + 1}
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Stats ===== */}
+        <section className="container mx-auto px-4 py-16">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-secondary-dark p-10 md:p-14 shadow-2xl shadow-primary/20">
+            <div className="absolute inset-0 bg-dots-pattern opacity-30" />
+            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-secondary/30 blur-3xl animate-pulse-glow" />
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-primary-foreground">
+              {c.stats.items.map((stat, i) => {
+                const Icon = getIcon(stat.icon);
+                return (
+                  <div key={i} className="p-4">
+                    <Icon className="h-10 w-10 mx-auto mb-3 opacity-90" />
+                    <div className="text-4xl md:text-5xl font-bold mb-1 tracking-tight">{stat.value}</div>
+                    <p className="text-sm opacity-85">{stat.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Planos ===== */}
+        <section
+          ref={plansRef}
+          id="planos"
+          className="relative bg-gradient-to-b from-primary-light/40 to-background py-16 md:py-24 scroll-mt-20 overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-grid-pattern mask-radial-fade opacity-30" />
+          <div className="container mx-auto px-4 relative">
+            <div className="text-center max-w-2xl mx-auto mb-14">
+              {c.plans_section.badge && (
+                <Badge variant="outline" className="mb-3 backdrop-blur-sm bg-background/60">
+                  {c.plans_section.badge}
+                </Badge>
+              )}
+              <h2 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight">{c.plans_section.title}</h2>
+              <p className="text-muted-foreground text-base md:text-lg">{c.plans_section.subtitle}</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
+              {c.plans_section.plans.map((plan: LPPlan, idx) => {
+                const popular = plan.highlight === 'popular';
+                const premium = plan.highlight === 'premium';
+                return (
+                  <div
+                    key={idx}
+                    className={`relative flex flex-col rounded-2xl border bg-card p-6 transition-all hover:-translate-y-1 ${
+                      popular
+                        ? 'border-primary border-2 shadow-2xl shadow-primary/20 scale-[1.02] bg-gradient-to-b from-primary/5 to-card'
+                        : premium
+                        ? 'border-foreground/30 hover:border-foreground/50'
+                        : 'border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10'
+                    }`}
+                  >
+                    {popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-gradient-primary text-primary-foreground gap-1 shadow-lg px-3">
+                          <Sparkles className="h-3 w-3" />
+                          Mais Popular
+                        </Badge>
+                      </div>
+                    )}
+
+                    <div className="text-center mb-5">
+                      <h3 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                        {plan.name}
+                      </h3>
+                      <div className="flex items-baseline justify-center gap-1 min-h-[3rem]">
+                        <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
+                        {plan.priceSuffix && (
+                          <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
+                        )}
+                      </div>
+                      {plan.credits && (
+                        <div className="mt-2 text-sm text-primary font-medium">{plan.credits}</div>
+                      )}
+                    </div>
+
+                    <ul className="space-y-2.5 flex-1 mb-5">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="text-foreground/90">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      className={`w-full ${popular ? 'shadow-lg shadow-primary/30' : ''}`}
+                      variant={popular ? 'default' : 'outline'}
+                      onClick={() => handleCta(plan.cta_mode, plan.cta_url)}
+                    >
+                      {plan.cta_label}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {c.plans_section.footer_note && (
+              <p className="text-center text-xs text-muted-foreground mt-8">
+                {c.plans_section.footer_note}
+              </p>
             )}
           </div>
         </section>
-      )}
 
-      {/* CTA Final */}
-      <section
-        ref={finalCtaRef}
-        className="py-16 md:py-24"
-        style={{ backgroundColor: theme.primary, color: '#fff' }}
-      >
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{content.final_cta.title}</h2>
-          {content.final_cta.subtitle && (
-            <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">{content.final_cta.subtitle}</p>
-          )}
-          {content.final_cta.button_mode === 'form' ? (
-            <Button
-              size="lg"
-              onClick={openForm}
-              className="text-lg px-10 h-14"
-              style={{ backgroundColor: theme.accent, color: '#fff' }}
-            >
-              {content.final_cta.button_label}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              asChild
-              className="text-lg px-10 h-14"
-              style={{ backgroundColor: theme.accent, color: '#fff' }}
-            >
-              <a href={content.final_cta.button_url} target="_blank" rel="noopener noreferrer">
-                {content.final_cta.button_label}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
-          )}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-10 px-4" style={{ backgroundColor: `${theme.text}`, color: theme.background }}>
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="text-center md:text-left">
-              <p className="font-semibold">{content.footer.company_name}</p>
-              {content.footer.cnpj && (
-                <p className="text-xs opacity-70">CNPJ: {content.footer.cnpj}</p>
-              )}
-              <p className="text-xs opacity-70 mt-1">
-                © {new Date().getFullYear()} · {content.footer.rights_text}
+        {/* ===== CTA Final ===== */}
+        <section ref={finalCtaRef} className="container mx-auto px-4 py-16 md:py-20 scroll-mt-20">
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary via-secondary to-primary-dark rounded-3xl p-10 md:p-16 text-center text-primary-foreground shadow-2xl shadow-primary/30">
+            <div className="absolute inset-0 bg-dots-pattern opacity-25" />
+            <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-white/10 blur-3xl animate-pulse-glow" />
+            <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-accent/20 blur-3xl animate-pulse-glow" style={{ animationDelay: '2s' }} />
+            <div className="relative">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">{c.final_cta.title}</h2>
+              <p className="text-base md:text-lg opacity-90 mb-8 max-w-2xl mx-auto">
+                {c.final_cta.subtitle}
               </p>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => handleCta(c.final_cta.cta_mode, c.final_cta.cta_url)}
+                className="text-base px-8 h-12 bg-white text-primary hover:bg-white/90 shadow-2xl ring-4 ring-white/20"
+              >
+                {c.final_cta.cta_label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              {c.final_cta.secondary_text && (
+                <div className="mt-5">
+                  <button
+                    onClick={() =>
+                      c.final_cta.secondary_url
+                        ? window.open(c.final_cta.secondary_url, '_blank', 'noopener,noreferrer')
+                        : openForm()
+                    }
+                    className="text-sm underline opacity-90 hover:opacity-100"
+                  >
+                    {c.final_cta.secondary_text}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Footer ===== */}
+        <footer className="border-t border-border bg-muted/30">
+          <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
+              {c.header.logo_url ? (
+                <img src={c.header.logo_url} alt={c.footer.company_name} className="h-10 max-w-[160px] object-contain opacity-80" />
+              ) : null}
+              <div>
+                <p className="text-sm font-semibold">{c.footer.company_name}</p>
+                {c.footer.cnpj && (
+                  <p className="text-xs text-muted-foreground">CNPJ: {c.footer.cnpj}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  © {new Date().getFullYear()} · {c.footer.rights_text}
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
-              {content.socials.instagram && (
-                <a href={content.socials.instagram} target="_blank" rel="noopener noreferrer"
-                  className="p-2 rounded-full hover:opacity-80 transition"
-                  style={{ backgroundColor: `${theme.background}15` }}>
+              {c.socials.instagram && (
+                <a href={c.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                   <Instagram className="h-5 w-5" />
                 </a>
               )}
-              {content.socials.linkedin && (
-                <a href={content.socials.linkedin} target="_blank" rel="noopener noreferrer"
-                  className="p-2 rounded-full hover:opacity-80 transition"
-                  style={{ backgroundColor: `${theme.background}15` }}>
+              {c.socials.linkedin && (
+                <a href={c.socials.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                   <Linkedin className="h-5 w-5" />
                 </a>
               )}
-              {content.socials.youtube && (
-                <a href={content.socials.youtube} target="_blank" rel="noopener noreferrer"
-                  className="p-2 rounded-full hover:opacity-80 transition"
-                  style={{ backgroundColor: `${theme.background}15` }}>
+              {c.socials.youtube && (
+                <a href={c.socials.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                   <Youtube className="h-5 w-5" />
                 </a>
               )}
-              {content.socials.facebook && (
-                <a href={content.socials.facebook} target="_blank" rel="noopener noreferrer"
-                  className="p-2 rounded-full hover:opacity-80 transition"
-                  style={{ backgroundColor: `${theme.background}15` }}>
+              {c.socials.facebook && (
+                <a href={c.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                   <Facebook className="h-5 w-5" />
                 </a>
               )}
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </main>
 
-      {/* Floating CTA (único, centralizado) */}
+      {/* Floating CTA */}
       {floating?.enabled && floating.label && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-          {floating.mode === 'form' ? (
-            <Button
-              size="lg"
-              onClick={openForm}
-              className="shadow-2xl"
-              style={{ backgroundColor: theme.accent, color: '#fff' }}
-            >
-              {floating.label}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : floating.mode === 'link' && floating.url ? (
-            <Button
-              asChild
-              size="lg"
-              className="shadow-2xl"
-              style={{ backgroundColor: theme.accent, color: '#fff' }}
-            >
-              <a href={floating.url} target="_blank" rel="noopener noreferrer">
-                {floating.label}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              onClick={scrollToFinalCta}
-              className="shadow-2xl"
-              style={{ backgroundColor: theme.accent, color: '#fff' }}
-            >
-              {floating.label}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            size="lg"
+            className="shadow-2xl"
+            onClick={() => handleCta(floating.mode, floating.url)}
+          >
+            {floating.label}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       )}
 
-      {/* Modal de formulário de cadastro */}
       {ctaForm && (
         <LeadFormModal
           open={formOpen}
           onOpenChange={setFormOpen}
           form={ctaForm}
           theme={theme}
-          sourceLp={content.header.brand_name}
+          sourceLp={c.header.brand_name}
         />
       )}
     </div>
@@ -390,7 +476,7 @@ interface LeadFormModalProps {
   sourceLp?: string;
 }
 
-function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormModalProps) {
+function LeadFormModal({ open, onOpenChange, form, sourceLp }: LeadFormModalProps) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -423,7 +509,6 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
 
     setSubmitting(true);
     try {
-      // Detecta campos especiais p/ name / phone / email
       const findByType = (t: 'text' | 'phone' | 'email') => {
         const f = form.fields.find((ff) => ff.type === t);
         return f ? (values[f.id] || '').trim() : '';
@@ -448,8 +533,7 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
       });
       if (error) throw error;
 
-      // Pixel
-      try { (window as any).fbq?.('track', 'Lead'); } catch { /* noop */ }
+      try { (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq?.('track', 'Lead'); } catch { /* noop */ }
 
       setSuccess(true);
 
@@ -463,8 +547,8 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
           toast.error('Link de redirecionamento inválido');
         }
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao enviar. Tente novamente.');
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Erro ao enviar. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
@@ -482,7 +566,7 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
       <DialogContent className="max-w-md">
         {success ? (
           <div className="text-center py-6">
-            <CheckCircle className="h-14 w-14 mx-auto mb-3" style={{ color: theme.accent }} />
+            <CheckCircle className="h-14 w-14 mx-auto mb-3 text-emerald-500" />
             <DialogTitle className="text-xl mb-2">Cadastro realizado!</DialogTitle>
             <DialogDescription>
               {form.redirect_url
@@ -493,7 +577,6 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
               <Button
                 className="mt-4"
                 onClick={() => window.open(form.redirect_url, '_blank', 'noopener,noreferrer')}
-                style={{ backgroundColor: theme.primary, color: '#fff' }}
               >
                 Abrir link
               </Button>
@@ -527,7 +610,6 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
                 disabled={submitting}
                 className="w-full"
                 size="lg"
-                style={{ backgroundColor: theme.primary, color: '#fff' }}
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (form.submit_label || 'Enviar')}
               </Button>
@@ -537,127 +619,4 @@ function LeadFormModal({ open, onOpenChange, form, theme, sourceLp }: LeadFormMo
       </DialogContent>
     </Dialog>
   );
-}
-
-function DynamicSection({ section, theme }: { section: LPSection; theme: LPTheme }) {
-  if (section.type === 'how_it_works') {
-    return (
-      <section className="py-12 md:py-20" style={{ backgroundColor: `${theme.text}06` }}>
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-3">
-            {section.title}
-          </h2>
-          {section.subtitle && (
-            <p className="text-center opacity-80 mb-10 max-w-2xl mx-auto">
-              {section.subtitle}
-            </p>
-          )}
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {section.steps.map((step, i) => (
-              <div key={i} className="text-center">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold"
-                  style={{ backgroundColor: theme.primary, color: '#fff' }}
-                >
-                  {i + 1}
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="opacity-80 leading-relaxed">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (section.type === 'stats') {
-    return (
-      <section className="py-12 md:py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 text-center">
-            {section.items.map((item, i) => {
-              const Icon = getIcon(item.icon);
-              return (
-                <div key={i} className="p-6 md:p-8">
-                  <Icon className="h-12 w-12 mx-auto mb-4" style={{ color: theme.primary }} />
-                  <div className="text-4xl font-bold mb-2" style={{ color: theme.primary }}>
-                    {item.value}
-                  </div>
-                  <p className="opacity-80">{item.label}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (section.type === 'benefits') {
-    return (
-      <section className="py-12 md:py-20" style={{ backgroundColor: `${theme.primary}10` }}>
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            {section.title && (
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10">
-                {section.title}
-              </h2>
-            )}
-            <div className="space-y-4">
-              {section.items.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-4 p-5 rounded-lg shadow-sm"
-                  style={{ backgroundColor: theme.background }}
-                >
-                  <CheckCircle
-                    className="h-6 w-6 flex-shrink-0 mt-1"
-                    style={{ color: theme.accent }}
-                  />
-                  <div>
-                    <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
-                    <p className="opacity-80">{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (section.type === 'faq') {
-    return (
-      <section className="py-12 md:py-20">
-        <div className="container mx-auto px-4 max-w-3xl">
-          {section.title && (
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10">
-              {section.title}
-            </h2>
-          )}
-          <Accordion type="single" collapsible className="space-y-2">
-            {section.items.map((item, i) => (
-              <AccordionItem
-                key={i}
-                value={`q-${i}`}
-                className="border rounded-md px-4"
-                style={{ borderColor: `${theme.text}20` }}
-              >
-                <AccordionTrigger className="text-left font-semibold">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="opacity-80 leading-relaxed whitespace-pre-line">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
-    );
-  }
-
-  return null;
 }

@@ -16,18 +16,13 @@ import {
 import { toast } from 'sonner';
 import { ArrowLeft, Save, Eye, Plus, Trash2, Upload, Loader2 } from 'lucide-react';
 import {
-  DEFAULT_CONTENT, DEFAULT_THEME,
-  type CustomLandingPage, type LPContent, type LPTheme,
+  DEFAULT_THEME, mergeLPContent,
+  type CustomLandingPage, type LPContent, type LPTheme, type LPPlan,
 } from '@/components/admin/landing-page/types';
 import { LandingPageRenderer } from '@/components/landing-page-renderer/LandingPageRenderer';
-import { SectionsEditor } from '@/components/admin/landing-page/SectionsEditor';
+import { IconPicker } from '@/components/admin/shared/IconPicker';
 import { normalizeSlug, validateSlug } from '@/lib/reservedSlugs';
 import { useAuth } from '@/hooks/useAuth';
-
-const ICON_OPTIONS = [
-  'TrendingUp', 'Shield', 'Zap', 'Users', 'Target', 'Clock',
-  'CheckCircle', 'Award', 'Heart', 'Star', 'Rocket', 'Sparkles',
-];
 
 async function uploadFile(file: File, folder: string): Promise<string | null> {
   const ext = file.name.split('.').pop();
@@ -58,7 +53,7 @@ export function LandingPageEditor() {
   const [slug, setSlug] = useState('');
   const [isPublished, setIsPublished] = useState(true);
   const [theme, setTheme] = useState<LPTheme>(DEFAULT_THEME);
-  const [content, setContent] = useState<LPContent>(DEFAULT_CONTENT);
+  const [content, setContent] = useState<LPContent>(mergeLPContent(null));
 
   useEffect(() => {
     if (isNew) return;
@@ -75,26 +70,7 @@ export function LandingPageEditor() {
       setSlug(lp.slug);
       setIsPublished(lp.is_published);
       setTheme({ ...DEFAULT_THEME, ...lp.theme });
-      const raw = lp.content || ({} as LPContent);
-      const legacyFloating = raw.floating_ctas?.[0];
-      setContent({
-        ...DEFAULT_CONTENT,
-        ...raw,
-        header: { ...DEFAULT_CONTENT.header, ...raw.header },
-        hero: { ...DEFAULT_CONTENT.hero, ...raw.hero },
-        media: { ...DEFAULT_CONTENT.media, ...raw.media },
-        social_proof: { ...DEFAULT_CONTENT.social_proof, ...raw.social_proof },
-        final_cta: { ...DEFAULT_CONTENT.final_cta, ...raw.final_cta },
-        socials: { ...DEFAULT_CONTENT.socials, ...raw.socials },
-        footer: { ...DEFAULT_CONTENT.footer, ...raw.footer },
-        tracking: { ...DEFAULT_CONTENT.tracking, ...raw.tracking },
-        cta_form: { ...DEFAULT_CONTENT.cta_form!, ...raw.cta_form },
-        features: raw.features ?? DEFAULT_CONTENT.features,
-        floating_cta: raw.floating_cta ?? (legacyFloating
-          ? { ...legacyFloating, mode: 'link', url: '' }
-          : DEFAULT_CONTENT.floating_cta),
-        sections: raw.sections ?? [],
-      });
+      setContent(mergeLPContent(lp.content));
       setLoading(false);
     })();
   }, [id, isNew, navigate]);
@@ -109,14 +85,17 @@ export function LandingPageEditor() {
       slug: slug.toLowerCase().trim(),
       title: title.trim(),
       is_published: isPublished,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       theme: theme as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       content: content as any,
     };
 
     if (isNew) {
       const { data, error } = await supabase
         .from('custom_landing_pages')
-        .insert({ ...payload, created_by: user?.id })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({ ...payload, created_by: user?.id } as any)
         .select('id')
         .single();
       setSaving(false);
@@ -181,7 +160,7 @@ export function LandingPageEditor() {
         </Card>
       ) : (
         <div className="grid lg:grid-cols-2 gap-4">
-          {/* Editor */}
+          {/* ===== Editor ===== */}
           <div className="space-y-4">
             <Card className="p-4 space-y-3">
               <div>
@@ -195,7 +174,7 @@ export function LandingPageEditor() {
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(normalizeSlug(e.target.value))}
-                    placeholder="vertentes"
+                    placeholder="conectae"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -208,29 +187,7 @@ export function LandingPageEditor() {
               </div>
             </Card>
 
-            <Accordion type="multiple" defaultValue={['theme', 'hero']} className="space-y-2">
-              {/* TEMA / CORES */}
-              <AccordionItem value="theme" className="border rounded-md px-3">
-                <AccordionTrigger>Cores</AccordionTrigger>
-                <AccordionContent className="space-y-3 pt-2">
-                  {(Object.keys(theme) as (keyof LPTheme)[]).map((k) => (
-                    <div key={k} className="flex items-center justify-between gap-2">
-                      <Label className="capitalize">{k}</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="color" value={theme[k]} className="w-14 h-9 p-1"
-                          onChange={(e) => setTheme({ ...theme, [k]: e.target.value })}
-                        />
-                        <Input
-                          value={theme[k]} className="w-28"
-                          onChange={(e) => setTheme({ ...theme, [k]: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-
+            <Accordion type="multiple" defaultValue={['header', 'hero']} className="space-y-2">
               {/* HEADER */}
               <AccordionItem value="header" className="border rounded-md px-3">
                 <AccordionTrigger>Cabeçalho</AccordionTrigger>
@@ -248,6 +205,46 @@ export function LandingPageEditor() {
                     onChange={(url) => updateContent('header', { ...content.header, logo_url: url })}
                     folder="logos"
                   />
+                  <div className="flex items-center justify-between">
+                    <Label>Mostrar botão "Entrar"</Label>
+                    <Switch
+                      checked={content.header.show_login_button}
+                      onCheckedChange={(v) => updateContent('header', { ...content.header, show_login_button: v })}
+                    />
+                  </div>
+                  {content.header.show_login_button && (
+                    <>
+                      <div>
+                        <Label>Texto do botão "Entrar"</Label>
+                        <Input
+                          value={content.header.login_label}
+                          onChange={(e) => updateContent('header', { ...content.header, login_label: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Link do botão "Entrar" (opcional)</Label>
+                        <Input
+                          value={content.header.login_url}
+                          placeholder="https://..."
+                          onChange={(e) => updateContent('header', { ...content.header, login_url: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <Label>Texto do botão "Cadastre-se"</Label>
+                    <Input
+                      value={content.header.signup_label}
+                      onChange={(e) => updateContent('header', { ...content.header, signup_label: e.target.value })}
+                    />
+                  </div>
+                  <CtaModeFields
+                    mode={content.header.signup_mode || 'link'}
+                    url={content.header.signup_url}
+                    onChange={(mode, url) =>
+                      updateContent('header', { ...content.header, signup_mode: mode, signup_url: url })
+                    }
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -256,14 +253,19 @@ export function LandingPageEditor() {
                 <AccordionTrigger>Hero (topo)</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
                   <div>
-                    <Label>Título</Label>
-                    <Input value={content.hero.title}
-                      onChange={(e) => updateContent('hero', { ...content.hero, title: e.target.value })} />
+                    <Label>Badge (texto pequeno acima do título)</Label>
+                    <Input value={content.hero.badge_text}
+                      onChange={(e) => updateContent('hero', { ...content.hero, badge_text: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Destaque (cor primária)</Label>
-                    <Input value={content.hero.highlight}
-                      onChange={(e) => updateContent('hero', { ...content.hero, highlight: e.target.value })} />
+                    <Label>Título — linha 1</Label>
+                    <Input value={content.hero.title_line1}
+                      onChange={(e) => updateContent('hero', { ...content.hero, title_line1: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Título — linha 2 (com destaque colorido)</Label>
+                    <Input value={content.hero.title_line2}
+                      onChange={(e) => updateContent('hero', { ...content.hero, title_line2: e.target.value })} />
                   </div>
                   <div>
                     <Label>Subtítulo</Label>
@@ -271,202 +273,259 @@ export function LandingPageEditor() {
                       onChange={(e) => updateContent('hero', { ...content.hero, subtitle: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Texto do botão CTA</Label>
-                    <Input value={content.hero.cta_label}
-                      onChange={(e) => updateContent('hero', { ...content.hero, cta_label: e.target.value })} />
+                    <Label>Texto do CTA primário</Label>
+                    <Input value={content.hero.cta_primary_label}
+                      onChange={(e) => updateContent('hero', { ...content.hero, cta_primary_label: e.target.value })} />
+                  </div>
+                  <CtaModeFields
+                    mode={content.hero.cta_primary_mode || 'link'}
+                    url={content.hero.cta_primary_url}
+                    onChange={(mode, url) =>
+                      updateContent('hero', { ...content.hero, cta_primary_mode: mode, cta_primary_url: url })
+                    }
+                  />
+                  <div>
+                    <Label>Texto do CTA secundário (opcional)</Label>
+                    <Input value={content.hero.cta_secondary_label}
+                      onChange={(e) => updateContent('hero', { ...content.hero, cta_secondary_label: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Tipo do botão</Label>
+                    <Label>Tipo do CTA secundário</Label>
                     <Select
-                      value={content.hero.cta_mode || 'link'}
-                      onValueChange={(v) => updateContent('hero', { ...content.hero, cta_mode: v as 'link' | 'form' })}
+                      value={content.hero.cta_secondary_mode || 'scroll_plans'}
+                      onValueChange={(v) => updateContent('hero', { ...content.hero, cta_secondary_mode: v as 'link' | 'form' | 'scroll_plans' })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="scroll_plans">Rolar até a seção de Planos</SelectItem>
                         <SelectItem value="link">Link direto (URL)</SelectItem>
-                        <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
+                        <SelectItem value="form">Abrir formulário</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {(content.hero.cta_mode || 'link') === 'link' && (
-                    <div>
-                      <Label>Link do botão CTA</Label>
-                      <Input value={content.hero.cta_url}
-                        placeholder="https://wa.me/55..."
-                        onChange={(e) => updateContent('hero', { ...content.hero, cta_url: e.target.value })} />
-                    </div>
-                  )}
-                  {content.hero.cta_mode === 'form' && (
-                    <p className="text-xs text-muted-foreground">
-                      Configure os campos no item <strong>"Formulário de Cadastro"</strong> abaixo.
-                    </p>
+                  {content.hero.cta_secondary_mode === 'link' && (
+                    <Input value={content.hero.cta_secondary_url} placeholder="https://..."
+                      onChange={(e) => updateContent('hero', { ...content.hero, cta_secondary_url: e.target.value })} />
                   )}
                 </AccordionContent>
               </AccordionItem>
 
-              {/* FEATURES */}
+              {/* FUNCIONALIDADES */}
               <AccordionItem value="features" className="border rounded-md px-3">
-                <AccordionTrigger>Features ({content.features.length})</AccordionTrigger>
+                <AccordionTrigger>Funcionalidades ({content.features_section.items.length})</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
-                  {content.features.map((f, i) => (
+                  <Input value={content.features_section.badge} placeholder="Badge"
+                    onChange={(e) => updateContent('features_section', { ...content.features_section, badge: e.target.value })} />
+                  <Input value={content.features_section.title} placeholder="Título"
+                    onChange={(e) => updateContent('features_section', { ...content.features_section, title: e.target.value })} />
+                  <Textarea value={content.features_section.subtitle} placeholder="Subtítulo"
+                    onChange={(e) => updateContent('features_section', { ...content.features_section, subtitle: e.target.value })} />
+                  {content.features_section.items.map((f, i) => (
                     <Card key={i} className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold">Feature {i + 1}</span>
+                        <span className="text-xs font-semibold">Card {i + 1}</span>
                         <Button variant="ghost" size="sm" onClick={() => {
-                          updateContent('features', content.features.filter((_, idx) => idx !== i));
+                          const items = content.features_section.items.filter((_, idx) => idx !== i);
+                          updateContent('features_section', { ...content.features_section, items });
                         }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
-                      <Select value={f.icon}
-                        onValueChange={(v) => {
-                          const arr = [...content.features]; arr[i] = { ...f, icon: v };
-                          updateContent('features', arr);
-                        }}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ICON_OPTIONS.map((ic) => <SelectItem key={ic} value={ic}>{ic}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <IconPicker value={f.icon} onChange={(icon) => {
+                        const items = [...content.features_section.items]; items[i] = { ...f, icon };
+                        updateContent('features_section', { ...content.features_section, items });
+                      }} />
                       <Input value={f.title} placeholder="Título"
                         onChange={(e) => {
-                          const arr = [...content.features]; arr[i] = { ...f, title: e.target.value };
-                          updateContent('features', arr);
+                          const items = [...content.features_section.items]; items[i] = { ...f, title: e.target.value };
+                          updateContent('features_section', { ...content.features_section, items });
                         }} />
-                      <Textarea value={f.description} placeholder="Descrição"
+                      <Textarea value={f.desc} placeholder="Descrição"
                         onChange={(e) => {
-                          const arr = [...content.features]; arr[i] = { ...f, description: e.target.value };
-                          updateContent('features', arr);
+                          const items = [...content.features_section.items]; items[i] = { ...f, desc: e.target.value };
+                          updateContent('features_section', { ...content.features_section, items });
                         }} />
                     </Card>
                   ))}
-                  {content.features.length < 6 && (
-                    <Button variant="outline" size="sm" onClick={() => {
-                      updateContent('features', [...content.features, {
-                        icon: 'Star', title: 'Nova feature', description: 'Descrição',
-                      }]);
-                    }}><Plus className="h-3 w-3" /> Adicionar feature</Button>
-                  )}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const items = [...content.features_section.items, { icon: 'Star', title: 'Nova funcionalidade', desc: 'Descrição' }];
+                    updateContent('features_section', { ...content.features_section, items });
+                  }}><Plus className="h-3 w-3" /> Adicionar card</Button>
                 </AccordionContent>
               </AccordionItem>
 
-              {/* MÍDIA CENTRAL */}
-              <AccordionItem value="media" className="border rounded-md px-3">
-                <AccordionTrigger>Mídia central (vídeo/imagem)</AccordionTrigger>
+              {/* EXTRAS */}
+              <AccordionItem value="extras" className="border rounded-md px-3">
+                <AccordionTrigger>Cards Extras ({content.extras.length})</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
-                  <div>
-                    <Label>Tipo</Label>
-                    <Select value={content.media.type}
-                      onValueChange={(v: any) => updateContent('media', { ...content.media, type: v, url: '' })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhuma</SelectItem>
-                        <SelectItem value="youtube">YouTube</SelectItem>
-                        <SelectItem value="image">Imagem</SelectItem>
-                        <SelectItem value="video">Vídeo MP4 (upload)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {content.media.type === 'youtube' && (
-                    <div>
-                      <Label>URL do YouTube</Label>
-                      <Input value={content.media.url} placeholder="https://youtube.com/watch?v=..."
-                        onChange={(e) => updateContent('media', { ...content.media, url: e.target.value })} />
-                    </div>
-                  )}
-                  {content.media.type === 'image' && (
-                    <ImageUploadField
-                      label="Imagem"
-                      value={content.media.url}
-                      onChange={(url) => updateContent('media', { ...content.media, url })}
-                      folder="media"
-                    />
-                  )}
-                  {content.media.type === 'video' && (
-                    <VideoUploadField
-                      value={content.media.url}
-                      onChange={(url) => updateContent('media', { ...content.media, url })}
-                    />
-                  )}
-                  {content.media.type !== 'none' && (
-                    <div>
-                      <Label>Legenda (título acima da mídia)</Label>
-                      <Input value={content.media.caption}
-                        onChange={(e) => updateContent('media', { ...content.media, caption: e.target.value })} />
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* SEÇÕES DINÂMICAS (Como Funciona, Stats, Benefícios, FAQ) */}
-              <AccordionItem value="sections" className="border rounded-md px-3">
-                <AccordionTrigger>
-                  Seções da página ({content.sections?.length ?? 0})
-                </AccordionTrigger>
-                <AccordionContent className="pt-2">
-                  <SectionsEditor
-                    sections={content.sections ?? []}
-                    onChange={(next) => updateContent('sections', next)}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* PROVA SOCIAL */}
-              <AccordionItem value="social_proof" className="border rounded-md px-3">
-                <AccordionTrigger>Prova social ({content.social_proof.testimonials.length})</AccordionTrigger>
-                <AccordionContent className="space-y-3 pt-2">
-                  <Input placeholder="Título" value={content.social_proof.title}
-                    onChange={(e) => updateContent('social_proof', { ...content.social_proof, title: e.target.value })} />
-                  <Input placeholder="Subtítulo" value={content.social_proof.subtitle}
-                    onChange={(e) => updateContent('social_proof', { ...content.social_proof, subtitle: e.target.value })} />
-                  {content.social_proof.testimonials.map((t, i) => (
+                  {content.extras.map((ex, i) => (
                     <Card key={i} className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold">Depoimento {i + 1}</span>
-                        <Button variant="ghost" size="sm" onClick={() => updateContent('social_proof', {
-                          ...content.social_proof,
-                          testimonials: content.social_proof.testimonials.filter((_, idx) => idx !== i),
-                        })}><Trash2 className="h-3 w-3" /></Button>
+                        <span className="text-xs font-semibold">Extra {i + 1}</span>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          updateContent('extras', content.extras.filter((_, idx) => idx !== i));
+                        }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
-                      <Input value={t.name} placeholder="Nome"
+                      <IconPicker value={ex.icon} onChange={(icon) => {
+                        const arr = [...content.extras]; arr[i] = { ...ex, icon };
+                        updateContent('extras', arr);
+                      }} />
+                      <Input value={ex.title} placeholder="Título"
                         onChange={(e) => {
-                          const arr = [...content.social_proof.testimonials]; arr[i] = { ...t, name: e.target.value };
-                          updateContent('social_proof', { ...content.social_proof, testimonials: arr });
+                          const arr = [...content.extras]; arr[i] = { ...ex, title: e.target.value };
+                          updateContent('extras', arr);
                         }} />
-                      <Input value={t.role} placeholder="Cargo / Cidade"
+                      <Textarea value={ex.desc} placeholder="Descrição"
                         onChange={(e) => {
-                          const arr = [...content.social_proof.testimonials]; arr[i] = { ...t, role: e.target.value };
-                          updateContent('social_proof', { ...content.social_proof, testimonials: arr });
+                          const arr = [...content.extras]; arr[i] = { ...ex, desc: e.target.value };
+                          updateContent('extras', arr);
                         }} />
-                      <Textarea value={t.quote} placeholder="Depoimento"
-                        onChange={(e) => {
-                          const arr = [...content.social_proof.testimonials]; arr[i] = { ...t, quote: e.target.value };
-                          updateContent('social_proof', { ...content.social_proof, testimonials: arr });
-                        }} />
-                      <ImageUploadField
-                        label="Foto"
-                        value={t.photo_url}
-                        onChange={(url) => {
-                          const arr = [...content.social_proof.testimonials]; arr[i] = { ...t, photo_url: url };
-                          updateContent('social_proof', { ...content.social_proof, testimonials: arr });
-                        }}
-                        folder="testimonials"
-                      />
-                      <div>
-                        <Label>Estrelas (1-5)</Label>
-                        <Input type="number" min={1} max={5} value={t.rating || 5}
-                          onChange={(e) => {
-                            const arr = [...content.social_proof.testimonials];
-                            arr[i] = { ...t, rating: Number(e.target.value) };
-                            updateContent('social_proof', { ...content.social_proof, testimonials: arr });
-                          }} />
-                      </div>
                     </Card>
                   ))}
-                  <Button variant="outline" size="sm" onClick={() => updateContent('social_proof', {
-                    ...content.social_proof,
-                    testimonials: [...content.social_proof.testimonials, {
-                      name: '', role: '', photo_url: '', quote: '', rating: 5,
-                    }],
-                  })}><Plus className="h-3 w-3" /> Adicionar depoimento</Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    updateContent('extras', [...content.extras, { icon: 'GraduationCap', title: 'Novo extra', desc: '' }]);
+                  }}><Plus className="h-3 w-3" /> Adicionar extra</Button>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* COMO FUNCIONA */}
+              <AccordionItem value="hiw" className="border rounded-md px-3">
+                <AccordionTrigger>Como Funciona ({content.how_it_works.steps.length} passos)</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <Input value={content.how_it_works.title} placeholder="Título"
+                    onChange={(e) => updateContent('how_it_works', { ...content.how_it_works, title: e.target.value })} />
+                  <Input value={content.how_it_works.subtitle} placeholder="Subtítulo"
+                    onChange={(e) => updateContent('how_it_works', { ...content.how_it_works, subtitle: e.target.value })} />
+                  {content.how_it_works.steps.map((s, i) => (
+                    <Card key={i} className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold">Passo {i + 1}</span>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          const steps = content.how_it_works.steps.filter((_, idx) => idx !== i);
+                          updateContent('how_it_works', { ...content.how_it_works, steps });
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                      <Input value={s.title} placeholder="Título"
+                        onChange={(e) => {
+                          const steps = [...content.how_it_works.steps]; steps[i] = { ...s, title: e.target.value };
+                          updateContent('how_it_works', { ...content.how_it_works, steps });
+                        }} />
+                      <Textarea value={s.desc} placeholder="Descrição"
+                        onChange={(e) => {
+                          const steps = [...content.how_it_works.steps]; steps[i] = { ...s, desc: e.target.value };
+                          updateContent('how_it_works', { ...content.how_it_works, steps });
+                        }} />
+                    </Card>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    updateContent('how_it_works', { ...content.how_it_works, steps: [...content.how_it_works.steps, { title: 'Novo passo', desc: '' }] });
+                  }}><Plus className="h-3 w-3" /> Adicionar passo</Button>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* STATS */}
+              <AccordionItem value="stats" className="border rounded-md px-3">
+                <AccordionTrigger>Estatísticas ({content.stats.items.length})</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  {content.stats.items.map((st, i) => (
+                    <Card key={i} className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold">Stat {i + 1}</span>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          const items = content.stats.items.filter((_, idx) => idx !== i);
+                          updateContent('stats', { items });
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                      <IconPicker value={st.icon} onChange={(icon) => {
+                        const items = [...content.stats.items]; items[i] = { ...st, icon };
+                        updateContent('stats', { items });
+                      }} />
+                      <Input value={st.value} placeholder="Valor (ex: 500+)"
+                        onChange={(e) => {
+                          const items = [...content.stats.items]; items[i] = { ...st, value: e.target.value };
+                          updateContent('stats', { items });
+                        }} />
+                      <Input value={st.label} placeholder="Label"
+                        onChange={(e) => {
+                          const items = [...content.stats.items]; items[i] = { ...st, label: e.target.value };
+                          updateContent('stats', { items });
+                        }} />
+                    </Card>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    updateContent('stats', { items: [...content.stats.items, { icon: 'Star', value: '0', label: 'Label' }] });
+                  }}><Plus className="h-3 w-3" /> Adicionar stat</Button>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* PLANOS */}
+              <AccordionItem value="plans" className="border rounded-md px-3">
+                <AccordionTrigger>Planos ({content.plans_section.plans.length})</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <Input value={content.plans_section.badge} placeholder="Badge"
+                    onChange={(e) => updateContent('plans_section', { ...content.plans_section, badge: e.target.value })} />
+                  <Input value={content.plans_section.title} placeholder="Título"
+                    onChange={(e) => updateContent('plans_section', { ...content.plans_section, title: e.target.value })} />
+                  <Textarea value={content.plans_section.subtitle} placeholder="Subtítulo"
+                    onChange={(e) => updateContent('plans_section', { ...content.plans_section, subtitle: e.target.value })} />
+                  {content.plans_section.plans.map((p, i) => (
+                    <Card key={i} className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold">Plano {i + 1}</span>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          const plans = content.plans_section.plans.filter((_, idx) => idx !== i);
+                          updateContent('plans_section', { ...content.plans_section, plans });
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                      <Input value={p.name} placeholder="Nome do plano"
+                        onChange={(e) => updatePlan(i, { ...p, name: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input value={p.price} placeholder="Preço (ex: R$ 39,90)"
+                          onChange={(e) => updatePlan(i, { ...p, price: e.target.value })} />
+                        <Input value={p.priceSuffix} placeholder="Sufixo (ex: /mês)"
+                          onChange={(e) => updatePlan(i, { ...p, priceSuffix: e.target.value })} />
+                      </div>
+                      <Input value={p.credits} placeholder="Texto de créditos"
+                        onChange={(e) => updatePlan(i, { ...p, credits: e.target.value })} />
+                      <div>
+                        <Label className="text-xs">Destaque visual</Label>
+                        <Select
+                          value={p.highlight || 'none'}
+                          onValueChange={(v) => updatePlan(i, { ...p, highlight: v === 'none' ? null : v as 'popular' | 'premium' })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="popular">Mais Popular (borda primária)</SelectItem>
+                            <SelectItem value="premium">Premium (borda escura)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Features (uma por linha)</Label>
+                        <Textarea
+                          rows={5}
+                          value={p.features.join('\n')}
+                          onChange={(e) => updatePlan(i, { ...p, features: e.target.value.split('\n') })}
+                        />
+                      </div>
+                      <Input value={p.cta_label} placeholder="Texto do botão"
+                        onChange={(e) => updatePlan(i, { ...p, cta_label: e.target.value })} />
+                      <CtaModeFields
+                        mode={p.cta_mode || 'link'}
+                        url={p.cta_url || ''}
+                        onChange={(mode, url) => updatePlan(i, { ...p, cta_mode: mode, cta_url: url })}
+                      />
+                    </Card>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const plans = [...content.plans_section.plans, {
+                      name: 'Novo plano', price: 'R$ 0', priceSuffix: '/mês',
+                      credits: '', cta_label: 'Assinar', cta_mode: 'link' as const, cta_url: '',
+                      features: ['Feature 1'],
+                    }];
+                    updateContent('plans_section', { ...content.plans_section, plans });
+                  }}><Plus className="h-3 w-3" /> Adicionar plano</Button>
+                  <Input value={content.plans_section.footer_note} placeholder="Nota de rodapé"
+                    onChange={(e) => updateContent('plans_section', { ...content.plans_section, footer_note: e.target.value })} />
                 </AccordionContent>
               </AccordionItem>
 
@@ -478,40 +537,33 @@ export function LandingPageEditor() {
                     onChange={(e) => updateContent('final_cta', { ...content.final_cta, title: e.target.value })} />
                   <Textarea placeholder="Subtítulo" value={content.final_cta.subtitle}
                     onChange={(e) => updateContent('final_cta', { ...content.final_cta, subtitle: e.target.value })} />
-                  <Input placeholder="Texto do botão" value={content.final_cta.button_label}
-                    onChange={(e) => updateContent('final_cta', { ...content.final_cta, button_label: e.target.value })} />
-                  <div>
-                    <Label>Tipo do botão</Label>
-                    <Select
-                      value={content.final_cta.button_mode || 'link'}
-                      onValueChange={(v) => updateContent('final_cta', { ...content.final_cta, button_mode: v as 'link' | 'form' })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="link">Link direto (URL)</SelectItem>
-                        <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {(content.final_cta.button_mode || 'link') === 'link' && (
-                    <Input placeholder="Link do botão (https://wa.me/...)" value={content.final_cta.button_url}
-                      onChange={(e) => updateContent('final_cta', { ...content.final_cta, button_url: e.target.value })} />
-                  )}
+                  <Input placeholder="Texto do botão" value={content.final_cta.cta_label}
+                    onChange={(e) => updateContent('final_cta', { ...content.final_cta, cta_label: e.target.value })} />
+                  <CtaModeFields
+                    mode={content.final_cta.cta_mode || 'link'}
+                    url={content.final_cta.cta_url}
+                    onChange={(mode, url) =>
+                      updateContent('final_cta', { ...content.final_cta, cta_mode: mode, cta_url: url })
+                    }
+                  />
+                  <Input placeholder="Texto secundário (link discreto)" value={content.final_cta.secondary_text}
+                    onChange={(e) => updateContent('final_cta', { ...content.final_cta, secondary_text: e.target.value })} />
+                  <Input placeholder="URL do texto secundário (opcional)" value={content.final_cta.secondary_url}
+                    onChange={(e) => updateContent('final_cta', { ...content.final_cta, secondary_url: e.target.value })} />
                 </AccordionContent>
               </AccordionItem>
 
-              {/* FORMULÁRIO DE CADASTRO (compartilhado pelos CTAs com modo Formulário) */}
+              {/* FORMULÁRIO DE CADASTRO */}
               <AccordionItem value="cta_form" className="border rounded-md px-3">
                 <AccordionTrigger>Formulário de Cadastro</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
                   <p className="text-xs text-muted-foreground">
-                    Este formulário é aberto quando qualquer botão CTA estiver no modo "Formulário".
+                    Aberto quando qualquer botão CTA estiver no modo "Formulário".
                   </p>
                   <div>
-                    <Label>Mensagem no topo do formulário (opcional)</Label>
+                    <Label>Mensagem no topo (opcional)</Label>
                     <Input
                       value={content.cta_form?.intro_text || ''}
-                      placeholder="Ex: Preencha para entrar no grupo"
                       onChange={(e) => updateContent('cta_form', { ...content.cta_form!, intro_text: e.target.value })}
                     />
                   </div>
@@ -519,19 +571,17 @@ export function LandingPageEditor() {
                     <Label>Texto do botão de envio</Label>
                     <Input
                       value={content.cta_form?.submit_label || ''}
-                      placeholder="Ex: Quero entrar no grupo"
                       onChange={(e) => updateContent('cta_form', { ...content.cta_form!, submit_label: e.target.value })}
                     />
                   </div>
                   <div>
-                    <Label>Redirecionar após cadastro (link do grupo, etc.)</Label>
+                    <Label>Redirecionar após cadastro (opcional)</Label>
                     <Input
                       value={content.cta_form?.redirect_url || ''}
-                      placeholder="https://chat.whatsapp.com/..."
+                      placeholder="https://..."
                       onChange={(e) => updateContent('cta_form', { ...content.cta_form!, redirect_url: e.target.value })}
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label>Campos do formulário</Label>
                     {(content.cta_form?.fields || []).map((f, i) => {
@@ -549,7 +599,7 @@ export function LandingPageEditor() {
                               updateContent('cta_form', { ...content.cta_form!, fields: arr });
                             }}><Trash2 className="h-3 w-3" /></Button>
                           </div>
-                          <Input value={f.label} placeholder="Rótulo do campo (ex: Nome)"
+                          <Input value={f.label} placeholder="Rótulo (ex: Nome)"
                             onChange={(e) => update({ label: e.target.value })} />
                           <div className="flex gap-2 items-center">
                             <Select value={f.type} onValueChange={(v) => update({ type: v as 'text'|'email'|'phone' })}>
@@ -586,9 +636,9 @@ export function LandingPageEditor() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* FLOATING CTA (único, centralizado) */}
+              {/* FLOATING CTA */}
               <AccordionItem value="floating" className="border rounded-md px-3">
-                <AccordionTrigger>Botão flutuante (rodapé fixo)</AccordionTrigger>
+                <AccordionTrigger>Botão flutuante</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
                   <Card className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
@@ -601,42 +651,23 @@ export function LandingPageEditor() {
                         />
                       </label>
                     </div>
-                    <div>
-                      <Label>Texto do botão</Label>
-                      <Input
-                        value={content.floating_cta?.label || ''}
-                        placeholder="Ex: Quero Falar Agora"
-                        onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, mode: 'link' }), label: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Tipo do botão</Label>
-                      <Select
-                        value={content.floating_cta?.mode || 'link'}
-                        onValueChange={(v) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '' }), mode: v as 'link' | 'form' })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="link">Link direto (URL)</SelectItem>
-                          <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {(content.floating_cta?.mode || 'link') === 'link' && (
-                      <div>
-                        <Label>Link</Label>
-                        <Input
-                          value={content.floating_cta?.url || ''}
-                          placeholder="https://wa.me/55..."
-                          onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '', mode: 'link' }), url: e.target.value })}
-                        />
-                      </div>
-                    )}
+                    <Input
+                      value={content.floating_cta?.label || ''}
+                      placeholder="Texto do botão"
+                      onChange={(e) => updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, mode: 'link' }), label: e.target.value })}
+                    />
+                    <CtaModeFields
+                      mode={content.floating_cta?.mode || 'link'}
+                      url={content.floating_cta?.url || ''}
+                      onChange={(mode, url) =>
+                        updateContent('floating_cta', { ...(content.floating_cta || { enabled: true, label: '' }), mode, url })
+                      }
+                    />
                   </Card>
                 </AccordionContent>
               </AccordionItem>
 
-              {/* REDES SOCIAIS */}
+              {/* SOCIALS */}
               <AccordionItem value="socials" className="border rounded-md px-3">
                 <AccordionTrigger>Redes sociais</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
@@ -663,12 +694,12 @@ export function LandingPageEditor() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* PIXEL & RASTREAMENTO */}
+              {/* TRACKING */}
               <AccordionItem value="tracking" className="border rounded-md px-3">
                 <AccordionTrigger>Pixel & Rastreamento</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
                   <div>
-                    <Label>ID do Pixel do Facebook (Meta Pixel)</Label>
+                    <Label>ID do Pixel do Facebook</Label>
                     <Input
                       value={content.tracking?.facebook_pixel_id ?? ''}
                       placeholder="Ex: 1234567890123456"
@@ -682,9 +713,6 @@ export function LandingPageEditor() {
                         });
                       }}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cole apenas o ID numérico do seu pixel (15 a 16 dígitos). O script será carregado automaticamente quando alguém abrir a sua LP. Deixe em branco para desativar.
-                    </p>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -694,7 +722,7 @@ export function LandingPageEditor() {
           {/* Preview ao vivo */}
           <Card className="overflow-hidden h-[80vh] sticky top-20 hidden lg:block">
             <div className="overflow-auto h-full origin-top-left">
-              <div style={{ transform: 'scale(0.6)', transformOrigin: 'top left', width: '166.66%' }}>
+              <div style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181%' }}>
                 <LandingPageRenderer theme={theme} content={content} />
               </div>
             </div>
@@ -702,6 +730,42 @@ export function LandingPageEditor() {
         </div>
       )}
     </div>
+  );
+
+  function updatePlan(i: number, plan: LPPlan) {
+    const plans = [...content.plans_section.plans]; plans[i] = plan;
+    updateContent('plans_section', { ...content.plans_section, plans });
+  }
+}
+
+// ===== Helpers =====
+interface CtaModeFieldsProps {
+  mode: 'link' | 'form';
+  url: string;
+  onChange: (mode: 'link' | 'form', url: string) => void;
+}
+
+function CtaModeFields({ mode, url, onChange }: CtaModeFieldsProps) {
+  return (
+    <>
+      <div>
+        <Label>Tipo do botão</Label>
+        <Select value={mode} onValueChange={(v) => onChange(v as 'link' | 'form', url)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="link">Link direto (URL)</SelectItem>
+            <SelectItem value="form">Abrir formulário de cadastro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {mode === 'link' && (
+        <div>
+          <Label>URL</Label>
+          <Input value={url} placeholder="https://..."
+            onChange={(e) => onChange(mode, e.target.value)} />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -732,36 +796,6 @@ function ImageUploadField({
         </Button>
       </div>
       {value && <img src={value} alt="" className="mt-2 max-h-20 rounded border" />}
-    </div>
-  );
-}
-
-function VideoUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
-  const [uploading, setUploading] = useState(false);
-  const handle = async (file: File) => {
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Vídeo muito grande (máx 50MB)');
-      return;
-    }
-    setUploading(true);
-    const url = await uploadFile(file, 'videos');
-    setUploading(false);
-    if (url) onChange(url);
-  };
-  return (
-    <div>
-      <Label>Vídeo MP4 (máx 50MB)</Label>
-      <div className="flex items-center gap-2">
-        <Input value={value} placeholder="URL do vídeo" onChange={(e) => onChange(e.target.value)} />
-        <Button variant="outline" size="sm" asChild disabled={uploading}>
-          <label className="cursor-pointer">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            <input type="file" accept="video/mp4" className="hidden"
-              onChange={(e) => e.target.files?.[0] && handle(e.target.files[0])} />
-          </label>
-        </Button>
-      </div>
-      {value && <video src={value} controls className="mt-2 max-h-32 rounded border" />}
     </div>
   );
 }
