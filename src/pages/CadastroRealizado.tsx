@@ -1,14 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 
-const REDIRECT_SECONDS = 5;
-
 export default function CadastroRealizado() {
   const navigate = useNavigate();
-  const [seconds, setSeconds] = useState(REDIRECT_SECONDS);
 
   // Meta Pixel
   useEffect(() => {
@@ -50,16 +47,6 @@ export default function CadastroRealizado() {
     };
   }, []);
 
-  // Contador regressivo
-  useEffect(() => {
-    if (seconds <= 0) {
-      navigate("/primeiros-passos", { replace: true });
-      return;
-    }
-    const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [seconds, navigate]);
-
   const goNow = () => navigate("/primeiros-passos", { replace: true });
 
   return (
@@ -83,10 +70,6 @@ export default function CadastroRealizado() {
         <Button size="lg" className="w-full sm:w-auto" onClick={goNow}>
           Conhecer plataforma
         </Button>
-
-        <p className="text-sm text-muted-foreground">
-          Redirecionando em {seconds} segundo{seconds === 1 ? "" : "s"}...
-        </p>
       </div>
     </div>
   );
