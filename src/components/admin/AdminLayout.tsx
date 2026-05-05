@@ -39,13 +39,14 @@ import {
   MessageSquare,
   ListChecks,
   UserPlus,
+  Building2,
 } from 'lucide-react';
 
 interface AdminNavItem {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  group: 'Visão Geral' | 'Financeiro' | 'Pessoas' | 'Conteúdo' | 'Afiliados';
+  group: 'Visão Geral' | 'Financeiro' | 'Pessoas' | 'Conteúdo' | 'Afiliados' | 'Portais';
 }
 
 export const ADMIN_NAV: AdminNavItem[] = [
@@ -69,6 +70,8 @@ export const ADMIN_NAV: AdminNavItem[] = [
 
   { title: 'Afiliados', url: '/admin/affiliates', icon: UserPlus, group: 'Afiliados' },
 
+  { title: 'Portais de Imóveis', url: '/admin/broker-portals', icon: Building2, group: 'Portais' },
+
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
@@ -76,7 +79,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Grupos WhatsApp', url: '/admin/whatsapp-groups', icon: MessageSquare, group: 'Conteúdo' },
 ];
 
-const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Afiliados', 'Conteúdo'];
+const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Afiliados', 'Portais', 'Conteúdo'];
 
 function AdminSidebar() {
   const { state } = useSidebar();
