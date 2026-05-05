@@ -257,24 +257,19 @@ export default function Planos() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              isCurrent={activePlanId === plan.id}
-              isPopular={plan.slug === 'performance'}
-              loading={submittingPlanId === plan.id}
-              pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
-              disabledReason={getDisabledReason(plan)}
-              isDowngrade={isDowngradePlan(plan)}
-              onSelect={handleSelect}
-            />
-          ))}
-        </div>
+        <CycleAndGrid
+          plans={plans}
+          activePlanId={activePlanId}
+          submittingPlanId={submittingPlanId}
+          pendingPlanId={pendingPlanId}
+          pendingInvoiceUrl={pendingInvoiceUrl}
+          getDisabledReason={getDisabledReason}
+          isDowngradePlan={isDowngradePlan}
+          onSelect={handleSelect}
+        />
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Cobrança mensal recorrente via Asaas. Os créditos são renovados a cada pagamento confirmado.
+          Cobrança recorrente via Asaas no ciclo escolhido. Os créditos são renovados a cada pagamento confirmado.
         </p>
       </div>
 
