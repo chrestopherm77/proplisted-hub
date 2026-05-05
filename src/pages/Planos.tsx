@@ -310,7 +310,7 @@ function CycleAndGrid({
   const free = plans.find((p) => Number(p.price) === 0);
 
   // Para cada parent_slug pago, escolhe a variação do ciclo selecionado
-  const paidParents = ['essencial', 'performance', 'elite'];
+  const paidParents = ['essencial', 'elite'];
   const paidPlans = paidParents
     .map((parent) => {
       const matches = plans.filter(
