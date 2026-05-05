@@ -75,6 +75,7 @@ const App = () => {
       <BrowserRouter>
         <PartnerProvider>
         <RedirectHandler />
+        <AffiliateRefCapture />
         <PageViewTracker />
         <Routes>
           <Route path="/" element={<Index />} />
