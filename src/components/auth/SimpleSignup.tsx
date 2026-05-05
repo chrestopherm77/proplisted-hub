@@ -167,6 +167,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         return;
       }
 
+      const affiliateRef = (typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : '') || '';
       const metadata: Record<string, string> = {
         person_type: "PF",
         name: name.trim(),
@@ -177,6 +178,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         creci: creci.trim(),
         creci_uf: creciUf,
         referral_code: (initialReferralCode || "").toUpperCase().trim(),
+        affiliate_ref: affiliateRef,
       };
 
       const { data, error } = await supabase.auth.signUp({
