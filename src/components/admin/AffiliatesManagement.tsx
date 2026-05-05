@@ -61,23 +61,47 @@ export function AffiliatesManagement() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => {
+  const loadUsers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .order('name', { ascending: true })
+      .limit(2000);
+    setUsers((data || []) as any);
+  };
+
+  const openCreate = async () => {
     setEditing(null);
-    setForm({ name: '', email: '', code: '', commission_percent: 20, is_active: true });
+    setForm({ user_id: '', name: '', email: '', code: '', commission_percent: 20, is_active: true });
+    if (users.length === 0) await loadUsers();
     setDialogOpen(true);
   };
-  const openEdit = (a: Affiliate) => {
+  const openEdit = async (a: Affiliate) => {
     setEditing(a);
-    setForm({ name: a.name, email: a.email, code: a.code, commission_percent: a.commission_percent, is_active: a.is_active });
+    setForm({ user_id: a.user_id || '', name: a.name, email: a.email, code: a.code, commission_percent: a.commission_percent, is_active: a.is_active });
+    if (users.length === 0) await loadUsers();
     setDialogOpen(true);
   };
 
+  const pickUser = (u: { id: string; name: string; email: string }) => {
+    setForm((f) => ({
+      ...f,
+      user_id: u.id,
+      name: u.name || f.name,
+      email: u.email || f.email,
+      code: f.code || slugify(u.name || u.email),
+    }));
+    setUserPickerOpen(false);
+  };
+
   const handleSave = async () => {
+    if (!form.user_id) { toast.error('Selecione um usuário cadastrado'); return; }
     if (!form.name.trim() || !form.email.trim()) { toast.error('Nome e email obrigatórios'); return; }
     const code = slugify(form.code || form.name);
     if (!code) { toast.error('Código inválido'); return; }
     setSaving(true);
     const payload = {
+      user_id: form.user_id,
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       code,
