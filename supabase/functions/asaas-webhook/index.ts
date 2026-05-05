@@ -722,6 +722,22 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
     console.error('Referral bonus check failed:', e);
   }
 
+  // Affiliate commission (each confirmed payment)
+  try {
+    const { data: commResult, error: commErr } = await supabaseClient.rpc('record_affiliate_commission', {
+      p_user_id: sub.user_id,
+      p_subscription_id: sub.id,
+      p_asaas_payment_id: asaasPaymentId,
+      p_amount: Number(payment.value ?? sub.plan?.price ?? 0),
+      p_plan_slug: sub.plan?.slug ?? null,
+      p_plan_name: sub.plan?.name ?? null,
+    });
+    if (commErr) console.error('record_affiliate_commission error:', commErr);
+    else if ((commResult as any)?.success) console.log(`💸 Affiliate commission ${(commResult as any).commission} for affiliate ${(commResult as any).affiliate_id}`);
+  } catch (e) {
+    console.error('Affiliate commission failed:', e);
+  }
+
   await supabaseClient
     .from('asaas_webhook_events')
     .update({ processed: true, processed_at: new Date().toISOString() })
