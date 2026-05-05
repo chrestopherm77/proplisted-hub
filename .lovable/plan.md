@@ -1,62 +1,77 @@
-## Painel de Afiliados (Parceiros de Indicação)
+# Portais de Imóveis para Corretores
 
-Sistema para o admin cadastrar afiliados, gerar link único de divulgação e dar a cada afiliado um painel próprio com métricas de cadastros e comissões geradas pelos planos pagos.
+Vamos criar a **estrutura base** (banco + admin + roteamento por domínio). Os 3 templates visuais serão construídos depois quando você passar as referências.
 
-### Como vai funcionar (visão geral)
+## O que será criado agora
 
-1. **Admin** cria um afiliado em `/admin/affiliates` (nome, email, % de comissão, status ativo).
-2. Sistema gera um **código único** (ex: `joao-silva`) e o link: `https://conectaeimob.com.br/?ref=joao-silva`.
-3. Quando alguém abre o link, o `ref` fica salvo (cookie/localStorage) e é gravado no perfil ao se cadastrar.
-4. Quando esse usuário paga uma assinatura (qualquer ciclo: mensal, trimestral ou anual), o webhook do Asaas registra automaticamente uma **comissão** para o afiliado, com o valor (% sobre o pago) e o mês de referência.
-5. O afiliado, ao logar com o email cadastrado, vê o **painel `/afiliado`** com:
-   - Total de cadastros vindos do link dele
-   - Quantos viraram assinantes pagos
-   - Valor de comissão acumulado no mês atual e meses anteriores
-   - Lista de pagamentos recentes (cliente, plano, valor, comissão, data)
+### 1. Banco de dados — nova tabela `broker_portals`
 
-Apenas usuários marcados como afiliados ativos enxergam esse painel.
+Cada portal pertence a um corretor (user) e tem:
 
-### Telas
+- `id`, `user_id` (dono/corretor)
+- `slug` (acesso via `/portal/:slug` para preview/teste)
+- `custom_domain` (ex: `imoveisjoao.com.br` — para apontar via DNS)
+- `template_id` (1, 2 ou 3 — qual dos 3 modelos usar)
+- `is_active` (boolean — **só admin** liga/desliga)
+- `properties_source` (`OWN` = só imóveis dele | `CITY` = todos do portal na cidade dele)
+- `city`, `state` (usado quando `properties_source = CITY`)
+- `branding` (jsonb): `logo_url`, `about`, `whatsapp`, `phone`, `email`, `instagram`, `facebook`, `tiktok`, `youtube`, `linkedin`, `address`, `primary_color`
+- `seo` (jsonb): `title`, `description`, `favicon_url`
+- `created_at`, `updated_at`
 
-**Admin → Afiliados** (nova entrada na sidebar admin)
-- Tabela: Nome, Email, Código/Link (com botão copiar), % Comissão, Cadastros, Pagantes, Comissão do mês, Status, Ações.
-- Modal "Novo Afiliado": nome, email, código (auto-sugerido, editável), % comissão (default 20%), ativo.
-- Detalhe do afiliado: lista todas comissões + cadastros indicados.
+**RLS:**
+- Admin (MASTER_ADMIN): full access
+- Corretor dono: SELECT do próprio portal (read-only — só admin edita/ativa)
+- Público (anon): SELECT apenas se `is_active = true` (necessário para o site renderizar sem login)
 
-**Afiliado → `/afiliado`** (público após login, só libera se for afiliado ativo)
-- Cards: link de divulgação (copiar), total de cadastros, assinantes ativos, comissão do mês, comissão total.
-- Gráfico simples por mês.
-- Tabela de comissões: cliente (parcial mascarado), plano, valor pago, % , comissão, data.
+### 2. Painel ADMIN — `/admin/broker-portals`
 
-### Mudanças técnicas
+Nova seção no sidebar admin com:
 
-**Banco (migration)**
-- `affiliates` — `id, user_id (nullable, FK virtual p/ profiles), name, email unique, code unique, commission_percent (default 20), is_active, created_at`.
-- `affiliate_referrals` — `id, affiliate_id, referred_user_id unique, created_at` (vínculo de quem se cadastrou pelo link).
-- `affiliate_commissions` — `id, affiliate_id, referred_user_id, subscription_id, payment_id (asaas), plan_slug, gross_amount, commission_percent, commission_amount, reference_month (date), status (PENDING/PAID), created_at`.
-- RLS:
-  - Admin (`MASTER_ADMIN`) gerencia tudo.
-  - Afiliado lê só linhas onde `affiliate_id` = seu próprio (via função `is_affiliate(auth.uid())` que cruza `affiliates.user_id = auth.uid()`).
-- Função `get_affiliate_summary(p_user_id)` → totais por mês (usada no painel do afiliado).
-- Trigger em `handle_new_user`: se metadata vier com `ref_code`, registra em `affiliate_referrals`.
+- **Lista** de portais criados (busca por corretor, domínio, cidade)
+- Botão **"Novo portal"** → escolhe corretor (autocomplete em `profiles`), template (1/2/3), slug, domínio
+- **Editar portal**: trocar logo, sobre, redes sociais, contatos, cor primária, template, fonte dos imóveis (OWN/CITY), cidade/UF, domínio, SEO
+- **Switch Ativar/Desativar** (somente admin vê e controla)
+- Botão **"Abrir preview"** → abre `/portal/:slug` em nova aba
+- Instruções de DNS para apontar o domínio para a Vercel/Lovable
 
-**Captura do `?ref=`**
-- Componente `AffiliateRefCapture` no `App.tsx` lê `?ref=` e salva em `localStorage.affiliate_ref`.
-- `SimpleSignup.tsx` envia esse valor no `signUp` metadata como `ref_code`.
-- Quando admin cria afiliado e ele se cadastra com o mesmo email, fazemos o `link` (`affiliates.user_id = profile.id`) automaticamente via trigger no insert de profiles (match por email).
+### 3. Roteamento por domínio (estrutura)
 
-**Asaas webhook (`supabase/functions/asaas-webhook/index.ts`)**
-- Ao confirmar pagamento de assinatura (PAID/CONFIRMED), buscar `affiliate_referrals` do `user_id`. Se existir e o afiliado estiver ativo, inserir linha em `affiliate_commissions` com `commission_amount = valor_pago * percent / 100` e `reference_month = data truncada no mês`.
-- Idempotente por `payment_id` (unique).
+- Nova rota `/portal/:slug` → renderiza o portal pelo slug (preview)
+- **Detecção por `custom_domain`**: hook `usePartner` já detecta hostname; criar lógica análoga `useBrokerPortal` que, quando o hostname não for o principal nem um partner, busca em `broker_portals.custom_domain`. Se achar e estiver ativo, monta o portal como home daquele domínio.
+- Se `is_active = false` → exibe página "Portal indisponível"
 
-**Frontend**
-- `src/pages/AffiliateDashboard.tsx` — painel do afiliado.
-- `src/components/admin/AffiliatesManagement.tsx` — CRUD admin + detalhes.
-- Adicionar rota `/afiliado` e `/admin/affiliates` no `App.tsx` e item na `ADMIN_NAV` (`AdminLayout.tsx`).
-- Adicionar atalho "Painel do Afiliado" no menu do usuário (`UserAvatarMenu.tsx`) só quando o usuário for afiliado ativo (hook `useIsAffiliate`).
+### 4. Componente `BrokerPortalRenderer` (placeholder)
 
-### Pontos a confirmar
+- Componente que recebe `portal` + `properties` e roteia para `<Template1 />`, `<Template2 />`, `<Template3 />`
+- Os 3 templates ficam como **stubs** (header com logo + lista simples de imóveis + footer com contatos) — você passa o design depois e a gente substitui sem mexer na estrutura.
 
-- **% de comissão padrão**: sugiro **20%** sobre o valor pago, configurável por afiliado. OK?
-- **Recorrência da comissão**: a comissão é gerada a **cada pagamento confirmado** (mensal/trimestral/anual) enquanto o cliente continuar pagando — é assim que você quer? (ou só no primeiro pagamento?)
-- **Pagamento ao afiliado**: por enquanto o painel apenas **mostra** o valor a pagar (status PENDING/PAID). O repasse é manual fora do sistema, com botão "Marcar como pago" no admin. OK?
+### 5. Busca de imóveis do portal
+
+Função utilitária que, dado um `portal`:
+- Se `properties_source = OWN`: `SELECT * FROM properties WHERE user_id = portal.user_id AND is_active = true`
+- Se `properties_source = CITY`: `SELECT * FROM properties WHERE city = portal.city AND state = portal.state AND is_active = true`
+
+Inclui página de detalhe `/portal/:slug/imovel/:id` (e também no domínio próprio: `/imovel/:id`).
+
+## O que NÃO entra agora (próximas etapas)
+
+- Design real dos 3 templates (aguardando suas referências)
+- Filtros avançados, mapa, formulário de contato customizado
+- Captura de leads do portal direto pro CRM do corretor
+
+## Detalhes técnicos
+
+**Arquivos novos:**
+- `supabase/migrations/<timestamp>_broker_portals.sql` — tabela + RLS + índices em `custom_domain` e `slug`
+- `src/components/admin/BrokerPortalsManagement.tsx` — listagem + dialog de criar/editar
+- `src/pages/BrokerPortal.tsx` — página pública do portal
+- `src/components/broker-portal/BrokerPortalRenderer.tsx`
+- `src/components/broker-portal/templates/Template1.tsx`, `Template2.tsx`, `Template3.tsx` (stubs)
+- `src/hooks/useBrokerPortal.ts` — detecta portal por hostname/slug
+
+**Arquivos editados:**
+- `src/App.tsx` — rotas `/portal/:slug`, `/portal/:slug/imovel/:id`, integração de detecção por domínio
+- `src/pages/Admin.tsx` + `src/components/admin/AdminLayout.tsx` — nova seção `broker-portals`
+
+Aprova pra eu seguir com essa estrutura?

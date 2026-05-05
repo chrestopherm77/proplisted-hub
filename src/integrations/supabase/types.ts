@@ -207,6 +207,54 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_portals: {
+        Row: {
+          branding: Json
+          city: string | null
+          created_at: string
+          custom_domain: string | null
+          id: string
+          is_active: boolean
+          properties_source: string
+          seo: Json
+          slug: string
+          state: string | null
+          template_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          branding?: Json
+          city?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          id?: string
+          is_active?: boolean
+          properties_source?: string
+          seo?: Json
+          slug: string
+          state?: string | null
+          template_id?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          branding?: Json
+          city?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          id?: string
+          is_active?: boolean
+          properties_source?: string
+          seo?: Json
+          slug?: string
+          state?: string | null
+          template_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coupon_usages: {
         Row: {
           coupon_id: string

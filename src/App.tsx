@@ -48,6 +48,8 @@ import NotFound from "./pages/NotFound";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import BrokerPortal from "./pages/BrokerPortal";
+import { BrokerDomainGate } from "./components/broker-portal/BrokerDomainGate";
 
 const queryClient = new QueryClient();
 
@@ -78,7 +80,7 @@ const App = () => {
         <AffiliateRefCapture />
         <PageViewTracker />
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<BrokerDomainGate><Index /></BrokerDomainGate>} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/leads" element={<Leads />} />
@@ -111,7 +113,9 @@ const App = () => {
           <Route path="/admin/support" element={<Admin section="support" />} />
           <Route path="/admin/whatsapp-groups" element={<Admin section="whatsapp-groups" />} />
           <Route path="/admin/affiliates" element={<Admin section="affiliates" />} />
+          <Route path="/admin/broker-portals" element={<Admin section="broker-portals" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
+          <Route path="/portal/:slug" element={<BrokerPortal />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
