@@ -31,6 +31,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
   const plansRef = useRef<HTMLDivElement>(null);
   const finalCtaRef = useRef<HTMLDivElement>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [floatingClosed, setFloatingClosed] = useState(false);
 
   const scrollToPlans = () =>
     plansRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
