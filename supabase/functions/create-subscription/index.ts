@@ -265,12 +265,19 @@ serve(async (req) => {
 
     const billingType = paymentMethod === 'CREDIT_CARD' ? 'CREDIT_CARD' : 'PIX';
 
+    // Mapeia ciclo do plano para o cycle do Asaas
+    const planCycle = (plan as any).billing_cycle || 'MONTHLY';
+    const asaasCycle =
+      planCycle === 'YEARLY' ? 'YEARLY' :
+      planCycle === 'QUARTERLY' ? 'QUARTERLY' :
+      'MONTHLY';
+
     const subPayload: any = {
       customer: customerId,
       billingType: 'UNDEFINED',
       value: Number(plan.price),
       nextDueDate: nextDueStr,
-      cycle: 'MONTHLY',
+      cycle: asaasCycle,
       description: `Assinatura ${plan.name} - Conectae`,
       externalReference: externalRef,
     };
