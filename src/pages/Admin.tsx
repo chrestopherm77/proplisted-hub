@@ -71,6 +71,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'whatsapp-groups': WhatsappCityGroupsManagement,
   'signup-progress': SignupProgressManagement,
   'user-activity': UserActivityLog,
+  affiliates: AffiliatesManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
