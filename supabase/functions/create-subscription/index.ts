@@ -325,6 +325,7 @@ serve(async (req) => {
         next_due_date: nextDueStr,
         payment_method: billingType,
         invoice_url: invoiceUrl,
+        billing_cycle: planCycle,
       })
       .select()
       .single();
