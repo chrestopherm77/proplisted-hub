@@ -85,14 +85,17 @@ export function LandingPageEditor() {
       slug: slug.toLowerCase().trim(),
       title: title.trim(),
       is_published: isPublished,
-      theme: theme as unknown as Record<string, unknown>,
-      content: content as unknown as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      theme: theme as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      content: content as any,
     };
 
     if (isNew) {
       const { data, error } = await supabase
         .from('custom_landing_pages')
-        .insert({ ...payload, created_by: user?.id })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({ ...payload, created_by: user?.id } as any)
         .select('id')
         .single();
       setSaving(false);
