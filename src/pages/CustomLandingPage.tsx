@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { LandingPageRenderer } from '@/components/landing-page-renderer/LandingPageRenderer';
 import NotFound from '@/pages/NotFound';
 import {
-  DEFAULT_CONTENT,
   DEFAULT_THEME,
+  mergeLPContent,
   type CustomLandingPage as LP,
   type LPContent,
   type LPTheme,
