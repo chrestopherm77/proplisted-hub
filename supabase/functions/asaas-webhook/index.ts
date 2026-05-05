@@ -640,8 +640,9 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
 
   // Update user_subscription period and status
   const now = new Date();
+  const cycleMonths = Number(sub.plan?.cycle_months ?? 1) || 1;
   const periodEnd = new Date(now);
-  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  periodEnd.setMonth(periodEnd.getMonth() + cycleMonths);
 
   await supabaseClient
     .from('user_subscriptions')
