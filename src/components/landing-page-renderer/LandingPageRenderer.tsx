@@ -2,8 +2,10 @@ import { useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
   Instagram, Linkedin, Youtube, Facebook,
-  ArrowRight, Sparkles, Check, Star, Shield, Zap, CheckCircle, Loader2,
+  ArrowRight, Sparkles, Check, Star, Shield, Zap, CheckCircle, Loader2, X,
 } from 'lucide-react';
+import whatsappIcon from '@/assets/whatsapp-icon.png';
+import { normalizePhoneToWa } from '@/lib/whatsapp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +31,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
   const plansRef = useRef<HTMLDivElement>(null);
   const finalCtaRef = useRef<HTMLDivElement>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [floatingClosed, setFloatingClosed] = useState(false);
 
   const scrollToPlans = () =>
     plansRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -440,17 +443,31 @@ export function LandingPageRenderer({ theme, content }: Props) {
         </footer>
       </main>
 
-      {/* Floating CTA */}
-      {floating?.enabled && floating.label && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-          <Button
-            size="lg"
-            className="shadow-2xl"
-            onClick={() => handleCta(floating.mode, floating.url)}
+      {/* Floating WhatsApp CTA */}
+      {floating?.enabled && !floatingClosed && (floating.url || floating.mode === 'form') && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-end gap-2">
+          <button
+            onClick={() => {
+              if (floating.mode === 'form') return openForm();
+              const raw = (floating.url || '').trim();
+              if (!raw) return openForm();
+              const href = /^https?:\/\//i.test(raw)
+                ? raw
+                : `https://wa.me/${normalizePhoneToWa(raw)}`;
+              window.open(href, '_blank', 'noopener,noreferrer');
+            }}
+            className="relative h-16 w-16 rounded-full shadow-2xl hover:scale-105 transition-transform"
+            aria-label={floating.label || 'Falar no WhatsApp'}
           >
-            {floating.label}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+            <img src={whatsappIcon} alt="WhatsApp" className="h-full w-full object-contain" />
+          </button>
+          <button
+            onClick={() => setFloatingClosed(true)}
+            className="h-6 w-6 rounded-full bg-background border border-border shadow flex items-center justify-center hover:bg-muted -ml-4 -mb-1"
+            aria-label="Fechar"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 
