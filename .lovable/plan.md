@@ -1,77 +1,37 @@
-# Portais de Imóveis para Corretores
+## Clonar Página Principal no Gerador de LP
 
-Vamos criar a **estrutura base** (banco + admin + roteamento por domínio). Os 3 templates visuais serão construídos depois quando você passar as referências.
+LPs existentes serão migradas visualmente para o novo template (opção A confirmada).
 
-## O que será criado agora
+### Estrutura nova de cada LP (espelha a Home)
+- **Header** — logo, labels de Entrar/Cadastre-se, CTA do header (link ou form)
+- **Hero** — badge, título linha 1 + linha 2 (com destaque), subtítulo, CTA primário e secundário
+- **Funcionalidades** — badge, título, subtítulo, **9 cards** (ícone + título + descrição)
+- **Extras** — **2 cards** destaque (ícone + título + descrição)
+- **Como Funciona** — título, subtítulo, **3 passos**
+- **Stats** — **3 itens** (ícone + valor + label)
+- **Planos** — badge, título, subtítulo, **4 planos** (nome, preço, sufixo, créditos, lista de features, CTA label + url/mode), nota de rodapé
+- **CTA Final** — título, subtítulo, botão (label + url/mode), texto secundário
+- **Footer / Socials / Tracking / Floating CTA / cta_form** — preservados
 
-### 1. Banco de dados — nova tabela `broker_portals`
+Tudo persistido por LP no JSON `content` da `custom_landing_pages`. Editar uma LP NÃO afeta a Home real do Conectae.
 
-Cada portal pertence a um corretor (user) e tem:
+### Arquivos impactados
 
-- `id`, `user_id` (dono/corretor)
-- `slug` (acesso via `/portal/:slug` para preview/teste)
-- `custom_domain` (ex: `imoveisjoao.com.br` — para apontar via DNS)
-- `template_id` (1, 2 ou 3 — qual dos 3 modelos usar)
-- `is_active` (boolean — **só admin** liga/desliga)
-- `properties_source` (`OWN` = só imóveis dele | `CITY` = todos do portal na cidade dele)
-- `city`, `state` (usado quando `properties_source = CITY`)
-- `branding` (jsonb): `logo_url`, `about`, `whatsapp`, `phone`, `email`, `instagram`, `facebook`, `tiktok`, `youtube`, `linkedin`, `address`, `primary_color`
-- `seo` (jsonb): `title`, `description`, `favicon_url`
-- `created_at`, `updated_at`
+**Tipos & defaults**
+- `src/components/admin/landing-page/types.ts` — reescrever `LPContent` e `DEFAULT_CONTENT` com a nova estrutura; adicionar `LPFeatureCard`, `LPExtraCard`, `LPStep`, `LPStat`, `LPPlan`. Manter `LPSection` opcional (legado).
 
-**RLS:**
-- Admin (MASTER_ADMIN): full access
-- Corretor dono: SELECT do próprio portal (read-only — só admin edita/ativa)
-- Público (anon): SELECT apenas se `is_active = true` (necessário para o site renderizar sem login)
+**Renderer**
+- `src/components/landing-page-renderer/LandingPageRenderer.tsx` — copiar JSX de `src/pages/Index.tsx` (header → hero → features → extras → how_it_works → stats → planos → CTA final → footer). CTAs respeitam `mode='link'` (abre URL) ou `mode='form'` (abre modal `cta_form` existente). Preservar floating CTA, socials, tracking.
 
-### 2. Painel ADMIN — `/admin/broker-portals`
+**Editor admin**
+- `src/components/admin/LandingPageEditor.tsx` — substituir accordions pelos da nova estrutura. Cada item de array editável com `IconPicker` (já existe) + Input/Textarea. Editor de planos com lista de features (add/remove). Preview ao vivo continua via `LandingPageRenderer`.
 
-Nova seção no sidebar admin com:
+**Compatibilidade com LPs existentes**
+- Função de merge runtime em `CustomLandingPage.tsx` e no editor preenche campos novos com defaults. Sem rewrite no banco — LPs antigas adotam o novo layout automaticamente.
 
-- **Lista** de portais criados (busca por corretor, domínio, cidade)
-- Botão **"Novo portal"** → escolhe corretor (autocomplete em `profiles`), template (1/2/3), slug, domínio
-- **Editar portal**: trocar logo, sobre, redes sociais, contatos, cor primária, template, fonte dos imóveis (OWN/CITY), cidade/UF, domínio, SEO
-- **Switch Ativar/Desativar** (somente admin vê e controla)
-- Botão **"Abrir preview"** → abre `/portal/:slug` em nova aba
-- Instruções de DNS para apontar o domínio para a Vercel/Lovable
-
-### 3. Roteamento por domínio (estrutura)
-
-- Nova rota `/portal/:slug` → renderiza o portal pelo slug (preview)
-- **Detecção por `custom_domain`**: hook `usePartner` já detecta hostname; criar lógica análoga `useBrokerPortal` que, quando o hostname não for o principal nem um partner, busca em `broker_portals.custom_domain`. Se achar e estiver ativo, monta o portal como home daquele domínio.
-- Se `is_active = false` → exibe página "Portal indisponível"
-
-### 4. Componente `BrokerPortalRenderer` (placeholder)
-
-- Componente que recebe `portal` + `properties` e roteia para `<Template1 />`, `<Template2 />`, `<Template3 />`
-- Os 3 templates ficam como **stubs** (header com logo + lista simples de imóveis + footer com contatos) — você passa o design depois e a gente substitui sem mexer na estrutura.
-
-### 5. Busca de imóveis do portal
-
-Função utilitária que, dado um `portal`:
-- Se `properties_source = OWN`: `SELECT * FROM properties WHERE user_id = portal.user_id AND is_active = true`
-- Se `properties_source = CITY`: `SELECT * FROM properties WHERE city = portal.city AND state = portal.state AND is_active = true`
-
-Inclui página de detalhe `/portal/:slug/imovel/:id` (e também no domínio próprio: `/imovel/:id`).
-
-## O que NÃO entra agora (próximas etapas)
-
-- Design real dos 3 templates (aguardando suas referências)
-- Filtros avançados, mapa, formulário de contato customizado
-- Captura de leads do portal direto pro CRM do corretor
-
-## Detalhes técnicos
-
-**Arquivos novos:**
-- `supabase/migrations/<timestamp>_broker_portals.sql` — tabela + RLS + índices em `custom_domain` e `slug`
-- `src/components/admin/BrokerPortalsManagement.tsx` — listagem + dialog de criar/editar
-- `src/pages/BrokerPortal.tsx` — página pública do portal
-- `src/components/broker-portal/BrokerPortalRenderer.tsx`
-- `src/components/broker-portal/templates/Template1.tsx`, `Template2.tsx`, `Template3.tsx` (stubs)
-- `src/hooks/useBrokerPortal.ts` — detecta portal por hostname/slug
-
-**Arquivos editados:**
-- `src/App.tsx` — rotas `/portal/:slug`, `/portal/:slug/imovel/:id`, integração de detecção por domínio
-- `src/pages/Admin.tsx` + `src/components/admin/AdminLayout.tsx` — nova seção `broker-portals`
-
-Aprova pra eu seguir com essa estrutura?
+### Detalhes técnicos
+- Reusa classes globais do Tailwind/`index.css` (`bg-gradient-primary`, `bg-grid-pattern`, etc.) — funcionam dentro da LP sem ajustes.
+- `LPTheme` mantido mas sem aplicar override forçado nesta etapa (LP herda tokens do Conectae). Override de cores pode ser ligado depois.
+- Cada plano ganha `cta_url` + `cta_mode` para funcionar em LP standalone (sem depender de `/auth`).
+- Logo do header reusa o `uploadFile()` já existente.
+- Sem migration SQL: shape do JSON é flexível, merge resolve em runtime.
