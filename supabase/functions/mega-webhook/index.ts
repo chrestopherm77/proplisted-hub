@@ -183,6 +183,10 @@ Deno.serve(async (req) => {
           RESIDENTIAL: "Residencial", COMMERCIAL: "Comercial", MIXED: "Misto",
           RURAL: "Rural", LAND: "Terreno",
           HOUSE: "Casa", APARTMENT: "Apartamento", KITNET: "Kitnet/Studio",
+          EVALUATING: "Avaliando opções",
+          COMMERCIAL_BUILDING: "Prédio comercial", WAREHOUSE: "Galpão",
+          OFFICE: "Sala comercial", STORE: "Loja",
+          MULTIPLE: "Aceito mais de uma opção",
         };
         const subTypeLabels: Record<string, string> = {
           HOUSE: "Casa", APARTMENT: "Apartamento", CONDO: "Condomínio",
@@ -190,6 +194,9 @@ Deno.serve(async (req) => {
           OFFICE: "Sala Comercial", STORE: "Loja", WAREHOUSE: "Galpão",
           BUILDING: "Prédio Comercial", FARM: "Fazenda", SITE: "Sítio",
           RANCH: "Chácara", LOT: "Lote", LAND: "Terreno", KITNET: "Kitnet/Studio",
+          EVALUATING: "Avaliando opções",
+          COMMERCIAL_BUILDING: "Prédio comercial",
+          MULTIPLE: "Aceito mais de uma opção",
         };
         const purposeLabels: Record<string, string> = {
           HOUSING: "Moradia", INVESTMENT: "Investimento",
