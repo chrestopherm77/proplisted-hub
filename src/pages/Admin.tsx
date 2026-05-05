@@ -21,6 +21,7 @@ import { SupportManagement } from '@/components/admin/SupportManagement';
 import { WhatsappCityGroupsManagement } from '@/components/admin/WhatsappCityGroupsManagement';
 import { SignupProgressManagement } from '@/components/admin/SignupProgressManagement';
 import { UserActivityLog } from '@/components/admin/UserActivityLog';
+import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
 
 type Section =
   | 'dashboard'
