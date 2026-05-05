@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
   Instagram, Linkedin, Youtube, Facebook,
-  ArrowRight, Sparkles, Check, Star, Shield, Zap, CheckCircle, Loader2,
+  ArrowRight, Sparkles, Check, Star, Shield, Zap, CheckCircle, Loader2, X,
 } from 'lucide-react';
+import whatsappIcon from '@/assets/whatsapp-icon.png';
+import { normalizePhoneToWa } from '@/lib/whatsapp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
