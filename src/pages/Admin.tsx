@@ -22,6 +22,7 @@ import { WhatsappCityGroupsManagement } from '@/components/admin/WhatsappCityGro
 import { SignupProgressManagement } from '@/components/admin/SignupProgressManagement';
 import { UserActivityLog } from '@/components/admin/UserActivityLog';
 import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
+import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagement';
 
 type Section =
   | 'dashboard'
@@ -46,7 +47,8 @@ type Section =
   | 'whatsapp-groups'
   | 'signup-progress'
   | 'user-activity'
-  | 'affiliates';
+  | 'affiliates'
+  | 'broker-portals';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -72,6 +74,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'signup-progress': SignupProgressManagement,
   'user-activity': UserActivityLog,
   affiliates: AffiliatesManagement,
+  'broker-portals': BrokerPortalsManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
