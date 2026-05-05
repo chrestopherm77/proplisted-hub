@@ -207,8 +207,38 @@ export function AffiliatesManagement() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? 'Editar Afiliado' : 'Novo Afiliado'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, code: editing ? form.code : slugify(e.target.value) })} /></div>
-            <div><Label>Email *</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="O usuário deve se cadastrar com este email" /></div>
+            <div>
+              <Label>Usuário cadastrado *</Label>
+              <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    {form.user_id
+                      ? <span className="truncate">{form.name} <span className="text-muted-foreground">— {form.email}</span></span>
+                      : <span className="text-muted-foreground">Selecione um usuário…</span>}
+                    <Search className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar por nome ou email…" />
+                    <CommandList>
+                      <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {users.map((u) => (
+                          <CommandItem key={u.id} value={`${u.name} ${u.email}`} onSelect={() => pickUser(u)}>
+                            <div className="flex flex-col">
+                              <span>{u.name || '(sem nome)'}</span>
+                              <span className="text-xs text-muted-foreground">{u.email}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">A vinculação é feita pelo usuário, não pelo email digitado.</p>
+            </div>
             <div>
               <Label>Código do link</Label>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: slugify(e.target.value) })} placeholder="ex: joao-silva" />
