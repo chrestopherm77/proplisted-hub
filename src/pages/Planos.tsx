@@ -310,7 +310,7 @@ function CycleAndGrid({
   const free = plans.find((p) => Number(p.price) === 0);
 
   // Para cada parent_slug pago, escolhe a variação do ciclo selecionado
-  const paidParents = ['essencial', 'performance', 'elite'];
+  const paidParents = ['essencial', 'elite'];
   const paidPlans = paidParents
     .map((parent) => {
       const matches = plans.filter(
@@ -376,7 +376,7 @@ function CycleAndGrid({
               plan={plan}
               monthlyReferencePrice={monthlyByParent.get(parent)}
               isCurrent={activePlanId === plan.id}
-              isPopular={parent === 'performance'}
+              isPopular={parent === 'elite'}
               loading={submittingPlanId === plan.id}
               pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
               disabledReason={getDisabledReason(plan)}
@@ -385,6 +385,29 @@ function CycleAndGrid({
             />
           );
         })}
+        {/* Card "Quero ser parceiro" */}
+        <div className="relative flex flex-col rounded-2xl border bg-card p-6 transition-all hover:-translate-y-1 border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
+          <div className="text-center mb-5">
+            <h3 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Quero ser parceiro
+            </h3>
+            <div className="min-h-[3rem] flex items-center justify-center">
+              <span className="text-2xl font-bold tracking-tight">Sob medida</span>
+            </div>
+          </div>
+          <ul className="space-y-2.5 flex-1 mb-5 text-sm text-foreground/90">
+            <li>Tem outras necessidades?</li>
+            <li>Vamos conversar sobre uma parceria personalizada para o seu negócio.</li>
+          </ul>
+          <a
+            href="https://wa.me/5516992456258"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center w-full h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition"
+          >
+            Falar no WhatsApp
+          </a>
+        </div>
       </div>
     </>
   );

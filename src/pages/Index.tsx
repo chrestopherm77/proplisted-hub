@@ -58,8 +58,9 @@ const Index = () => {
     else navigate(`/auth?plan=${slug}`);
   };
 
-  const isPopular = (slug: string) => slug === 'performance';
-  const isHighlight = (slug: string) => slug === 'elite';
+  const isPopular = (slug: string) => slug === 'elite';
+  const isHighlight = (_slug: string) => false;
+  const PARTNER_WA = 'https://wa.me/5516992456258';
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -272,6 +273,7 @@ const Index = () => {
               {c.plans_section.plans.map((plan) => {
                 const popular = isPopular(plan.slug);
                 const highlight = isHighlight(plan.slug);
+                const isPartner = plan.slug === 'partner';
                 return (
                   <div
                     key={plan.slug}
@@ -296,13 +298,22 @@ const Index = () => {
                       <h3 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                         {plan.name}
                       </h3>
-                      <div className="flex items-baseline justify-center gap-1 min-h-[3rem]">
-                        <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
-                        {plan.priceSuffix && (
-                          <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
-                        )}
-                      </div>
-                      <div className="mt-2 text-sm text-primary font-medium">{plan.credits}</div>
+                      {!isPartner && (
+                        <>
+                          <div className="flex items-baseline justify-center gap-1 min-h-[3rem]">
+                            <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
+                            {plan.priceSuffix && (
+                              <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
+                            )}
+                          </div>
+                          <div className="mt-2 text-sm text-primary font-medium">{plan.credits}</div>
+                        </>
+                      )}
+                      {isPartner && (
+                        <div className="min-h-[3rem] flex items-center justify-center">
+                          <span className="text-2xl font-bold tracking-tight">Sob medida</span>
+                        </div>
+                      )}
                     </div>
 
                     <ul className="space-y-2.5 flex-1 mb-5">
@@ -314,13 +325,21 @@ const Index = () => {
                       ))}
                     </ul>
 
-                    <Button
-                      className={`w-full ${popular ? 'shadow-lg shadow-primary/30' : ''}`}
-                      variant={popular ? 'default' : 'outline'}
-                      onClick={() => handlePlanSelect(plan.slug)}
-                    >
-                      {plan.cta}
-                    </Button>
+                    {isPartner ? (
+                      <Button asChild className="w-full" variant="outline">
+                        <a href={PARTNER_WA} target="_blank" rel="noopener noreferrer">
+                          {plan.cta}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        className={`w-full ${popular ? 'shadow-lg shadow-primary/30' : ''}`}
+                        variant={popular ? 'default' : 'outline'}
+                        onClick={() => handlePlanSelect(plan.slug)}
+                      >
+                        {plan.cta}
+                      </Button>
+                    )}
                   </div>
                 );
               })}

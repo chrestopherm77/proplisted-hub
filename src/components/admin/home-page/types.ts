@@ -18,7 +18,7 @@ export interface HomeStatItem {
 }
 
 export interface HomePlan {
-  slug: 'conexao' | 'essencial' | 'performance' | 'elite';
+  slug: 'conexao' | 'essencial' | 'elite' | 'partner';
   name: string;
   price: string;
   priceSuffix: string;
@@ -75,8 +75,8 @@ export interface HomeContent {
 export const PLAN_SLUGS: HomePlan['slug'][] = [
   'conexao',
   'essencial',
-  'performance',
   'elite',
+  'partner',
 ];
 
 // Defaults espelhando o seed da migration — fallback caso a tabela esteja vazia.
@@ -153,28 +153,27 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
         slug: 'essencial', name: 'Essencial', price: 'R$ 39,90', priceSuffix: '/mês',
         credits: '30 créditos/mês', cta: 'Assinar Essencial',
         features: [
-          '5 solicitações de parceria', 'Até 10 ofertas de parceria',
-          'Até 10 imóveis no portal', 'Acesso full a lançamentos',
+          'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
+          'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
           'Acesso full a financiamentos', '3 criativos imobiliários',
           'Treinamentos básicos e intermediários',
         ],
       },
       {
-        slug: 'performance', name: 'Performance', price: 'R$ 79,90', priceSuffix: '/mês',
-        credits: '430 créditos/mês', cta: 'Assinar Performance',
+        slug: 'elite', name: 'Elite', price: 'R$ 79,90', priceSuffix: '/mês',
+        credits: '150 créditos/mês', cta: 'Assinar Elite',
         features: [
           'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
           'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
-          '15 criativos imobiliários', 'Hot Seat 2x mês', '2 leads inclusos',
+          '15 criativos imobiliários', 'Site Personalizado',
         ],
       },
       {
-        slug: 'elite', name: 'Elite', price: 'R$ 149,90', priceSuffix: '/mês',
-        credits: '1.000 créditos/mês', cta: 'Assinar Elite',
+        slug: 'partner', name: 'Quero ser parceiro', price: '', priceSuffix: '',
+        credits: '', cta: 'Falar no WhatsApp',
         features: [
-          'Tudo do Performance, e mais:', 'Imóveis no portal ilimitados',
-          '30 criativos imobiliários', 'Treinamentos básicos e intermediários',
-          'Hot Seat 2x mês', '5 leads inclusos', 'Suporte prioritário',
+          'Tem outras necessidades?',
+          'Vamos conversar sobre uma parceria personalizada para o seu negócio.',
         ],
       },
     ],
