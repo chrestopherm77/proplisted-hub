@@ -224,6 +224,12 @@ export function UserAvatarMenu() {
             <Gift className="mr-2 h-4 w-4 text-primary" />
             <span>Indicar e ganhar</span>
           </DropdownMenuItem>
+          {isAffiliate && (
+            <DropdownMenuItem onClick={() => navigate('/afiliado')}>
+              <TrendingUp className="mr-2 h-4 w-4 text-primary" />
+              <span>Painel de Afiliados</span>
+            </DropdownMenuItem>
+          )}
           {!isPartnerSite && (
             <DropdownMenuItem onClick={() => navigate('/planos')}>
               <Crown className="mr-2 h-4 w-4" />
