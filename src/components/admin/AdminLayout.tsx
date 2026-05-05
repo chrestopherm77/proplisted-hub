@@ -67,6 +67,8 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Liberar acesso', url: '/admin/launch-access', icon: KeyRound, group: 'Pessoas' },
   { title: 'Parceiros', url: '/admin/partners', icon: Handshake, group: 'Pessoas' },
 
+  { title: 'Afiliados', url: '/admin/affiliates', icon: UserPlus, group: 'Afiliados' },
+
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
