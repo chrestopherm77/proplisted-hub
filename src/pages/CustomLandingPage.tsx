@@ -92,26 +92,7 @@ export default function CustomLandingPage() {
   if (notFound || !lp) return <NotFound />;
 
   const theme: LPTheme = { ...DEFAULT_THEME, ...(lp.theme as LPTheme) };
-  const raw = (lp.content as LPContent) || ({} as LPContent);
-  const legacyFloating = raw.floating_ctas?.[0];
-  const content: LPContent = {
-    ...DEFAULT_CONTENT,
-    ...raw,
-    header: { ...DEFAULT_CONTENT.header, ...raw.header },
-    hero: { ...DEFAULT_CONTENT.hero, ...raw.hero },
-    media: { ...DEFAULT_CONTENT.media, ...raw.media },
-    social_proof: { ...DEFAULT_CONTENT.social_proof, ...raw.social_proof },
-    final_cta: { ...DEFAULT_CONTENT.final_cta, ...raw.final_cta },
-    socials: { ...DEFAULT_CONTENT.socials, ...raw.socials },
-    footer: { ...DEFAULT_CONTENT.footer, ...raw.footer },
-    tracking: { ...DEFAULT_CONTENT.tracking, ...raw.tracking },
-    cta_form: { ...DEFAULT_CONTENT.cta_form!, ...raw.cta_form },
-    features: raw.features ?? DEFAULT_CONTENT.features,
-    floating_cta: raw.floating_cta ?? (legacyFloating
-      ? { ...legacyFloating, mode: 'link', url: '' }
-      : DEFAULT_CONTENT.floating_cta),
-    sections: raw.sections ?? [],
-  };
+  const content: LPContent = mergeLPContent(lp.content as Partial<LPContent>);
 
   return <LandingPageRenderer theme={theme} content={content} />;
 }
