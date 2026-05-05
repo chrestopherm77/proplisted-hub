@@ -208,6 +208,14 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         } catch { /* ignore */ }
       }
 
+      // Vincula afiliado se veio de link ?aff=
+      if (affiliateRef && data?.user?.id) {
+        try {
+          await supabase.rpc("register_affiliate_referral", { p_code: affiliateRef, p_user_id: data.user.id });
+          localStorage.removeItem('affiliate_ref');
+        } catch { /* ignore */ }
+      }
+
       toast.success("Cadastro realizado com sucesso!");
       if (data?.user?.id) {
         try { await markSignupCompleted(data.user.id, buildTrackingData(), 1); } catch { /* ignore */ }
