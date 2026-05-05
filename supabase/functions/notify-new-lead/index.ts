@@ -59,6 +59,12 @@ const propertyTypeLabels: Record<string, string> = {
   HOUSE: "Casa",
   APARTMENT: "Apartamento",
   KITNET: "Kitnet",
+  EVALUATING: "Avaliando opções",
+  COMMERCIAL_BUILDING: "Prédio comercial",
+  WAREHOUSE: "Galpão",
+  OFFICE: "Sala comercial",
+  STORE: "Loja",
+  MULTIPLE: "Aceito mais de uma opção",
 };
 
 const commercialTypeLabels: Record<string, string> = {
@@ -81,6 +87,7 @@ const residentialTypeLabels: Record<string, string> = {
   LOFT: "Loft",
   STUDIO: "Studio",
   MULTIPLE: "Múltiplos tipos",
+  EVALUATING: "Avaliando opções",
 };
 
 const mixedTypeLabels: Record<string, string> = {
