@@ -44,6 +44,133 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_commissions: {
+        Row: {
+          affiliate_id: string
+          asaas_payment_id: string | null
+          commission_amount: number
+          commission_percent: number
+          created_at: string
+          gross_amount: number
+          id: string
+          paid_at: string | null
+          plan_name: string | null
+          plan_slug: string | null
+          reference_month: string
+          referred_user_id: string
+          status: string
+          subscription_id: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          asaas_payment_id?: string | null
+          commission_amount?: number
+          commission_percent?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          paid_at?: string | null
+          plan_name?: string | null
+          plan_slug?: string | null
+          reference_month?: string
+          referred_user_id: string
+          status?: string
+          subscription_id?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          asaas_payment_id?: string | null
+          commission_amount?: number
+          commission_percent?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          paid_at?: string | null
+          plan_name?: string | null
+          plan_slug?: string | null
+          reference_month?: string
+          referred_user_id?: string
+          status?: string
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_referrals: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          referred_user_id: string
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          referred_user_id: string
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          referred_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliates: {
+        Row: {
+          code: string
+          commission_percent: number
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          commission_percent?: number
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          commission_percent?: number
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       asaas_webhook_events: {
         Row: {
           asaas_event_id: string | null
@@ -2216,6 +2343,7 @@ export type Database = {
         Returns: Json
       }
       generate_referral_code: { Args: never; Returns: string }
+      get_affiliate_dashboard: { Args: { p_user_id: string }; Returns: Json }
       get_groups_for_city: {
         Args: { p_city: string; p_uf: string }
         Returns: string[]
@@ -2268,6 +2396,17 @@ export type Database = {
         Args: { p_lead_id: string; p_user_id: string }
         Returns: Json
       }
+      record_affiliate_commission: {
+        Args: {
+          p_amount: number
+          p_asaas_payment_id: string
+          p_plan_name: string
+          p_plan_slug: string
+          p_subscription_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       redeem_referral: {
         Args: { p_referral_code: string; p_user_id: string }
         Returns: Json
@@ -2279,6 +2418,10 @@ export type Database = {
           p_voucher_code: string
           p_voucher_id: string
         }
+        Returns: Json
+      }
+      register_affiliate_referral: {
+        Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
       touch_completion_reminder: {

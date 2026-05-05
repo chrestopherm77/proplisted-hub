@@ -1,58 +1,62 @@
+## Painel de Afiliados (Parceiros de Indicação)
 
-## Objetivo
+Sistema para o admin cadastrar afiliados, gerar link único de divulgação e dar a cada afiliado um painel próprio com métricas de cadastros e comissões geradas pelos planos pagos.
 
-Permitir que Essencial, Performance e Elite sejam contratados em 3 ciclos: **Mensal**, **Trimestral** ou **Anual**, com cobrança única por ciclo no Asaas e crédito proporcional (ex.: Essencial Anual = 360 créditos por cobrança).
+### Como vai funcionar (visão geral)
 
-### Tabela de preços
-| Plano | Mensal | Trimestral | Anual |
-|---|---|---|---|
-| Essencial | R$ 39,90 | R$ 105,00 | R$ 360,00 |
-| Performance | R$ 79,90 | R$ 215,00 | R$ 720,00 |
-| Elite | R$ 149,90 | R$ 399,00 | R$ 1.380,00 |
+1. **Admin** cria um afiliado em `/admin/affiliates` (nome, email, % de comissão, status ativo).
+2. Sistema gera um **código único** (ex: `joao-silva`) e o link: `https://conectaeimob.com.br/?ref=joao-silva`.
+3. Quando alguém abre o link, o `ref` fica salvo (cookie/localStorage) e é gravado no perfil ao se cadastrar.
+4. Quando esse usuário paga uma assinatura (qualquer ciclo: mensal, trimestral ou anual), o webhook do Asaas registra automaticamente uma **comissão** para o afiliado, com o valor (% sobre o pago) e o mês de referência.
+5. O afiliado, ao logar com o email cadastrado, vê o **painel `/afiliado`** com:
+   - Total de cadastros vindos do link dele
+   - Quantos viraram assinantes pagos
+   - Valor de comissão acumulado no mês atual e meses anteriores
+   - Lista de pagamentos recentes (cliente, plano, valor, comissão, data)
 
-## 1. Banco de dados
+Apenas usuários marcados como afiliados ativos enxergam esse painel.
 
-Migration adicionando suporte a ciclo na tabela `subscription_plans` e `user_subscriptions`:
+### Telas
 
-- `subscription_plans.billing_cycle text not null default 'MONTHLY'` (valores: `MONTHLY`, `QUARTERLY`, `YEARLY`)
-- `subscription_plans.cycle_months int not null default 1` (1, 3, 12)
-- `subscription_plans.parent_slug text` — agrupa variações (`essencial`, `performance`, `elite`)
-- Slugs novos: cria 6 novos planos (3 trimestrais + 3 anuais) preservando os 3 mensais existentes:
-  - `essencial-trimestral` R$105 / `essencial-anual` R$360
-  - `performance-trimestral` R$215 / `performance-anual` R$720
-  - `elite-trimestral` R$399 / `elite-anual` R$1380
-- Cada novo plano herda `features` e `feature_list` do mensal correspondente, mas `monthly_credits` proporcional ao ciclo (Essencial trim=90, anual=360; Performance trim=1290, anual=5160; Elite trim=3000, anual=12000) — cumprindo a regra **"Crédito por cobrança"** confirmada pelo usuário.
-- `user_subscriptions.billing_cycle text` (espelho do plano, para auditoria).
+**Admin → Afiliados** (nova entrada na sidebar admin)
+- Tabela: Nome, Email, Código/Link (com botão copiar), % Comissão, Cadastros, Pagantes, Comissão do mês, Status, Ações.
+- Modal "Novo Afiliado": nome, email, código (auto-sugerido, editável), % comissão (default 20%), ativo.
+- Detalhe do afiliado: lista todas comissões + cadastros indicados.
 
-## 2. UI — `/planos` (src/pages/Planos.tsx + PlanCard)
+**Afiliado → `/afiliado`** (público após login, só libera se for afiliado ativo)
+- Cards: link de divulgação (copiar), total de cadastros, assinantes ativos, comissão do mês, comissão total.
+- Gráfico simples por mês.
+- Tabela de comissões: cliente (parcial mascarado), plano, valor pago, % , comissão, data.
 
-Reorganizar a tela em **4 colunas**: Conexão (grátis) + Essencial + Performance + Elite, com um **toggle Mensal / Trimestral / Anual** acima do grid (ou dentro de cada card pago).
+### Mudanças técnicas
 
-- Toggle global controla qual variação (mês/tri/ano) é exibida nos 3 cards pagos.
-- Mostra preço destacado + economia ("equivale a R$ 30,00/mês — economize 25%") quando trimestral/anual.
-- Clicar em "Assinar" passa o `planId` da variação selecionada.
-- Mantém todas as guardas atuais (plano atual, downgrade, pendente).
+**Banco (migration)**
+- `affiliates` — `id, user_id (nullable, FK virtual p/ profiles), name, email unique, code unique, commission_percent (default 20), is_active, created_at`.
+- `affiliate_referrals` — `id, affiliate_id, referred_user_id unique, created_at` (vínculo de quem se cadastrou pelo link).
+- `affiliate_commissions` — `id, affiliate_id, referred_user_id, subscription_id, payment_id (asaas), plan_slug, gross_amount, commission_percent, commission_amount, reference_month (date), status (PENDING/PAID), created_at`.
+- RLS:
+  - Admin (`MASTER_ADMIN`) gerencia tudo.
+  - Afiliado lê só linhas onde `affiliate_id` = seu próprio (via função `is_affiliate(auth.uid())` que cruza `affiliates.user_id = auth.uid()`).
+- Função `get_affiliate_summary(p_user_id)` → totais por mês (usada no painel do afiliado).
+- Trigger em `handle_new_user`: se metadata vier com `ref_code`, registra em `affiliate_referrals`.
 
-## 3. Edge function `create-subscription`
+**Captura do `?ref=`**
+- Componente `AffiliateRefCapture` no `App.tsx` lê `?ref=` e salva em `localStorage.affiliate_ref`.
+- `SimpleSignup.tsx` envia esse valor no `signUp` metadata como `ref_code`.
+- Quando admin cria afiliado e ele se cadastra com o mesmo email, fazemos o `link` (`affiliates.user_id = profile.id`) automaticamente via trigger no insert de profiles (match por email).
 
-- Lê `billing_cycle` e `cycle_months` do plano.
-- No payload Asaas: `cycle = 'MONTHLY' | 'QUARTERLY' | 'YEARLY'` (mapeado a partir de `billing_cycle`).
-- `value = plan.price` (já é o valor por cobrança).
-- Mantém `nextDueDate` e o agendamento para vencimento atual quando troca de plano.
+**Asaas webhook (`supabase/functions/asaas-webhook/index.ts`)**
+- Ao confirmar pagamento de assinatura (PAID/CONFIRMED), buscar `affiliate_referrals` do `user_id`. Se existir e o afiliado estiver ativo, inserir linha em `affiliate_commissions` com `commission_amount = valor_pago * percent / 100` e `reference_month = data truncada no mês`.
+- Idempotente por `payment_id` (unique).
 
-## 4. Webhook `asaas-webhook`
+**Frontend**
+- `src/pages/AffiliateDashboard.tsx` — painel do afiliado.
+- `src/components/admin/AffiliatesManagement.tsx` — CRUD admin + detalhes.
+- Adicionar rota `/afiliado` e `/admin/affiliates` no `App.tsx` e item na `ADMIN_NAV` (`AdminLayout.tsx`).
+- Adicionar atalho "Painel do Afiliado" no menu do usuário (`UserAvatarMenu.tsx`) só quando o usuário for afiliado ativo (hook `useIsAffiliate`).
 
-Ao confirmar pagamento, estender o período conforme `cycle_months`:
-- `current_period_end = now + cycle_months meses`.
-- Creditar `plan.monthly_credits` (já calibrado por cobrança = total do ciclo).
+### Pontos a confirmar
 
-## 5. Home pública (opcional, leve)
-
-`home_page_content` continua mostrando os 4 planos mensais como hoje. Se quiser, mostro um aviso "Disponível também em trimestral e anual" em cada card pago — confirme se deseja, senão deixo só dentro de `/planos`.
-
-## Detalhes técnicos
-
-- `useSubscriptionLimits`: nada muda — continua lendo o plano ativo do usuário e usa `monthly_credits` apenas como info; limites de funcionalidades vêm de `features` (idênticas entre variações do mesmo plano).
-- `cancel-subscription`: nenhum ajuste necessário (só usa `asaas_subscription_id`).
-- Slugs `conexao`, `essencial`, `performance`, `elite` ficam intactos para não quebrar referências (LP, `home_page_content`).
-- Defensivo: o seletor `useSubscriptionLimits` já considera o plano ativo qualquer que seja a variação.
+- **% de comissão padrão**: sugiro **20%** sobre o valor pago, configurável por afiliado. OK?
+- **Recorrência da comissão**: a comissão é gerada a **cada pagamento confirmado** (mensal/trimestral/anual) enquanto o cliente continuar pagando — é assim que você quer? (ou só no primeiro pagamento?)
+- **Pagamento ao afiliado**: por enquanto o painel apenas **mostra** o valor a pagar (status PENDING/PAID). O repasse é manual fora do sistema, com botão "Marcar como pago" no admin. OK?

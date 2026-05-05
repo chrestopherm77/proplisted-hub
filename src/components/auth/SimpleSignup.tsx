@@ -167,6 +167,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         return;
       }
 
+      const affiliateRef = (typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : '') || '';
       const metadata: Record<string, string> = {
         person_type: "PF",
         name: name.trim(),
@@ -177,6 +178,7 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
         creci: creci.trim(),
         creci_uf: creciUf,
         referral_code: (initialReferralCode || "").toUpperCase().trim(),
+        affiliate_ref: affiliateRef,
       };
 
       const { data, error } = await supabase.auth.signUp({
@@ -203,6 +205,14 @@ export function SimpleSignup({ onSwitchToLogin, initialReferralCode }: SimpleSig
       if (code && data?.user?.id) {
         try {
           await supabase.rpc("redeem_referral", { p_user_id: data.user.id, p_referral_code: code });
+        } catch { /* ignore */ }
+      }
+
+      // Vincula afiliado se veio de link ?aff=
+      if (affiliateRef && data?.user?.id) {
+        try {
+          await supabase.rpc("register_affiliate_referral", { p_code: affiliateRef, p_user_id: data.user.id });
+          localStorage.removeItem('affiliate_ref');
         } catch { /* ignore */ }
       }
 

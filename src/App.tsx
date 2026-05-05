@@ -46,6 +46,8 @@ import Indicar from "./pages/Indicar";
 import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
 import { PageViewTracker } from "./components/PageViewTracker";
+import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +75,7 @@ const App = () => {
       <BrowserRouter>
         <PartnerProvider>
         <RedirectHandler />
+        <AffiliateRefCapture />
         <PageViewTracker />
         <Routes>
           <Route path="/" element={<Index />} />
@@ -107,6 +110,8 @@ const App = () => {
           <Route path="/admin/public-videos" element={<Admin section="public-videos" />} />
           <Route path="/admin/support" element={<Admin section="support" />} />
           <Route path="/admin/whatsapp-groups" element={<Admin section="whatsapp-groups" />} />
+          <Route path="/admin/affiliates" element={<Admin section="affiliates" />} />
+          <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
