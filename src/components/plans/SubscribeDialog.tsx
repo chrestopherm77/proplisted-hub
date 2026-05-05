@@ -85,7 +85,9 @@ export const SubscribeDialog = ({ plan, open, onOpenChange, onSuccess }: Subscri
         <DialogHeader>
           <DialogTitle>Assinar {plan.name}</DialogTitle>
           <DialogDescription>
-            R$ {Number(plan.price).toFixed(2).replace('.', ',')}/mês — {plan.monthly_credits} créditos mensais
+            R$ {Number(plan.price).toFixed(2).replace('.', ',')}
+            {plan.billing_cycle === 'YEARLY' ? '/ano' : plan.billing_cycle === 'QUARTERLY' ? '/trimestre' : '/mês'}
+            {' '}— {plan.monthly_credits.toLocaleString('pt-BR')} créditos por cobrança
           </DialogDescription>
         </DialogHeader>
 
