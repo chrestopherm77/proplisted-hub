@@ -18,7 +18,7 @@ export interface HomeStatItem {
 }
 
 export interface HomePlan {
-  slug: 'conexao' | 'essencial' | 'performance' | 'elite';
+  slug: 'conexao' | 'essencial' | 'elite' | 'partner';
   name: string;
   price: string;
   priceSuffix: string;
