@@ -29,9 +29,11 @@ export function AffiliatesManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState<Affiliate | null>(null);
   const [editing, setEditing] = useState<Affiliate | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', code: '', commission_percent: 20, is_active: true });
+  const [form, setForm] = useState({ user_id: '' as string, name: '', email: '', code: '', commission_percent: 20, is_active: true });
   const [saving, setSaving] = useState(false);
   const [details, setDetails] = useState<{ refs: any[]; comms: any[] } | null>(null);
+  const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
