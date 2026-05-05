@@ -45,7 +45,8 @@ type Section =
   | 'support'
   | 'whatsapp-groups'
   | 'signup-progress'
-  | 'user-activity';
+  | 'user-activity'
+  | 'affiliates';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
