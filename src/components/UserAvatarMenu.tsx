@@ -50,6 +50,9 @@ export function UserAvatarMenu() {
     };
     fetchProfile();
 
+    supabase.from('affiliates').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
+      .then(({ data }) => setIsAffiliate(!!data));
+
     const channel = supabase
       .channel('user-avatar-profile')
       .on('postgres_changes', {
