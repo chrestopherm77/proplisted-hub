@@ -38,6 +38,7 @@ import {
   LifeBuoy,
   MessageSquare,
   ListChecks,
+  UserPlus,
 } from 'lucide-react';
 
 interface AdminNavItem {
