@@ -44,7 +44,7 @@ interface AdminNavItem {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  group: 'Visão Geral' | 'Financeiro' | 'Pessoas' | 'Conteúdo';
+  group: 'Visão Geral' | 'Financeiro' | 'Pessoas' | 'Conteúdo' | 'Afiliados';
 }
 
 export const ADMIN_NAV: AdminNavItem[] = [
