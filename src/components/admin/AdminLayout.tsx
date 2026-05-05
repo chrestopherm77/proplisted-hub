@@ -76,7 +76,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Grupos WhatsApp', url: '/admin/whatsapp-groups', icon: MessageSquare, group: 'Conteúdo' },
 ];
 
-const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Conteúdo'];
+const GROUPS: AdminNavItem['group'][] = ['Visão Geral', 'Financeiro', 'Pessoas', 'Afiliados', 'Conteúdo'];
 
 function AdminSidebar() {
   const { state } = useSidebar();
