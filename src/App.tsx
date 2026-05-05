@@ -110,6 +110,8 @@ const App = () => {
           <Route path="/admin/public-videos" element={<Admin section="public-videos" />} />
           <Route path="/admin/support" element={<Admin section="support" />} />
           <Route path="/admin/whatsapp-groups" element={<Admin section="whatsapp-groups" />} />
+          <Route path="/admin/affiliates" element={<Admin section="affiliates" />} />
+          <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
