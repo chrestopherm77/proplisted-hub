@@ -1,57 +1,58 @@
-# Plano
 
-## 1. Validação de WhatsApp no cadastro do sistema (`SimpleSignup.tsx`)
+## Objetivo
 
-Replicar o fluxo do formulário público (`/lp` → `ContactStep.tsx`):
+Permitir que Essencial, Performance e Elite sejam contratados em 3 ciclos: **Mensal**, **Trimestral** ou **Anual**, com cobrança única por ciclo no Asaas e crédito proporcional (ex.: Essencial Anual = 360 créditos por cobrança).
 
-- Adicionar estado `phoneVerified` + `isCheckingWhatsApp`.
-- Após o usuário digitar o telefone, exibir um botão **"Validar WhatsApp"** logo abaixo do campo.
-- Ao clicar, chamar a edge function existente `check-whatsapp` com `{ phone }`.
-  - Se `exists === true` → marcar como verificado, mostrar badge verde "WhatsApp verificado com sucesso!" e travar o campo telefone (disabled).
-  - Se não → mostrar erro "Este número não possui WhatsApp ativo".
-- Se o usuário editar o telefone depois, resetar `phoneVerified` para `false`.
-- No `validate()` e no `handleSubmit`, **bloquear o envio** se `phoneVerified` for `false` (toast: "Valide seu WhatsApp antes de continuar").
-- O botão "Criar conta" fica desabilitado enquanto o WhatsApp não estiver verificado.
+### Tabela de preços
+| Plano | Mensal | Trimestral | Anual |
+|---|---|---|---|
+| Essencial | R$ 39,90 | R$ 105,00 | R$ 360,00 |
+| Performance | R$ 79,90 | R$ 215,00 | R$ 720,00 |
+| Elite | R$ 149,90 | R$ 399,00 | R$ 1.380,00 |
 
-## 2. Tornar TODOS os campos do cadastro obrigatórios
+## 1. Banco de dados
 
-Hoje no `SimpleSignup` o **CRECI** e **UF do CRECI** são opcionais. Vamos tornar todos os campos visíveis obrigatórios:
+Migration adicionando suporte a ciclo na tabela `subscription_plans` e `user_subscriptions`:
 
-- Remover o rótulo "(opcional)" do CRECI.
-- Adicionar validação: `creci` obrigatório, `creciUf` obrigatório.
-- Manter as validações já existentes de nome, telefone, UF, cidade, e-mail, senha e confirmação.
-- Atualizar o metadata enviado ao Supabase para sempre incluir `creci`, `creci_uf` e `profession: "CORRETOR"`.
+- `subscription_plans.billing_cycle text not null default 'MONTHLY'` (valores: `MONTHLY`, `QUARTERLY`, `YEARLY`)
+- `subscription_plans.cycle_months int not null default 1` (1, 3, 12)
+- `subscription_plans.parent_slug text` — agrupa variações (`essencial`, `performance`, `elite`)
+- Slugs novos: cria 6 novos planos (3 trimestrais + 3 anuais) preservando os 3 mensais existentes:
+  - `essencial-trimestral` R$105 / `essencial-anual` R$360
+  - `performance-trimestral` R$215 / `performance-anual` R$720
+  - `elite-trimestral` R$399 / `elite-anual` R$1380
+- Cada novo plano herda `features` e `feature_list` do mensal correspondente, mas `monthly_credits` proporcional ao ciclo (Essencial trim=90, anual=360; Performance trim=1290, anual=5160; Elite trim=3000, anual=12000) — cumprindo a regra **"Crédito por cobrança"** confirmada pelo usuário.
+- `user_subscriptions.billing_cycle text` (espelho do plano, para auditoria).
 
-## 3. Bloquear remoção de dados pessoais já preenchidos no Perfil (`src/pages/Profile.tsx` + cards)
+## 2. UI — `/planos` (src/pages/Planos.tsx + PlanCard)
 
-Regra: **se um campo já tem valor salvo no banco, o usuário pode editá-lo, mas não pode deixá-lo vazio**. Isso evita que pessoas "limpem" dados pessoais já fornecidos.
+Reorganizar a tela em **4 colunas**: Conexão (grátis) + Essencial + Performance + Elite, com um **toggle Mensal / Trimestral / Anual** acima do grid (ou dentro de cada card pago).
 
-Implementação:
+- Toggle global controla qual variação (mês/tri/ano) é exibida nos 3 cards pagos.
+- Mostra preço destacado + economia ("equivale a R$ 30,00/mês — economize 25%") quando trimestral/anual.
+- Clicar em "Assinar" passa o `planId` da variação selecionada.
+- Mantém todas as guardas atuais (plano atual, downgrade, pendente).
 
-- Guardar um snapshot `initialProfile` logo após `fetchProfile()` (cópia do que veio do banco).
-- Criar helper `isFieldLocked(field)` → retorna `true` se `initialProfile[field]` tinha conteúdo (não vazio/null).
-- No `handleSave`:
-  - Antes de chamar `update`, validar cada campo: se estava preenchido inicialmente e agora está vazio → bloquear o save com toast: "Não é possível remover [campo]. Você pode atualizar para um novo valor, mas não deixar em branco."
-- Nos componentes filhos (`ProfilePersonalCard`, `ProfileLocationCard`, `ProfileProfessionalCard`, e o input de telefone direto em `Profile.tsx`):
-  - Para `Input`: adicionar prop `required` quando o campo veio preenchido (visual) e onChange impede salvar vazio (validação acima cobre).
-  - Para `Select`: não impedimos a UI de trocar valor, mas se o usuário tentar trocar para vazio, o save bloqueia.
-  - Adicionar texto auxiliar discreto abaixo do campo bloqueado: *"Este dado não pode ser removido."*
+## 3. Edge function `create-subscription`
 
-Campos cobertos pelo bloqueio: todos os campos de `ProfileState` (nome, CPF, profissão, empresa, CNPJ, telefone, endereço, UF, cidade, bairro, CRECI/CAU/CREA PF e PJ, dados do RT). E-mail já é não editável.
+- Lê `billing_cycle` e `cycle_months` do plano.
+- No payload Asaas: `cycle = 'MONTHLY' | 'QUARTERLY' | 'YEARLY'` (mapeado a partir de `billing_cycle`).
+- `value = plan.price` (já é o valor por cobrança).
+- Mantém `nextDueDate` e o agendamento para vencimento atual quando troca de plano.
 
-## 4. Detalhes técnicos
+## 4. Webhook `asaas-webhook`
 
-- Reuso da edge function `check-whatsapp` (já existente, usada em `/lp`).
-- `formatPhone` continua sendo usado no input.
-- Não há mudanças de schema do banco.
-- Não há nova RLS.
+Ao confirmar pagamento, estender o período conforme `cycle_months`:
+- `current_period_end = now + cycle_months meses`.
+- Creditar `plan.monthly_credits` (já calibrado por cobrança = total do ciclo).
 
-## Arquivos a editar
+## 5. Home pública (opcional, leve)
 
-- `src/components/auth/SimpleSignup.tsx` — validação WhatsApp + tornar CRECI obrigatório.
-- `src/pages/Profile.tsx` — snapshot + validação de "não pode esvaziar" no `handleSave`.
-- `src/components/profile/ProfilePersonalCard.tsx` — texto auxiliar nos campos bloqueados.
-- `src/components/profile/ProfileLocationCard.tsx` — idem.
-- `src/components/profile/ProfileProfessionalCard.tsx` — idem.
+`home_page_content` continua mostrando os 4 planos mensais como hoje. Se quiser, mostro um aviso "Disponível também em trimestral e anual" em cada card pago — confirme se deseja, senão deixo só dentro de `/planos`.
 
-Após sua aprovação, implemento as mudanças.
+## Detalhes técnicos
+
+- `useSubscriptionLimits`: nada muda — continua lendo o plano ativo do usuário e usa `monthly_credits` apenas como info; limites de funcionalidades vêm de `features` (idênticas entre variações do mesmo plano).
+- `cancel-subscription`: nenhum ajuste necessário (só usa `asaas_subscription_id`).
+- Slugs `conexao`, `essencial`, `performance`, `elite` ficam intactos para não quebrar referências (LP, `home_page_content`).
+- Defensivo: o seletor `useSubscriptionLimits` já considera o plano ativo qualquer que seja a variação.

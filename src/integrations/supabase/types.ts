@@ -1785,7 +1785,9 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          billing_cycle: string
           created_at: string
+          cycle_months: number
           display_order: number
           feature_list: Json
           features: Json
@@ -1793,12 +1795,15 @@ export type Database = {
           is_active: boolean
           monthly_credits: number
           name: string
+          parent_slug: string | null
           price: number
           slug: string
           updated_at: string
         }
         Insert: {
+          billing_cycle?: string
           created_at?: string
+          cycle_months?: number
           display_order?: number
           feature_list?: Json
           features?: Json
@@ -1806,12 +1811,15 @@ export type Database = {
           is_active?: boolean
           monthly_credits?: number
           name: string
+          parent_slug?: string | null
           price?: number
           slug: string
           updated_at?: string
         }
         Update: {
+          billing_cycle?: string
           created_at?: string
+          cycle_months?: number
           display_order?: number
           feature_list?: Json
           features?: Json
@@ -1819,6 +1827,7 @@ export type Database = {
           is_active?: boolean
           monthly_credits?: number
           name?: string
+          parent_slug?: string | null
           price?: number
           slug?: string
           updated_at?: string
@@ -1984,6 +1993,7 @@ export type Database = {
         Row: {
           asaas_customer_id: string | null
           asaas_subscription_id: string | null
+          billing_cycle: string | null
           canceled_at: string | null
           created_at: string
           current_period_end: string | null
@@ -2002,6 +2012,7 @@ export type Database = {
         Insert: {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
+          billing_cycle?: string | null
           canceled_at?: string | null
           created_at?: string
           current_period_end?: string | null
@@ -2020,6 +2031,7 @@ export type Database = {
         Update: {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
+          billing_cycle?: string | null
           canceled_at?: string | null
           created_at?: string
           current_period_end?: string | null

@@ -12,28 +12,40 @@ export interface PlanCardData {
   price: number;
   monthly_credits: number;
   feature_list: string[];
+  billing_cycle?: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  cycle_months?: number;
+  parent_slug?: string | null;
 }
 
 interface PlanCardProps {
   plan: PlanCardData;
+  /** Preço do plano mensal equivalente, para mostrar economia em trimestral/anual. */
+  monthlyReferencePrice?: number;
   isCurrent?: boolean;
   isPopular?: boolean;
   loading?: boolean;
   pendingInvoiceUrl?: string | null;
-  /** Texto exibido em tooltip + botão desabilitado quando troca não é permitida agora. */
   disabledReason?: string | null;
-  /** Quando este plano custa MENOS que o atual e o atual é pago: true → rotulamos como downgrade agendado. */
   isDowngrade?: boolean;
   onSelect: (plan: PlanCardData) => void;
 }
 
+const cycleLabel = (c?: string) =>
+  c === 'YEARLY' ? '/ano' : c === 'QUARTERLY' ? '/trimestre' : '/mês';
+
 export const PlanCard = ({
-  plan, isCurrent, isPopular, loading, pendingInvoiceUrl,
+  plan, monthlyReferencePrice, isCurrent, isPopular, loading, pendingInvoiceUrl,
   disabledReason, isDowngrade, onSelect,
 }: PlanCardProps) => {
   const isFree = Number(plan.price) === 0;
   const isPending = !!pendingInvoiceUrl;
   const isDisabled = isCurrent || loading || !!disabledReason;
+  const months = plan.cycle_months ?? 1;
+  const perMonth = months > 1 ? Number(plan.price) / months : null;
+  const savingPct =
+    monthlyReferencePrice && months > 1
+      ? Math.round((1 - Number(plan.price) / (monthlyReferencePrice * months)) * 100)
+      : 0;
 
   const buttonLabel = (() => {
     if (loading) return 'Processando...';
@@ -75,11 +87,7 @@ export const PlanCard = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="block w-full mt-6">
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  disabled
-                >
+                <Button className="w-full" variant="outline" disabled>
                   {buttonLabel}
                 </Button>
               </span>
@@ -129,17 +137,28 @@ export const PlanCard = ({
           {isFree ? (
             <div className="text-4xl font-bold">Grátis</div>
           ) : (
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-2xl font-medium text-muted-foreground">R$</span>
-              <span className="text-4xl font-bold">
-                {Number(plan.price).toFixed(2).replace('.', ',')}
-              </span>
-              <span className="text-sm text-muted-foreground">/mês</span>
-            </div>
+            <>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-2xl font-medium text-muted-foreground">R$</span>
+                <span className="text-4xl font-bold">
+                  {Number(plan.price).toFixed(2).replace('.', ',')}
+                </span>
+                <span className="text-sm text-muted-foreground">{cycleLabel(plan.billing_cycle)}</span>
+              </div>
+              {perMonth && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  equivale a R$ {perMonth.toFixed(2).replace('.', ',')}/mês
+                  {savingPct > 0 && (
+                    <span className="ml-2 text-emerald-600 font-medium">— economize {savingPct}%</span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
         <div className="mt-2 text-sm text-primary font-medium">
-          {plan.monthly_credits.toLocaleString('pt-BR')} créditos/mês
+          {plan.monthly_credits.toLocaleString('pt-BR')} créditos
+          {months > 1 ? ` por cobrança (${months}x)` : '/mês'}
         </div>
       </CardHeader>
 
@@ -158,4 +177,3 @@ export const PlanCard = ({
     </Card>
   );
 };
-
