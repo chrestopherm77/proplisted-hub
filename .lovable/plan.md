@@ -1,65 +1,68 @@
-## Modelo "Agnus" (Template 1) para Portal de Imóveis
+## Objetivo
 
-Vou substituir o `Template1` placeholder atual por um site profissional inspirado nas referências enviadas (Agnus Negócios Imobiliários), totalmente editável via painel admin existente em **Portais de Imóveis**.
+Deixar o painel admin do Portal de Imóveis tão editável quanto o gerador de Landing Pages, com upload real de imagens, busca de corretor funcional e controle claro da fonte dos imóveis (próprios ou todos do portal).
 
-### Páginas / Seções
+## 1. Corrigir busca de corretor
 
-**Home (`/portal/:slug` ou domínio personalizado)**
-- Header fixo: logo + menu (Início, Sobre, Contato, Financie, Negocie seu Imóvel) + WhatsApp/email + ícones sociais (Instagram, Facebook, YouTube, TikTok, LinkedIn) + favoritos
-- Hero com **imagem de fundo**, logo grande centralizada e **barra de filtros** sobreposta: Negócio (Venda/Aluguel), Tipo do Imóvel, Valor mínimo, Valor máximo, Cidade, e botão "Buscar por Referência"
-- Grid "Imóveis em destaque" com cards (foto carrossel, badge de status tipo "Pronto para construir / Em obras / Pronto para morar", referência, badge VENDA/ALUGUEL, cidade/UF, título, área, preço e ❤️ favoritar)
-- Seção "Sobre" (bloco com imagem + texto editável)
-- Footer escuro: logo, CNPJ, contatos, menu, redes sociais, copyright
-- Botão flutuante de WhatsApp
+A busca atual usa `.or()` com debounce e quebra quando o input já contém o nome selecionado. Substituir pelo mesmo padrão usado em `AffiliatesManagement.tsx`:
 
-**Listagem com filtros aplicados** (mesma rota com query params) — grid + paginação simples
+- Carregar até 2000 perfis (`profiles.select('id, name, email').order('name')`) ao abrir o diálogo.
+- Usar `Popover` + `Command` (`CommandInput` filtra localmente).
+- Mostrar nome + email + chip selecionado; limpar com X.
 
-**Detalhe do imóvel** (`/portal/:slug/imovel/:id`)
-- Galeria de fotos no topo (com contador "X fotos")
-- Bloco com Venda/Aluguel + preço, área total, situação
-- Coluna esquerda: botão "Agendar visita", "Ficha do imóvel" (perfil, situação, mobília, área), card do corretor (nome, CRECI, telefone, email)
-- Coluna direita: descrição, localização (endereço + mapa Leaflet já existente no projeto + foto)
-- Formulário de contato (nome, telefone, email, mensagem) com botões WhatsApp e E-mail
-- Seção "Imóveis similares"
+## 2. Uploads reais (sem precisar de URL)
 
-**Favoritos** (`/portal/:slug/favoritos`) — armazenados em `localStorage` por slug.
+Reaproveitar `ImageUploadField` (bucket público `landing-pages`) em todos os campos de imagem do editor:
 
-### Editabilidade (sem mexer no banco)
+- Logo (`branding.logo_url`) — pasta `portals/logos`
+- Imagem de fundo do hero (`branding.hero_bg_url`) — `portals/hero`
+- Imagem da seção Sobre (`branding.about_image_url`) — `portals/about`
+- Favicon (`seo.favicon_url`) — `portals/favicon`
 
-Todos os textos/contatos/cores/imagens vêm dos campos `branding` e `seo` já existentes em `broker_portals`. Vou adicionar no editor admin (`BrokerPortalsManagement.tsx`) os campos novos abaixo (todos guardados dentro do JSON `branding`, sem migration):
+Cada campo continua aceitando URL manual também.
 
-- `hero_bg_url` — imagem de fundo do hero
-- `hero_title`, `hero_subtitle` — opcional sobre a logo
-- `cnpj`, `creci` — exibidos no card do corretor e footer
-- `email_visible` (bool) — mostrar email ou botão "Ver e-mail"
-- `about_image_url`, `about_text` — seção sobre
-- `accent_color` (cor secundária, ex: dourado da referência) — além de `primary_color`
-- `footer_text`
-- Já existentes reutilizados: `logo_url`, `whatsapp`, `phone`, `email`, `address`, `instagram`, `facebook`, `tiktok`, `youtube`, `linkedin`, `about`, `primary_color`
+## 3. Editor com seções (estilo gerador de LP)
 
-Cores aplicadas via CSS variables inline no root do template (não tocam o tema global).
+Reorganizar o diálogo em abas (`Tabs` shadcn) para ficar limpo e abrangente:
 
-### Detalhes técnicos
+```text
+[Geral] [Marca] [Hero] [Sobre] [Contato/Redes] [SEO] [Avançado]
+```
 
-**Arquivos novos:**
-- `src/components/broker-portal/templates/template1/Template1.tsx` — orquestrador (passa a ser o novo Template 1 padrão)
-- `src/components/broker-portal/templates/template1/Header.tsx`
-- `src/components/broker-portal/templates/template1/Hero.tsx` (com filtros)
-- `src/components/broker-portal/templates/template1/PropertyGrid.tsx`
-- `src/components/broker-portal/templates/template1/PropertyCard.tsx`
-- `src/components/broker-portal/templates/template1/PropertyDetail.tsx`
-- `src/components/broker-portal/templates/template1/Footer.tsx`
-- `src/components/broker-portal/templates/template1/WhatsAppFab.tsx`
-- `src/components/broker-portal/templates/template1/useFavorites.ts`
-- `src/components/broker-portal/templates/template1/filters.ts` (lógica de filtragem em memória sobre o array de `properties` já carregado)
+**Geral**: corretor (novo seletor), slug, domínio, template, ativo, **Fonte dos imóveis** (com explicação clara: "Apenas meus imóveis" ou "Todos os imóveis publicados na plataforma" filtrando por cidade/UF opcional).
 
-**Arquivos editados:**
-- `src/components/broker-portal/templates/Template1.tsx` → reexporta o novo template
-- `src/components/broker-portal/BrokerPortalRenderer.tsx` → suporte a `view` (home / detalhe) via state interno (a navegação detalhe usa `useState` em vez de rota nova para funcionar com `BrokerDomainGate`); para a rota `/portal/:slug`, uso `useSearchParams` com `?p=<id>` para abrir o detalhe sem precisar criar rota nova
-- `src/components/admin/BrokerPortalsManagement.tsx` → adicionar os novos campos do branding (hero_bg_url, accent_color, cnpj, creci, about_image_url, about_text, footer_text, email_visible)
+**Marca**: upload de logo, cor primária, cor de destaque, cor de fundo.
 
-**Reutilizo:** `PropertyMap` existente, `PropertyGallery`, `lucide-react` para ícones, e `formatBRL` util.
+**Hero**: upload de fundo, título, subtítulo, textos do CTA.
 
-**Templates 2 e 3:** continuam reusando Template 1 por enquanto (já é o caso hoje).
+**Sobre**: upload de imagem + textarea grande para o texto.
 
-**Sem migration de banco** — toda a configuração cabe nos JSONs já existentes.
+**Contato/Redes**: WhatsApp, telefone, email, endereço, CNPJ, CRECI, Instagram/Facebook/TikTok/YouTube/LinkedIn.
+
+**SEO**: título, descrição, upload de favicon.
+
+**Avançado**: rótulos editáveis dos itens do menu (Início, Sobre, Contato, Financie, Negocie seu Imóvel) e texto do rodapé (`branding.footer_text`, `branding.menu_labels`).
+
+Tudo continua salvo em `branding`/`seo` (JSONB) — sem migração de schema.
+
+## 4. Fonte dos imóveis (a função mais importante)
+
+Já existe o campo `properties_source` (`OWN` | `CITY`) e `useBrokerPortal.fetchPortalProperties` já trata as duas fontes. Vou:
+
+- Destacar o seletor no topo da aba **Geral** com descrição:
+  - **OWN** — "Mostra apenas os imóveis cadastrados pelo corretor selecionado."
+  - **CITY** — "Mostra todos os imóveis ativos da plataforma na cidade/UF informados."
+- Quando `CITY`, exigir cidade (validação no save) e mostrar contador estimado em tempo real (`select count` de `properties` com filtros).
+- Mostrar essa info também no card de listagem de portais.
+
+## 5. Renderer respeita rótulos editáveis
+
+`Header.tsx` e `Footer.tsx` passam a ler `branding.menu_labels` (com fallback aos atuais) e `branding.footer_text` no copyright.
+
+## Arquivos afetados
+
+- `src/components/admin/BrokerPortalsManagement.tsx` — refatorar diálogo em abas, novo seletor de corretor, uploads, contador de imóveis CITY, validações.
+- `src/components/broker-portal/templates/template1/Header.tsx` — usar `menu_labels`.
+- `src/components/broker-portal/templates/template1/Footer.tsx` — usar `menu_labels` + `footer_text`.
+
+Sem mudanças no banco. Sem novos buckets (reutiliza `landing-pages`).

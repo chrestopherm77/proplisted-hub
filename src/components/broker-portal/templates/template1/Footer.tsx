@@ -38,9 +38,13 @@ export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: str
         <div className="text-sm">
           <h4 className="font-semibold mb-3">Menu</h4>
           <ul className="space-y-2">
-            {['home','sobre','contato','financie','negociar'].map((id) => (
-              <li key={id}><button onClick={() => onNav(id)} className="hover:text-[var(--bp-accent)] underline-offset-2 underline capitalize">{id === 'home' ? 'Início' : id === 'negociar' ? 'Negocie seu Imóvel' : id}</button></li>
-            ))}
+            {(() => {
+              const lb = b.menu_labels ?? {};
+              const def: Record<string,string> = { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' };
+              return ['home','sobre','contato','financie','negociar'].map((id) => (
+                <li key={id}><button onClick={() => onNav(id)} className="hover:text-[var(--bp-accent)] underline-offset-2 underline">{lb[id] || def[id]}</button></li>
+              ));
+            })()}
           </ul>
         </div>
         <div className="text-sm">
@@ -55,7 +59,7 @@ export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: str
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-white/60">
-        © Copyright {year} - {portal.seo?.title || 'Portal de Imóveis'} - Todos os direitos reservados
+        {b.footer_text || `© Copyright ${year} - ${portal.seo?.title || 'Portal de Imóveis'} - Todos os direitos reservados`}
       </div>
     </footer>
   );
