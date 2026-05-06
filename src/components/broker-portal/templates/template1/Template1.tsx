@@ -61,7 +61,7 @@ export default function Template1({ portal, properties }: TemplateProps) {
         <PropertyDetail portal={portal} property={openProperty} all={properties} onBack={close} onOpen={open} />
       ) : (
         <>
-          <Hero portal={portal} cities={cities} types={types.map(getPropertyTypeLabel)} onSearch={(f) => { setFilters(f); setTimeout(() => document.getElementById('bp-imoveis')?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
+          <Hero portal={portal} cities={cities} types={types} onSearch={(f) => { setFilters(f); setTimeout(() => document.getElementById('bp-imoveis')?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
 
           <main id="bp-imoveis" className="bg-[#fafaf5] py-10">
             <div className="container mx-auto px-4">

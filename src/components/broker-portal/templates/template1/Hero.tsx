@@ -4,6 +4,7 @@ import { FilterState, EMPTY_FILTERS } from './types';
 import { Search } from 'lucide-react';
 
 export function Hero({ portal, cities, types, onSearch }: { portal: BrokerPortal; cities: string[]; types: string[]; onSearch: (f: FilterState) => void }) {
+  const typeLabel = (t: string) => ({ APARTAMENTO: 'Apartamento', CASA: 'Casa', SOBRADO: 'Sobrado', COBERTURA: 'Cobertura', TERRENO: 'Terreno', SALA_COMERCIAL: 'Sala Comercial', GALPAO: 'Galpão', SITIO: 'Sítio', CHACARA: 'Chácara', AREA_DE_LAZER: 'Área de Lazer' } as Record<string, string>)[t] || t;
   const b = portal.branding ?? {};
   const [f, setF] = useState<FilterState>(EMPTY_FILTERS);
   const [refMode, setRefMode] = useState(false);
@@ -64,14 +65,15 @@ export function Hero({ portal, cities, types, onSearch }: { portal: BrokerPortal
               <Field label="Negócio">
                 <select className="w-full border rounded px-2 py-2 text-sm" value={f.operation} onChange={(e) => set('operation', e.target.value)}>
                   <option value="">Selecione</option>
-                  <option value="VENDA">Venda</option>
-                  <option value="ALUGUEL">Aluguel</option>
+                  <option value="SALE">Venda</option>
+                  <option value="RENT">Aluguel</option>
+                  <option value="BOTH">Venda e Aluguel</option>
                 </select>
               </Field>
               <Field label="Tipo do Imóvel">
                 <select className="w-full border rounded px-2 py-2 text-sm" value={f.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
                   <option value="">Selecione</option>
-                  {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {types.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
                 </select>
               </Field>
               <Field label="Valor mínimo">
