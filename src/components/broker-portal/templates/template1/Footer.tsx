@@ -30,13 +30,15 @@ export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: str
         <div className="text-sm">
           <h4 className="font-semibold mb-3">Menu</h4>
           <ul className="space-y-2">
-            {(() => {
-              const lb = b.menu_labels ?? {};
-              const def: Record<string,string> = { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' };
-              return ['home','sobre','contato','financie','negociar'].map((id) => (
-                <li key={id}><button onClick={() => onNav(id)} className="hover:text-[var(--bp-accent)] underline-offset-2 underline">{lb[id] || def[id]}</button></li>
-              ));
-            })()}
+            {menu.filter((m) => m.visible).map((m) => (
+              <li key={m.id}>
+                {m.mode === 'url' ? (
+                  <a href={m.target} target="_blank" rel="noreferrer" className="hover:text-[var(--bp-accent)] underline underline-offset-2">{m.label}</a>
+                ) : (
+                  <button onClick={() => onNav(m.target)} className="hover:text-[var(--bp-accent)] underline underline-offset-2">{m.label}</button>
+                )}
+              </li>
+            ))}
           </ul>
         </div>
         <div className="text-sm">
