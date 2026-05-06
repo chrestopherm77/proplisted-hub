@@ -1,68 +1,66 @@
-## Objetivo
+## O que vai mudar no modelo "Agnus Premium"
 
-Deixar o painel admin do Portal de Imóveis tão editável quanto o gerador de Landing Pages, com upload real de imagens, busca de corretor funcional e controle claro da fonte dos imóveis (próprios ou todos do portal).
+### 1. Seção "Sobre nós" (corrigir foto cortada e duplicação no final)
 
-## 1. Corrigir busca de corretor
+Hoje a imagem do "Sobre" aparece duas vezes:
+- uma vez na seção "Sobre nós" (ok, mas em formato esticado);
+- outra vez no rodapé, em uma faixa larga de 288px de altura cobrindo a foto inteira (é essa a "imagem cortada" que aparece no fim da página).
 
-A busca atual usa `.or()` com debounce e quebra quando o input já contém o nome selecionado. Substituir pelo mesmo padrão usado em `AffiliatesManagement.tsx`:
+Ajustes:
+- **Remover a faixa duplicada do rodapé** (`Footer.tsx`): tirar o bloco que mostra `about_image_url`/`about_text` antes da grade do footer. Sobre fica só na seção "Sobre nós".
+- **Melhorar o layout da seção "Sobre nós"** (`Template1.tsx`):
+  - Card com fundo claro, padding generoso, em duas colunas (foto à esquerda, texto à direita) no desktop, empilhado no mobile.
+  - Foto com `aspect-[4/3]`, `object-cover`, `object-position: center top` e altura máxima controlada (≈ 380px), bordas arredondadas e sombra suave — assim o rosto não é cortado pela metade.
+  - Título e texto com tipografia coerente com o resto do site.
 
-- Carregar até 2000 perfis (`profiles.select('id, name, email').order('name')`) ao abrir o diálogo.
-- Usar `Popover` + `Command` (`CommandInput` filtra localmente).
-- Mostrar nome + email + chip selecionado; limpar com X.
+### 2. Menu superior configurável (ocultar item / definir destino)
 
-## 2. Uploads reais (sem precisar de URL)
+Hoje os itens do menu (Início, Sobre, Contato, Financie, Negocie seu Imóvel) sempre aparecem e sempre rolam para a seção interna correspondente.
 
-Reaproveitar `ImageUploadField` (bucket público `landing-pages`) em todos os campos de imagem do editor:
+Ajustes no admin (`BrokerPortalsManagement.tsx`, aba "Avançado"):
+- Para cada item do menu, três campos:
+  - **Rótulo** (já existe).
+  - **Visível** (switch on/off) — permite ocultar um item.
+  - **Destino**: select com opções
+    - "Seção da página" (padrão; rola até `home`/`sobre`/`contato`/`financie`/`negociar`);
+    - "Link externo" (libera campo de URL — abre em nova aba);
+    - "Outra seção da página" (libera select com as seções existentes).
+- O mesmo bloco é reutilizado para os links no rodapé.
 
-- Logo (`branding.logo_url`) — pasta `portals/logos`
-- Imagem de fundo do hero (`branding.hero_bg_url`) — `portals/hero`
-- Imagem da seção Sobre (`branding.about_image_url`) — `portals/about`
-- Favicon (`seo.favicon_url`) — `portals/favicon`
-
-Cada campo continua aceitando URL manual também.
-
-## 3. Editor com seções (estilo gerador de LP)
-
-Reorganizar o diálogo em abas (`Tabs` shadcn) para ficar limpo e abrangente:
+Estrutura salva em `branding.menu_items`:
 
 ```text
-[Geral] [Marca] [Hero] [Sobre] [Contato/Redes] [SEO] [Avançado]
+menu_items: [
+  { id: 'home',     label: 'Início',           visible: true,  mode: 'section', target: 'home' },
+  { id: 'sobre',    label: 'Sobre',            visible: true,  mode: 'section', target: 'sobre' },
+  { id: 'contato',  label: 'Contato',          visible: true,  mode: 'section', target: 'contato' },
+  { id: 'financie', label: 'Financie',         visible: false, mode: 'url',     target: 'https://...' },
+  { id: 'negociar', label: 'Negocie seu Imóvel', visible: true, mode: 'section', target: 'negociar' },
+]
 ```
 
-**Geral**: corretor (novo seletor), slug, domínio, template, ativo, **Fonte dos imóveis** (com explicação clara: "Apenas meus imóveis" ou "Todos os imóveis publicados na plataforma" filtrando por cidade/UF opcional).
+Mantém compatibilidade com `branding.menu_labels` antigo (lê labels antigas se `menu_items` não existir ainda).
 
-**Marca**: upload de logo, cor primária, cor de destaque, cor de fundo.
+Header e Footer (`Header.tsx`, `Footer.tsx`):
+- Renderizam apenas itens com `visible !== false`.
+- `mode: 'section'` → chama `onNav(target)` (rolagem suave atual).
+- `mode: 'url'`  → renderiza `<a href target="_blank" rel="noreferrer">`.
 
-**Hero**: upload de fundo, título, subtítulo, textos do CTA.
+### 3. Transição "esfumaçada" entre header e hero
 
-**Sobre**: upload de imagem + textarea grande para o texto.
+A linha dura entre o cabeçalho preto e a foto do hero será trocada por uma sobreposição com gradiente suave:
 
-**Contato/Redes**: WhatsApp, telefone, email, endereço, CNPJ, CRECI, Instagram/Facebook/TikTok/YouTube/LinkedIn.
+- No `Header.tsx`: remover a `border-b border-white/5` e adicionar uma sombra/gradiente inferior (`shadow-[0_20px_40px_-20px_rgba(0,0,0,0.9)]` + uma faixa absoluta com `bg-gradient-to-b from-black/80 to-transparent`).
+- No `Hero.tsx`: adicionar no topo da seção um overlay absoluto `from-[var(--bp-bg)]/90 via-[var(--bp-bg)]/40 to-transparent` (≈ 120px) que esfuma a borda superior contra o header, sem alterar o filtro escuro central.
 
-**SEO**: título, descrição, upload de favicon.
+Resultado: o header parece "derreter" sobre a foto, sem linha visível.
 
-**Avançado**: rótulos editáveis dos itens do menu (Início, Sobre, Contato, Financie, Negocie seu Imóvel) e texto do rodapé (`branding.footer_text`, `branding.menu_labels`).
+## Arquivos alterados
 
-Tudo continua salvo em `branding`/`seo` (JSONB) — sem migração de schema.
+- `src/components/broker-portal/templates/template1/Template1.tsx` — refazer card "Sobre nós".
+- `src/components/broker-portal/templates/template1/Footer.tsx` — remover faixa duplicada de `about_image_url`/`about_text`; usar `menu_items`.
+- `src/components/broker-portal/templates/template1/Header.tsx` — usar `menu_items`, esfumaçar borda inferior.
+- `src/components/broker-portal/templates/template1/Hero.tsx` — gradiente superior esfumaçado.
+- `src/components/admin/BrokerPortalsManagement.tsx` — editor de `menu_items` (visível + destino + URL) na aba Avançado; default migra `menu_labels` para `menu_items` ao abrir.
 
-## 4. Fonte dos imóveis (a função mais importante)
-
-Já existe o campo `properties_source` (`OWN` | `CITY`) e `useBrokerPortal.fetchPortalProperties` já trata as duas fontes. Vou:
-
-- Destacar o seletor no topo da aba **Geral** com descrição:
-  - **OWN** — "Mostra apenas os imóveis cadastrados pelo corretor selecionado."
-  - **CITY** — "Mostra todos os imóveis ativos da plataforma na cidade/UF informados."
-- Quando `CITY`, exigir cidade (validação no save) e mostrar contador estimado em tempo real (`select count` de `properties` com filtros).
-- Mostrar essa info também no card de listagem de portais.
-
-## 5. Renderer respeita rótulos editáveis
-
-`Header.tsx` e `Footer.tsx` passam a ler `branding.menu_labels` (com fallback aos atuais) e `branding.footer_text` no copyright.
-
-## Arquivos afetados
-
-- `src/components/admin/BrokerPortalsManagement.tsx` — refatorar diálogo em abas, novo seletor de corretor, uploads, contador de imóveis CITY, validações.
-- `src/components/broker-portal/templates/template1/Header.tsx` — usar `menu_labels`.
-- `src/components/broker-portal/templates/template1/Footer.tsx` — usar `menu_labels` + `footer_text`.
-
-Sem mudanças no banco. Sem novos buckets (reutiliza `landing-pages`).
+Nenhuma mudança no banco de dados (tudo dentro do JSON `branding`).
