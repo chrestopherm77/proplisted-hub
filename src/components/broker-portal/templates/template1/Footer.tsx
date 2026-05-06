@@ -1,23 +1,15 @@
 import { BrokerPortal } from '@/hooks/useBrokerPortal';
 import { Phone, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { resolveMenuItems } from './menuItems';
 
 export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: string) => void }) {
   const b = portal.branding ?? {};
   const copyEmail = () => { if (b.email) { navigator.clipboard.writeText(b.email); toast.success('E-mail copiado'); } };
   const year = new Date().getFullYear();
+  const menu = resolveMenuItems(b);
   return (
     <footer className="bg-[var(--bp-bg)] text-[var(--bp-fg)] mt-12">
-      {(b.about_image_url || b.about_text) && (
-        <div className="relative">
-          {b.about_image_url && <img src={b.about_image_url} alt="" className="w-full h-72 object-cover" />}
-          {b.about_text && (
-            <div className="absolute inset-0 flex items-center justify-end p-8 bg-gradient-to-l from-black/60 to-transparent">
-              <p className="max-w-md text-white text-2xl font-light leading-snug">{b.about_text}</p>
-            </div>
-          )}
-        </div>
-      )}
       <div className="container mx-auto px-4 py-10 grid md:grid-cols-4 gap-8">
         <div>
           {b.logo_url && <img src={b.logo_url} alt="logo" className="h-16" />}
