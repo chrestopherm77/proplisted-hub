@@ -4,6 +4,7 @@ import { FilterState, EMPTY_FILTERS } from './types';
 import { Search } from 'lucide-react';
 
 export function Hero({ portal, cities, types, onSearch }: { portal: BrokerPortal; cities: string[]; types: string[]; onSearch: (f: FilterState) => void }) {
+  const typeLabel = (t: string) => ({ APARTAMENTO: 'Apartamento', CASA: 'Casa', SOBRADO: 'Sobrado', COBERTURA: 'Cobertura', TERRENO: 'Terreno', SALA_COMERCIAL: 'Sala Comercial', GALPAO: 'Galpão', SITIO: 'Sítio', CHACARA: 'Chácara', AREA_DE_LAZER: 'Área de Lazer' } as Record<string, string>)[t] || t;
   const b = portal.branding ?? {};
   const [f, setF] = useState<FilterState>(EMPTY_FILTERS);
   const [refMode, setRefMode] = useState(false);
