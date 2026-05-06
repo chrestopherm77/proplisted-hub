@@ -20,9 +20,9 @@ export const PORTAL_TEMPLATES: PortalTemplateInfo[] = [
   },
   {
     id: 3,
-    name: 'Modelo 3 (em breve)',
-    description: 'Em desenvolvimento.',
-    available: false,
+    name: 'Maison Boutique',
+    description: 'Modelo boutique claro com logo central, paleta bege/verde-oliva, hero amplo e seções separadas de venda e locação.',
+    available: true,
   },
 ];
 
