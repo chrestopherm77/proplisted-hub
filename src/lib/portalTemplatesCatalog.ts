@@ -14,9 +14,9 @@ export const PORTAL_TEMPLATES: PortalTemplateInfo[] = [
   },
   {
     id: 2,
-    name: 'Modelo 2 (em breve)',
-    description: 'Em desenvolvimento.',
-    available: false,
+    name: 'Colleone Classic',
+    description: 'Modelo claro com hero em destaque, seção de imóveis exclusivos, depoimentos e identidade azul-marinho.',
+    available: true,
   },
   {
     id: 3,
