@@ -1,6 +1,58 @@
 import { BrokerPortal } from '@/hooks/useBrokerPortal';
 
 export function buildDemoPortal(templateId: number): BrokerPortal {
+  const isClassic = templateId === 2;
+  const branding: Record<string, any> = isClassic
+    ? {
+        logo_url: '',
+        primary_color: '#1e3a8a',
+        accent_color: '#1e3a8a',
+        accent_color_strong: '#b91c1c',
+        bg_color: '#1e3a8a',
+        hero_bg_url: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1920&q=80',
+        hero_title: 'Conectando pessoas aos seus lares',
+        hero_subtitle: 'Imóveis exclusivos com atendimento personalizado',
+        whatsapp: '5541999058812',
+        phone: '(41) 99905-8812',
+        email: 'contato@exemplo.com.br',
+        instagram: 'https://instagram.com',
+        facebook: 'https://facebook.com',
+        youtube: 'https://youtube.com',
+        tiktok: 'https://tiktok.com',
+        address: 'Rua Exemplo, 1000 - Curitiba/PR',
+        cnpj: '00.000.000/0001-00',
+        creci: '44570',
+        about_text: 'Mais de 15 anos de tradição no mercado imobiliário, oferecendo imóveis exclusivos com atendimento dedicado.',
+        about_image_url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        footer_text: '© 2026 - Imobiliária Demo - Todos os direitos reservados',
+        cta_banner_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
+        cta_banner_text: 'Não encontrou o que procurava?',
+        testimonials: [
+          { name: 'Marina Vidal', text: 'Se você está procurando um corretor que realmente se importa com suas necessidades e trabalha incansavelmente para garantir o melhor negócio, recomendo fortemente. Atenção aos detalhes e dedicação incomparáveis.' },
+          { name: 'Carlos Souza', text: 'Muito prestativo, eficiente e capaz de entender nossas necessidades. Ficamos seguros com a condução e satisfeitos com os resultados alcançados. Seguimos clientes!' },
+          { name: 'Ana Beatriz', text: 'Desde o primeiro contato, a equipe foi atenciosa e prestativa, oferecendo opções que atendiam exatamente às minhas necessidades. Recomendo fortemente.' },
+        ],
+      }
+    : {
+        logo_url: '',
+        primary_color: '#1c1c1c',
+        accent_color: '#c9a44c',
+        bg_color: '#1c1c1c',
+        hero_bg_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
+        hero_title: 'Encontre o imóvel dos seus sonhos',
+        hero_subtitle: 'Os melhores imóveis selecionados para você',
+        whatsapp: '5516999999999',
+        phone: '(16) 99999-9999',
+        email: 'contato@exemplo.com.br',
+        instagram: 'https://instagram.com',
+        facebook: 'https://facebook.com',
+        address: 'Av. Exemplo, 1000 - Ribeirão Preto/SP',
+        cnpj: '00.000.000/0001-00',
+        creci: 'CRECI 00000-J',
+        about_text: 'Imobiliária com mais de 20 anos de tradição em Ribeirão Preto. Oferecemos os melhores imóveis com atendimento personalizado e dedicado.',
+        about_image_url: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&q=80',
+        footer_text: 'Imobiliária Demo — todos os direitos reservados',
+      };
   return {
     id: 'demo',
     user_id: 'demo',
@@ -11,27 +63,8 @@ export function buildDemoPortal(templateId: number): BrokerPortal {
     properties_source: 'OWN',
     city: 'Ribeirão Preto',
     state: 'SP',
-    branding: {
-      logo_url: '',
-      primary_color: '#1c1c1c',
-      accent_color: '#c9a44c',
-      bg_color: '#1c1c1c',
-      hero_bg_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
-      hero_title: 'Encontre o imóvel dos seus sonhos',
-      hero_subtitle: 'Os melhores imóveis selecionados para você',
-      whatsapp: '5516999999999',
-      phone: '(16) 99999-9999',
-      email: 'contato@exemplo.com.br',
-      instagram: 'https://instagram.com',
-      facebook: 'https://facebook.com',
-      address: 'Av. Exemplo, 1000 - Ribeirão Preto/SP',
-      cnpj: '00.000.000/0001-00',
-      creci: 'CRECI 00000-J',
-      about_text: 'Imobiliária com mais de 20 anos de tradição em Ribeirão Preto. Oferecemos os melhores imóveis com atendimento personalizado e dedicado.',
-      about_image_url: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&q=80',
-      footer_text: 'Imobiliária Demo — todos os direitos reservados',
-    },
-    seo: { title: 'Preview', description: '', favicon_url: '' },
+    branding,
+    seo: { title: isClassic ? 'Imobiliária Demo' : 'Preview', description: '', favicon_url: '' },
   };
 }
 
