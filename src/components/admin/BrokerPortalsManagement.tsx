@@ -422,7 +422,52 @@ export function BrokerPortalsManagement() {
                 <ImageUploadField label="Imagem da seção Sobre" value={editing.branding?.about_image_url ?? ''} onChange={(v) => updateBranding('about_image_url', v)} folder="portals/about" />
                 <div><Label>Texto da seção Sobre</Label><Textarea rows={6} value={editing.branding?.about_text ?? ''} onChange={(e) => updateBranding('about_text', e.target.value)} /></div>
                 <div><Label>Texto adicional (rodapé/breve)</Label><Textarea rows={3} value={editing.branding?.about ?? ''} onChange={(e) => updateBranding('about', e.target.value)} /></div>
+
+                <div className="border-t pt-4">
+                  <Label className="text-base font-semibold">Banner CTA (Modelo 2)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Banner exibido entre depoimentos e rodapé.</p>
+                  <ImageUploadField label="Imagem do banner CTA" value={editing.branding?.cta_banner_url ?? ''} onChange={(v) => updateBranding('cta_banner_url', v)} folder="portals/cta" />
+                  <div className="mt-2"><Label>Texto do banner CTA</Label><Input value={editing.branding?.cta_banner_text ?? ''} onChange={(e) => updateBranding('cta_banner_text', e.target.value)} placeholder="Não encontrou o que procurava?" /></div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Label className="text-base font-semibold">Depoimentos</Label>
+                      <p className="text-xs text-muted-foreground">Aparecem na seção de depoimentos do portal.</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      const list = Array.isArray(editing.branding?.testimonials) ? [...editing.branding.testimonials] : [];
+                      list.push({ name: '', text: '' });
+                      updateBranding('testimonials', list);
+                    }}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
+                  </div>
+                  <div className="space-y-3">
+                    {(Array.isArray(editing.branding?.testimonials) ? editing.branding.testimonials : []).map((t: any, idx: number) => (
+                      <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <Input placeholder="Nome" value={t.name ?? ''} onChange={(e) => {
+                            const list = [...editing.branding.testimonials];
+                            list[idx] = { ...list[idx], name: e.target.value };
+                            updateBranding('testimonials', list);
+                          }} />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => {
+                            const list = [...editing.branding.testimonials];
+                            list.splice(idx, 1);
+                            updateBranding('testimonials', list);
+                          }}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                        <Textarea rows={3} placeholder="Depoimento" value={t.text ?? ''} onChange={(e) => {
+                          const list = [...editing.branding.testimonials];
+                          list[idx] = { ...list[idx], text: e.target.value };
+                          updateBranding('testimonials', list);
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </TabsContent>
+
 
               {/* CONTATO */}
               <TabsContent value="contato" className="space-y-3">
