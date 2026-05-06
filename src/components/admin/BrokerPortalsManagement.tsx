@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,9 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, ExternalLink, Copy, Loader2, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, Copy, Loader2, Eye, X, ChevronsUpDown } from 'lucide-react';
 import { PORTAL_TEMPLATES, getTemplateName } from '@/lib/portalTemplatesCatalog';
+import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
 
 type Portal = {
   id: string;
@@ -40,18 +44,26 @@ const emptyForm = (): Partial<Portal> => ({
   properties_source: 'OWN',
   city: '',
   state: '',
-  branding: { logo_url: '', about: '', whatsapp: '', phone: '', email: '', instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '', address: '', primary_color: '#1c1c1c', accent_color: '#c9a44c', bg_color: '#1c1c1c', hero_bg_url: '', hero_title: '', hero_subtitle: '', cnpj: '', creci: '', about_image_url: '', about_text: '', footer_text: '' },
+  branding: {
+    logo_url: '', about: '', whatsapp: '', phone: '', email: '',
+    instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '',
+    address: '', primary_color: '#1c1c1c', accent_color: '#c9a44c', bg_color: '#1c1c1c',
+    hero_bg_url: '', hero_title: '', hero_subtitle: '',
+    cnpj: '', creci: '', about_image_url: '', about_text: '', footer_text: '',
+    menu_labels: { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' },
+  },
   seo: { title: '', description: '', favicon_url: '' },
 });
 
 export function BrokerPortalsManagement() {
   const [items, setItems] = useState<Portal[]>([]);
-  const [profiles, setProfiles] = useState<ProfileLite[]>([]);
+  const [allProfiles, setAllProfiles] = useState<ProfileLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Portal> | null>(null);
   const [toDelete, setToDelete] = useState<Portal | null>(null);
   const [saving, setSaving] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [cityCount, setCityCount] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -60,26 +72,47 @@ export function BrokerPortalsManagement() {
     setLoading(false);
   };
 
+  const loadProfiles = async () => {
+    if (allProfiles.length > 0) return;
+    const { data } = await supabase.from('profiles').select('id, name, email').order('name', { ascending: true }).limit(2000);
+    setAllProfiles((data as ProfileLite[]) ?? []);
+  };
+
   useEffect(() => { load(); }, []);
 
+  // Contador de imóveis quando fonte=CITY
   useEffect(() => {
-    if (!editing) return;
-    if (!userSearch.trim()) { setProfiles([]); return; }
+    if (!editing || editing.properties_source !== 'CITY' || !editing.city) {
+      setCityCount(null);
+      return;
+    }
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .or(`name.ilike.%${userSearch}%,email.ilike.%${userSearch}%`)
-        .limit(10);
-      setProfiles((data as ProfileLite[]) ?? []);
-    }, 300);
+      let q = supabase.from('properties').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('city', editing.city);
+      if (editing.state) q = q.eq('state', editing.state);
+      const { count } = await q;
+      setCityCount(count ?? 0);
+    }, 400);
     return () => clearTimeout(t);
-  }, [userSearch, editing]);
+  }, [editing?.properties_source, editing?.city, editing?.state]);
+
+  const selectedProfile = useMemo(
+    () => allProfiles.find((p) => p.id === editing?.user_id) || null,
+    [allProfiles, editing?.user_id]
+  );
+
+  const openEditor = async (p?: Portal) => {
+    await loadProfiles();
+    setEditing(p ?? emptyForm());
+  };
 
   const save = async () => {
     if (!editing) return;
     if (!editing.user_id || !editing.slug) {
       toast.error('Selecione o corretor e informe um slug');
+      return;
+    }
+    if (editing.properties_source === 'CITY' && !editing.city) {
+      toast.error('Informe a cidade quando a fonte for "Todos da plataforma"');
       return;
     }
     setSaving(true);
@@ -99,10 +132,7 @@ export function BrokerPortalsManagement() {
       ? await supabase.from('broker_portals').update(payload).eq('id', editing.id)
       : await supabase.from('broker_portals').insert(payload);
     setSaving(false);
-    if (error) {
-      toast.error('Erro: ' + error.message);
-      return;
-    }
+    if (error) { toast.error('Erro: ' + error.message); return; }
     toast.success('Portal salvo');
     setEditing(null);
     load();
@@ -122,8 +152,10 @@ export function BrokerPortalsManagement() {
     setToDelete(null);
   };
 
-  const updateBranding = (k: string, v: string) =>
+  const updateBranding = (k: string, v: any) =>
     setEditing((e) => e && { ...e, branding: { ...(e.branding ?? {}), [k]: v } });
+  const updateMenuLabel = (k: string, v: string) =>
+    setEditing((e) => e && { ...e, branding: { ...(e.branding ?? {}), menu_labels: { ...((e.branding ?? {}).menu_labels ?? {}), [k]: v } } });
   const updateSeo = (k: string, v: string) =>
     setEditing((e) => e && { ...e, seo: { ...(e.seo ?? {}), [k]: v } });
 
@@ -134,7 +166,7 @@ export function BrokerPortalsManagement() {
           <h2 className="text-2xl font-bold">Portais de Imóveis</h2>
           <p className="text-sm text-muted-foreground">Sites individuais para corretores. Apenas admin ativa/desativa.</p>
         </div>
-        <Button onClick={() => setEditing(emptyForm())}>
+        <Button onClick={() => openEditor()}>
           <Plus className="h-4 w-4" /> Novo portal
         </Button>
       </div>
@@ -187,7 +219,7 @@ export function BrokerPortalsManagement() {
                   <h3 className="font-semibold">/{p.slug}</h3>
                   <Badge variant="outline">{getTemplateName(p.template_id)}</Badge>
                   <Badge variant={p.properties_source === 'OWN' ? 'secondary' : 'default'}>
-                    {p.properties_source === 'OWN' ? 'Imóveis próprios' : `Cidade: ${p.city ?? '-'}`}
+                    {p.properties_source === 'OWN' ? 'Imóveis do corretor' : `Todos da cidade: ${p.city ?? '-'}${p.state ? '/' + p.state : ''}`}
                   </Badge>
                   {p.is_active ? <Badge>Ativo</Badge> : <Badge variant="secondary">Inativo</Badge>}
                 </div>
@@ -208,7 +240,7 @@ export function BrokerPortalsManagement() {
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setEditing(p); setUserSearch(''); }}>
+                <Button variant="outline" size="sm" onClick={() => openEditor(p)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setToDelete(p)}>
@@ -221,112 +253,208 @@ export function BrokerPortalsManagement() {
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing?.id ? 'Editar portal' : 'Novo portal'}</DialogTitle>
           </DialogHeader>
           {editing && (
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <Tabs defaultValue="geral" className="w-full">
+              <TabsList className="flex flex-wrap h-auto">
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="marca">Marca</TabsTrigger>
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="sobre">Sobre</TabsTrigger>
+                <TabsTrigger value="contato">Contato/Redes</TabsTrigger>
+                <TabsTrigger value="seo">SEO</TabsTrigger>
+                <TabsTrigger value="avancado">Avançado</TabsTrigger>
+              </TabsList>
+
+              {/* GERAL */}
+              <TabsContent value="geral" className="space-y-4">
                 <div>
-                  <Label>Corretor (buscar nome ou email)</Label>
-                  <Input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Buscar..." />
-                  {profiles.length > 0 && (
-                    <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
-                      {profiles.map((p) => (
-                        <button key={p.id} type="button" className={`w-full text-left p-2 text-sm hover:bg-muted ${editing.user_id === p.id ? 'bg-muted' : ''}`}
-                          onClick={() => { setEditing({ ...editing, user_id: p.id }); setUserSearch(`${p.name} (${p.email ?? ''})`); setProfiles([]); }}>
-                          {p.name} <span className="text-muted-foreground">{p.email}</span>
-                        </button>
-                      ))}
-                    </div>
+                  <Label>Corretor cadastrado</Label>
+                  <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between">
+                        {selectedProfile
+                          ? <span className="truncate">{selectedProfile.name} <span className="text-muted-foreground">{selectedProfile.email}</span></span>
+                          : <span className="text-muted-foreground">Buscar corretor por nome ou email...</span>}
+                        <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                      <Command>
+                        <CommandInput placeholder="Buscar..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum corretor encontrado.</CommandEmpty>
+                          <CommandGroup>
+                            {allProfiles.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={`${p.name} ${p.email}`}
+                                onSelect={() => { setEditing({ ...editing, user_id: p.id }); setPickerOpen(false); }}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{p.name}</span>
+                                  <span className="text-xs text-muted-foreground">{p.email}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {selectedProfile && (
+                    <button type="button" onClick={() => setEditing({ ...editing, user_id: '' })} className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1 hover:text-foreground">
+                      <X className="h-3 w-3" /> Remover seleção
+                    </button>
                   )}
-                  {editing.user_id && <p className="text-xs text-muted-foreground mt-1">ID: {editing.user_id}</p>}
                 </div>
-                <div>
-                  <Label>Template</Label>
-                  <Select value={String(editing.template_id ?? 1)} onValueChange={(v) => setEditing({ ...editing, template_id: Number(v) })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PORTAL_TEMPLATES.map((t) => (
-                        <SelectItem key={t.id} value={String(t.id)} disabled={!t.available}>{t.name}{!t.available ? ' (em breve)' : ''}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Modelo (Template)</Label>
+                    <Select value={String(editing.template_id ?? 1)} onValueChange={(v) => setEditing({ ...editing, template_id: Number(v) })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PORTAL_TEMPLATES.map((t) => (
+                          <SelectItem key={t.id} value={String(t.id)} disabled={!t.available}>{t.name}{!t.available ? ' (em breve)' : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2 mt-6">
+                    <Switch checked={editing.is_active ?? false} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} />
+                    <Label>Portal ativo</Label>
+                  </div>
+                  <div>
+                    <Label>Slug (ex: imoveis-joao)</Label>
+                    <Input value={editing.slug ?? ''} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Domínio personalizado (opcional)</Label>
+                    <Input value={editing.custom_domain ?? ''} onChange={(e) => setEditing({ ...editing, custom_domain: e.target.value })} placeholder="imoveisjoao.com.br" />
+                  </div>
                 </div>
-                <div>
-                  <Label>Slug (ex: imoveis-joao)</Label>
-                  <Input value={editing.slug ?? ''} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Domínio personalizado (opcional)</Label>
-                  <Input value={editing.custom_domain ?? ''} onChange={(e) => setEditing({ ...editing, custom_domain: e.target.value })} placeholder="imoveisjoao.com.br" />
-                </div>
-                <div>
-                  <Label>Fonte dos imóveis</Label>
+
+                <div className="border rounded-md p-4 bg-muted/30 space-y-3">
+                  <div>
+                    <Label className="text-base font-semibold">Quais imóveis aparecem no portal?</Label>
+                    <p className="text-xs text-muted-foreground">Defina a fonte dos imóveis exibidos. Esta é a principal regra do portal.</p>
+                  </div>
                   <Select value={editing.properties_source ?? 'OWN'} onValueChange={(v: 'OWN' | 'CITY') => setEditing({ ...editing, properties_source: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OWN">Apenas imóveis do corretor</SelectItem>
-                      <SelectItem value="CITY">Todos os imóveis da cidade</SelectItem>
+                      <SelectItem value="OWN">Apenas os imóveis publicados pelo corretor</SelectItem>
+                      <SelectItem value="CITY">Todos os imóveis da plataforma (filtrar por cidade)</SelectItem>
                     </SelectContent>
                   </Select>
+                  {editing.properties_source === 'CITY' && (
+                    <>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <Label>Cidade *</Label>
+                          <Input value={editing.city ?? ''} onChange={(e) => setEditing({ ...editing, city: e.target.value })} />
+                        </div>
+                        <div>
+                          <Label>UF</Label>
+                          <Input maxLength={2} value={editing.state ?? ''} onChange={(e) => setEditing({ ...editing, state: e.target.value.toUpperCase() })} />
+                        </div>
+                      </div>
+                      {cityCount !== null && (
+                        <p className="text-xs text-muted-foreground">
+                          {cityCount} imóvel(is) ativo(s) encontrado(s){editing.city ? ` em ${editing.city}${editing.state ? '/' + editing.state : ''}` : ''}.
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {editing.properties_source === 'OWN' && (
+                    <p className="text-xs text-muted-foreground">Apenas os imóveis cadastrados pelo corretor selecionado serão exibidos.</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 mt-6">
-                  <Switch checked={editing.is_active ?? false} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} />
-                  <Label>Ativo</Label>
-                </div>
-                <div>
-                  <Label>Cidade</Label>
-                  <Input value={editing.city ?? ''} onChange={(e) => setEditing({ ...editing, city: e.target.value })} />
-                </div>
-                <div>
-                  <Label>UF</Label>
-                  <Input maxLength={2} value={editing.state ?? ''} onChange={(e) => setEditing({ ...editing, state: e.target.value.toUpperCase() })} />
-                </div>
-              </div>
+              </TabsContent>
 
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Marca / Branding</h4>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div><Label>Logo URL</Label><Input value={editing.branding?.logo_url ?? ''} onChange={(e) => updateBranding('logo_url', e.target.value)} /></div>
+              {/* MARCA */}
+              <TabsContent value="marca" className="space-y-4">
+                <ImageUploadField label="Logo" value={editing.branding?.logo_url ?? ''} onChange={(v) => updateBranding('logo_url', v)} folder="portals/logos" />
+                <div className="grid md:grid-cols-3 gap-3">
                   <div><Label>Cor primária (header/footer)</Label><Input type="color" value={editing.branding?.primary_color ?? '#1c1c1c'} onChange={(e) => updateBranding('primary_color', e.target.value)} /></div>
                   <div><Label>Cor de destaque (botões)</Label><Input type="color" value={editing.branding?.accent_color ?? '#c9a44c'} onChange={(e) => updateBranding('accent_color', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label>Imagem de fundo do hero (URL)</Label><Input value={editing.branding?.hero_bg_url ?? ''} onChange={(e) => updateBranding('hero_bg_url', e.target.value)} /></div>
-                  <div><Label>Título do hero</Label><Input value={editing.branding?.hero_title ?? ''} onChange={(e) => updateBranding('hero_title', e.target.value)} /></div>
-                  <div><Label>Subtítulo do hero</Label><Input value={editing.branding?.hero_subtitle ?? ''} onChange={(e) => updateBranding('hero_subtitle', e.target.value)} /></div>
-                  <div><Label>CNPJ</Label><Input value={editing.branding?.cnpj ?? ''} onChange={(e) => updateBranding('cnpj', e.target.value)} /></div>
-                  <div><Label>CRECI</Label><Input value={editing.branding?.creci ?? ''} onChange={(e) => updateBranding('creci', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label>Imagem da seção "Sobre" (URL)</Label><Input value={editing.branding?.about_image_url ?? ''} onChange={(e) => updateBranding('about_image_url', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label>Texto da seção "Sobre"</Label><Textarea rows={3} value={editing.branding?.about_text ?? ''} onChange={(e) => updateBranding('about_text', e.target.value)} /></div>
+                  <div><Label>Cor de fundo</Label><Input type="color" value={editing.branding?.bg_color ?? '#1c1c1c'} onChange={(e) => updateBranding('bg_color', e.target.value)} /></div>
+                </div>
+              </TabsContent>
+
+              {/* HERO */}
+              <TabsContent value="hero" className="space-y-4">
+                <ImageUploadField label="Imagem de fundo do hero" value={editing.branding?.hero_bg_url ?? ''} onChange={(v) => updateBranding('hero_bg_url', v)} folder="portals/hero" />
+                <div><Label>Título do hero</Label><Input value={editing.branding?.hero_title ?? ''} onChange={(e) => updateBranding('hero_title', e.target.value)} /></div>
+                <div><Label>Subtítulo do hero</Label><Input value={editing.branding?.hero_subtitle ?? ''} onChange={(e) => updateBranding('hero_subtitle', e.target.value)} /></div>
+              </TabsContent>
+
+              {/* SOBRE */}
+              <TabsContent value="sobre" className="space-y-4">
+                <ImageUploadField label="Imagem da seção Sobre" value={editing.branding?.about_image_url ?? ''} onChange={(v) => updateBranding('about_image_url', v)} folder="portals/about" />
+                <div><Label>Texto da seção Sobre</Label><Textarea rows={6} value={editing.branding?.about_text ?? ''} onChange={(e) => updateBranding('about_text', e.target.value)} /></div>
+                <div><Label>Texto adicional (rodapé/breve)</Label><Textarea rows={3} value={editing.branding?.about ?? ''} onChange={(e) => updateBranding('about', e.target.value)} /></div>
+              </TabsContent>
+
+              {/* CONTATO */}
+              <TabsContent value="contato" className="space-y-3">
+                <div className="grid md:grid-cols-2 gap-3">
                   <div><Label>WhatsApp</Label><Input value={editing.branding?.whatsapp ?? ''} onChange={(e) => updateBranding('whatsapp', e.target.value)} /></div>
                   <div><Label>Telefone</Label><Input value={editing.branding?.phone ?? ''} onChange={(e) => updateBranding('phone', e.target.value)} /></div>
                   <div><Label>Email</Label><Input value={editing.branding?.email ?? ''} onChange={(e) => updateBranding('email', e.target.value)} /></div>
                   <div><Label>Endereço</Label><Input value={editing.branding?.address ?? ''} onChange={(e) => updateBranding('address', e.target.value)} /></div>
-                  <div><Label>Instagram</Label><Input value={editing.branding?.instagram ?? ''} onChange={(e) => updateBranding('instagram', e.target.value)} /></div>
-                  <div><Label>Facebook</Label><Input value={editing.branding?.facebook ?? ''} onChange={(e) => updateBranding('facebook', e.target.value)} /></div>
-                  <div><Label>TikTok</Label><Input value={editing.branding?.tiktok ?? ''} onChange={(e) => updateBranding('tiktok', e.target.value)} /></div>
-                  <div><Label>YouTube</Label><Input value={editing.branding?.youtube ?? ''} onChange={(e) => updateBranding('youtube', e.target.value)} /></div>
-                  <div><Label>LinkedIn</Label><Input value={editing.branding?.linkedin ?? ''} onChange={(e) => updateBranding('linkedin', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label>Sobre</Label><Textarea rows={3} value={editing.branding?.about ?? ''} onChange={(e) => updateBranding('about', e.target.value)} /></div>
+                  <div><Label>CNPJ</Label><Input value={editing.branding?.cnpj ?? ''} onChange={(e) => updateBranding('cnpj', e.target.value)} /></div>
+                  <div><Label>CRECI</Label><Input value={editing.branding?.creci ?? ''} onChange={(e) => updateBranding('creci', e.target.value)} /></div>
+                  <div><Label>Instagram (URL)</Label><Input value={editing.branding?.instagram ?? ''} onChange={(e) => updateBranding('instagram', e.target.value)} /></div>
+                  <div><Label>Facebook (URL)</Label><Input value={editing.branding?.facebook ?? ''} onChange={(e) => updateBranding('facebook', e.target.value)} /></div>
+                  <div><Label>TikTok (URL)</Label><Input value={editing.branding?.tiktok ?? ''} onChange={(e) => updateBranding('tiktok', e.target.value)} /></div>
+                  <div><Label>YouTube (URL)</Label><Input value={editing.branding?.youtube ?? ''} onChange={(e) => updateBranding('youtube', e.target.value)} /></div>
+                  <div><Label>LinkedIn (URL)</Label><Input value={editing.branding?.linkedin ?? ''} onChange={(e) => updateBranding('linkedin', e.target.value)} /></div>
                 </div>
-              </div>
+              </TabsContent>
 
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">SEO</h4>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div><Label>Título</Label><Input value={editing.seo?.title ?? ''} onChange={(e) => updateSeo('title', e.target.value)} /></div>
-                  <div><Label>Favicon URL</Label><Input value={editing.seo?.favicon_url ?? ''} onChange={(e) => updateSeo('favicon_url', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label>Descrição</Label><Textarea rows={2} value={editing.seo?.description ?? ''} onChange={(e) => updateSeo('description', e.target.value)} /></div>
-                </div>
-              </div>
+              {/* SEO */}
+              <TabsContent value="seo" className="space-y-3">
+                <div><Label>Título da página (SEO)</Label><Input value={editing.seo?.title ?? ''} onChange={(e) => updateSeo('title', e.target.value)} /></div>
+                <div><Label>Descrição</Label><Textarea rows={3} value={editing.seo?.description ?? ''} onChange={(e) => updateSeo('description', e.target.value)} /></div>
+                <ImageUploadField label="Favicon" value={editing.seo?.favicon_url ?? ''} onChange={(v) => updateSeo('favicon_url', v)} folder="portals/favicon" />
+              </TabsContent>
 
-              {editing.custom_domain && (
-                <div className="bg-muted p-3 rounded-md text-xs">
-                  <strong>DNS:</strong> aponte o domínio <code>{editing.custom_domain}</code> para a Lovable conforme as instruções de domínio personalizado.
+              {/* AVANÇADO */}
+              <TabsContent value="avancado" className="space-y-4">
+                <div>
+                  <Label className="text-base font-semibold">Rótulos do menu</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Personalize o nome de cada item no cabeçalho/rodapé.</p>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {[
+                      ['home','Início'],['sobre','Sobre'],['contato','Contato'],['financie','Financie'],['negociar','Negocie seu Imóvel']
+                    ].map(([k, def]) => (
+                      <div key={k}>
+                        <Label className="text-xs">{def}</Label>
+                        <Input
+                          value={editing.branding?.menu_labels?.[k] ?? ''}
+                          placeholder={def}
+                          onChange={(e) => updateMenuLabel(k, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+                <div>
+                  <Label>Texto do rodapé (copyright)</Label>
+                  <Input value={editing.branding?.footer_text ?? ''} onChange={(e) => updateBranding('footer_text', e.target.value)} placeholder="© 2026 Minha Imobiliária" />
+                </div>
+
+                {editing.custom_domain && (
+                  <div className="bg-muted p-3 rounded-md text-xs">
+                    <strong>DNS:</strong> aponte o domínio <code>{editing.custom_domain}</code> para a Lovable conforme as instruções de domínio personalizado.
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
