@@ -2,7 +2,44 @@ import { BrokerPortal } from '@/hooks/useBrokerPortal';
 
 export function buildDemoPortal(templateId: number): BrokerPortal {
   const isClassic = templateId === 2;
-  const branding: Record<string, any> = isClassic
+  const isBoutique = templateId === 3;
+  const branding: Record<string, any> = isBoutique
+    ? {
+        logo_url: '',
+        primary_color: '#5a6b3f',
+        accent_color: '#5a6b3f',
+        accent_color_strong: '#8b6f3f',
+        bg_color: '#5a6b3f',
+        bg_color_light: '#f1ede4',
+        hero_bg_url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1920&q=80',
+        hero_title: '',
+        hero_subtitle: '',
+        whatsapp: '5511998097952',
+        phone: '(11) 99809-7952',
+        email: 'contato@maison.com.br',
+        instagram: 'https://instagram.com',
+        facebook: 'https://facebook.com',
+        address: 'Avenida Páscoa Zanetti Trevisan, 510 - Sala 13, Santa Rosa - Vinhedo/SP, 13289-172',
+        cnpj: '00.000.000/0001-00',
+        creci: '172.219',
+        broker_name: 'Ricardo Monteiro',
+        about_text: 'Somos uma boutique imobiliária dedicada a conectar pessoas aos seus lares dos sonhos. Atendimento personalizado, imóveis exclusivos e uma equipe comprometida em entregar a melhor experiência.',
+        about_image_url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        footer_text: '© 2026 - Maison Vinhedo - Todos os direitos reservados',
+        cta_banner_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+        cta_banner_text: 'Encontre o seu imóvel ideal',
+        build_or_buy: [
+          { image_url: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80', title: 'Comprar pronto', description: 'Imóveis prontos para morar.' },
+          { image_url: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800&q=80', title: 'Construir', description: 'Terrenos e projetos sob medida.' },
+          { image_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', title: 'Investir', description: 'As melhores oportunidades.' },
+        ],
+        testimonials: [
+          { name: 'Marina Vidal', text: 'Atendimento impecável do início ao fim. Recomendo de olhos fechados.' },
+          { name: 'Carlos Souza', text: 'Profissionais dedicados e atenciosos. Encontramos a casa perfeita.' },
+          { name: 'Ana Beatriz', text: 'Experiência maravilhosa. Equipe sempre disponível e atenciosa.' },
+        ],
+      }
+    : isClassic
     ? {
         logo_url: '',
         primary_color: '#1e3a8a',
@@ -64,7 +101,7 @@ export function buildDemoPortal(templateId: number): BrokerPortal {
     city: 'Ribeirão Preto',
     state: 'SP',
     branding,
-    seo: { title: isClassic ? 'Imobiliária Demo' : 'Preview', description: '', favicon_url: '' },
+    seo: { title: isBoutique ? 'Maison Vinhedo' : isClassic ? 'Imobiliária Demo' : 'Preview', description: '', favicon_url: '' },
   };
 }
 

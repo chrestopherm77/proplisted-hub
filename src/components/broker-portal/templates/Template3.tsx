@@ -1,4 +1,1 @@
-import Template1 from './Template1';
-export default function Template3(props: any) {
-  return <Template1 {...props} />;
-}
+export { default } from './template3/Template3';

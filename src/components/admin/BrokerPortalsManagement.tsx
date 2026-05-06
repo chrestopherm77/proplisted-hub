@@ -467,6 +467,54 @@ export function BrokerPortalsManagement() {
                     ))}
                   </div>
                 </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Label className="text-base font-semibold">Comprar ou Construir (Modelo 3)</Label>
+                      <p className="text-xs text-muted-foreground">Até 3 cartões exibidos na seção "Comprar casa pronta ou construir".</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" disabled={(editing.branding?.build_or_buy?.length ?? 0) >= 3} onClick={() => {
+                      const list = Array.isArray(editing.branding?.build_or_buy) ? [...editing.branding.build_or_buy] : [];
+                      list.push({ image_url: '', title: '', description: '', link: '' });
+                      updateBranding('build_or_buy', list);
+                    }}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
+                  </div>
+                  <div className="space-y-3">
+                    {(Array.isArray(editing.branding?.build_or_buy) ? editing.branding.build_or_buy : []).map((it: any, idx: number) => (
+                      <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-muted-foreground">Cartão {idx + 1}</span>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => {
+                            const list = [...editing.branding.build_or_buy];
+                            list.splice(idx, 1);
+                            updateBranding('build_or_buy', list);
+                          }}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                        <ImageUploadField label="Imagem" value={it.image_url ?? ''} onChange={(v) => {
+                          const list = [...editing.branding.build_or_buy];
+                          list[idx] = { ...list[idx], image_url: v };
+                          updateBranding('build_or_buy', list);
+                        }} folder="portals/build-or-buy" />
+                        <Input placeholder="Título" value={it.title ?? ''} onChange={(e) => {
+                          const list = [...editing.branding.build_or_buy];
+                          list[idx] = { ...list[idx], title: e.target.value };
+                          updateBranding('build_or_buy', list);
+                        }} />
+                        <Textarea rows={2} placeholder="Descrição" value={it.description ?? ''} onChange={(e) => {
+                          const list = [...editing.branding.build_or_buy];
+                          list[idx] = { ...list[idx], description: e.target.value };
+                          updateBranding('build_or_buy', list);
+                        }} />
+                        <Input placeholder="Link (opcional)" value={it.link ?? ''} onChange={(e) => {
+                          const list = [...editing.branding.build_or_buy];
+                          list[idx] = { ...list[idx], link: e.target.value };
+                          updateBranding('build_or_buy', list);
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </TabsContent>
 
 
