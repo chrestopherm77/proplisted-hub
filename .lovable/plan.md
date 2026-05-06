@@ -1,66 +1,76 @@
-## O que vai mudar no modelo "Agnus Premium"
+# Modelo 2 — "Colleone Classic"
 
-### 1. Seção "Sobre nós" (corrigir foto cortada e duplicação no final)
+Baseado nas imagens enviadas (estilo Ricardo Colleone): cabeçalho claro com logo à esquerda, hero azul-marinho com foto, faixa de busca, seção "Imóveis Exclusivos" em destaque, grade "Imóveis em Destaque", depoimentos, banner CTA e rodapé azul-marinho.
 
-Hoje a imagem do "Sobre" aparece duas vezes:
-- uma vez na seção "Sobre nós" (ok, mas em formato esticado);
-- outra vez no rodapé, em uma faixa larga de 288px de altura cobrindo a foto inteira (é essa a "imagem cortada" que aparece no fim da página).
+A ideia é entregar um segundo template **completo, editável e funcional**, usando exatamente a mesma estrutura de configuração do Modelo 1 (mesmas chaves em `branding`, mesmo editor admin, mesmo sistema de menu, mesma busca de imóveis OWN/CITY). Assim o usuário pode trocar de modelo sem refazer nada.
 
-Ajustes:
-- **Remover a faixa duplicada do rodapé** (`Footer.tsx`): tirar o bloco que mostra `about_image_url`/`about_text` antes da grade do footer. Sobre fica só na seção "Sobre nós".
-- **Melhorar o layout da seção "Sobre nós"** (`Template1.tsx`):
-  - Card com fundo claro, padding generoso, em duas colunas (foto à esquerda, texto à direita) no desktop, empilhado no mobile.
-  - Foto com `aspect-[4/3]`, `object-cover`, `object-position: center top` e altura máxima controlada (≈ 380px), bordas arredondadas e sombra suave — assim o rosto não é cortado pela metade.
-  - Título e texto com tipografia coerente com o resto do site.
+## O que será construído
 
-### 2. Menu superior configurável (ocultar item / definir destino)
+1. **Nova pasta** `src/components/broker-portal/templates/template2/` com componentes próprios:
+   - `Template2.tsx` — orquestrador (substitui o atual stub que renderiza Template1)
+   - `Header.tsx` — fundo branco, logo grande à esquerda, top-bar com WhatsApp/e-mail/redes, menu horizontal com item ativo destacado em azul
+   - `Hero.tsx` — fundo azul-marinho com imagem (`hero_bg_url`) em overlay, faixa de busca branca sobreposta na parte inferior (Negócio, Tipo, Valor mín/máx, Cidade, Pesquisar) + alternância "Referência"
+   - `ExclusivesSection.tsx` — "Imóveis Exclusivos": até 3 cards grandes com watermark da logo sobre a foto (usa imóveis marcados como destaque ou os 3 mais recentes)
+   - `FeaturedGrid.tsx` — "Imóveis em Destaque": grade 4 colunas com cards estilo Colleone (faixa azul "Pronto para morar", selo Ref + VENDA, dormitórios/garagens/área, preço em vermelho, paginação)
+   - `Testimonials.tsx` — carrossel de depoimentos (lê `branding.testimonials[]` quando existir; fallback para placeholders)
+   - `CtaBanner.tsx` — banner "Não encontrou o que procurava? ENTRE EM CONTATO" com imagem de fundo
+   - `AboutSection.tsx` — Sobre nós (mesmas chaves `about_text` / `about_image_url`)
+   - `Footer.tsx` — rodapé azul-marinho com 4 colunas (logo+CNPJ, contato, menu, social) reusando `resolveMenuItems`
+   - `PropertyCard.tsx` e `PropertyDetail.tsx` — visual Colleone (faixa azul superior, preço vermelho)
+   - `WhatsAppFab.tsx`, `useFavorites.ts` — reaproveitam ou re-exportam os do template1
+   - `types.ts` — re-exporta `FilterState`/`applyFilters` do template1 para manter a busca idêntica
 
-Hoje os itens do menu (Início, Sobre, Contato, Financie, Negocie seu Imóvel) sempre aparecem e sempre rolam para a seção interna correspondente.
+2. **Reaproveitamento total da edição existente**:
+   - Mesmo `branding` salvo em `broker_portals` — nada novo no banco.
+   - O editor admin (`BrokerPortalsManagement.tsx`) **já cobre** todos os campos: logo upload, cores, hero, sobre nós, contatos, redes, CNPJ, CRECI, footer text, menu items configurável, fonte de imóveis (OWN/CITY).
+   - Adicionar no editor uma seção opcional **"Depoimentos"** (lista editável: nome + texto) gravada em `branding.testimonials` — usada por ambos os modelos quando preenchida.
+   - Adicionar campos opcionais `cta_banner_url` e `cta_banner_text` no editor para personalizar o banner CTA do Modelo 2 (Modelo 1 ignora).
 
-Ajustes no admin (`BrokerPortalsManagement.tsx`, aba "Avançado"):
-- Para cada item do menu, três campos:
-  - **Rótulo** (já existe).
-  - **Visível** (switch on/off) — permite ocultar um item.
-  - **Destino**: select com opções
-    - "Seção da página" (padrão; rola até `home`/`sobre`/`contato`/`financie`/`negociar`);
-    - "Link externo" (libera campo de URL — abre em nova aba);
-    - "Outra seção da página" (libera select com as seções existentes).
-- O mesmo bloco é reutilizado para os links no rodapé.
+3. **Catálogo e seletor**:
+   - Atualizar `src/lib/portalTemplatesCatalog.ts`: Modelo 2 passa a `available: true` com nome **"Colleone Classic"** e descrição apropriada. Modelo 3 continua "em breve".
+   - `BrokerPortalRenderer.tsx`: o `case 2` passa a renderizar o novo `Template2` real (hoje aponta para o stub que renderiza Template1).
+   - `buildDemoPortal(2)` em `portalTemplateDemo.ts`: paleta clara (`bg #ffffff`, `accent #1e3a8a` azul-marinho, `accent_strong #b91c1c` vermelho) + 3 depoimentos demo + CTA demo, para a pré-visualização ficar fiel.
 
-Estrutura salva em `branding.menu_items`:
+4. **Filtros e busca de imóveis**: idênticos ao Modelo 1 — `applyFilters` + `fetchPortalProperties` (OWN ou CITY) já funcionam corretamente, só serão consumidos pelo novo `Hero`/grade.
+
+5. **Menu configurável**: o novo `Header`/`Footer` usam `resolveMenuItems(branding)`, então o editor de menu do admin continua valendo (mostrar/ocultar item, modo seção ou URL externa).
+
+## Layout (referência Colleone)
 
 ```text
-menu_items: [
-  { id: 'home',     label: 'Início',           visible: true,  mode: 'section', target: 'home' },
-  { id: 'sobre',    label: 'Sobre',            visible: true,  mode: 'section', target: 'sobre' },
-  { id: 'contato',  label: 'Contato',          visible: true,  mode: 'section', target: 'contato' },
-  { id: 'financie', label: 'Financie',         visible: false, mode: 'url',     target: 'https://...' },
-  { id: 'negociar', label: 'Negocie seu Imóvel', visible: true, mode: 'section', target: 'negociar' },
-]
+┌──────────────────────────────────────────────────────────────┐
+│ [LOGO]      Início  Sobre  Contato  Anuncie    ❤ Favoritos  │  ← Header branco
+├──────────────────────────────────────────────────────────────┤
+│  Hero azul-marinho c/ imagem  (título opcional)              │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │ Negócio | Tipo | Vmín | Vmáx | Cidade | [Pesquisar] │    │
+│  └──────────────────────────────────────────────────────┘    │
+├──────────────────────────────────────────────────────────────┤
+│              IMÓVEIS EXCLUSIVOS (3 cards grandes)            │
+├──────────────────────────────────────────────────────────────┤
+│              IMÓVEIS EM DESTAQUE (grade 4 col)               │
+├──────────────────────────────────────────────────────────────┤
+│              DEPOIMENTOS (carrossel)                         │
+├──────────────────────────────────────────────────────────────┤
+│  Banner: "Não encontrou? ENTRE EM CONTATO"                   │
+├──────────────────────────────────────────────────────────────┤
+│  Footer azul-marinho: Logo | Contato | Menu | Social         │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-Mantém compatibilidade com `branding.menu_labels` antigo (lê labels antigas se `menu_items` não existir ainda).
+## Observações técnicas
 
-Header e Footer (`Header.tsx`, `Footer.tsx`):
-- Renderizam apenas itens com `visible !== false`.
-- `mode: 'section'` → chama `onNav(target)` (rolagem suave atual).
-- `mode: 'url'`  → renderiza `<a href target="_blank" rel="noreferrer">`.
+- Nada será alterado no Modelo 1; ele continua funcional.
+- Edge functions, RLS e schema do Supabase **não mudam** — toda a edição já passa pelo `branding jsonb` existente.
+- Pré-visualização disponível em `/portal-templates/preview/2` (rota já existente).
 
-### 3. Transição "esfumaçada" entre header e hero
+## Arquivos
 
-A linha dura entre o cabeçalho preto e a foto do hero será trocada por uma sobreposição com gradiente suave:
+**Novos**: `src/components/broker-portal/templates/template2/{Template2,Header,Hero,ExclusivesSection,FeaturedGrid,Testimonials,CtaBanner,AboutSection,Footer,PropertyCard,PropertyDetail,types}.tsx`
 
-- No `Header.tsx`: remover a `border-b border-white/5` e adicionar uma sombra/gradiente inferior (`shadow-[0_20px_40px_-20px_rgba(0,0,0,0.9)]` + uma faixa absoluta com `bg-gradient-to-b from-black/80 to-transparent`).
-- No `Hero.tsx`: adicionar no topo da seção um overlay absoluto `from-[var(--bp-bg)]/90 via-[var(--bp-bg)]/40 to-transparent` (≈ 120px) que esfuma a borda superior contra o header, sem alterar o filtro escuro central.
-
-Resultado: o header parece "derreter" sobre a foto, sem linha visível.
-
-## Arquivos alterados
-
-- `src/components/broker-portal/templates/template1/Template1.tsx` — refazer card "Sobre nós".
-- `src/components/broker-portal/templates/template1/Footer.tsx` — remover faixa duplicada de `about_image_url`/`about_text`; usar `menu_items`.
-- `src/components/broker-portal/templates/template1/Header.tsx` — usar `menu_items`, esfumaçar borda inferior.
-- `src/components/broker-portal/templates/template1/Hero.tsx` — gradiente superior esfumaçado.
-- `src/components/admin/BrokerPortalsManagement.tsx` — editor de `menu_items` (visível + destino + URL) na aba Avançado; default migra `menu_labels` para `menu_items` ao abrir.
-
-Nenhuma mudança no banco de dados (tudo dentro do JSON `branding`).
+**Editados**:
+- `src/components/broker-portal/templates/Template2.tsx` (passa a importar o novo Template2)
+- `src/components/broker-portal/BrokerPortalRenderer.tsx`
+- `src/lib/portalTemplatesCatalog.ts`
+- `src/lib/portalTemplateDemo.ts` (paleta + demos por template)
+- `src/components/admin/BrokerPortalsManagement.tsx` (campos `testimonials[]`, `cta_banner_url`, `cta_banner_text`)
