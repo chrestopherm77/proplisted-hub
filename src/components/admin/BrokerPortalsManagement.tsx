@@ -159,6 +159,31 @@ export function BrokerPortalsManagement() {
   const updateSeo = (k: string, v: string) =>
     setEditing((e) => e && { ...e, seo: { ...(e.seo ?? {}), [k]: v } });
 
+  const getMenuItems = (): Array<{ id: string; label: string; visible: boolean; mode: 'section' | 'url'; target: string }> => {
+    const b = editing?.branding ?? {};
+    if (Array.isArray(b.menu_items) && b.menu_items.length) {
+      return b.menu_items.map((it: any, i: number) => ({
+        id: it.id ?? `item-${i}`,
+        label: it.label ?? '',
+        visible: it.visible !== false,
+        mode: it.mode === 'url' ? 'url' : 'section',
+        target: it.target ?? it.id ?? 'home',
+      }));
+    }
+    const labels = b.menu_labels ?? {};
+    const def: Record<string,string> = { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' };
+    return ['home','sobre','contato','financie','negociar'].map((id) => ({
+      id, label: labels[id] || def[id], visible: true, mode: 'section', target: id,
+    }));
+  };
+  const setMenuItems = (items: any[]) =>
+    setEditing((e) => e && { ...e, branding: { ...(e.branding ?? {}), menu_items: items } });
+  const updateMenuItem = (idx: number, patch: Record<string, any>) => {
+    const items = getMenuItems();
+    items[idx] = { ...items[idx], ...patch };
+    setMenuItems(items);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
