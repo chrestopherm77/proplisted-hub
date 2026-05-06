@@ -1,20 +1,14 @@
 import { Instagram, Facebook, Youtube, Heart, Phone, Mail, Copy } from 'lucide-react';
 import { BrokerPortal } from '@/hooks/useBrokerPortal';
 import { toast } from 'sonner';
+import { resolveMenuItems } from './menuItems';
 
 export function Header({ portal, onNav, currentSection }: { portal: BrokerPortal; onNav: (s: string) => void; currentSection: string }) {
   const b = portal.branding ?? {};
-  const labels = b.menu_labels ?? {};
-  const items = [
-    { id: 'home', label: labels.home || 'Início' },
-    { id: 'sobre', label: labels.sobre || 'Sobre' },
-    { id: 'contato', label: labels.contato || 'Contato' },
-    { id: 'financie', label: labels.financie || 'Financie' },
-    { id: 'negociar', label: labels.negociar || 'Negocie seu Imóvel' },
-  ];
+  const items = resolveMenuItems(b).filter((m) => m.visible);
   const copyEmail = () => { if (b.email) { navigator.clipboard.writeText(b.email); toast.success('E-mail copiado'); } };
   return (
-    <header className="bg-[var(--bp-bg)] text-[var(--bp-fg)] border-b border-white/5">
+    <header className="relative z-30 bg-[var(--bp-bg)] text-[var(--bp-fg)]">
       <div className="bg-black/30 text-xs">
         <div className="container mx-auto px-4 py-2 flex items-center justify-end gap-4 flex-wrap">
           {b.whatsapp && (
@@ -39,20 +33,23 @@ export function Header({ portal, onNav, currentSection }: { portal: BrokerPortal
           {b.logo_url ? <img src={b.logo_url} alt="logo" className="h-10" /> : <span className="font-bold text-lg">{portal.seo?.title ?? 'Portal de Imóveis'}</span>}
         </div>
         <nav className="flex items-center gap-1 flex-wrap">
-          {items.map((it) => (
-            <button
-              key={it.id}
-              onClick={() => onNav(it.id)}
-              className={`px-3 py-2 text-sm uppercase tracking-wider transition-colors ${currentSection === it.id ? 'bg-[var(--bp-accent)] text-black font-semibold' : 'hover:text-[var(--bp-accent)]'}`}
-            >
-              {it.label}
-            </button>
-          ))}
+          {items.map((it) => {
+            const active = it.mode === 'section' && currentSection === it.target;
+            const cls = `px-3 py-2 text-sm uppercase tracking-wider transition-colors ${active ? 'bg-[var(--bp-accent)] text-black font-semibold' : 'hover:text-[var(--bp-accent)]'}`;
+            if (it.mode === 'url') {
+              return <a key={it.id} href={it.target} target="_blank" rel="noreferrer" className={cls}>{it.label}</a>;
+            }
+            return (
+              <button key={it.id} onClick={() => onNav(it.target)} className={cls}>{it.label}</button>
+            );
+          })}
         </nav>
         <button onClick={() => onNav('favoritos')} className="flex items-center gap-1 text-sm uppercase tracking-wider hover:text-[var(--bp-accent)]">
           <Heart className="h-4 w-4 text-red-500" /> Imóveis Favoritos
         </button>
       </div>
+      {/* Esfumaçado abaixo do header, sobrepondo o hero */}
+      <div className="pointer-events-none absolute left-0 right-0 top-full h-24 bg-gradient-to-b from-[var(--bp-bg)] via-[var(--bp-bg)]/60 to-transparent" />
     </header>
   );
 }
