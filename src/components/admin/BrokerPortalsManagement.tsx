@@ -403,9 +403,10 @@ export function BrokerPortalsManagement() {
               {/* MARCA */}
               <TabsContent value="marca" className="space-y-4">
                 <ImageUploadField label="Logo" value={editing.branding?.logo_url ?? ''} onChange={(v) => updateBranding('logo_url', v)} folder="portals/logos" />
-                <div className="grid md:grid-cols-3 gap-3">
+                <div className="grid md:grid-cols-4 gap-3">
                   <div><Label>Cor primária (header/footer)</Label><Input type="color" value={editing.branding?.primary_color ?? '#1c1c1c'} onChange={(e) => updateBranding('primary_color', e.target.value)} /></div>
                   <div><Label>Cor de destaque (botões)</Label><Input type="color" value={editing.branding?.accent_color ?? '#c9a44c'} onChange={(e) => updateBranding('accent_color', e.target.value)} /></div>
+                  <div><Label>Cor de preço/CTA forte</Label><Input type="color" value={editing.branding?.accent_color_strong ?? '#b91c1c'} onChange={(e) => updateBranding('accent_color_strong', e.target.value)} /></div>
                   <div><Label>Cor de fundo</Label><Input type="color" value={editing.branding?.bg_color ?? '#1c1c1c'} onChange={(e) => updateBranding('bg_color', e.target.value)} /></div>
                 </div>
               </TabsContent>
