@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, ExternalLink, Copy, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, Copy, Loader2, Eye } from 'lucide-react';
+import { PORTAL_TEMPLATES, getTemplateName } from '@/lib/portalTemplatesCatalog';
 
 type Portal = {
   id: string;
@@ -128,7 +129,7 @@ export function BrokerPortalsManagement() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-2xl font-bold">Portais de Imóveis</h2>
           <p className="text-sm text-muted-foreground">Sites individuais para corretores. Apenas admin ativa/desativa.</p>
@@ -137,6 +138,41 @@ export function BrokerPortalsManagement() {
           <Plus className="h-4 w-4" /> Novo portal
         </Button>
       </div>
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Modelos disponíveis</h3>
+          <span className="text-xs text-muted-foreground">Visualize e compartilhe um exemplo do modelo</span>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {PORTAL_TEMPLATES.map((t) => {
+            const previewUrl = `${window.location.origin}/portal-modelo/${t.id}`;
+            return (
+              <div key={t.id} className="border rounded-md p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">{t.name}</h4>
+                  <Badge variant={t.available ? 'default' : 'secondary'}>{t.available ? 'Disponível' : 'Em breve'}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground flex-1">{t.description}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" disabled={!t.available} asChild={t.available}>
+                    {t.available ? (
+                      <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-3.5 w-3.5" /> Ver modelo
+                      </a>
+                    ) : (
+                      <span><Eye className="h-3.5 w-3.5" /> Ver modelo</span>
+                    )}
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={!t.available} onClick={() => { navigator.clipboard.writeText(previewUrl); toast.success('Link copiado para enviar'); }}>
+                    <Copy className="h-3.5 w-3.5" /> Copiar link
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       {loading ? (
         <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -149,7 +185,7 @@ export function BrokerPortalsManagement() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold">/{p.slug}</h3>
-                  <Badge variant="outline">Template {p.template_id}</Badge>
+                  <Badge variant="outline">{getTemplateName(p.template_id)}</Badge>
                   <Badge variant={p.properties_source === 'OWN' ? 'secondary' : 'default'}>
                     {p.properties_source === 'OWN' ? 'Imóveis próprios' : `Cidade: ${p.city ?? '-'}`}
                   </Badge>
@@ -212,9 +248,9 @@ export function BrokerPortalsManagement() {
                   <Select value={String(editing.template_id ?? 1)} onValueChange={(v) => setEditing({ ...editing, template_id: Number(v) })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Template 1</SelectItem>
-                      <SelectItem value="2">Template 2</SelectItem>
-                      <SelectItem value="3">Template 3</SelectItem>
+                      {PORTAL_TEMPLATES.map((t) => (
+                        <SelectItem key={t.id} value={String(t.id)} disabled={!t.available}>{t.name}{!t.available ? ' (em breve)' : ''}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

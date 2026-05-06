@@ -49,6 +49,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import BrokerPortal from "./pages/BrokerPortal";
+import PortalTemplatePreview from "./pages/PortalTemplatePreview";
 import { BrokerDomainGate } from "./components/broker-portal/BrokerDomainGate";
 
 const queryClient = new QueryClient();
@@ -116,6 +117,7 @@ const App = () => {
           <Route path="/admin/broker-portals" element={<Admin section="broker-portals" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
+          <Route path="/portal-modelo/:id" element={<PortalTemplatePreview />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/lp" element={<LeadForm />} />
           <Route path="/lp-01" element={<LeadForm01 />} />
