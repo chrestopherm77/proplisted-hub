@@ -159,6 +159,31 @@ export function BrokerPortalsManagement() {
   const updateSeo = (k: string, v: string) =>
     setEditing((e) => e && { ...e, seo: { ...(e.seo ?? {}), [k]: v } });
 
+  const getMenuItems = (): Array<{ id: string; label: string; visible: boolean; mode: 'section' | 'url'; target: string }> => {
+    const b = editing?.branding ?? {};
+    if (Array.isArray(b.menu_items) && b.menu_items.length) {
+      return b.menu_items.map((it: any, i: number) => ({
+        id: it.id ?? `item-${i}`,
+        label: it.label ?? '',
+        visible: it.visible !== false,
+        mode: it.mode === 'url' ? 'url' : 'section',
+        target: it.target ?? it.id ?? 'home',
+      }));
+    }
+    const labels = b.menu_labels ?? {};
+    const def: Record<string,string> = { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' };
+    return ['home','sobre','contato','financie','negociar'].map((id) => ({
+      id, label: labels[id] || def[id], visible: true, mode: 'section', target: id,
+    }));
+  };
+  const setMenuItems = (items: any[]) =>
+    setEditing((e) => e && { ...e, branding: { ...(e.branding ?? {}), menu_items: items } });
+  const updateMenuItem = (idx: number, patch: Record<string, any>) => {
+    const items = getMenuItems();
+    items[idx] = { ...items[idx], ...patch };
+    setMenuItems(items);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -426,19 +451,48 @@ export function BrokerPortalsManagement() {
               {/* AVANÇADO */}
               <TabsContent value="avancado" className="space-y-4">
                 <div>
-                  <Label className="text-base font-semibold">Rótulos do menu</Label>
-                  <p className="text-xs text-muted-foreground mb-2">Personalize o nome de cada item no cabeçalho/rodapé.</p>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {[
-                      ['home','Início'],['sobre','Sobre'],['contato','Contato'],['financie','Financie'],['negociar','Negocie seu Imóvel']
-                    ].map(([k, def]) => (
-                      <div key={k}>
-                        <Label className="text-xs">{def}</Label>
-                        <Input
-                          value={editing.branding?.menu_labels?.[k] ?? ''}
-                          placeholder={def}
-                          onChange={(e) => updateMenuLabel(k, e.target.value)}
-                        />
+                  <Label className="text-base font-semibold">Itens do menu</Label>
+                  <p className="text-xs text-muted-foreground mb-3">Defina rótulo, se aparece no menu e para onde leva (seção da página ou link externo).</p>
+                  <div className="space-y-3">
+                    {getMenuItems().map((it, idx) => (
+                      <div key={it.id} className="border rounded-md p-3 space-y-2 bg-muted/30">
+                        <div className="grid md:grid-cols-12 gap-2 items-end">
+                          <div className="md:col-span-4">
+                            <Label className="text-xs">Rótulo</Label>
+                            <Input value={it.label} onChange={(e) => updateMenuItem(idx, { label: e.target.value })} />
+                          </div>
+                          <div className="md:col-span-3">
+                            <Label className="text-xs">Destino</Label>
+                            <Select value={it.mode} onValueChange={(v) => updateMenuItem(idx, { mode: v, target: v === 'section' ? (it.id || 'home') : '' })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="section">Seção da página</SelectItem>
+                                <SelectItem value="url">Link externo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-4">
+                            <Label className="text-xs">{it.mode === 'url' ? 'URL (https://...)' : 'Seção'}</Label>
+                            {it.mode === 'url' ? (
+                              <Input value={it.target} placeholder="https://..." onChange={(e) => updateMenuItem(idx, { target: e.target.value })} />
+                            ) : (
+                              <Select value={it.target} onValueChange={(v) => updateMenuItem(idx, { target: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="home">Início</SelectItem>
+                                  <SelectItem value="sobre">Sobre</SelectItem>
+                                  <SelectItem value="contato">Contato</SelectItem>
+                                  <SelectItem value="financie">Financie</SelectItem>
+                                  <SelectItem value="negociar">Negocie seu Imóvel</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                          <div className="md:col-span-1 flex items-center gap-2 pb-2">
+                            <Switch checked={it.visible} onCheckedChange={(v) => updateMenuItem(idx, { visible: v })} />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{it.visible ? 'Visível no menu' : 'Oculto do menu'}</p>
                       </div>
                     ))}
                   </div>

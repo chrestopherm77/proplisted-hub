@@ -1,23 +1,15 @@
 import { BrokerPortal } from '@/hooks/useBrokerPortal';
 import { Phone, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { resolveMenuItems } from './menuItems';
 
 export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: string) => void }) {
   const b = portal.branding ?? {};
   const copyEmail = () => { if (b.email) { navigator.clipboard.writeText(b.email); toast.success('E-mail copiado'); } };
   const year = new Date().getFullYear();
+  const menu = resolveMenuItems(b);
   return (
     <footer className="bg-[var(--bp-bg)] text-[var(--bp-fg)] mt-12">
-      {(b.about_image_url || b.about_text) && (
-        <div className="relative">
-          {b.about_image_url && <img src={b.about_image_url} alt="" className="w-full h-72 object-cover" />}
-          {b.about_text && (
-            <div className="absolute inset-0 flex items-center justify-end p-8 bg-gradient-to-l from-black/60 to-transparent">
-              <p className="max-w-md text-white text-2xl font-light leading-snug">{b.about_text}</p>
-            </div>
-          )}
-        </div>
-      )}
       <div className="container mx-auto px-4 py-10 grid md:grid-cols-4 gap-8">
         <div>
           {b.logo_url && <img src={b.logo_url} alt="logo" className="h-16" />}
@@ -38,13 +30,15 @@ export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: str
         <div className="text-sm">
           <h4 className="font-semibold mb-3">Menu</h4>
           <ul className="space-y-2">
-            {(() => {
-              const lb = b.menu_labels ?? {};
-              const def: Record<string,string> = { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' };
-              return ['home','sobre','contato','financie','negociar'].map((id) => (
-                <li key={id}><button onClick={() => onNav(id)} className="hover:text-[var(--bp-accent)] underline-offset-2 underline">{lb[id] || def[id]}</button></li>
-              ));
-            })()}
+            {menu.filter((m) => m.visible).map((m) => (
+              <li key={m.id}>
+                {m.mode === 'url' ? (
+                  <a href={m.target} target="_blank" rel="noreferrer" className="hover:text-[var(--bp-accent)] underline underline-offset-2">{m.label}</a>
+                ) : (
+                  <button onClick={() => onNav(m.target)} className="hover:text-[var(--bp-accent)] underline underline-offset-2">{m.label}</button>
+                )}
+              </li>
+            ))}
           </ul>
         </div>
         <div className="text-sm">
