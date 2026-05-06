@@ -119,7 +119,7 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
               <p className="text-sm text-neutral-700">{[property.address, property.neighborhood, `${property.city}/${property.state}`].filter(Boolean).join(' - ')}</p>
               {property.latitude && property.longitude && (
                 <div className="mt-3 h-72 rounded overflow-hidden">
-                  <PropertyMap properties={[property]} height="100%" />
+                  <PropertyMap properties={[property]} />
                 </div>
               )}
             </div>
