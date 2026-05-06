@@ -25,7 +25,12 @@ export const EMPTY_FILTERS: FilterState = {
 
 export function applyFilters(items: any[], f: FilterState) {
   return items.filter((p) => {
-    if (f.operation && p.operation_type !== f.operation) return false;
+    if (f.operation) {
+      const op = p.operation_type;
+      if (f.operation === 'SALE' && op !== 'SALE' && op !== 'BOTH') return false;
+      if (f.operation === 'RENT' && op !== 'RENT' && op !== 'BOTH') return false;
+      if (f.operation === 'BOTH' && op !== 'BOTH') return false;
+    }
     if (f.propertyType && p.property_type !== f.propertyType) return false;
     if (f.city && (p.city || '').toLowerCase() !== f.city.toLowerCase()) return false;
     const price = Number(p.price_sale ?? p.price_rent ?? 0);
