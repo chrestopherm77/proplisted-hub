@@ -29,7 +29,7 @@ export function Hero({ portal, cities, types, onSearch }: { portal: BrokerPortal
     >
       {/* Esfumaçado superior — funde com o header */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--bp-bg)]/90 via-[var(--bp-bg)]/40 to-transparent z-10" />
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16 relative z-20">
         <div className="text-center mb-10">
           {b.logo_url && <img src={b.logo_url} alt="logo" className="h-32 md:h-44 mx-auto mb-4" />}
           {b.hero_title && <h1 className="text-2xl md:text-4xl font-light">{b.hero_title}</h1>}
