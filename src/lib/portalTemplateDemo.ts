@@ -101,7 +101,7 @@ export function buildDemoPortal(templateId: number): BrokerPortal {
     city: 'Ribeirão Preto',
     state: 'SP',
     branding,
-    seo: { title: isClassic ? 'Imobiliária Demo' : 'Preview', description: '', favicon_url: '' },
+    seo: { title: isBoutique ? 'Maison Vinhedo' : isClassic ? 'Imobiliária Demo' : 'Preview', description: '', favicon_url: '' },
   };
 }
 
