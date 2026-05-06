@@ -39,7 +39,7 @@ const emptyForm = (): Partial<Portal> => ({
   properties_source: 'OWN',
   city: '',
   state: '',
-  branding: { logo_url: '', about: '', whatsapp: '', phone: '', email: '', instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '', address: '', primary_color: '#2563eb' },
+  branding: { logo_url: '', about: '', whatsapp: '', phone: '', email: '', instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '', address: '', primary_color: '#1c1c1c', accent_color: '#c9a44c', bg_color: '#1c1c1c', hero_bg_url: '', hero_title: '', hero_subtitle: '', cnpj: '', creci: '', about_image_url: '', about_text: '', footer_text: '' },
   seo: { title: '', description: '', favicon_url: '' },
 });
 
@@ -254,7 +254,15 @@ export function BrokerPortalsManagement() {
                 <h4 className="font-semibold mb-2">Marca / Branding</h4>
                 <div className="grid md:grid-cols-2 gap-3">
                   <div><Label>Logo URL</Label><Input value={editing.branding?.logo_url ?? ''} onChange={(e) => updateBranding('logo_url', e.target.value)} /></div>
-                  <div><Label>Cor primária</Label><Input value={editing.branding?.primary_color ?? ''} onChange={(e) => updateBranding('primary_color', e.target.value)} /></div>
+                  <div><Label>Cor primária (header/footer)</Label><Input type="color" value={editing.branding?.primary_color ?? '#1c1c1c'} onChange={(e) => updateBranding('primary_color', e.target.value)} /></div>
+                  <div><Label>Cor de destaque (botões)</Label><Input type="color" value={editing.branding?.accent_color ?? '#c9a44c'} onChange={(e) => updateBranding('accent_color', e.target.value)} /></div>
+                  <div className="md:col-span-2"><Label>Imagem de fundo do hero (URL)</Label><Input value={editing.branding?.hero_bg_url ?? ''} onChange={(e) => updateBranding('hero_bg_url', e.target.value)} /></div>
+                  <div><Label>Título do hero</Label><Input value={editing.branding?.hero_title ?? ''} onChange={(e) => updateBranding('hero_title', e.target.value)} /></div>
+                  <div><Label>Subtítulo do hero</Label><Input value={editing.branding?.hero_subtitle ?? ''} onChange={(e) => updateBranding('hero_subtitle', e.target.value)} /></div>
+                  <div><Label>CNPJ</Label><Input value={editing.branding?.cnpj ?? ''} onChange={(e) => updateBranding('cnpj', e.target.value)} /></div>
+                  <div><Label>CRECI</Label><Input value={editing.branding?.creci ?? ''} onChange={(e) => updateBranding('creci', e.target.value)} /></div>
+                  <div className="md:col-span-2"><Label>Imagem da seção "Sobre" (URL)</Label><Input value={editing.branding?.about_image_url ?? ''} onChange={(e) => updateBranding('about_image_url', e.target.value)} /></div>
+                  <div className="md:col-span-2"><Label>Texto da seção "Sobre"</Label><Textarea rows={3} value={editing.branding?.about_text ?? ''} onChange={(e) => updateBranding('about_text', e.target.value)} /></div>
                   <div><Label>WhatsApp</Label><Input value={editing.branding?.whatsapp ?? ''} onChange={(e) => updateBranding('whatsapp', e.target.value)} /></div>
                   <div><Label>Telefone</Label><Input value={editing.branding?.phone ?? ''} onChange={(e) => updateBranding('phone', e.target.value)} /></div>
                   <div><Label>Email</Label><Input value={editing.branding?.email ?? ''} onChange={(e) => updateBranding('email', e.target.value)} /></div>
