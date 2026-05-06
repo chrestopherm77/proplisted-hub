@@ -65,14 +65,15 @@ export function Hero({ portal, cities, types, onSearch }: { portal: BrokerPortal
               <Field label="Negócio">
                 <select className="w-full border rounded px-2 py-2 text-sm" value={f.operation} onChange={(e) => set('operation', e.target.value)}>
                   <option value="">Selecione</option>
-                  <option value="VENDA">Venda</option>
-                  <option value="ALUGUEL">Aluguel</option>
+                  <option value="SALE">Venda</option>
+                  <option value="RENT">Aluguel</option>
+                  <option value="BOTH">Venda e Aluguel</option>
                 </select>
               </Field>
               <Field label="Tipo do Imóvel">
                 <select className="w-full border rounded px-2 py-2 text-sm" value={f.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
                   <option value="">Selecione</option>
-                  {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {types.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
                 </select>
               </Field>
               <Field label="Valor mínimo">
