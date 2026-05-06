@@ -4,12 +4,13 @@ import { toast } from 'sonner';
 
 export function Header({ portal, onNav, currentSection }: { portal: BrokerPortal; onNav: (s: string) => void; currentSection: string }) {
   const b = portal.branding ?? {};
+  const labels = b.menu_labels ?? {};
   const items = [
-    { id: 'home', label: 'Início' },
-    { id: 'sobre', label: 'Sobre' },
-    { id: 'contato', label: 'Contato' },
-    { id: 'financie', label: 'Financie' },
-    { id: 'negociar', label: 'Negocie seu Imóvel' },
+    { id: 'home', label: labels.home || 'Início' },
+    { id: 'sobre', label: labels.sobre || 'Sobre' },
+    { id: 'contato', label: labels.contato || 'Contato' },
+    { id: 'financie', label: labels.financie || 'Financie' },
+    { id: 'negociar', label: labels.negociar || 'Negocie seu Imóvel' },
   ];
   const copyEmail = () => { if (b.email) { navigator.clipboard.writeText(b.email); toast.success('E-mail copiado'); } };
   return (
