@@ -39,7 +39,7 @@ const emptyForm = (): Partial<Portal> => ({
   properties_source: 'OWN',
   city: '',
   state: '',
-  branding: { logo_url: '', about: '', whatsapp: '', phone: '', email: '', instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '', address: '', primary_color: '#2563eb' },
+  branding: { logo_url: '', about: '', whatsapp: '', phone: '', email: '', instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '', address: '', primary_color: '#1c1c1c', accent_color: '#c9a44c', bg_color: '#1c1c1c', hero_bg_url: '', hero_title: '', hero_subtitle: '', cnpj: '', creci: '', about_image_url: '', about_text: '', footer_text: '' },
   seo: { title: '', description: '', favicon_url: '' },
 });
 
