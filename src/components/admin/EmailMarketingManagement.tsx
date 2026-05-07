@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Send, Users, Mail } from 'lucide-react';
+import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
+
+const CONECTAE_LOGO_URL = 'https://hmcpfedcvkurttyolurv.supabase.co/storage/v1/object/public/landing-pages/email-assets/conectae-logo.png';
 
 interface ProfileRow { id: string; name: string | null; email: string | null; }
 
