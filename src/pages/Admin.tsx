@@ -23,6 +23,7 @@ import { SignupProgressManagement } from '@/components/admin/SignupProgressManag
 import { UserActivityLog } from '@/components/admin/UserActivityLog';
 import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
 import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagement';
+import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
 
 type Section =
   | 'dashboard'
