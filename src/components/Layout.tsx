@@ -72,7 +72,8 @@ export const Layout = ({ children }: LayoutProps) => {
               <MobileMenu isAdmin={isAdmin ?? false} isConstrutora={isConstrutora} onSignOut={handleSignOut} />
               <SidebarTrigger className="hidden md:flex" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <FaqButton />
               <UserAvatarMenu />
             </div>
           </header>
