@@ -38,6 +38,8 @@ function bodyToHtml(text: string) {
     .join('');
 }
 
+const CONECTAE_LOGO_URL = 'https://hmcpfedcvkurttyolurv.supabase.co/storage/v1/object/public/landing-pages/email-assets/conectae-logo.png';
+
 const buildHtml = (subject: string, body: string, imageUrl?: string) => `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background-color:#f4f4f5;padding:40px 20px;margin:0;">
@@ -49,6 +51,9 @@ const buildHtml = (subject: string, body: string, imageUrl?: string) => `<!DOCTY
     <div style="padding:32px;">
       ${bodyToHtml(body)}
       <p style="color:#71717a;font-size:13px;margin:24px 0 0;">Equipe Conectae</p>
+    </div>
+    <div style="padding:24px 32px 32px;border-top:1px solid #e4e4e7;text-align:center;background:#fafafa;">
+      <img src="${CONECTAE_LOGO_URL}" alt="Conectae" style="height:48px;width:auto;display:inline-block;"/>
     </div>
   </div>
   <p style="color:#a1a1aa;font-size:12px;text-align:center;margin-top:24px;">© ${new Date().getFullYear()} Conectae. Todos os direitos reservados.</p>
