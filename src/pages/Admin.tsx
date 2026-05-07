@@ -24,6 +24,7 @@ import { UserActivityLog } from '@/components/admin/UserActivityLog';
 import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
 import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagement';
 import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
+import { FaqManagement } from '@/components/admin/FaqManagement';
 
 type Section =
   | 'dashboard'
