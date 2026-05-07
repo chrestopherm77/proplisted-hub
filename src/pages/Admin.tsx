@@ -23,6 +23,7 @@ import { SignupProgressManagement } from '@/components/admin/SignupProgressManag
 import { UserActivityLog } from '@/components/admin/UserActivityLog';
 import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
 import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagement';
+import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
 
 type Section =
   | 'dashboard'
@@ -48,7 +49,8 @@ type Section =
   | 'signup-progress'
   | 'user-activity'
   | 'affiliates'
-  | 'broker-portals';
+  | 'broker-portals'
+  | 'email-marketing';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -75,6 +77,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'user-activity': UserActivityLog,
   affiliates: AffiliatesManagement,
   'broker-portals': BrokerPortalsManagement,
+  'email-marketing': EmailMarketingManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
