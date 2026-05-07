@@ -137,6 +137,10 @@ export function EmailMarketingManagement() {
         <div style="padding:20px;border-bottom:1px solid #e4e4e7;text-align:center;"><strong style="color:#18181b;font-size:18px;">Conectae</strong></div>
         ${imageUrl ? `<img src="${esc(imageUrl)}" style="display:block;width:100%;height:auto;"/>` : ''}
         <div style="padding:24px;">${body || '<p style="color:#a1a1aa;">Pré-visualização da mensagem...</p>'}</div>
+        <div style="padding:20px 24px 28px;border-top:1px solid #e4e4e7;text-align:center;background:#fafafa;">
+          <img src="${CONECTAE_LOGO_URL}" alt="Conectae" style="height:40px;width:auto;display:inline-block;"/>
+          <p style="color:#a1a1aa;font-size:12px;margin:12px 0 0;">© ${new Date().getFullYear()} Conectae. Todos os direitos reservados.</p>
+        </div>
       </div>
     </div>`;
   }, [bodyText, imageUrl]);
