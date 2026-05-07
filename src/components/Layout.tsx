@@ -40,9 +40,12 @@ export const Layout = ({ children }: LayoutProps) => {
                   <BrandLogo size="md" />
                 )}
               </Link>
-              <Link to="/auth">
-                <Button size="sm" className="text-sm">Entrar</Button>
-              </Link>
+              <div className="flex items-center gap-1">
+                <FaqButton />
+                <Link to="/auth">
+                  <Button size="sm" className="text-sm">Entrar</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </header>
