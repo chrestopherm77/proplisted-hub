@@ -80,6 +80,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   affiliates: AffiliatesManagement,
   'broker-portals': BrokerPortalsManagement,
   'email-marketing': EmailMarketingManagement,
+  faq: FaqManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
