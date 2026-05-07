@@ -74,6 +74,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Portais de Imóveis', url: '/admin/broker-portals', icon: Building2, group: 'Portais' },
 
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
+  { title: 'Email Marketing', url: '/admin/email-marketing', icon: Mail, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
   { title: 'Link Público', url: '/admin/public-videos', icon: Video, group: 'Conteúdo' },
