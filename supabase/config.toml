@@ -42,6 +42,9 @@ verify_jwt = false
 [functions.send-promo-blast]
 verify_jwt = false
 
+[functions.send-marketing-blast]
+verify_jwt = true
+
 [functions.send-financing-whatsapp]
 verify_jwt = false
 
