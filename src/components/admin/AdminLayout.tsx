@@ -41,6 +41,7 @@ import {
   UserPlus,
   Building2,
   Mail,
+  HelpCircle,
 } from 'lucide-react';
 
 interface AdminNavItem {
