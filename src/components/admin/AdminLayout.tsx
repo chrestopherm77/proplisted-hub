@@ -40,6 +40,7 @@ import {
   ListChecks,
   UserPlus,
   Building2,
+  Mail,
 } from 'lucide-react';
 
 interface AdminNavItem {
