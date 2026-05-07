@@ -1,78 +1,81 @@
+## Objetivo
 
-# Modelo 3 — "Maison Boutique"
+Criar no painel Admin uma nova aba **Email Marketing** que permita:
+- Compor assunto, texto (rich/HTML) e imagem do email
+- Escolher destinatários: todos os usuários cadastrados, seleção individual via lista, ou emails manuais
+- Disparar via Resend com delay configurável entre **15 e 20 segundos** entre cada envio
+- Acompanhar progresso e relatório (enviados / falhados)
 
-Baseado nas imagens enviadas (estilo Maison Vinhedo): identidade boutique com fundo bege/creme claro, logo centralizado no topo, menu abaixo do logo com item ativo em verde-oliva/marrom, hero com imagem grande, faixa de busca em verde-oliva sobreposta, e duas grades separadas — **Venda** e **Locação**.
+## Mudanças
 
-Mantém a mesma lógica dos modelos 1 e 2: usa o `branding` existente, o editor admin atual e o sistema de menu/filtros já consolidados. Toda a configuração (logo, cores, contatos, menu, fonte de imóveis OWN/CITY, depoimentos, banner CTA) continua funcionando sem novas tabelas no banco.
+### 1. Nova edge function `send-marketing-blast`
+Baseada em `send-promo-blast` (mesmos padrões: CORS estrito, validação JWT + `MASTER_ADMIN`, Resend SDK).
 
-## O que será construído
+Aceita no body:
+- `subject` (string)
+- `bodyHtml` (string — texto do email, com parágrafos)
+- `imageUrl` (string opcional — exibida no topo)
+- `recipients` (array de `{ email, name? }`)
+- `delaySeconds` (number, clamp entre 15 e 20)
 
-1. **Nova pasta** `src/components/broker-portal/templates/template3/`:
-   - `Template3.tsx` — orquestrador (substitui o stub atual que renderiza Template1)
-   - `Header.tsx` — fundo bege/creme, **logo grande centralizado** no topo, telefone+WhatsApp à esquerda, ícones sociais à direita, menu horizontal centralizado abaixo do logo (item ativo com fundo verde-oliva/marrom)
-   - `Hero.tsx` — imagem grande full-width (`hero_bg_url`) com **faixa de busca verde-oliva** sobreposta no rodapé do hero (Negócio, Tipo, Valor mín/máx, Cidade, Bairros, Condomínios, Pesquisar) + alternância "Referência"
-   - `FeaturedSale.tsx` — seção "Imóveis em destaque - Venda" (grade 4 colunas, cards estilo Maison: tag "Pronto para morar" verde-oliva, info bairro/cidade, ícones suítes/garagens/área, **preço em verde-oliva**, paginação simples)
-   - `FeaturedRent.tsx` — seção "Imóveis em destaque - Locação" (mesma estrutura, filtra `operation_type RENT/BOTH`)
-   - `BuildOrBuySection.tsx` — bloco "Comprar casa pronta ou construir" (3 cartões grandes com imagem e CTA opcional — usa `branding.build_or_buy[]` quando preenchido; fallback com 3 placeholders demo)
-   - `AboutSection.tsx` — Sobre nós (mesmas chaves `about_text` / `about_image_url`, layout boutique 2 colunas)
-   - `Testimonials.tsx` — reaproveita o do template2 (carrossel) quando `branding.testimonials[]` existir
-   - `CtaBanner.tsx` — banner "Encontre seu imóvel ideal" com imagem (usa `cta_banner_url` / `cta_banner_text`)
-   - `Footer.tsx` — banner de imagem acima + rodapé verde-oliva com 4 colunas (logo+copyright | endereço+contato+corretor/CRECI | menu | social), reusando `resolveMenuItems`
-   - `PropertyCard.tsx` — visual Maison (tag verde, preço verde-oliva)
-   - `types.ts` — re-exporta `FilterState`/`applyFilters` do template1
+Comportamento:
+- Renderiza HTML usando template padrão Conectae (header com logo, imagem opcional, corpo, assinatura)
+- Loop com `await delay(delaySeconds * 1000)` entre envios
+- Retorna `{ total, sent, failed, errors }`
+- Registra log por envio (console)
 
-2. **Reaproveitamento total da edição existente**:
-   - Mesmo `branding` em `broker_portals` — **nada novo no banco**.
-   - Editor admin (`BrokerPortalsManagement.tsx`) já cobre tudo: logo, cores, hero, sobre, contatos, menu, fonte de imóveis, depoimentos, CTA banner.
-   - Adicionar opcionalmente no editor a seção **"Comprar ou Construir"** (até 3 itens: imagem + título + descrição + link), gravada em `branding.build_or_buy[]`. Modelos 1 e 2 ignoram.
+Configurada com `verify_jwt = true` em `supabase/config.toml`.
 
-3. **Catálogo e roteamento**:
-   - `portalTemplatesCatalog.ts`: Modelo 3 passa a `available: true` com nome **"Maison Boutique"**.
-   - `Template3.tsx` raiz: passa a re-exportar o novo `template3/Template3` (hoje aponta para Template1).
-   - `BrokerPortalRenderer.tsx` já roteia `case 3` corretamente.
-   - `buildDemoPortal(3)` em `portalTemplateDemo.ts`: paleta clara (`bg #f1ede4` bege, `accent #5a6b3f` verde-oliva, `accent_strong #8b6f3f` marrom-bronze) + 3 itens demo de "comprar ou construir" + depoimentos + CTA banner para a pré-visualização ficar fiel.
+### 2. Novo componente `src/components/admin/EmailMarketingManagement.tsx`
 
-4. **Filtros e busca**: idênticos aos modelos 1/2 — `applyFilters` e `fetchPortalProperties` (OWN/CITY) reaproveitados.
+Layout em duas colunas (responsivo):
 
-5. **Menu configurável**: novo `Header`/`Footer` usam `resolveMenuItems(branding)`, então o editor de menu do admin continua valendo (mostrar/ocultar, modo seção ou URL externa).
+**Coluna esquerda — Composição:**
+- Input "Assunto"
+- Input URL da imagem (com upload opcional para storage `creatives` ou similar já existente — verificar; se não, apenas URL)
+- Textarea grande "Mensagem" (suporta quebras de linha; convertidas para `<p>` no HTML)
+- Slider/Input "Delay entre envios (segundos)" — min 15, max 20, default 17
+- Preview ao vivo do email renderizado (iframe ou div com HTML)
 
-## Layout de referência
+**Coluna direita — Destinatários:**
+- Tabs: "Usuários cadastrados" | "Emails manuais"
+- Aba Usuários:
+  - Busca por nome/email
+  - Botão "Selecionar todos" / "Limpar"
+  - Lista com checkbox carregada de `profiles` (id, name, email, is_active=true)
+  - Contador de selecionados
+- Aba Manuais:
+  - Textarea para colar emails (um por linha ou separados por vírgula)
+  - Validação de formato
+- Resumo total de destinatários únicos (dedupe por email)
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ (11) 99809-7952 ☎       [LOGO CENTRAL]            [IG][FB]   │  ← Header bege
-│            Início  Sobre  Contato  Financie  Negocie  ♥      │
-├──────────────────────────────────────────────────────────────┤
-│  Hero c/ imagem grande full-width                            │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │ [faixa verde-oliva] Negócio | Tipo | Vmín | Vmáx |…  │    │
-│  └──────────────────────────────────────────────────────┘    │
-├──────────────────────────────────────────────────────────────┤
-│        Imóveis em destaque - VENDA  (grade 4 col)            │
-├──────────────────────────────────────────────────────────────┤
-│        Imóveis em destaque - LOCAÇÃO (grade 4 col)           │
-├──────────────────────────────────────────────────────────────┤
-│        Comprar casa pronta ou construir (3 cards)            │
-├──────────────────────────────────────────────────────────────┤
-│        Sobre nós | Depoimentos | CTA banner                  │
-├──────────────────────────────────────────────────────────────┤
-│  Banner imagem                                                │
-│  Footer verde-oliva: Logo | Endereço/Contato | Menu | Social │
-└──────────────────────────────────────────────────────────────┘
-```
+**Rodapé:**
+- Botão "Disparar emails" com confirmação (AlertDialog mostrando total, delay e tempo estimado)
+- Durante envio: barra de progresso (chamada única à function, então mostramos estado "enviando..." e resultado final). *Observação: como a function é uma única chamada bloqueante, o progresso real granular não é exposto — mostramos spinner com tempo estimado e o relatório ao final.*
 
-## Observações técnicas
+### 3. Integração no Admin
 
-- Modelos 1 e 2 não são alterados.
-- Sem mudanças no schema do Supabase, RLS ou edge functions.
-- Pré-visualização disponível em `/portal-templates/preview/3` (rota já existe).
+- `src/pages/Admin.tsx`: adicionar section `email-marketing` mapeando para `EmailMarketingManagement`
+- `src/components/admin/AdminLayout.tsx`: novo item de navegação no grupo **Conteúdo** com ícone `Mail`, rota `/admin/email-marketing`
+- `src/App.tsx`: adicionar rota correspondente (seguindo padrão das outras seções admin)
+
+### 4. Detalhes técnicos
+
+- Uso do cliente Supabase já existente para listar `profiles`
+- Dedupe de emails (case-insensitive) antes de enviar
+- Limite de tempo: como o disparo pode demorar (ex: 100 emails × 20s = 33min), avisar usuário no dialog de confirmação. Edge functions Supabase têm limite de execução; recomendar lotes ≤ 50 destinatários por disparo (validação no UI com aviso quando excede)
+- Resend já configurado (`RESEND_API_KEY` secret existente, usado em `send-promo-blast`)
+- Remetente: `Conectae <noreply@conectaeimob.com.br>` (mesmo de `send-promo-blast`)
 
 ## Arquivos
 
-**Novos**: `src/components/broker-portal/templates/template3/{Template3,Header,Hero,FeaturedSale,FeaturedRent,BuildOrBuySection,AboutSection,Testimonials,CtaBanner,Footer,PropertyCard,types}.tsx`
+**Criar:**
+- `supabase/functions/send-marketing-blast/index.ts`
+- `supabase/functions/send-marketing-blast/deno.json` (com `resend`)
+- `src/components/admin/EmailMarketingManagement.tsx`
 
-**Editados**:
-- `src/components/broker-portal/templates/Template3.tsx` (passa a importar o novo Template3)
-- `src/lib/portalTemplatesCatalog.ts` (Modelo 3 disponível, nome "Maison Boutique")
-- `src/lib/portalTemplateDemo.ts` (paleta bege + verde-oliva + demos `build_or_buy`)
-- `src/components/admin/BrokerPortalsManagement.tsx` (editor opcional para `branding.build_or_buy[]`)
+**Editar:**
+- `supabase/config.toml` (adicionar `[functions.send-marketing-blast]`)
+- `src/pages/Admin.tsx`
+- `src/components/admin/AdminLayout.tsx`
+- `src/App.tsx`
