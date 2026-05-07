@@ -1,81 +1,71 @@
-## Objetivo
+## Botão de FAQ no header
 
-Criar no painel Admin uma nova aba **Email Marketing** que permita:
-- Compor assunto, texto (rich/HTML) e imagem do email
-- Escolher destinatários: todos os usuários cadastrados, seleção individual via lista, ou emails manuais
-- Disparar via Resend com delay configurável entre **15 e 20 segundos** entre cada envio
-- Acompanhar progresso e relatório (enviados / falhados)
+Adicionar um botão circular com ícone de interrogação (`HelpCircle`) ao lado do `UserAvatarMenu` no header — visível em desktop e mobile. Ao clicar, abre um painel lateral (Sheet) com um FAQ completo organizado por categorias.
 
-## Mudanças
+### Componente novo: `src/components/FaqButton.tsx`
 
-### 1. Nova edge function `send-marketing-blast`
-Baseada em `send-promo-blast` (mesmos padrões: CORS estrito, validação JWT + `MASTER_ADMIN`, Resend SDK).
+- Botão `ghost` redondo com ícone `HelpCircle` (lucide-react), `aria-label="Perguntas frequentes"`.
+- Abre um `Sheet` (lado direito no desktop, full-width no mobile, largura ~480px).
+- Cabeçalho do sheet: título "Central de Ajuda" + subtítulo.
+- Campo de busca no topo (filtra perguntas/respostas em tempo real, case-insensitive).
+- Conteúdo: `Accordion` (shadcn) agrupado por categoria, com badge de categoria.
+- Rodapé do sheet: link rápido "Falar com suporte" que dispara o `SupportChatWidget` existente (via evento custom `open-support-chat`) ou redireciona para `/suporte` se a rota existir.
 
-Aceita no body:
-- `subject` (string)
-- `bodyHtml` (string — texto do email, com parágrafos)
-- `imageUrl` (string opcional — exibida no topo)
-- `recipients` (array de `{ email, name? }`)
-- `delaySeconds` (number, clamp entre 15 e 20)
+### Conteúdo do FAQ (categorias e perguntas)
 
-Comportamento:
-- Renderiza HTML usando template padrão Conectae (header com logo, imagem opcional, corpo, assinatura)
-- Loop com `await delay(delaySeconds * 1000)` entre envios
-- Retorna `{ total, sent, failed, errors }`
-- Registra log por envio (console)
+1. **Conta e cadastro**
+  - Como criar minha conta?
+  - Posso ter mais de uma conta com o mesmo telefone? (limite de 1)
+  - Como verificar meu CRECI/CAU/CREA?
+  - Esqueci minha senha, como redefinir?
+  - Como atualizar meus dados de perfil?
+2. **Leads e marketplace**
+  - O que é o Marketplace de Leads?
+  - Como compro um lead?
+  - Quantos parceiros podem comprar o mesmo lead? (até 5)
+  - Por que alguns dados do lead ficam ocultos antes da compra?
+  - Como funciona o reembolso/contestação de leads?
+  - O que significa "lead esgotado"?
+3. **Pagamentos e créditos**
+  - Quais formas de pagamento são aceitas?
+  - Como funcionam os créditos da plataforma?
+  - Onde vejo minhas faturas e recibos?
+4. **Lançamentos e parcerias**
+  - Como cadastro um lançamento?
+  - Como funciona o "Balcão de Parcerias"?
+  - Posso indicar parceiros para um lançamento?
+5. **Portal do corretor (White Label)**
+  - O que é o Portal do Corretor?
+  - Posso usar meus imoveis no portal ?
+  - Posso anunciar imoveis de outros corretores ?
+6. **Integrações**
+  - Como funcionam as notificações por email?
+  - Posso integrar com meu CRM?
+7. **Suporte e segurança**
+  - Como falo com o suporte?
+  - Meus dados estão seguros?
+  - Como excluir minha conta?
 
-Configurada com `verify_jwt = true` em `supabase/config.toml`.
+Cada pergunta terá resposta de 2-5 linhas em português, tom claro e direto.
 
-### 2. Novo componente `src/components/admin/EmailMarketingManagement.tsx`
+### Integração no Layout
 
-Layout em duas colunas (responsivo):
+Em `src/components/Layout.tsx`, dentro do header (linha 71-73), inserir `<FaqButton />` antes do `<UserAvatarMenu />`. Como o mesmo header serve mobile + desktop, isso cobre os dois casos automaticamente.
 
-**Coluna esquerda — Composição:**
-- Input "Assunto"
-- Input URL da imagem (com upload opcional para storage `creatives` ou similar já existente — verificar; se não, apenas URL)
-- Textarea grande "Mensagem" (suporta quebras de linha; convertidas para `<p>` no HTML)
-- Slider/Input "Delay entre envios (segundos)" — min 15, max 20, default 17
-- Preview ao vivo do email renderizado (iframe ou div com HTML)
+### Detalhes técnicos
 
-**Coluna direita — Destinatários:**
-- Tabs: "Usuários cadastrados" | "Emails manuais"
-- Aba Usuários:
-  - Busca por nome/email
-  - Botão "Selecionar todos" / "Limpar"
-  - Lista com checkbox carregada de `profiles` (id, name, email, is_active=true)
-  - Contador de selecionados
-- Aba Manuais:
-  - Textarea para colar emails (um por linha ou separados por vírgula)
-  - Validação de formato
-- Resumo total de destinatários únicos (dedupe por email)
+- Reutiliza componentes shadcn já presentes: `Sheet`, `Accordion`, `Input`, `Button`, `Badge`, `ScrollArea`.
+- Estrutura de dados local: array `FAQ_CATEGORIES` no próprio arquivo (sem necessidade de tabela).
+- Filtro de busca: normaliza acentos via `String.prototype.normalize('NFD')` antes de comparar.
+- `translate="no"` no root do sheet (regra de UI 100% PT-BR).
+- Sem dependências novas.
 
-**Rodapé:**
-- Botão "Disparar emails" com confirmação (AlertDialog mostrando total, delay e tempo estimado)
-- Durante envio: barra de progresso (chamada única à function, então mostramos estado "enviando..." e resultado final). *Observação: como a function é uma única chamada bloqueante, o progresso real granular não é exposto — mostramos spinner com tempo estimado e o relatório ao final.*
+### Arquivos
 
-### 3. Integração no Admin
+**Criar**
 
-- `src/pages/Admin.tsx`: adicionar section `email-marketing` mapeando para `EmailMarketingManagement`
-- `src/components/admin/AdminLayout.tsx`: novo item de navegação no grupo **Conteúdo** com ícone `Mail`, rota `/admin/email-marketing`
-- `src/App.tsx`: adicionar rota correspondente (seguindo padrão das outras seções admin)
+- `src/components/FaqButton.tsx`
 
-### 4. Detalhes técnicos
+**Editar**
 
-- Uso do cliente Supabase já existente para listar `profiles`
-- Dedupe de emails (case-insensitive) antes de enviar
-- Limite de tempo: como o disparo pode demorar (ex: 100 emails × 20s = 33min), avisar usuário no dialog de confirmação. Edge functions Supabase têm limite de execução; recomendar lotes ≤ 50 destinatários por disparo (validação no UI com aviso quando excede)
-- Resend já configurado (`RESEND_API_KEY` secret existente, usado em `send-promo-blast`)
-- Remetente: `Conectae <noreply@conectaeimob.com.br>` (mesmo de `send-promo-blast`)
-
-## Arquivos
-
-**Criar:**
-- `supabase/functions/send-marketing-blast/index.ts`
-- `supabase/functions/send-marketing-blast/deno.json` (com `resend`)
-- `src/components/admin/EmailMarketingManagement.tsx`
-
-**Editar:**
-- `supabase/config.toml` (adicionar `[functions.send-marketing-blast]`)
-- `src/pages/Admin.tsx`
-- `src/components/admin/AdminLayout.tsx`
-- `src/App.tsx`
+- `src/components/Layout.tsx` (adicionar `<FaqButton />` antes do `<UserAvatarMenu />`)

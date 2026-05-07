@@ -8,6 +8,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserAvatarMenu } from '@/components/UserAvatarMenu';
+import { FaqButton } from '@/components/FaqButton';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { CompleteProfileReminder } from '@/components/profile/CompleteProfileReminder';
 
@@ -39,9 +40,12 @@ export const Layout = ({ children }: LayoutProps) => {
                   <BrandLogo size="md" />
                 )}
               </Link>
-              <Link to="/auth">
-                <Button size="sm" className="text-sm">Entrar</Button>
-              </Link>
+              <div className="flex items-center gap-1">
+                <FaqButton />
+                <Link to="/auth">
+                  <Button size="sm" className="text-sm">Entrar</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </header>
@@ -68,7 +72,8 @@ export const Layout = ({ children }: LayoutProps) => {
               <MobileMenu isAdmin={isAdmin ?? false} isConstrutora={isConstrutora} onSignOut={handleSignOut} />
               <SidebarTrigger className="hidden md:flex" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <FaqButton />
               <UserAvatarMenu />
             </div>
           </header>
