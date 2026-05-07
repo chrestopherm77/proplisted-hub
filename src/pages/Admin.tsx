@@ -77,6 +77,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'user-activity': UserActivityLog,
   affiliates: AffiliatesManagement,
   'broker-portals': BrokerPortalsManagement,
+  'email-marketing': EmailMarketingManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
