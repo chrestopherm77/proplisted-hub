@@ -51,7 +51,8 @@ type Section =
   | 'user-activity'
   | 'affiliates'
   | 'broker-portals'
-  | 'email-marketing';
+  | 'email-marketing'
+  | 'faq';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
