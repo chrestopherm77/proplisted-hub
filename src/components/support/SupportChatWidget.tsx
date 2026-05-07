@@ -208,6 +208,16 @@ export function SupportChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, view]);
 
+  // Allow other components (e.g. FAQ) to open the support chat
+  useEffect(() => {
+    const handler = () => {
+      setView('list');
+      setOpen(true);
+    };
+    window.addEventListener('open-support-chat', handler);
+    return () => window.removeEventListener('open-support-chat', handler);
+  }, []);
+
   if (!user || hidden) return null;
 
   const totalUnread = tickets.filter((t) => t.unread_by_user).length;
