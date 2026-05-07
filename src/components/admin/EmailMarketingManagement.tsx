@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Send, Users, Mail } from 'lucide-react';
+import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
+
+const CONECTAE_LOGO_URL = 'https://hmcpfedcvkurttyolurv.supabase.co/storage/v1/object/public/landing-pages/email-assets/conectae-logo.png';
 
 interface ProfileRow { id: string; name: string | null; email: string | null; }
 
@@ -134,6 +137,10 @@ export function EmailMarketingManagement() {
         <div style="padding:20px;border-bottom:1px solid #e4e4e7;text-align:center;"><strong style="color:#18181b;font-size:18px;">Conectae</strong></div>
         ${imageUrl ? `<img src="${esc(imageUrl)}" style="display:block;width:100%;height:auto;"/>` : ''}
         <div style="padding:24px;">${body || '<p style="color:#a1a1aa;">Pré-visualização da mensagem...</p>'}</div>
+        <div style="padding:20px 24px 28px;border-top:1px solid #e4e4e7;text-align:center;background:#fafafa;">
+          <img src="${CONECTAE_LOGO_URL}" alt="Conectae" style="height:40px;width:auto;display:inline-block;"/>
+          <p style="color:#a1a1aa;font-size:12px;margin:12px 0 0;">© ${new Date().getFullYear()} Conectae. Todos os direitos reservados.</p>
+        </div>
       </div>
     </div>`;
   }, [bodyText, imageUrl]);
@@ -154,10 +161,12 @@ export function EmailMarketingManagement() {
               <Label>Assunto</Label>
               <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} placeholder="Ex: Novidades da semana" />
             </div>
-            <div>
-              <Label>URL da imagem (opcional)</Label>
-              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
-            </div>
+            <ImageUploadField
+              label="Imagem do email (opcional)"
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="email-marketing"
+            />
             <div>
               <Label>Mensagem</Label>
               <Textarea value={bodyText} onChange={(e) => setBodyText(e.target.value)} rows={10} maxLength={20000}
