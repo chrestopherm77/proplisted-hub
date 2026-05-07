@@ -8,6 +8,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserAvatarMenu } from '@/components/UserAvatarMenu';
+import { FaqButton } from '@/components/FaqButton';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { CompleteProfileReminder } from '@/components/profile/CompleteProfileReminder';
 
