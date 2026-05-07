@@ -49,7 +49,8 @@ type Section =
   | 'signup-progress'
   | 'user-activity'
   | 'affiliates'
-  | 'broker-portals';
+  | 'broker-portals'
+  | 'email-marketing';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
