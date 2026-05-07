@@ -157,10 +157,12 @@ export function EmailMarketingManagement() {
               <Label>Assunto</Label>
               <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} placeholder="Ex: Novidades da semana" />
             </div>
-            <div>
-              <Label>URL da imagem (opcional)</Label>
-              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
-            </div>
+            <ImageUploadField
+              label="Imagem do email (opcional)"
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="email-marketing"
+            />
             <div>
               <Label>Mensagem</Label>
               <Textarea value={bodyText} onChange={(e) => setBodyText(e.target.value)} rows={10} maxLength={20000}
