@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Loader2, Building2, List, Map as MapIcon, X } from 'lucide-react';
+import { Search, Plus, Loader2, Building2, List, Map as MapIcon, X, Globe } from 'lucide-react';
 import { PropertyCard } from '@/components/portal/PropertyCard';
 import { PropertyMap } from '@/components/portal/PropertyMap';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { PROPERTY_TYPES, OPERATION_TYPES, ZONE_OPTIONS, formatCurrencyInput, parseCurrencyInput } from '@/lib/propertyUtils';
+import { buildWaLink } from '@/lib/whatsapp';
 
 
 interface Property {
@@ -148,10 +149,22 @@ const PortalImoveis = () => {
               Publique seus imóveis e veja anúncios de outros corretores para revender
             </p>
           </div>
-          <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
-            <Plus className="h-4 w-4" />
-            Novo Anúncio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
+              <Plus className="h-4 w-4" />
+              Novo Anúncio
+            </Button>
+            <a
+              href={buildWaLink('+5531936182628', 'Olá! Gostaria de saber mais sobre como ter meu próprio site/portal personalizado com a Conectae.')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="lg">
+                <Globe className="h-4 w-4" />
+                Tenha seu Site/portal personalizado
+              </Button>
+            </a>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
