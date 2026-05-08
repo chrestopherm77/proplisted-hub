@@ -149,10 +149,22 @@ const PortalImoveis = () => {
               Publique seus imóveis e veja anúncios de outros corretores para revender
             </p>
           </div>
-          <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
-            <Plus className="h-4 w-4" />
-            Novo Anúncio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => navigate('/portal-imoveis/novo')} size="lg">
+              <Plus className="h-4 w-4" />
+              Novo Anúncio
+            </Button>
+            <a
+              href={buildWaLink('+5531936182628', 'Olá! Gostaria de saber mais sobre como ter meu próprio site/portal personalizado com a Conectae.')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="lg">
+                <Globe className="h-4 w-4" />
+                Tenha seu Site/portal personalizado
+              </Button>
+            </a>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
