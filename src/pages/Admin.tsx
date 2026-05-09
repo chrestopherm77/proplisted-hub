@@ -52,6 +52,7 @@ type Section =
   | 'user-activity'
   | 'affiliates'
   | 'broker-portals'
+  | 'broker-portal-requests'
   | 'email-marketing'
   | 'faq';
 
