@@ -250,7 +250,7 @@ const Launches = () => {
             ) : (
               <Button
                 onClick={() => {
-                  const url = buildWaLink('5516992456258', 'Vim do site da Conectae e quero criar um novo lançamento');
+                const url = buildWaLink('5543996102805', 'Vim do site da Conectae e quero criar um novo lançamento');
                   window.open(url, '_blank', 'noopener,noreferrer');
                 }}
                 className="gap-2"
