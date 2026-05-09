@@ -105,25 +105,6 @@ export function PurchasedLeadModal({
     });
   };
 
-  // Parse description for display when no form_data
-  const parseDescriptionToDisplay = (description: string) => {
-    const lines = description.split('\n').map(line => line.trim()).filter(Boolean);
-    
-    return lines.map((line, idx) => {
-      const [label, ...valueParts] = line.split(':');
-      const value = valueParts.join(':').trim();
-      
-      if (value) {
-        return (
-          <p key={idx}>
-            <span className="font-medium text-foreground">{label}:</span> {value}
-          </p>
-        );
-      }
-      return <p key={idx}>{line}</p>;
-    });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden p-0">

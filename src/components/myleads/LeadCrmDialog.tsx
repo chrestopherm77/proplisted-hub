@@ -106,15 +106,6 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
   const normalizedFormData = normalizeFormData(lead.formData);
   const hasFormData = normalizedFormData && Object.keys(normalizedFormData).length > 0;
 
-  const parseDescription = (description: string) =>
-    description.split('\n').map(l => l.trim()).filter(Boolean).map((line, idx) => {
-      const [label, ...vp] = line.split(':');
-      const value = vp.join(':').trim();
-      return value ? (
-        <p key={idx}><span className="font-medium text-foreground">{label}:</span> {value}</p>
-      ) : <p key={idx}>{line}</p>;
-    });
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[90vh] flex flex-col overflow-hidden p-0">
