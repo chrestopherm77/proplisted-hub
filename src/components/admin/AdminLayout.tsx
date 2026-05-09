@@ -73,6 +73,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Afiliados', url: '/admin/affiliates', icon: UserPlus, group: 'Afiliados' },
 
   { title: 'Portais de Imóveis', url: '/admin/broker-portals', icon: Building2, group: 'Portais' },
+  { title: 'Solicitações de Portal', url: '/admin/broker-portal-requests', icon: Building2, group: 'Portais' },
 
   { title: 'Criativos', url: '/admin/creatives', icon: Sparkles, group: 'Conteúdo' },
   { title: 'Email Marketing', url: '/admin/email-marketing', icon: Mail, group: 'Conteúdo' },
