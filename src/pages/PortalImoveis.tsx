@@ -155,7 +155,7 @@ const PortalImoveis = () => {
               Novo Anúncio
             </Button>
             <a
-              href={buildWaLink('+5531936182628', 'Olá! Gostaria de saber mais sobre como ter meu próprio site/portal personalizado com a Conectae.')}
+              href={buildWaLink('+5543996102805', 'Olá! Gostaria de saber mais sobre como ter meu próprio site/portal personalizado com a Conectae.')}
               target="_blank"
               rel="noopener noreferrer"
             >
