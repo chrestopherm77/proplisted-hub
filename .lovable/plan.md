@@ -1,35 +1,61 @@
-## Mudanças
+## Objetivo
 
-### 1) Modal "Meus Leads" (CRM) — remover resumo do topo
-Arquivo: `src/components/myleads/LeadCrmDialog.tsx`
+Criar um formulário público (link compartilhável) que coleta os mesmos dados pedidos no "Novo portal" do admin, e mostrar as solicitações em uma nova aba dentro do admin. Sem integração automática — o admin recebe os dados e cria o portal manualmente depois.
 
-- Remover o bloco que renderiza `parseDescription(lead.description)` no header (texto cinza com "Preferência 1: ..., Preferência 2: ...").
-- Remover a função `parseDescription` que ficará sem uso.
-- Remover o cabeçalho duplicado "📋 Detalhes do Lead" logo antes do `LeadPreferencesView` (os cards já têm seu próprio título "🎯 Preferência N — ...").
-- Manter: nome, badge de etapa, telefone + WhatsApp, e-mail e a seção `LeadPreferencesView`.
+## O que será criado
 
-### 2) Modal de Leads Disponíveis (marketplace) — remover resumo do topo
-Arquivo: `src/components/marketplace/LeadDetailsModal.tsx`
+### 1. Página pública do formulário — `/solicitar-portal`
+Formulário em etapas (ou seções) com TODOS os campos do modal do admin, em linguagem amigável para o corretor:
 
-- Remover o cabeçalho duplicado "📋 Detalhes do Lead" antes do `LeadPreferencesView`, mantendo apenas as preferências detalhadas (igual ao CRM).
-- Header (Lead #ID, badge de disponibilidade, data para admin) permanece igual.
+- **Dados do corretor**: Nome, e‑mail, telefone/WhatsApp
+- **Marca**: Logo (upload), CNPJ, CRECI, cores (primária, destaque, fundo)
+- **Hero (capa)**: Título, subtítulo, imagem de fundo
+- **Sobre**: Texto sobre, imagem da seção sobre
+- **Contato e endereço**: WhatsApp, telefone, e‑mail, endereço
+- **Redes sociais**: Instagram, Facebook, TikTok, YouTube, LinkedIn
+- **SEO**: Título do site, descrição, favicon
+- **Fonte dos imóveis**: "Meus imóveis" ou "Todos da cidade X/UF"
+- **Slug desejado** (ex: imoveis-joao) e domínio personalizado (opcional)
+- **Rótulos do menu** (Início, Sobre, Contato, Financie, Negociar)
+- **Texto do rodapé**
 
-### 3) Modal de Lead Comprado — mesma limpeza
-Arquivo: `src/components/marketplace/PurchasedLeadModal.tsx`
+Sem login. Validação dos campos obrigatórios (nome, e‑mail, telefone, slug). Tela de sucesso ao final.
 
-- Remover o bloco `parseDescriptionToDisplay(lead.description)` no header (mesmo resumo redundante).
-- Remover a função `parseDescriptionToDisplay`.
-- Remover o cabeçalho "📋 Detalhes do Lead" antes do `LeadPreferencesView`.
+### 2. Tabela no banco — `broker_portal_requests`
+Armazena cada solicitação enviada:
+- nome, e‑mail, telefone do solicitante
+- `branding` (jsonb), `seo` (jsonb), `slug`, `custom_domain`
+- `properties_source`, `city`, `state`, `template_id`
+- `status` ('NEW' | 'REVIEWED' | 'CREATED' | 'REJECTED')
+- `notes` (admin)
+- `created_at`
 
-### 4) Leads esgotados — exibir contagem 5/5
-Mostrar o número de compras nos leads marcados como esgotados, incluindo os marcados manualmente (`is_exhausted = true`).
+**RLS**:
+- `INSERT` público (anon) com validação básica (nome/email/telefone preenchidos)
+- `SELECT/UPDATE/DELETE` apenas para `MASTER_ADMIN`
 
-- `src/pages/Leads.tsx` (~linha 626): badge do card passa de `'Esgotado'` para `` `Esgotado ${lead.max_purchases}/${lead.max_purchases}` ``.
-- `src/components/marketplace/LeadDetailsModal.tsx` (~linha 110): badge do header passa para `` `Esgotado ${lead.max_purchases}/${lead.max_purchases}` `` quando `isSoldOut`.
-- `src/components/marketplace/LeadDetailsModal.tsx` (~linha 154): botão desabilitado passa para `` `Esgotado (${lead.max_purchases}/${lead.max_purchases})` ``.
+### 3. Aba no admin — "Solicitações de Portal"
+Dentro de `BrokerPortalsManagement` (ou nova seção do menu admin), uma lista das solicitações com:
+- Resumo (nome, e‑mail, telefone, slug pedido, data, status)
+- Botão "Ver detalhes" abre modal com TODOS os campos preenchidos
+- Botão "Copiar dados" (JSON) e "Marcar como criado/rejeitado"
+- Badge contador de solicitações novas
 
-`isSoldOut` já cobre tanto `purchase_count >= max_purchases` quanto `is_exhausted === true`, então a contagem "5/5" aparece também quando o admin esgota manualmente.
+Sem criar o portal automaticamente — o admin lê e usa os dados manualmente no formulário existente "Novo portal".
 
-## Fora de escopo
-- Sem alterações de banco, RLS ou edge functions.
-- Sem mudanças de lógica de compra/preço.
+### 4. Upload de imagens no formulário público
+Para logo, hero e sobre, usar bucket público existente (ou criar `portal-requests` público). Usuário anônimo precisa poder fazer upload nesse bucket — política de storage permitindo INSERT anon.
+
+## Detalhes técnicos
+
+- Rota `/solicitar-portal` adicionada em `src/App.tsx`, página em `src/pages/SolicitarPortal.tsx`
+- Componente do form reaproveita campos/labels do `BrokerPortalsManagement.tsx`
+- Nova aba/sessão no admin: `src/components/admin/BrokerPortalRequests.tsx` listada em `Admin.tsx`
+- Migração cria tabela + bucket de storage + políticas
+- Link "Copiar link do formulário" no topo de "Portais de Imóveis" no admin para o admin enviar ao corretor
+
+## Fora do escopo
+
+- Criar o portal automaticamente a partir da solicitação
+- Notificações por e‑mail/WhatsApp ao admin (pode ser adicionado depois)
+- Edição da solicitação pelo corretor após envio
