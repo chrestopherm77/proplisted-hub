@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Download, Trash2, Eye, ImageOff } from 'lucide-react';
+import { Sparkles, Download, Trash2, Eye, ImageOff, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Creative {
