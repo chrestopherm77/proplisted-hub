@@ -81,6 +81,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'user-activity': UserActivityLog,
   affiliates: AffiliatesManagement,
   'broker-portals': BrokerPortalsManagement,
+  'broker-portal-requests': BrokerPortalRequests,
   'email-marketing': EmailMarketingManagement,
   faq: FaqManagement,
 };
