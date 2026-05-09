@@ -370,12 +370,15 @@ function CycleAndGrid({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {ordered.map((plan) => {
           const parent = ((plan as any).parent_slug ?? plan.slug) as string;
+          const activePlan = plans.find((p) => p.id === activePlanId);
+          const activeParent = activePlan ? ((activePlan as any).parent_slug ?? activePlan.slug) : null;
+          const isCurrent = activeParent != null && parent === activeParent;
           return (
             <PlanCard
               key={plan.id}
               plan={plan}
               monthlyReferencePrice={monthlyByParent.get(parent)}
-              isCurrent={activePlanId === plan.id}
+              isCurrent={isCurrent}
               isPopular={parent === 'elite'}
               loading={submittingPlanId === plan.id}
               pendingInvoiceUrl={pendingPlanId === plan.id ? pendingInvoiceUrl : null}
