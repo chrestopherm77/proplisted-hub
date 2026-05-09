@@ -28,6 +28,7 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
   const [items, setItems] = useState<Creative[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Creative | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
