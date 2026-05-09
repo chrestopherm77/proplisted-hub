@@ -49,6 +49,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import BrokerPortal from "./pages/BrokerPortal";
+import SolicitarPortal from "./pages/SolicitarPortal";
 import PortalTemplatePreview from "./pages/PortalTemplatePreview";
 import { BrokerDomainGate } from "./components/broker-portal/BrokerDomainGate";
 
