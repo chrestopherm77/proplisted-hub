@@ -122,7 +122,7 @@ export const PlanCard = ({
       )}
       {isCurrent && (
         <div className="absolute -top-3 right-4">
-          <Badge className="bg-emerald-500 text-white">Plano Atual</Badge>
+          <Badge className="bg-emerald-500 text-white">Ativo</Badge>
         </div>
       )}
       {isPending && !isCurrent && (
