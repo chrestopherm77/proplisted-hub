@@ -24,7 +24,37 @@ interface MobileMenuProps {
 export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProps) => {
   const location = useLocation();
   const { partner, isPartnerSite } = usePartner();
+  const { user } = useAuth();
+  const [creditBalance, setCreditBalance] = useState(0);
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchBalance = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('credit_balance')
+        .eq('id', user.id)
+        .single();
+      if (data) setCreditBalance(data.credit_balance || 0);
+    };
+    fetchBalance();
+
+    const channel = supabase
+      .channel('mobile-credit-balance')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${user.id}`,
+      }, (payload: any) => {
+        const next = payload?.new?.credit_balance;
+        if (typeof next === 'number') setCreditBalance(next);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   return (
     <Sheet>
