@@ -623,7 +623,7 @@ export default function Leads() {
                         className="text-xs"
                       >
                         {isSoldOut(lead)
-                          ? 'Esgotado'
+                          ? `Esgotado ${lead.max_purchases}/${lead.max_purchases}`
                           : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disp.`}
                       </Badge>
                     </div>
