@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown, Sparkles, Coins } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { usePartner } from '@/contexts/PartnerContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Sheet,
   SheetContent,
