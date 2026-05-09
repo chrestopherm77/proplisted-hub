@@ -151,10 +151,6 @@ export function PurchasedLeadModal({
             )}
           </div>
           
-          {/* Summary from description */}
-          <div className="pt-3 text-muted-foreground text-sm space-y-1">
-            {parseDescriptionToDisplay(lead.description)}
-          </div>
         </DialogHeader>
 
         <Separator />
@@ -163,10 +159,7 @@ export function PurchasedLeadModal({
           <ScrollArea className="h-full">
             <div className="px-6">
               {hasFormData ? (
-                <div className="py-4 space-y-6">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                  </div>
+                <div className="py-4">
                   <LeadPreferencesView formData={normalizedFormData} />
                 </div>
               ) : (
