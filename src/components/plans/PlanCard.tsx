@@ -49,7 +49,7 @@ export const PlanCard = ({
 
   const buttonLabel = (() => {
     if (loading) return 'Processando...';
-    if (isCurrent) return 'Plano Atual';
+    if (isCurrent) return 'Plano Ativo';
     if (isFree) return 'Ativar Plano Grátis';
     if (isDowngrade) return 'Agendar downgrade';
     return 'Assinar Plano';
@@ -122,7 +122,7 @@ export const PlanCard = ({
       )}
       {isCurrent && (
         <div className="absolute -top-3 right-4">
-          <Badge className="bg-emerald-500 text-white">Plano Atual</Badge>
+          <Badge className="bg-emerald-500 text-white">Ativo</Badge>
         </div>
       )}
       {isPending && !isCurrent && (
