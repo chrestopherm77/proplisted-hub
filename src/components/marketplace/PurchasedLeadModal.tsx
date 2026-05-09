@@ -105,25 +105,6 @@ export function PurchasedLeadModal({
     });
   };
 
-  // Parse description for display when no form_data
-  const parseDescriptionToDisplay = (description: string) => {
-    const lines = description.split('\n').map(line => line.trim()).filter(Boolean);
-    
-    return lines.map((line, idx) => {
-      const [label, ...valueParts] = line.split(':');
-      const value = valueParts.join(':').trim();
-      
-      if (value) {
-        return (
-          <p key={idx}>
-            <span className="font-medium text-foreground">{label}:</span> {value}
-          </p>
-        );
-      }
-      return <p key={idx}>{line}</p>;
-    });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden p-0">
@@ -151,10 +132,6 @@ export function PurchasedLeadModal({
             )}
           </div>
           
-          {/* Summary from description */}
-          <div className="pt-3 text-muted-foreground text-sm space-y-1">
-            {parseDescriptionToDisplay(lead.description)}
-          </div>
         </DialogHeader>
 
         <Separator />
@@ -163,10 +140,7 @@ export function PurchasedLeadModal({
           <ScrollArea className="h-full">
             <div className="px-6">
               {hasFormData ? (
-                <div className="py-4 space-y-6">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                  </div>
+                <div className="py-4">
                   <LeadPreferencesView formData={normalizedFormData} />
                 </div>
               ) : (

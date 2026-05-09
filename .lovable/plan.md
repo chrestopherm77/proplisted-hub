@@ -1,71 +1,35 @@
-## Botão de FAQ no header
+## Mudanças
 
-Adicionar um botão circular com ícone de interrogação (`HelpCircle`) ao lado do `UserAvatarMenu` no header — visível em desktop e mobile. Ao clicar, abre um painel lateral (Sheet) com um FAQ completo organizado por categorias.
+### 1) Modal "Meus Leads" (CRM) — remover resumo do topo
+Arquivo: `src/components/myleads/LeadCrmDialog.tsx`
 
-### Componente novo: `src/components/FaqButton.tsx`
+- Remover o bloco que renderiza `parseDescription(lead.description)` no header (texto cinza com "Preferência 1: ..., Preferência 2: ...").
+- Remover a função `parseDescription` que ficará sem uso.
+- Remover o cabeçalho duplicado "📋 Detalhes do Lead" logo antes do `LeadPreferencesView` (os cards já têm seu próprio título "🎯 Preferência N — ...").
+- Manter: nome, badge de etapa, telefone + WhatsApp, e-mail e a seção `LeadPreferencesView`.
 
-- Botão `ghost` redondo com ícone `HelpCircle` (lucide-react), `aria-label="Perguntas frequentes"`.
-- Abre um `Sheet` (lado direito no desktop, full-width no mobile, largura ~480px).
-- Cabeçalho do sheet: título "Central de Ajuda" + subtítulo.
-- Campo de busca no topo (filtra perguntas/respostas em tempo real, case-insensitive).
-- Conteúdo: `Accordion` (shadcn) agrupado por categoria, com badge de categoria.
-- Rodapé do sheet: link rápido "Falar com suporte" que dispara o `SupportChatWidget` existente (via evento custom `open-support-chat`) ou redireciona para `/suporte` se a rota existir.
+### 2) Modal de Leads Disponíveis (marketplace) — remover resumo do topo
+Arquivo: `src/components/marketplace/LeadDetailsModal.tsx`
 
-### Conteúdo do FAQ (categorias e perguntas)
+- Remover o cabeçalho duplicado "📋 Detalhes do Lead" antes do `LeadPreferencesView`, mantendo apenas as preferências detalhadas (igual ao CRM).
+- Header (Lead #ID, badge de disponibilidade, data para admin) permanece igual.
 
-1. **Conta e cadastro**
-  - Como criar minha conta?
-  - Posso ter mais de uma conta com o mesmo telefone? (limite de 1)
-  - Como verificar meu CRECI/CAU/CREA?
-  - Esqueci minha senha, como redefinir?
-  - Como atualizar meus dados de perfil?
-2. **Leads e marketplace**
-  - O que é o Marketplace de Leads?
-  - Como compro um lead?
-  - Quantos parceiros podem comprar o mesmo lead? (até 5)
-  - Por que alguns dados do lead ficam ocultos antes da compra?
-  - Como funciona o reembolso/contestação de leads?
-  - O que significa "lead esgotado"?
-3. **Pagamentos e créditos**
-  - Quais formas de pagamento são aceitas?
-  - Como funcionam os créditos da plataforma?
-  - Onde vejo minhas faturas e recibos?
-4. **Lançamentos e parcerias**
-  - Como cadastro um lançamento?
-  - Como funciona o "Balcão de Parcerias"?
-  - Posso indicar parceiros para um lançamento?
-5. **Portal do corretor (White Label)**
-  - O que é o Portal do Corretor?
-  - Posso usar meus imoveis no portal ?
-  - Posso anunciar imoveis de outros corretores ?
-6. **Integrações**
-  - Como funcionam as notificações por email?
-  - Posso integrar com meu CRM?
-7. **Suporte e segurança**
-  - Como falo com o suporte?
-  - Meus dados estão seguros?
-  - Como excluir minha conta?
+### 3) Modal de Lead Comprado — mesma limpeza
+Arquivo: `src/components/marketplace/PurchasedLeadModal.tsx`
 
-Cada pergunta terá resposta de 2-5 linhas em português, tom claro e direto.
+- Remover o bloco `parseDescriptionToDisplay(lead.description)` no header (mesmo resumo redundante).
+- Remover a função `parseDescriptionToDisplay`.
+- Remover o cabeçalho "📋 Detalhes do Lead" antes do `LeadPreferencesView`.
 
-### Integração no Layout
+### 4) Leads esgotados — exibir contagem 5/5
+Mostrar o número de compras nos leads marcados como esgotados, incluindo os marcados manualmente (`is_exhausted = true`).
 
-Em `src/components/Layout.tsx`, dentro do header (linha 71-73), inserir `<FaqButton />` antes do `<UserAvatarMenu />`. Como o mesmo header serve mobile + desktop, isso cobre os dois casos automaticamente.
+- `src/pages/Leads.tsx` (~linha 626): badge do card passa de `'Esgotado'` para `` `Esgotado ${lead.max_purchases}/${lead.max_purchases}` ``.
+- `src/components/marketplace/LeadDetailsModal.tsx` (~linha 110): badge do header passa para `` `Esgotado ${lead.max_purchases}/${lead.max_purchases}` `` quando `isSoldOut`.
+- `src/components/marketplace/LeadDetailsModal.tsx` (~linha 154): botão desabilitado passa para `` `Esgotado (${lead.max_purchases}/${lead.max_purchases})` ``.
 
-### Detalhes técnicos
+`isSoldOut` já cobre tanto `purchase_count >= max_purchases` quanto `is_exhausted === true`, então a contagem "5/5" aparece também quando o admin esgota manualmente.
 
-- Reutiliza componentes shadcn já presentes: `Sheet`, `Accordion`, `Input`, `Button`, `Badge`, `ScrollArea`.
-- Estrutura de dados local: array `FAQ_CATEGORIES` no próprio arquivo (sem necessidade de tabela).
-- Filtro de busca: normaliza acentos via `String.prototype.normalize('NFD')` antes de comparar.
-- `translate="no"` no root do sheet (regra de UI 100% PT-BR).
-- Sem dependências novas.
-
-### Arquivos
-
-**Criar**
-
-- `src/components/FaqButton.tsx`
-
-**Editar**
-
-- `src/components/Layout.tsx` (adicionar `<FaqButton />` antes do `<UserAvatarMenu />`)
+## Fora de escopo
+- Sem alterações de banco, RLS ou edge functions.
+- Sem mudanças de lógica de compra/preço.

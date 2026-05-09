@@ -107,7 +107,7 @@ export function LeadDetailsModal({
             </div>
             <Badge variant={isSoldOut ? 'destructive' : 'default'}>
               {isSoldOut
-                ? 'Esgotado'
+                ? `Esgotado ${lead.max_purchases}/${lead.max_purchases}`
                 : `${lead.max_purchases - lead.purchase_count}/${lead.max_purchases} disponíveis`}
             </Badge>
           </div>
@@ -117,10 +117,7 @@ export function LeadDetailsModal({
           <ScrollArea className="h-full">
             <div className="px-6">
               {hasFormData ? (
-                <div className="py-3 space-y-5">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <span className="text-lg font-semibold">📋 Detalhes do Lead</span>
-                  </div>
+                <div className="py-3">
                   <LeadPreferencesView
                     formData={normalizedFormData}
                     fieldTextClass="text-base"
@@ -151,7 +148,7 @@ export function LeadDetailsModal({
               ✓ Já comprado
             </Button>
           ) : isSoldOut ? (
-            <Button disabled variant="secondary" size="lg">Esgotado</Button>
+            <Button disabled variant="secondary" size="lg">Esgotado ({lead.max_purchases}/{lead.max_purchases})</Button>
           ) : onBuyWithCredits ? (
             <Button
               onClick={() => onBuyWithCredits(lead.id)}
