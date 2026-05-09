@@ -73,7 +73,19 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             )}
           </SheetTitle>
         </SheetHeader>
-        <nav className="flex flex-col space-y-2 mt-8">
+        <Link
+          to="/comprar-creditos"
+          className="mt-6 flex items-center justify-between gap-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 px-3 py-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <span className="text-xs text-muted-foreground">Créditos disponíveis</span>
+          </div>
+          <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300">
+            {(creditBalance ?? 0).toLocaleString('pt-BR')}
+          </span>
+        </Link>
+        <nav className="flex flex-col space-y-2 mt-4">
           <Link
             to="/my-leads"
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
