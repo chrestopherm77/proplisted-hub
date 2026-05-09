@@ -53,11 +53,17 @@ export function GenerateCreative({ onDone }: { onDone: () => void }) {
     if (!user) return;
 
     const willCallAi = !!slots[0]?.url;
+    const hasCreditsForAi = isAdmin || creditBalance >= CREATIVE_COST;
 
-    if (!creativesGate.allowed) {
+    // Se a geração usa IA, créditos suficientes liberam a geração mesmo após
+    // o limite mensal do plano. Sem IA (apenas mockups), respeita o limite do plano.
+    if (!creativesGate.allowed && !(willCallAi && hasCreditsForAi)) {
       setLimitDialog({
         open: true,
-        reason: creativesGate.reason ?? `Você atingiu o limite mensal de criativos do plano ${plan?.name ?? ''}.`,
+        reason: willCallAi
+          ? `${creativesGate.reason ?? `Você atingiu o limite mensal de criativos do plano ${plan?.name ?? ''}.`} Compre créditos para continuar gerando criativos com IA.`
+          : creativesGate.reason ?? `Você atingiu o limite mensal de criativos do plano ${plan?.name ?? ''}.`,
+        secondary: willCallAi ? { label: 'Comprar créditos', path: '/comprar-creditos' } : undefined,
       });
       return;
     }
