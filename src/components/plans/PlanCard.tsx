@@ -49,7 +49,7 @@ export const PlanCard = ({
 
   const buttonLabel = (() => {
     if (loading) return 'Processando...';
-    if (isCurrent) return 'Plano Atual';
+    if (isCurrent) return 'Plano Ativo';
     if (isFree) return 'Ativar Plano Grátis';
     if (isDowngrade) return 'Agendar downgrade';
     return 'Assinar Plano';
