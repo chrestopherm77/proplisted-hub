@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Download, Trash2, Eye, ImageOff } from 'lucide-react';
+import { Sparkles, Download, Trash2, Eye, ImageOff, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 interface Creative {
@@ -28,6 +29,7 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
   const [items, setItems] = useState<Creative[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Creative | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -95,18 +97,26 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((c) => {
           const thumb = getThumb(c);
+          const isActive = activeId === c.id;
           return (
-            <Card key={c.id} className="overflow-hidden group">
+            <Card
+              key={c.id}
+              className="overflow-hidden group cursor-pointer relative"
+              onClick={() => setActiveId((prev) => (prev === c.id ? null : c.id))}
+            >
               <div className="aspect-square bg-muted relative">
                 {thumb ? (
                   <img src={thumb} alt="Criativo" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full"><ImageOff className="h-8 w-8 text-muted-foreground" /></div>
                 )}
-                <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="secondary" onClick={() => setSelected(c)}><Eye className="h-4 w-4" /></Button>
-                  {thumb && <Button size="icon" variant="secondary" onClick={() => handleDownload(thumb, `criativo-${c.id}.jpg`)}><Download className="h-4 w-4" /></Button>}
-                  <Button size="icon" variant="destructive" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4" /></Button>
+                <div className={cn(
+                  "absolute inset-0 bg-background/80 transition-opacity flex items-center justify-center gap-2",
+                  isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
+                  <Button size="icon" variant="secondary" onClick={(e) => { e.stopPropagation(); setSelected(c); }}><Eye className="h-4 w-4" /></Button>
+                  {thumb && <Button size="icon" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(thumb, `criativo-${c.id}.jpg`); }}><Download className="h-4 w-4" /></Button>}
+                  <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
               <CardContent className="p-3 space-y-1">
@@ -124,6 +134,14 @@ export function MyCreatives({ onGenerate }: { onGenerate: () => void }) {
                 <p className="text-xs text-muted-foreground capitalize">{c.style_slug}</p>
                 <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
               </CardContent>
+              {isActive && (
+                <button
+                  className="absolute top-1 right-1 p-1 rounded-full bg-background/90 hover:bg-background text-foreground z-20"
+                  onClick={(e) => { e.stopPropagation(); setActiveId(null); }}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </Card>
           );
         })}
