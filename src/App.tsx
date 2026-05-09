@@ -116,6 +116,8 @@ const App = () => {
           <Route path="/admin/whatsapp-groups" element={<Admin section="whatsapp-groups" />} />
           <Route path="/admin/affiliates" element={<Admin section="affiliates" />} />
           <Route path="/admin/broker-portals" element={<Admin section="broker-portals" />} />
+          <Route path="/admin/broker-portal-requests" element={<Admin section="broker-portal-requests" />} />
+          <Route path="/solicitar-portal" element={<SolicitarPortal />} />
           <Route path="/admin/email-marketing" element={<Admin section="email-marketing" />} />
           <Route path="/admin/faq" element={<Admin section="faq" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
