@@ -207,6 +207,63 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_portal_requests: {
+        Row: {
+          admin_notes: string | null
+          branding: Json
+          city: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          custom_domain: string | null
+          id: string
+          properties_source: string
+          seo: Json
+          slug: string | null
+          state: string | null
+          status: string
+          template_id: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          branding?: Json
+          city?: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          custom_domain?: string | null
+          id?: string
+          properties_source?: string
+          seo?: Json
+          slug?: string | null
+          state?: string | null
+          status?: string
+          template_id?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          branding?: Json
+          city?: string | null
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          custom_domain?: string | null
+          id?: string
+          properties_source?: string
+          seo?: Json
+          slug?: string | null
+          state?: string | null
+          status?: string
+          template_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       broker_portals: {
         Row: {
           branding: Json

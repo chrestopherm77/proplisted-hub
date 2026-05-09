@@ -23,6 +23,7 @@ import { SignupProgressManagement } from '@/components/admin/SignupProgressManag
 import { UserActivityLog } from '@/components/admin/UserActivityLog';
 import { AffiliatesManagement } from '@/components/admin/AffiliatesManagement';
 import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagement';
+import { BrokerPortalRequests } from '@/components/admin/BrokerPortalRequests';
 import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
 import { FaqManagement } from '@/components/admin/FaqManagement';
 
@@ -51,6 +52,7 @@ type Section =
   | 'user-activity'
   | 'affiliates'
   | 'broker-portals'
+  | 'broker-portal-requests'
   | 'email-marketing'
   | 'faq';
 
@@ -79,6 +81,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'user-activity': UserActivityLog,
   affiliates: AffiliatesManagement,
   'broker-portals': BrokerPortalsManagement,
+  'broker-portal-requests': BrokerPortalRequests,
   'email-marketing': EmailMarketingManagement,
   faq: FaqManagement,
 };
