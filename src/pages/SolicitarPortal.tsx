@@ -12,21 +12,17 @@ import { PublicImageUpload } from '@/components/portal-request/PublicImageUpload
 import { PORTAL_TEMPLATES } from '@/lib/portalTemplatesCatalog';
 
 type Branding = {
-  logo_url: string; about: string; whatsapp: string; phone: string; email: string;
+  logo_url: string; about: string;
   instagram: string; facebook: string; tiktok: string; youtube: string; linkedin: string;
   address: string; primary_color: string; accent_color: string; bg_color: string;
-  hero_bg_url: string; hero_title: string; hero_subtitle: string;
-  cnpj: string; creci: string; about_image_url: string; about_text: string; footer_text: string;
-  menu_labels: { home: string; sobre: string; contato: string; financie: string; negociar: string };
+  cnpj: string; creci: string; about_image_url: string; about_text: string;
 };
 
 const emptyBranding = (): Branding => ({
-  logo_url: '', about: '', whatsapp: '', phone: '', email: '',
+  logo_url: '', about: '',
   instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '',
   address: '', primary_color: '#1c1c1c', accent_color: '#c9a44c', bg_color: '#1c1c1c',
-  hero_bg_url: '', hero_title: '', hero_subtitle: '',
-  cnpj: '', creci: '', about_image_url: '', about_text: '', footer_text: '',
-  menu_labels: { home: 'Início', sobre: 'Sobre', contato: 'Contato', financie: 'Financie', negociar: 'Negocie seu Imóvel' },
+  cnpj: '', creci: '', about_image_url: '', about_text: '',
 });
 
 export default function SolicitarPortal() {
@@ -47,11 +43,8 @@ export default function SolicitarPortal() {
   const [state, setState] = useState('');
 
   const [branding, setBranding] = useState<Branding>(emptyBranding());
-  const [seo, setSeo] = useState({ title: '', description: '', favicon_url: '' });
 
   const upd = <K extends keyof Branding>(k: K, v: Branding[K]) => setBranding((b) => ({ ...b, [k]: v }));
-  const updMenu = (k: keyof Branding['menu_labels'], v: string) =>
-    setBranding((b) => ({ ...b, menu_labels: { ...b.menu_labels, [k]: v } }));
 
   const submit = async () => {
     if (!contactName.trim() || !contactEmail.trim() || !contactPhone.trim()) {
@@ -70,7 +63,6 @@ export default function SolicitarPortal() {
       city: city || null,
       state: state || null,
       branding,
-      seo,
     });
     setSaving(false);
     if (error) {
