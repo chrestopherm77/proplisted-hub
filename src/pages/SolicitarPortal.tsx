@@ -193,20 +193,6 @@ export default function SolicitarPortal() {
           </div>
         </Card>
 
-        {/* Capa (Hero) */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Capa do site (Hero)</h2>
-          <div>
-            <Label>Título principal</Label>
-            <Input value={branding.hero_title} onChange={(e) => upd('hero_title', e.target.value)} />
-          </div>
-          <div>
-            <Label>Subtítulo</Label>
-            <Input value={branding.hero_subtitle} onChange={(e) => upd('hero_subtitle', e.target.value)} />
-          </div>
-          <PublicImageUpload label="Imagem de fundo da capa" value={branding.hero_bg_url} onChange={(v) => upd('hero_bg_url', v)} folder="hero" />
-        </Card>
-
         {/* Sobre */}
         <Card className="p-6 space-y-4">
           <h2 className="text-xl font-semibold">Sobre você / sua imobiliária</h2>
@@ -217,22 +203,10 @@ export default function SolicitarPortal() {
           <PublicImageUpload label="Imagem da seção Sobre" value={branding.about_image_url} onChange={(v) => upd('about_image_url', v)} folder="about" />
         </Card>
 
-        {/* Contato e Redes */}
+        {/* Redes sociais */}
         <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Contato e redes sociais</h2>
+          <h2 className="text-xl font-semibold">Redes sociais</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label>WhatsApp do site</Label>
-              <Input value={branding.whatsapp} onChange={(e) => upd('whatsapp', e.target.value)} />
-            </div>
-            <div>
-              <Label>Telefone</Label>
-              <Input value={branding.phone} onChange={(e) => upd('phone', e.target.value)} />
-            </div>
-            <div>
-              <Label>E-mail</Label>
-              <Input value={branding.email} onChange={(e) => upd('email', e.target.value)} />
-            </div>
             <div>
               <Label>Endereço</Label>
               <Input value={branding.address} onChange={(e) => upd('address', e.target.value)} />
@@ -257,42 +231,6 @@ export default function SolicitarPortal() {
               <Label>LinkedIn (URL)</Label>
               <Input value={branding.linkedin} onChange={(e) => upd('linkedin', e.target.value)} />
             </div>
-          </div>
-        </Card>
-
-        {/* Menu */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Rótulos do menu</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {(['home','sobre','contato','financie','negociar'] as const).map((k) => (
-              <div key={k}>
-                <Label className="capitalize">{k}</Label>
-                <Input value={branding.menu_labels[k]} onChange={(e) => updMenu(k, e.target.value)} />
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* SEO */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">SEO</h2>
-          <div>
-            <Label>Título do site</Label>
-            <Input value={seo.title} onChange={(e) => setSeo({ ...seo, title: e.target.value })} />
-          </div>
-          <div>
-            <Label>Descrição</Label>
-            <Textarea rows={3} value={seo.description} onChange={(e) => setSeo({ ...seo, description: e.target.value })} />
-          </div>
-          <PublicImageUpload label="Favicon" value={seo.favicon_url} onChange={(v) => setSeo({ ...seo, favicon_url: v })} folder="favicon" />
-        </Card>
-
-        {/* Rodapé */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Rodapé</h2>
-          <div>
-            <Label>Texto do rodapé</Label>
-            <Input value={branding.footer_text} onChange={(e) => upd('footer_text', e.target.value)} />
           </div>
         </Card>
 
