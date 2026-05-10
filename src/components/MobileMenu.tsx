@@ -63,7 +63,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72">
+      <SheetContent side="left" className="w-72 overflow-y-auto max-h-screen">
         <SheetHeader>
           <SheetTitle className="text-left">
             {isPartnerSite && partner?.logo_url ? (
