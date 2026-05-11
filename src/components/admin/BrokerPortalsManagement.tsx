@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, ExternalLink, Copy, Loader2, Eye, X, ChevronsUpDown } from 'lucide-react';
 import { PORTAL_TEMPLATES, getTemplateName } from '@/lib/portalTemplatesCatalog';
 import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
+import { PortalDomainPanel } from '@/components/admin/PortalDomainPanel';
 
 type Portal = {
   id: string;
@@ -286,6 +287,7 @@ export function BrokerPortalsManagement() {
             <Tabs defaultValue="geral" className="w-full">
               <TabsList className="flex flex-wrap h-auto">
                 <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="dominio">Domínio</TabsTrigger>
                 <TabsTrigger value="marca">Marca</TabsTrigger>
                 <TabsTrigger value="hero">Hero</TabsTrigger>
                 <TabsTrigger value="sobre">Sobre</TabsTrigger>
@@ -293,6 +295,17 @@ export function BrokerPortalsManagement() {
                 <TabsTrigger value="seo">SEO</TabsTrigger>
                 <TabsTrigger value="avancado">Avançado</TabsTrigger>
               </TabsList>
+
+              {/* DOMÍNIO */}
+              <TabsContent value="dominio" className="space-y-4">
+                <PortalDomainPanel
+                  customDomain={editing.custom_domain ?? ''}
+                  onChange={(v) => setEditing({ ...editing, custom_domain: v })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Lembre de clicar em <strong>Salvar</strong> no rodapé para gravar o domínio.
+                </p>
+              </TabsContent>
 
               {/* GERAL */}
               <TabsContent value="geral" className="space-y-4">
