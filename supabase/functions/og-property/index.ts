@@ -107,8 +107,9 @@ serve(async (req) => {
     const descRich = property.additional_info?.toString().slice(0, 200) || property.title || "";
     const description = [descBase, descRich].filter(Boolean).join(" — ") || "Confira este imóvel.";
 
-    const photos: string[] = Array.isArray(property.photos) ? property.photos : [];
-    const image = photos[0] || "https://proplisted-hub.lovable.app/placeholder.svg";
+    const photos: any[] = Array.isArray(property.photos) ? property.photos : [];
+    const firstPhoto = photos[0];
+    const image = (typeof firstPhoto === "string" ? firstPhoto : firstPhoto?.url) || "https://proplisted-hub.lovable.app/placeholder.svg";
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
