@@ -1,4 +1,5 @@
 import { Instagram, Facebook, Youtube, Heart, Phone, Mail, Copy } from 'lucide-react';
+import { formatPhoneBR } from '@/lib/whatsapp';
 import { BrokerPortal } from '@/hooks/useBrokerPortal';
 import { toast } from 'sonner';
 import { resolveMenuItems } from './menuItems';
