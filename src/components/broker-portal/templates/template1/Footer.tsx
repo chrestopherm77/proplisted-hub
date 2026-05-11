@@ -20,7 +20,7 @@ export function Footer({ portal, onNav }: { portal: BrokerPortal; onNav: (s: str
           {b.cnpj && <p className="font-semibold text-[var(--bp-accent)]">CNPJ - {b.cnpj}</p>}
           {b.whatsapp && (
             <a href={`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`} className="flex items-center gap-2 text-[var(--bp-accent)]">
-              <Phone className="h-4 w-4" /> {b.whatsapp}
+              <Phone className="h-4 w-4" /> {formatPhoneBR(b.whatsapp)}
             </a>
           )}
           {b.email && (
