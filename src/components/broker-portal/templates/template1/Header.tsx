@@ -14,7 +14,7 @@ export function Header({ portal, onNav, currentSection }: { portal: BrokerPortal
         <div className="container mx-auto px-4 py-2 flex items-center justify-end gap-4 flex-wrap">
           {b.whatsapp && (
             <a href={`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-[var(--bp-accent)]">
-              <Phone className="h-3 w-3" /> {b.whatsapp}
+              <Phone className="h-3 w-3" /> {formatPhoneBR(b.whatsapp)}
             </a>
           )}
           {b.email && (
