@@ -41,3 +41,19 @@ export function buildWaLink(phone: string | null | undefined, message?: string):
   const base = `https://wa.me/${num}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
+
+/**
+ * Formata telefone brasileiro como (DDD) Numero.
+ * Aceita números com/sem DDI 55, com/sem máscara.
+ * Ex.: 5516992456258 -> (16) 99245-6258
+ */
+export function formatPhoneBR(phone: string | null | undefined): string {
+  if (!phone) return "";
+  let d = String(phone).replace(/\D/g, "");
+  if (!d) return "";
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  return String(phone);
+}
+

@@ -8,6 +8,7 @@ import { PropertyCard } from './PropertyCard';
 import { useFavorites } from './useFavorites';
 import { ArrowLeft, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatPhoneBR } from '@/lib/whatsapp';
 
 export function PropertyDetail({ portal, property, all, onBack, onOpen }: { portal: BrokerPortal; property: any; all: any[]; onBack: () => void; onOpen: (id: string) => void }) {
   const b = portal.branding ?? {};
@@ -33,8 +34,10 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
         <button onClick={onBack} className="text-sm flex items-center gap-1 mb-3 hover:text-[var(--bp-accent-strong)]">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </button>
-        <div className="relative">
-          <PropertyGallery photos={property.photos || []} />
+        <div className="relative max-w-4xl mx-auto">
+          <div className="[&_.aspect-video]:max-h-[60vh] [&_.aspect-video]:md:max-h-[480px]">
+            <PropertyGallery photos={property.photos || []} />
+          </div>
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             <span className="bg-black/80 text-white text-xs px-2 py-1 rounded">Ref.: {property.reference_code}</span>
             <span className="bg-black/80 text-white text-xs px-2 py-1 rounded">{(property.photos || []).length} fotos</span>
@@ -80,7 +83,7 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
               {b.creci && <p className="text-xs text-neutral-500">CRECI - {b.creci}</p>}
               {b.whatsapp && (
                 <a href={`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`} className="flex items-center gap-2 text-[var(--bp-accent-strong)] mt-2 text-sm">
-                  <Phone className="h-4 w-4" /> {b.whatsapp}
+                  <Phone className="h-4 w-4" /> {formatPhoneBR(b.whatsapp)}
                 </a>
               )}
               <div className="mt-4 space-y-2">
