@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getEffectivePortalHost } from '@/lib/portalHost';
 
 export interface BrokerPortal {
   id: string;
@@ -27,8 +28,10 @@ export function useBrokerPortalByDomain() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const host = window.location.hostname;
-    if (MAIN_HOSTS.includes(host) || host.includes('lovable.app')) {
+    const host = getEffectivePortalHost();
+    const realHost = window.location.hostname;
+    // Se NÃO veio host via proxy/storage e estamos num host principal, ignora.
+    if (host === realHost && (MAIN_HOSTS.includes(host) || host.includes('lovable.app'))) {
       setLoading(false);
       return;
     }
