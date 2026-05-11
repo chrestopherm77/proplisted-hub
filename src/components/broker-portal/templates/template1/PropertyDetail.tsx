@@ -34,7 +34,9 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
     window.open(`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // URL com Open Graph (edge function) — preview com foto e título no FB/WhatsApp
+  const portalRef = portal.custom_domain || portal.slug;
+  const shareUrl = `https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/og-property?p=${property.id}&portal=${encodeURIComponent(portalRef)}`;
   const shareTitle = `${property.property_type ?? 'Imóvel'} - ${formatPrice(price)} - Ref. ${property.reference_code ?? ''}`.trim();
 
   const shareFacebook = () => {
