@@ -1,61 +1,27 @@
-## Objetivo
+## Ajustes no template Agnus (template1) — página de detalhe do imóvel
 
-Criar um formulário público (link compartilhável) que coleta os mesmos dados pedidos no "Novo portal" do admin, e mostrar as solicitações em uma nova aba dentro do admin. Sem integração automática — o admin recebe os dados e cria o portal manualmente depois.
+Arquivo: `src/components/broker-portal/templates/template1/PropertyDetail.tsx`
 
-## O que será criado
+### 1. Remover opção de e-mail no card de contato lateral
+No card lateral (lado esquerdo do detalhe do imóvel) hoje existem dois botões: "WhatsApp" e "E-mail", além de um input de e-mail e exibição do e-mail copiável da imobiliária. A pessoa só deve ter o botão de WhatsApp.
 
-### 1. Página pública do formulário — `/solicitar-portal`
-Formulário em etapas (ou seções) com TODOS os campos do modal do admin, em linguagem amigável para o corretor:
+Mudanças:
+- Remover o botão "E-mail" e a função `sendEmail`.
+- Remover o input "Seu email" do formulário.
+- Remover o botão "Copiar e-mail" (`copyEmail`) e a exibição do e-mail logo abaixo do telefone.
+- Remover `email` do estado `form` e os imports não utilizados (`Copy`).
+- O botão de WhatsApp passa a ocupar a largura inteira (substituindo o `grid grid-cols-2`).
 
-- **Dados do corretor**: Nome, e‑mail, telefone/WhatsApp
-- **Marca**: Logo (upload), CNPJ, CRECI, cores (primária, destaque, fundo)
-- **Hero (capa)**: Título, subtítulo, imagem de fundo
-- **Sobre**: Texto sobre, imagem da seção sobre
-- **Contato e endereço**: WhatsApp, telefone, e‑mail, endereço
-- **Redes sociais**: Instagram, Facebook, TikTok, YouTube, LinkedIn
-- **SEO**: Título do site, descrição, favicon
-- **Fonte dos imóveis**: "Meus imóveis" ou "Todos da cidade X/UF"
-- **Slug desejado** (ex: imoveis-joao) e domínio personalizado (opcional)
-- **Rótulos do menu** (Início, Sobre, Contato, Financie, Negociar)
-- **Texto do rodapé**
+### 2. Descrição do imóvel
+O bloco "Descrição do imóvel" hoje já lê de `property.additional_info`, que é o campo gravado no cadastro do imóvel no portal (form "Informações adicionais" em `NewProperty.tsx`). Ou seja, **a descrição já vem do portal** quando preenchida.
 
-Sem login. Validação dos campos obrigatórios (nome, e‑mail, telefone, slug). Tela de sucesso ao final.
+Para deixar mais claro e cobrir o caso de imóveis antigos sem `additional_info`, o bloco passa a também usar o `title` do imóvel como fallback:
 
-### 2. Tabela no banco — `broker_portal_requests`
-Armazena cada solicitação enviada:
-- nome, e‑mail, telefone do solicitante
-- `branding` (jsonb), `seo` (jsonb), `slug`, `custom_domain`
-- `properties_source`, `city`, `state`, `template_id`
-- `status` ('NEW' | 'REVIEWED' | 'CREATED' | 'REJECTED')
-- `notes` (admin)
-- `created_at`
+```
+property.additional_info || property.title || 'Sem descrição.'
+```
 
-**RLS**:
-- `INSERT` público (anon) com validação básica (nome/email/telefone preenchidos)
-- `SELECT/UPDATE/DELETE` apenas para `MASTER_ADMIN`
+Nenhuma outra mudança em layout, mapa, galeria ou imóveis similares.
 
-### 3. Aba no admin — "Solicitações de Portal"
-Dentro de `BrokerPortalsManagement` (ou nova seção do menu admin), uma lista das solicitações com:
-- Resumo (nome, e‑mail, telefone, slug pedido, data, status)
-- Botão "Ver detalhes" abre modal com TODOS os campos preenchidos
-- Botão "Copiar dados" (JSON) e "Marcar como criado/rejeitado"
-- Badge contador de solicitações novas
-
-Sem criar o portal automaticamente — o admin lê e usa os dados manualmente no formulário existente "Novo portal".
-
-### 4. Upload de imagens no formulário público
-Para logo, hero e sobre, usar bucket público existente (ou criar `portal-requests` público). Usuário anônimo precisa poder fazer upload nesse bucket — política de storage permitindo INSERT anon.
-
-## Detalhes técnicos
-
-- Rota `/solicitar-portal` adicionada em `src/App.tsx`, página em `src/pages/SolicitarPortal.tsx`
-- Componente do form reaproveita campos/labels do `BrokerPortalsManagement.tsx`
-- Nova aba/sessão no admin: `src/components/admin/BrokerPortalRequests.tsx` listada em `Admin.tsx`
-- Migração cria tabela + bucket de storage + políticas
-- Link "Copiar link do formulário" no topo de "Portais de Imóveis" no admin para o admin enviar ao corretor
-
-## Fora do escopo
-
-- Criar o portal automaticamente a partir da solicitação
-- Notificações por e‑mail/WhatsApp ao admin (pode ser adicionado depois)
-- Edição da solicitação pelo corretor após envio
+### Resumo de arquivos alterados
+- `src/components/broker-portal/templates/template1/PropertyDetail.tsx`

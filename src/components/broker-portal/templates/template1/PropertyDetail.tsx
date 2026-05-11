@@ -6,13 +6,13 @@ import { formatPrice, getOperationLabel } from '@/lib/propertyUtils';
 import { statusLabel } from './types';
 import { PropertyCard } from './PropertyCard';
 import { useFavorites } from './useFavorites';
-import { ArrowLeft, Phone, Copy, MapPin } from 'lucide-react';
+import { ArrowLeft, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function PropertyDetail({ portal, property, all, onBack, onOpen }: { portal: BrokerPortal; property: any; all: any[]; onBack: () => void; onOpen: (id: string) => void }) {
   const b = portal.branding ?? {};
   const fav = useFavorites(portal.slug);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', message: 'Olá, estou interessado nesse imóvel que encontrei no site. Aguardo seu retorno.' });
+  const [form, setForm] = useState({ name: '', phone: '', message: 'Olá, estou interessado nesse imóvel que encontrei no site. Aguardo seu retorno.' });
 
   const price = property.price_sale ?? property.price_rent;
 
@@ -26,15 +26,6 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
     const text = `${form.message}\n\nImóvel Ref: ${property.reference_code}\nNome: ${form.name}\nTelefone: ${form.phone}`;
     window.open(`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
   };
-
-  const sendEmail = () => {
-    if (!b.email) return toast.error('E-mail não configurado');
-    const subject = `Interesse no imóvel Ref: ${property.reference_code}`;
-    const body = `${form.message}\n\nNome: ${form.name}\nTelefone: ${form.phone}\nEmail: ${form.email}`;
-    window.open(`mailto:${b.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-  };
-
-  const copyEmail = () => { if (b.email) { navigator.clipboard.writeText(b.email); toast.success('E-mail copiado'); } };
 
   return (
     <div className="bg-[#fafaf5]">
@@ -92,19 +83,11 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
                   <Phone className="h-4 w-4" /> {b.whatsapp}
                 </a>
               )}
-              {b.email && (
-                <button onClick={copyEmail} className="flex items-center gap-1 text-sm mt-1"><Copy className="h-3 w-3" /> {b.email}</button>
-              )}
-
               <div className="mt-4 space-y-2">
                 <input className="w-full border rounded px-3 py-2 text-sm" placeholder="Seu nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 <input className="w-full border rounded px-3 py-2 text-sm" placeholder="Seu telefone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                <input className="w-full border rounded px-3 py-2 text-sm" placeholder="Seu email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 <textarea className="w-full border rounded px-3 py-2 text-sm" rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={sendWhats} className="py-2 bg-green-500 text-white font-semibold rounded text-sm">WhatsApp</button>
-                  <button onClick={sendEmail} className="py-2 bg-[var(--bp-accent)] text-black font-semibold rounded text-sm">E-mail</button>
-                </div>
+                <button onClick={sendWhats} className="w-full py-2 bg-green-500 text-white font-semibold rounded text-sm">WhatsApp</button>
               </div>
             </div>
           </div>
@@ -112,7 +95,7 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
           <div className="md:col-span-2 space-y-4">
             <div className="bg-white rounded shadow-sm p-4">
               <h3 className="font-semibold mb-2">Descrição do imóvel</h3>
-              <p className="text-sm whitespace-pre-line text-neutral-700">{property.additional_info || 'Sem descrição.'}</p>
+              <p className="text-sm whitespace-pre-line text-neutral-700">{property.additional_info || property.title || 'Sem descrição.'}</p>
             </div>
             <div className="bg-white rounded shadow-sm p-4">
               <h3 className="font-semibold mb-2 flex items-center gap-1"><MapPin className="h-4 w-4" /> Localização</h3>
