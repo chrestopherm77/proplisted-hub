@@ -8,6 +8,7 @@ import { PropertyCard } from './PropertyCard';
 import { useFavorites } from './useFavorites';
 import { ArrowLeft, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatPhoneBR } from '@/lib/whatsapp';
 
 export function PropertyDetail({ portal, property, all, onBack, onOpen }: { portal: BrokerPortal; property: any; all: any[]; onBack: () => void; onOpen: (id: string) => void }) {
   const b = portal.branding ?? {};
