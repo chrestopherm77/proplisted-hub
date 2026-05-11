@@ -101,3 +101,6 @@ verify_jwt = true
 
 [functions.send-welcome-email]
 verify_jwt = false
+
+[functions.og-property]
+verify_jwt = false
