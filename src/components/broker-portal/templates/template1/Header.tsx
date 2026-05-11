@@ -29,9 +29,8 @@ export function Header({ portal, onNav, currentSection }: { portal: BrokerPortal
         </div>
       </div>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          {b.logo_url ? <img src={b.logo_url} alt="logo" className="h-10" /> : <span className="font-bold text-lg">{portal.seo?.title ?? 'Portal de Imóveis'}</span>}
-        </div>
+        <div />
+
         <nav className="flex items-center gap-1 flex-wrap">
           {items.map((it) => {
             const active = it.mode === 'section' && currentSection === it.target;
