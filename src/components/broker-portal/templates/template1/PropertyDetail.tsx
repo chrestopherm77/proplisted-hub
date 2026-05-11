@@ -81,7 +81,7 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
               {b.creci && <p className="text-xs text-neutral-500">CRECI - {b.creci}</p>}
               {b.whatsapp && (
                 <a href={`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`} className="flex items-center gap-2 text-[var(--bp-accent-strong)] mt-2 text-sm">
-                  <Phone className="h-4 w-4" /> {b.whatsapp}
+                  <Phone className="h-4 w-4" /> {formatPhoneBR(b.whatsapp)}
                 </a>
               )}
               <div className="mt-4 space-y-2">
