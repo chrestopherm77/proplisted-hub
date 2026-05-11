@@ -34,8 +34,10 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
         <button onClick={onBack} className="text-sm flex items-center gap-1 mb-3 hover:text-[var(--bp-accent-strong)]">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </button>
-        <div className="relative">
-          <PropertyGallery photos={property.photos || []} />
+        <div className="relative max-w-4xl mx-auto">
+          <div className="[&_.aspect-video]:max-h-[60vh] [&_.aspect-video]:md:max-h-[480px]">
+            <PropertyGallery photos={property.photos || []} />
+          </div>
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             <span className="bg-black/80 text-white text-xs px-2 py-1 rounded">Ref.: {property.reference_code}</span>
             <span className="bg-black/80 text-white text-xs px-2 py-1 rounded">{(property.photos || []).length} fotos</span>
