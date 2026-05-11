@@ -6,9 +6,15 @@ import { formatPrice, getOperationLabel } from '@/lib/propertyUtils';
 import { statusLabel } from './types';
 import { PropertyCard } from './PropertyCard';
 import { useFavorites } from './useFavorites';
-import { ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Phone, MapPin, Share2, Facebook, Link2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPhoneBR } from '@/lib/whatsapp';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 
 export function PropertyDetail({ portal, property, all, onBack, onOpen }: { portal: BrokerPortal; property: any; all: any[]; onBack: () => void; onOpen: (id: string) => void }) {
   const b = portal.branding ?? {};
@@ -26,6 +32,34 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
     if (!b.whatsapp) return toast.error('WhatsApp não configurado');
     const text = `${form.message}\n\nImóvel Ref: ${property.reference_code}\nNome: ${form.name}\nTelefone: ${form.phone}`;
     window.open(`https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = `${property.property_type ?? 'Imóvel'} - ${formatPrice(price)} - Ref. ${property.reference_code ?? ''}`.trim();
+
+  const shareFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer');
+  };
+  const shareWhatsapp = () => {
+    const text = `${shareTitle}\n${shareUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copiado!');
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  };
+  const shareNative = async () => {
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({ title: shareTitle, url: shareUrl });
+      } catch { /* cancelado */ }
+    } else {
+      copyLink();
+    }
   };
 
   return (
@@ -63,7 +97,36 @@ export function PropertyDetail({ portal, property, all, onBack, onOpen }: { port
               </div>
             </div>
 
-            <button className="w-full py-3 bg-[var(--bp-accent)] text-black font-semibold rounded">Agendar visita</button>
+            <div className="flex gap-2">
+              <button className="flex-1 py-3 bg-[var(--bp-accent)] text-black font-semibold rounded">Agendar visita</button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="px-4 py-3 bg-white border rounded font-semibold text-sm flex items-center gap-2 hover:bg-neutral-50"
+                    aria-label="Compartilhar"
+                  >
+                    <Share2 className="h-4 w-4" /> Compartilhar
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={shareFacebook}>
+                    <Facebook className="h-4 w-4 mr-2" /> Facebook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={shareWhatsapp}>
+                    <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={copyLink}>
+                    <Link2 className="h-4 w-4 mr-2" /> Copiar link
+                  </DropdownMenuItem>
+                  {typeof navigator !== 'undefined' && (navigator as any).share && (
+                    <DropdownMenuItem onClick={shareNative}>
+                      <Share2 className="h-4 w-4 mr-2" /> Mais opções
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <div className="bg-white rounded shadow-sm p-4">
               <h3 className="font-semibold mb-2 border-b pb-2">Ficha do imóvel</h3>
