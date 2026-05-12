@@ -42,6 +42,7 @@ import {
   Building2,
   Mail,
   HelpCircle,
+  Megaphone,
 } from 'lucide-react';
 
 interface AdminNavItem {
