@@ -97,6 +97,10 @@ const Profile = () => {
       if (searchParams.get('recovery') === 'true') {
         setIsRecoveryModalOpen(true);
       }
+      if (searchParams.get('complete') === '1') {
+        setForceCompletion(true);
+        setIsCompleteModalOpen(true);
+      }
     }
   }, [user, authLoading, navigate]);
 
@@ -104,6 +108,15 @@ const Profile = () => {
     setIsRecoveryModalOpen(false);
     searchParams.delete('recovery');
     setSearchParams(searchParams, { replace: true });
+  };
+
+  const handleCloseCompleteModal = () => {
+    setIsCompleteModalOpen(false);
+    setForceCompletion(false);
+    if (searchParams.get('complete')) {
+      searchParams.delete('complete');
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const fetchProfile = async () => {
