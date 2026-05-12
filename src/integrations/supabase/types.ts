@@ -171,6 +171,57 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_banners: {
+        Row: {
+          bg_color: string
+          created_at: string
+          dismissible: boolean
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          link_label: string | null
+          link_url: string | null
+          message: string
+          priority: number
+          starts_at: string | null
+          text_color: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          bg_color?: string
+          created_at?: string
+          dismissible?: boolean
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          message: string
+          priority?: number
+          starts_at?: string | null
+          text_color?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bg_color?: string
+          created_at?: string
+          dismissible?: boolean
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          message?: string
+          priority?: number
+          starts_at?: string | null
+          text_color?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       asaas_webhook_events: {
         Row: {
           asaas_event_id: string | null
