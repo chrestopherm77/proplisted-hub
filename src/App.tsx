@@ -120,6 +120,7 @@ const App = () => {
           <Route path="/solicitar-portal" element={<SolicitarPortal />} />
           <Route path="/admin/email-marketing" element={<Admin section="email-marketing" />} />
           <Route path="/admin/faq" element={<Admin section="faq" />} />
+          <Route path="/admin/alert-banners" element={<Admin section="alert-banners" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
           <Route path="/portal-modelo/:id" element={<PortalTemplatePreview />} />
