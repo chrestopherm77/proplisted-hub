@@ -17,6 +17,7 @@ import { ProfilePasswordCard } from '@/components/profile/ProfilePasswordCard';
 import { MyBrandCard } from '@/components/profile/MyBrandCard';
 import { MySubscriptionCard } from '@/components/profile/MySubscriptionCard';
 import { CompleteProfileBanner } from '@/components/profile/CompleteProfileBanner';
+import { CompleteProfileModal } from '@/components/profile/CompleteProfileModal';
 
 interface ProfileState {
   person_type: string;
@@ -65,6 +66,8 @@ const Profile = () => {
   const { toast } = useToast();
 
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [forceCompletion, setForceCompletion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(defaultProfile);
@@ -94,6 +97,10 @@ const Profile = () => {
       if (searchParams.get('recovery') === 'true') {
         setIsRecoveryModalOpen(true);
       }
+      if (searchParams.get('complete') === '1') {
+        setForceCompletion(true);
+        setIsCompleteModalOpen(true);
+      }
     }
   }, [user, authLoading, navigate]);
 
@@ -101,6 +108,15 @@ const Profile = () => {
     setIsRecoveryModalOpen(false);
     searchParams.delete('recovery');
     setSearchParams(searchParams, { replace: true });
+  };
+
+  const handleCloseCompleteModal = () => {
+    setIsCompleteModalOpen(false);
+    setForceCompletion(false);
+    if (searchParams.get('complete')) {
+      searchParams.delete('complete');
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const fetchProfile = async () => {
@@ -185,9 +201,15 @@ const Profile = () => {
   return (
     <Layout>
       <PasswordRecoveryModal isOpen={isRecoveryModalOpen} onClose={handleCloseRecoveryModal} />
+      <CompleteProfileModal
+        open={isCompleteModalOpen}
+        onClose={handleCloseCompleteModal}
+        forceCompletion={forceCompletion}
+        onCompleted={() => fetchProfile()}
+      />
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
         {/* Banner Completar Cadastro */}
-        <CompleteProfileBanner />
+        <CompleteProfileBanner onOpenWizard={() => setIsCompleteModalOpen(true)} />
 
         {/* Minha Assinatura */}
         <MySubscriptionCard />

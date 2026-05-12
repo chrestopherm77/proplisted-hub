@@ -47,6 +47,7 @@ export default function CadastroRealizado() {
     };
   }, []);
 
+  const goComplete = () => navigate("/profile?complete=1", { replace: true });
   const goNow = () => navigate("/primeiros-passos", { replace: true });
 
   return (
@@ -63,13 +64,18 @@ export default function CadastroRealizado() {
             Cadastro realizado com sucesso!
           </h1>
           <p className="text-lg text-muted-foreground">
-            Bem-vindo(a) ao Conectae Imob. Vamos te mostrar como aproveitar a plataforma ao máximo.
+            Falta pouco! Complete seus dados e assine os termos para liberar todos os recursos da plataforma.
           </p>
         </div>
 
-        <Button size="lg" className="w-full sm:w-auto" onClick={goNow}>
-          Conhecer plataforma
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button size="lg" className="w-full sm:w-auto" onClick={goComplete}>
+            Completar meu cadastro
+          </Button>
+          <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={goNow}>
+            Conhecer plataforma
+          </Button>
+        </div>
       </div>
     </div>
   );

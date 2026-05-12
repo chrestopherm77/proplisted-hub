@@ -1448,7 +1448,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accepted_contract: boolean
+          accepted_dpa: boolean
           accepted_terms: boolean | null
+          accepted_terms_of_use: boolean
           address: string | null
           address_city: string | null
           address_neighborhood: string | null
@@ -1489,10 +1492,14 @@ export type Database = {
           rt_crea: string | null
           rt_crea_uf: string | null
           rt_name: string | null
+          terms_accepted_at: string | null
           updated_at: string | null
         }
         Insert: {
+          accepted_contract?: boolean
+          accepted_dpa?: boolean
           accepted_terms?: boolean | null
+          accepted_terms_of_use?: boolean
           address?: string | null
           address_city?: string | null
           address_neighborhood?: string | null
@@ -1533,10 +1540,14 @@ export type Database = {
           rt_crea?: string | null
           rt_crea_uf?: string | null
           rt_name?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          accepted_contract?: boolean
+          accepted_dpa?: boolean
           accepted_terms?: boolean | null
+          accepted_terms_of_use?: boolean
           address?: string | null
           address_city?: string | null
           address_neighborhood?: string | null
@@ -1577,6 +1588,7 @@ export type Database = {
           rt_crea?: string | null
           rt_crea_uf?: string | null
           rt_name?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
