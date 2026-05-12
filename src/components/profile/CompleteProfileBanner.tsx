@@ -89,9 +89,16 @@ export function CompleteProfileBanner({ onCompleted, onOpenWizard }: CompletePro
                 para liberar todos os recursos da plataforma.
               </p>
             </div>
-            <Button onClick={handleMarkComplete} disabled={loading} size="sm">
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Validando...</> : "Já preenchi tudo — marcar como completo"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {onOpenWizard && (
+                <Button onClick={onOpenWizard} size="sm">
+                  Completar agora
+                </Button>
+              )}
+              <Button onClick={handleMarkComplete} disabled={loading} size="sm" variant="outline">
+                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Validando...</> : "Já preenchi tudo"}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
