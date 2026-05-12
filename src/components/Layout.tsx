@@ -11,6 +11,7 @@ import { UserAvatarMenu } from '@/components/UserAvatarMenu';
 import { FaqButton } from '@/components/FaqButton';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { CompleteProfileReminder } from '@/components/profile/CompleteProfileReminder';
+import { AlertBanner } from '@/components/AlertBanner';
 
 interface LayoutProps {
   children: ReactNode;
