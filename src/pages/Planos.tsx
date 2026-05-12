@@ -372,7 +372,10 @@ function CycleAndGrid({
           const parent = ((plan as any).parent_slug ?? plan.slug) as string;
           const activePlan = plans.find((p) => p.id === activePlanId);
           const activeParent = activePlan ? ((activePlan as any).parent_slug ?? activePlan.slug) : null;
-          const isCurrent = activeParent != null && parent === activeParent;
+          // Sem nenhuma assinatura ativa nem pendente => o plano grátis (Conexão) é o "atual" por padrão.
+          const noActiveOrPending = activePlanId == null && pendingPlanId == null;
+          const isFreeFallbackCurrent = noActiveOrPending && Number(plan.price) === 0;
+          const isCurrent = (activeParent != null && parent === activeParent) || isFreeFallbackCurrent;
           return (
             <PlanCard
               key={plan.id}
