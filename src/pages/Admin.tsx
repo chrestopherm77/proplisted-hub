@@ -26,6 +26,7 @@ import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagem
 import { BrokerPortalRequests } from '@/components/admin/BrokerPortalRequests';
 import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
 import { FaqManagement } from '@/components/admin/FaqManagement';
+import { AlertBannersManagement } from '@/components/admin/AlertBannersManagement';
 
 type Section =
   | 'dashboard'
