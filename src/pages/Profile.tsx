@@ -201,9 +201,15 @@ const Profile = () => {
   return (
     <Layout>
       <PasswordRecoveryModal isOpen={isRecoveryModalOpen} onClose={handleCloseRecoveryModal} />
+      <CompleteProfileModal
+        open={isCompleteModalOpen}
+        onClose={handleCloseCompleteModal}
+        forceCompletion={forceCompletion}
+        onCompleted={() => fetchProfile()}
+      />
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
         {/* Banner Completar Cadastro */}
-        <CompleteProfileBanner />
+        <CompleteProfileBanner onOpenWizard={() => setIsCompleteModalOpen(true)} />
 
         {/* Minha Assinatura */}
         <MySubscriptionCard />
