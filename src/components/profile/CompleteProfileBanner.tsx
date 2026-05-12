@@ -10,9 +10,10 @@ import { CheckCircle2, AlertCircle, Loader2, Sparkles } from "lucide-react";
 
 interface CompleteProfileBannerProps {
   onCompleted?: () => void;
+  onOpenWizard?: () => void;
 }
 
-export function CompleteProfileBanner({ onCompleted }: CompleteProfileBannerProps) {
+export function CompleteProfileBanner({ onCompleted, onOpenWizard }: CompleteProfileBannerProps) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [completed, setCompleted] = useState<boolean | null>(null);
