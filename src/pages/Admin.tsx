@@ -26,6 +26,7 @@ import { BrokerPortalsManagement } from '@/components/admin/BrokerPortalsManagem
 import { BrokerPortalRequests } from '@/components/admin/BrokerPortalRequests';
 import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManagement';
 import { FaqManagement } from '@/components/admin/FaqManagement';
+import { AlertBannersManagement } from '@/components/admin/AlertBannersManagement';
 
 type Section =
   | 'dashboard'
@@ -54,7 +55,8 @@ type Section =
   | 'broker-portals'
   | 'broker-portal-requests'
   | 'email-marketing'
-  | 'faq';
+  | 'faq'
+  | 'alert-banners';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -84,6 +86,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'broker-portal-requests': BrokerPortalRequests,
   'email-marketing': EmailMarketingManagement,
   faq: FaqManagement,
+  'alert-banners': AlertBannersManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
