@@ -17,6 +17,7 @@ import { ProfilePasswordCard } from '@/components/profile/ProfilePasswordCard';
 import { MyBrandCard } from '@/components/profile/MyBrandCard';
 import { MySubscriptionCard } from '@/components/profile/MySubscriptionCard';
 import { CompleteProfileBanner } from '@/components/profile/CompleteProfileBanner';
+import { CompleteProfileModal } from '@/components/profile/CompleteProfileModal';
 
 interface ProfileState {
   person_type: string;
