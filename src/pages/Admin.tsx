@@ -55,7 +55,8 @@ type Section =
   | 'broker-portals'
   | 'broker-portal-requests'
   | 'email-marketing'
-  | 'faq';
+  | 'faq'
+  | 'alert-banners';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
