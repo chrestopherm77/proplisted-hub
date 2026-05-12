@@ -66,6 +66,8 @@ const Profile = () => {
   const { toast } = useToast();
 
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [forceCompletion, setForceCompletion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(defaultProfile);
