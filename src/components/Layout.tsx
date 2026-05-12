@@ -79,6 +79,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
           </header>
 
+          <AlertBanner />
           <main className="flex-1 container mx-auto px-4 py-4 md:py-8">{children}</main>
 
           <footer className="bg-white border-t border-border mt-auto">
