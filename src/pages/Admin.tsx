@@ -86,6 +86,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'broker-portal-requests': BrokerPortalRequests,
   'email-marketing': EmailMarketingManagement,
   faq: FaqManagement,
+  'alert-banners': AlertBannersManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
