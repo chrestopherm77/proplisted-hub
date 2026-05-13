@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatPhone } from "@/lib/validators";
-import { User, Phone, Mail, FileText, Check, CheckCircle, Loader2, Send } from "lucide-react";
+import { User, Phone, Mail, FileText, Check, CheckCircle, Loader2, Send, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
