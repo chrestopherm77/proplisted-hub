@@ -201,6 +201,15 @@ export function ContactStep({ data, updateData }: StepProps) {
         subtitle="Verificação de número real para receber ofertas de imóveis da sua preferência por um de nossos corretores"
       >
         <div className="space-y-6 max-w-md mx-auto">
+          {/* Alerta de validação */}
+          <div className="flex items-start gap-3 p-4 rounded-lg border bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900 text-amber-800 dark:text-amber-300">
+            <Info className="h-5 w-5 mt-0.5 shrink-0" />
+            <p className="text-sm leading-relaxed">
+              <strong>É necessário validar seu número</strong> para que os corretores possam entrar em contato com você.
+              Sem essa validação, seu lead não será liberado.
+            </p>
+          </div>
+
           {/* Name Input */}
           <div className="space-y-2">
             <Label htmlFor="name" className="flex items-center gap-2">
