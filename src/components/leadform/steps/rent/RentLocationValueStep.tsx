@@ -1,6 +1,7 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { LocationSelector } from "../../LocationSelector";
+import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
