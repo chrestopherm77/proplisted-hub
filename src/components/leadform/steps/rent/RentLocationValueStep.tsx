@@ -1,6 +1,7 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { LocationSelector } from "../../LocationSelector";
+import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,8 +39,8 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
             onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '' })}
             onCityChange={(city) => updateLocationAndRegion({ city })}
             onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
-            allowedStates={['SP']}
-            allowedCities={['Ribeirão Preto','Bonfim Paulista','Cravinhos','Sertãozinho','Serrana','Jardinópolis','Brodowski','Batatais','Sales Oliveira','Orlândia','Nuporanga','São Joaquim da Barra','Morro Agudo','Pontal','Pitangueiras','Jaboticabal','Pradópolis','Dumont','Guatapará']}
+            allowedStates={ALLOWED_STATES}
+            allowedCities={ALLOWED_CITIES}
           />
         </div>
 

@@ -1,45 +1,61 @@
-## Diagnóstico
+## Objetivo
 
-O erro **"Edge Function returned a non-2xx status code"** veio da edge `generate-creative-image`. Nos logs:
+Adicionar 6 novas cidades de Minas Gerais (Vertentes) aos formulários LP/LP01 e rotear automaticamente os novos leads dessas cidades para o grupo de WhatsApp das Vertentes (que já existe e atende Barbacena, São João del Rei e Tiradentes).
 
+Cidades a incluir (MG):
+- Resende Costa
+- Prados
+- Ritápolis
+- Rio das Mortes
+- Barroso
+- Conceição da Barra de Minas
+
+## Mudanças
+
+### 1. Formulários LP / LP01 (frontend)
+
+Hoje o `LocationSelector` dos 4 fluxos está travado em `allowedStates: ['SP']` e uma lista fixa de cidades de Ribeirão Preto e região. Vou ampliar para aceitar **SP + MG** e incluir as novas cidades em todos os fluxos:
+
+- `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx`
+- `src/components/leadform/steps/rent/RentLocationValueStep.tsx`
+- `src/components/leadform/steps/build/BuildLocationStep.tsx`
+- `src/components/leadform/steps/sell/SellGeneralInfoStep.tsx`
+
+Para evitar duplicação, vou centralizar em um único arquivo `src/components/leadform/allowedRegions.ts` que exporta `ALLOWED_STATES` e `ALLOWED_CITIES`, e os 4 steps passam a importar dele. Assim, novas cidades futuras se adicionam em um só lugar.
+
+### 2. Roteamento do grupo WhatsApp (backend)
+
+A função `notify-lead-group` já roteia por cidade via tabela `whatsapp_city_groups` + RPC `get_groups_for_city`. O grupo das Vertentes (`120363409744685071@g.us`) já existe para Barbacena/SJDR/Tiradentes.
+
+Basta inserir 6 novas linhas em `whatsapp_city_groups` mapeando as novas cidades MG para esse mesmo `group_jid`. Nenhuma mudança de código é necessária no backend — o roteamento passa a funcionar automaticamente.
+
+## Detalhes técnicos
+
+```text
+src/components/leadform/
+├── allowedRegions.ts          (novo — fonte única)
+└── steps/
+    ├── buy/BuyLocationBudgetStep.tsx     (importa de allowedRegions)
+    ├── rent/RentLocationValueStep.tsx    (importa de allowedRegions)
+    ├── build/BuildLocationStep.tsx       (importa de allowedRegions)
+    └── sell/SellGeneralInfoStep.tsx      (importa de allowedRegions)
 ```
-Gemini API error: 503 { "status": "UNAVAILABLE",
-  "message": "This model is currently experiencing high demand..." }
+
+DB (via insert tool):
+```sql
+INSERT INTO whatsapp_city_groups (city, uf, group_jid, is_active) VALUES
+  ('Resende Costa', 'MG', '120363409744685071@g.us', true),
+  ('Prados', 'MG', '120363409744685071@g.us', true),
+  ('Ritápolis', 'MG', '120363409744685071@g.us', true),
+  ('Rio das Mortes', 'MG', '120363409744685071@g.us', true),
+  ('Barroso', 'MG', '120363409744685071@g.us', true),
+  ('Conceição da Barra de Minas', 'MG', '120363409744685071@g.us', true);
 ```
 
-O modelo configurado no estilo é o **`google/gemini-3-pro-image-preview`** (Nano Banana Pro), que é caro e está sobrecarregado no Google. Hoje a função:
+Observação: a função `get_groups_for_city` já é case/acento-insensitive (`immutable_unaccent_lower`), então o nome cadastrado pelo usuário no formulário casa corretamente independente de acentuação.
 
-1. Não tem retry — qualquer 503 quebra a geração.
-2. Não faz fallback para um modelo mais leve (Flash / Nano Banana 2).
-3. Já debitou os 10 créditos do usuário antes da chamada — em caso de falha 5xx, o crédito **não está sendo devolvido** (o usuário paga por uma falha do Google).
-4. Mostra mensagem genérica "Falha ao gerar imagem com IA" sem orientar o usuário.
+## Fora do escopo
 
-## Plano de correção (somente `supabase/functions/generate-creative-image/index.ts`)
-
-1. **Retry com backoff** para erros transitórios (`503`, `429`, `500`):
-   - até 2 tentativas extras (3 no total)
-   - delay 1.5s → 4s
-
-2. **Fallback de modelo** quando o Pro continuar indisponível após o retry:
-   - se modelo era `gemini-3-pro-image-preview` → tenta `gemini-3.1-flash-image-preview`
-   - registra no log qual modelo realmente gerou
-
-3. **Reembolso de créditos** quando a IA falha por motivo do provedor (5xx/429 após esgotar retries+fallback):
-   - chamar `admin.rpc("admin_adjust_credits", ...)` ou inserir crédito de volta via `credit_transactions` (vou usar o mesmo caminho atômico já existente — refund de `CREATIVE_COST` para o `userId`)
-   - marcar criativo como `FAILED` com mensagem clara
-
-4. **Mensagens user-friendly** por status:
-   - `503` → "A IA está sobrecarregada no momento. Tentamos novamente automaticamente, mas falhou. Seus créditos foram devolvidos. Tente novamente em 1-2 minutos."
-   - `429` → mantém atual
-   - outros 5xx → "Erro temporário na IA. Créditos devolvidos."
-
-5. **Status HTTP de retorno** vira `200` com `{ error, refunded: true }` para o frontend conseguir ler a mensagem (hoje retornar 503 dispara o toast genérico do supabase-js que esconde o body).
-
-### Detalhe técnico do refund
-
-Existe a função `consume_credits_for_creative` (débito atômico). Para o refund, vou usar `admin_adjust_credits` (já existe como edge function) **NÃO** — vou inserir direto via SQL chamando uma RPC já existente ou, se não houver, fazer um simples `update` em `user_credits` somando `CREATIVE_COST` + insert em `credit_transactions` com `type='REFUND'` e referência ao criativo. Vou verificar primeiro o schema durante a implementação para escolher o caminho mais limpo.
-
-### Fora de escopo
-
-- Não vou alterar a UI do `MyCreatives` / `StepResult` — o "Tentar novamente" já existe e vai pegar a nova mensagem.
-- Não vou trocar o modelo padrão configurado pelo admin em `creative_styles` — só fazer fallback automático em runtime quando o Pro estiver fora.
+- Não vou tocar em outras cidades/grupos existentes.
+- Não vou alterar a lógica da função `notify-lead-group` nem o template da mensagem.
+- Não vou criar um novo grupo WhatsApp — uso o mesmo das Vertentes.
