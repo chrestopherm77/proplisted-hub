@@ -1,6 +1,7 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { LocationSelector } from "../../LocationSelector";
+import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 
 export function BuildLocationStep({ data, updateFlowData }: StepProps) {
   // Gera o campo location para compatibilidade
