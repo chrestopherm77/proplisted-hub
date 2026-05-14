@@ -1,66 +1,45 @@
-## Objetivo
+## Diagnóstico
 
-Ao concluir o cadastro inicial, o usuário é levado direto ao perfil e um modal guiado abre automaticamente. Ele preenche os dados que faltam em etapas, e na última etapa assina os 3 termos (Contrato de Parceria, DPA e Termo de Uso). Ao finalizar, o perfil é atualizado e marcado como completo.
-
-## Fluxo
-
-1. `SimpleSignup` (após `signUp` bem-sucedido) → mantém `/cadastro-realizado`.
-2. Botão "Conhecer plataforma" em `/cadastro-realizado` → muda para "Completar meu cadastro" e navega para `/profile?complete=1` (já existe esse query param).
-3. `Profile.tsx` detecta `?complete=1` e abre automaticamente o novo `<CompleteProfileModal />`.
-4. Também adicionamos um botão "Completar agora" no `CompleteProfileBanner` que abre o mesmo modal (substitui o atual "Já preenchi tudo").
-
-## Modal `CompleteProfileModal`
-
-Componente novo em `src/components/profile/CompleteProfileModal.tsx`. Wizard com indicador de progresso.
-
-Etapas (condicionais conforme PF/PJ já gravado em `profiles.person_type`):
+O erro **"Edge Function returned a non-2xx status code"** veio da edge `generate-creative-image`. Nos logs:
 
 ```
-Etapa 1 — Dados pessoais
-  PF: CPF, profissão (se vazia)
-  PJ: CNPJ, razão social, tipo de empresa, dados do RT
-Etapa 2 — Endereço completo
-  CEP/endereço, UF, cidade, bairro (UF/cidade já vêm do signup; pré-preenchidos)
-Etapa 3 — Dados profissionais
-  CRECI/CAU/CREA conforme profissão; CRECI já pode vir preenchido
-Etapa 4 — Termos e assinatura
-  3 checkboxes obrigatórios (Contrato, DPA, Termo de Uso)
-  Cada um abre o modal de leitura existente (reaproveita CONTRACT_TERMS, DPA_TERMS, TERMS_OF_USE)
-  Botão final: "Concluir cadastro"
+Gemini API error: 503 { "status": "UNAVAILABLE",
+  "message": "This model is currently experiencing high demand..." }
 ```
 
-Regras:
-- Validação por etapa antes de avançar (zod).
-- Campos já preenchidos vêm pré-populados (busca via `supabase.from('profiles').select('*')`).
-- Não permite remover dado já preenchido (mesma regra do `Profile.tsx`).
-- Não fecha por clique fora / ESC quando aberto via `?complete=1` (forçar conclusão), mas tem botão "Continuar depois" que fecha.
+O modelo configurado no estilo é o **`google/gemini-3-pro-image-preview`** (Nano Banana Pro), que é caro e está sobrecarregado no Google. Hoje a função:
 
-Ao clicar "Concluir cadastro":
-1. `update` em `profiles` com todos os campos + `accepted_terms = true` + `accepted_contract = true` + `accepted_dpa = true` + `accepted_terms_of_use = true` + `terms_accepted_at = now()`.
-2. Chama RPC `mark_profile_complete(p_user_id)` (já existe).
-3. Toast de sucesso, fecha modal, remove `?complete=1` da URL, recarrega banner/perfil.
+1. Não tem retry — qualquer 503 quebra a geração.
+2. Não faz fallback para um modelo mais leve (Flash / Nano Banana 2).
+3. Já debitou os 10 créditos do usuário antes da chamada — em caso de falha 5xx, o crédito **não está sendo devolvido** (o usuário paga por uma falha do Google).
+4. Mostra mensagem genérica "Falha ao gerar imagem com IA" sem orientar o usuário.
 
-## Migração necessária
+## Plano de correção (somente `supabase/functions/generate-creative-image/index.ts`)
 
-Adicionar colunas em `profiles` (se ainda não existirem) para registrar o aceite individual:
-- `accepted_contract boolean default false`
-- `accepted_dpa boolean default false`
-- `accepted_terms_of_use boolean default false`
-- `terms_accepted_at timestamptz`
+1. **Retry com backoff** para erros transitórios (`503`, `429`, `500`):
+   - até 2 tentativas extras (3 no total)
+   - delay 1.5s → 4s
 
-(Já existe `accepted_terms` — manter por compatibilidade, mas marcar `true` junto.)
+2. **Fallback de modelo** quando o Pro continuar indisponível após o retry:
+   - se modelo era `gemini-3-pro-image-preview` → tenta `gemini-3.1-flash-image-preview`
+   - registra no log qual modelo realmente gerou
 
-## Arquivos
+3. **Reembolso de créditos** quando a IA falha por motivo do provedor (5xx/429 após esgotar retries+fallback):
+   - chamar `admin.rpc("admin_adjust_credits", ...)` ou inserir crédito de volta via `credit_transactions` (vou usar o mesmo caminho atômico já existente — refund de `CREATIVE_COST` para o `userId`)
+   - marcar criativo como `FAILED` com mensagem clara
 
-- **novo** `src/components/profile/CompleteProfileModal.tsx` — wizard com 4 etapas + leitura/aceite dos termos (reaproveita `registrationTerms.ts`).
-- **edit** `src/pages/Profile.tsx` — abre o modal automaticamente quando `?complete=1`.
-- **edit** `src/components/profile/CompleteProfileBanner.tsx` — botão principal passa a abrir o modal (em vez de só marcar como completo).
-- **edit** `src/pages/CadastroRealizado.tsx` — botão muda label e destino para `/profile?complete=1`.
-- **migração** novas colunas em `profiles` para os 3 aceites + timestamp.
+4. **Mensagens user-friendly** por status:
+   - `503` → "A IA está sobrecarregada no momento. Tentamos novamente automaticamente, mas falhou. Seus créditos foram devolvidos. Tente novamente em 1-2 minutos."
+   - `429` → mantém atual
+   - outros 5xx → "Erro temporário na IA. Créditos devolvidos."
 
-## Detalhes técnicos
+5. **Status HTTP de retorno** vira `200` com `{ error, refunded: true }` para o frontend conseguir ler a mensagem (hoje retornar 503 dispara o toast genérico do supabase-js que esconde o body).
 
-- Reaproveita componentes existentes: `ProfilePersonalCard`, `ProfileLocationCard`, `ProfileProfessionalCard` dentro do wizard, ou cria sub-formulários enxutos com os mesmos campos. Recomendado: sub-formulários enxutos para caber bem no `Dialog`.
-- `Dialog` com `max-w-2xl` e `ScrollArea` para conteúdo longo.
-- Indicador de progresso: `<StepIndicator />` (já existe em `src/components/auth/StepIndicator.tsx`).
-- Tipagem dos novos campos será refletida automaticamente em `src/integrations/supabase/types.ts` após a migração.
+### Detalhe técnico do refund
+
+Existe a função `consume_credits_for_creative` (débito atômico). Para o refund, vou usar `admin_adjust_credits` (já existe como edge function) **NÃO** — vou inserir direto via SQL chamando uma RPC já existente ou, se não houver, fazer um simples `update` em `user_credits` somando `CREATIVE_COST` + insert em `credit_transactions` com `type='REFUND'` e referência ao criativo. Vou verificar primeiro o schema durante a implementação para escolher o caminho mais limpo.
+
+### Fora de escopo
+
+- Não vou alterar a UI do `MyCreatives` / `StepResult` — o "Tentar novamente" já existe e vai pegar a nova mensagem.
+- Não vou trocar o modelo padrão configurado pelo admin em `creative_styles` — só fazer fallback automático em runtime quando o Pro estiver fora.
