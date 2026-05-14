@@ -211,35 +211,82 @@ Deno.serve(async (req) => {
       requestParts.push({ inline_data: { mime_type: logoRef.mimeType, data: logoRef.data } });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`;
-    const aiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: requestParts }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
-        },
-      }),
-    });
+    // Tenta gerar com retry + fallback de modelo (Pro -> Flash) em caso de 503/429/5xx.
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const callGemini = async (modelName: string) => {
+      const u = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+      return await fetch(u, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: requestParts }],
+          generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+        }),
+      });
+    };
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error("Gemini API error:", aiRes.status, errText);
+    const modelsToTry: string[] = [geminiModel];
+    if (geminiModel === "gemini-3-pro-image-preview") {
+      modelsToTry.push("gemini-3.1-flash-image-preview");
+    }
+
+    let aiRes: Response | null = null;
+    let lastErrText = "";
+    let lastStatus = 0;
+    let usedModel = geminiModel;
+
+    outer: for (const m of modelsToTry) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await callGemini(m);
+        if (r.ok) {
+          aiRes = r;
+          usedModel = m;
+          break outer;
+        }
+        lastStatus = r.status;
+        lastErrText = await r.text();
+        console.error(`Gemini ${m} attempt ${attempt + 1} failed:`, r.status, lastErrText.slice(0, 200));
+        // Só vale retry para erros transitórios
+        const transient = r.status === 503 || r.status === 429 || (r.status >= 500 && r.status < 600);
+        if (!transient) break; // erro definitivo: pula para o próximo modelo (ou termina)
+        if (attempt < 2) await sleep(attempt === 0 ? 1500 : 4000);
+      }
+    }
+
+    if (!aiRes) {
+      // Falhou em todos os modelos. Devolve crédito (se foi debitado) e responde 200 com mensagem.
       let userMessage = "Falha ao gerar imagem com IA";
-      if (aiRes.status === 429) userMessage = "Muitas gerações em sequência. Tente novamente em alguns segundos.";
-      else if (aiRes.status === 400) userMessage = `Erro na requisição: ${errText.slice(0, 200)}`;
-      else if (aiRes.status === 403) userMessage = "Chave da API Gemini inválida ou sem permissão.";
+      if (lastStatus === 503) userMessage = "A IA de imagens está sobrecarregada agora. Seus créditos foram devolvidos. Tente novamente em 1-2 minutos.";
+      else if (lastStatus === 429) userMessage = "Muitas gerações em sequência. Seus créditos foram devolvidos. Aguarde alguns segundos e tente novamente.";
+      else if (lastStatus === 400) userMessage = `Erro na requisição: ${lastErrText.slice(0, 200)}`;
+      else if (lastStatus === 403) userMessage = "Chave da API Gemini inválida ou sem permissão.";
+      else if (lastStatus >= 500) userMessage = "Erro temporário na IA. Seus créditos foram devolvidos. Tente novamente em instantes.";
+
+      let refunded = false;
+      if (!isAdmin && (lastStatus === 503 || lastStatus === 429 || lastStatus >= 500)) {
+        const { error: refundErr } = await admin.rpc("add_credits_atomic", {
+          p_user_id: userId,
+          p_amount: CREATIVE_COST,
+          p_type: "CREATIVE_REFUND",
+          p_lead_id: null,
+        });
+        if (refundErr) console.error("Refund failed:", refundErr);
+        else refunded = true;
+      }
 
       await admin
         .from("creatives")
         .update({ status: "FAILED", error_message: userMessage })
         .eq("id", creativeId);
 
-      return new Response(JSON.stringify({ error: userMessage }), {
-        status: aiRes.status,
+      return new Response(JSON.stringify({ error: userMessage, refunded }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (usedModel !== geminiModel) {
+      console.log(`[generate-creative-image] fallback model used: ${usedModel}`);
     }
 
     const aiData = await aiRes.json();
