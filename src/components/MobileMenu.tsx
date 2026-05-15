@@ -118,7 +118,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
               }`}
             >
               <Search className="h-5 w-5" />
-              <span className="font-medium">Balcão de Parcerias</span>
+              <span className="font-medium">Venda em Parceria</span>
             </Link>
           )}
           {!isPartnerSite && (

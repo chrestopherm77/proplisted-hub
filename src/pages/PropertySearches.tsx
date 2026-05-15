@@ -851,7 +851,7 @@ const PropertySearches = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Excluir este interesse?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. A procura será removida permanentemente do Balcão de Parcerias.
+                                    Esta ação não pode ser desfeita. A procura será removida permanentemente da Venda em Parceria.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
