@@ -1,61 +1,44 @@
-## Objetivo
+## Ajustes em `notify-property-match` (WhatsApp "novo lead com perfil do seu imóvel")
 
-Adicionar 6 novas cidades de Minas Gerais (Vertentes) aos formulários LP/LP01 e rotear automaticamente os novos leads dessas cidades para o grupo de WhatsApp das Vertentes (que já existe e atende Barbacena, São João del Rei e Tiradentes).
+Dois ajustes pontuais na edge function `supabase/functions/notify-property-match/index.ts`. Sem mudanças de UI, sem migrations.
 
-Cidades a incluir (MG):
-- Resende Costa
-- Prados
-- Ritápolis
-- Rio das Mortes
-- Barroso
-- Conceição da Barra de Minas
+### 1. Corrigir formatação dos valores (real)
 
-## Mudanças
+Os valores do lead form (`budgetMin`, `budgetMax`, `maxRent`) são salvos **em centavos mascarados** (ex: "R$ 350.000,00" → 35000000). Hoje a função faz `parseInt(digits)` e exibe direto, gerando algo como "R$ 35.000.000" no WhatsApp.
 
-### 1. Formulários LP / LP01 (frontend)
+Correção:
+- `parseMoney` passa a dividir por 100 quando o valor veio do form mascarado.
+- `fmtMoney` formata com `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })`, resultando em "R$ 350.000".
 
-Hoje o `LocationSelector` dos 4 fluxos está travado em `allowedStates: ['SP']` e uma lista fixa de cidades de Ribeirão Preto e região. Vou ampliar para aceitar **SP + MG** e incluir as novas cidades em todos os fluxos:
+Resultado esperado na mensagem: `R$ 300.000 a R$ 500.000` ou `até R$ 2.500/mês`.
 
-- `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx`
-- `src/components/leadform/steps/rent/RentLocationValueStep.tsx`
-- `src/components/leadform/steps/build/BuildLocationStep.tsx`
-- `src/components/leadform/steps/sell/SellGeneralInfoStep.tsx`
+### 2. Identificação do lead + link direto pro modal
 
-Para evitar duplicação, vou centralizar em um único arquivo `src/components/leadform/allowedRegions.ts` que exporta `ALLOWED_STATES` e `ALLOWED_CITIES`, e os 4 steps passam a importar dele. Assim, novas cidades futuras se adicionam em um só lugar.
+A página `/leads` já abre o modal automaticamente quando recebe `?leadId=<uuid>` na URL (verificado em `src/pages/Leads.tsx` linha 192). Vamos aproveitar isso.
 
-### 2. Roteamento do grupo WhatsApp (backend)
+Mudanças na mensagem:
+- Incluir uma **marcação curta do lead** no topo: `🆔 Lead #<8 primeiros chars do UUID em maiúsculo>` (mesmo padrão usado no `LeadDetailsModal`).
+- Substituir o link genérico `https://www.conectaeimob.com.br/leads` por **link direto** que abre o modal do lead:  
+  `https://www.conectaeimob.com.br/leads?leadId=<uuid>`
 
-A função `notify-lead-group` já roteia por cidade via tabela `whatsapp_city_groups` + RPC `get_groups_for_city`. O grupo das Vertentes (`120363409744685071@g.us`) já existe para Barbacena/SJDR/Tiradentes.
+### Exemplo do novo texto
 
-Basta inserir 6 novas linhas em `whatsapp_city_groups` mapeando as novas cidades MG para esse mesmo `group_jid`. Nenhuma mudança de código é necessária no backend — o roteamento passa a funcionar automaticamente.
+```
+🎯 Novo lead com perfil pro seu imóvel!
 
-## Detalhes técnicos
+Olá, João!
 
-```text
-src/components/leadform/
-├── allowedRegions.ts          (novo — fonte única)
-└── steps/
-    ├── buy/BuyLocationBudgetStep.tsx     (importa de allowedRegions)
-    ├── rent/RentLocationValueStep.tsx    (importa de allowedRegions)
-    ├── build/BuildLocationStep.tsx       (importa de allowedRegions)
-    └── sell/SellGeneralInfoStep.tsx      (importa de allowedRegions)
+🆔 Lead #A1B2C3D4
+Imóvel: Casa Jardim Sumaré (Ref: A0123)
+Cidade: Ribeirão Preto
+
+Acabou de chegar um lead em Ribeirão Preto interessado em COMPRAR
+na faixa de R$ 300.000 a R$ 500.000.
+
+Veja os detalhes e compre agora:
+👉 https://www.conectaeimob.com.br/leads?leadId=8f3c...
 ```
 
-DB (via insert tool):
-```sql
-INSERT INTO whatsapp_city_groups (city, uf, group_jid, is_active) VALUES
-  ('Resende Costa', 'MG', '120363409744685071@g.us', true),
-  ('Prados', 'MG', '120363409744685071@g.us', true),
-  ('Ritápolis', 'MG', '120363409744685071@g.us', true),
-  ('Rio das Mortes', 'MG', '120363409744685071@g.us', true),
-  ('Barroso', 'MG', '120363409744685071@g.us', true),
-  ('Conceição da Barra de Minas', 'MG', '120363409744685071@g.us', true);
-```
-
-Observação: a função `get_groups_for_city` já é case/acento-insensitive (`immutable_unaccent_lower`), então o nome cadastrado pelo usuário no formulário casa corretamente independente de acentuação.
-
-## Fora do escopo
-
-- Não vou tocar em outras cidades/grupos existentes.
-- Não vou alterar a lógica da função `notify-lead-group` nem o template da mensagem.
-- Não vou criar um novo grupo WhatsApp — uso o mesmo das Vertentes.
+### Fora de escopo
+- Não altera `notify-alert-match`, `notify-lead-group`, nem nenhum outro disparo.
+- Não muda lógica de matching, nem o frontend.
