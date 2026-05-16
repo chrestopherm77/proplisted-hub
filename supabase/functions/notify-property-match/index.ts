@@ -57,16 +57,24 @@ async function sendMegaMessage(megaUrl: string, token: string, body: unknown, at
 
 function parseMoney(v: unknown): number {
   if (v === null || v === undefined) return 0;
-  const s = String(v);
+  const s = String(v).trim();
+  if (!s) return 0;
   const d = s.replace(/\D/g, '');
   if (!d) return 0;
-  // Heurística: valores escritos com centavos terminam com 2 zeros do parse de máscara R$
-  // Como o lead form salva valores brutos (ex: "350000" ou "R$ 350.000,00"), só considera dígitos.
-  return parseInt(d, 10);
+  // Lead form salva valores mascarados em centavos (ex: "R$ 350.000,00" -> 35000000).
+  // Detectamos pelo prefixo "R$" ou pela presença de separador decimal.
+  const isMaskedCents = /R\$/i.test(s) || /[.,]\d{2}\b/.test(s);
+  const n = parseInt(d, 10);
+  return isMaskedCents ? Math.round(n / 100) : n;
 }
 
 function fmtMoney(n: number): string {
-  return `R$ ${n.toLocaleString('pt-BR')}`;
+  return n.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 }
 
 serve(async (req) => {
