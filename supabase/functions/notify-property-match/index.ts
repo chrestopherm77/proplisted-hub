@@ -217,12 +217,13 @@ serve(async (req) => {
       const message =
         `🎯 *Novo lead com perfil pro seu imóvel!*\n\n` +
         `Olá${firstName ? `, ${firstName}` : ""}!\n\n` +
+        `🆔 *Lead #${leadId.slice(0, 8).toUpperCase()}*\n` +
         `Imóvel: *${propTitle}* (Ref: ${property.reference_code})\n` +
         `Cidade: ${property.city}\n\n` +
         `Acabou de chegar um lead em *${city}* interessado em *${actionLabel}*` +
         `${budgetLabel ? ` na faixa de *${budgetLabel}*` : ""}.\n\n` +
-        `Acesse o Marketplace pra ver os detalhes:\n` +
-        `👉 https://www.conectaeimob.com.br/leads`;
+        `Veja os detalhes e compre agora:\n` +
+        `👉 https://www.conectaeimob.com.br/leads?leadId=${leadId}`;
 
       const ok = await sendMegaMessage(
         megaUrl,
