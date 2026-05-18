@@ -5,7 +5,7 @@ import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Check, X } from "lucide-react";
+import { DollarSign, Check, X, AlertCircle } from "lucide-react";
 import { formatCurrencyWithLimits } from "@/lib/validators";
 
 const includesOptions = [
