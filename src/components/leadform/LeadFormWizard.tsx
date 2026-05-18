@@ -241,7 +241,8 @@ const flowSteps: StepDefinition[] = [
       if (!data.buy?.region) return false;
       const min = parseInt((data.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
       const max = parseInt((data.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
-      // Se ambos preenchidos, max precisa ser >= min
+      if (min < 5_000_000) return false; // R$ 50.000,00 mínimo
+      if (max > 0 && max < 5_000_000) return false;
       if (min > 0 && max > 0 && max < min) return false;
       return true;
     },
