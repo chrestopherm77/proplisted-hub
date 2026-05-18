@@ -132,7 +132,8 @@ Deno.serve(async (req) => {
         const fd = leadForMatch.form_data as Record<string, unknown>;
         const intentionRaw = (fd.intention as string) || "";
         const flowKey = intentionRaw.toLowerCase();
-        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const flowRaw = fd[flowKey];
+        const flow = (Array.isArray(flowRaw) ? flowRaw[0] : flowRaw) as Record<string, unknown> | undefined;
         const matchCity = flow?.city as string | undefined;
         const matchUf = flow?.uf as string | undefined;
 
