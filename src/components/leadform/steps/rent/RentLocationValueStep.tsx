@@ -25,6 +25,9 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
     updateFlowData('rent', { ...updates, region });
   };
 
+  const rentCents = parseInt((data.rent?.maxRent || '').replace(/\D/g, '') || '0', 10);
+  const hasRentMinError = rentCents > 0 && rentCents < 40_000; // R$ 400,00
+
   return (
     <StepContainer
       title="Localização e valor"
