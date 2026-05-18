@@ -77,6 +77,13 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
             </div>
           </div>
 
+          {(hasMinError || hasMaxError) && (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              O valor mínimo para compra é R$ 50.000,00.
+            </p>
+          )}
+
           {hasRangeError && (
             <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" />
