@@ -172,7 +172,10 @@ const flowSteps: StepDefinition[] = [
     id: 'sell-value', 
     component: SellValueStep, 
     isVisible: (data) => data.intention === 'SELL',
-    validate: (data) => !!data.sell?.expectedValue,
+    validate: (data) => {
+      const v = parseInt((data.sell?.expectedValue || '').replace(/\D/g, '') || '0', 10);
+      return v >= 5_000_000; // R$ 50.000,00
+    },
   },
   { 
     id: 'sell-payment-methods', 
@@ -238,7 +241,8 @@ const flowSteps: StepDefinition[] = [
       if (!data.buy?.region) return false;
       const min = parseInt((data.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
       const max = parseInt((data.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
-      // Se ambos preenchidos, max precisa ser >= min
+      if (min < 5_000_000) return false; // R$ 50.000,00 mínimo
+      if (max > 0 && max < 5_000_000) return false;
       if (min > 0 && max > 0 && max < min) return false;
       return true;
     },
@@ -361,7 +365,11 @@ const flowSteps: StepDefinition[] = [
     id: 'rent-location-value', 
     component: RentLocationValueStep, 
     isVisible: (data) => data.intention === 'RENT',
-    validate: (data) => !!data.rent?.region && !!data.rent?.maxRent,
+    validate: (data) => {
+      if (!data.rent?.region) return false;
+      const v = parseInt((data.rent?.maxRent || '').replace(/\D/g, '') || '0', 10);
+      return v >= 40_000; // R$ 400,00
+    },
   },
   { 
     id: 'rent-guarantee', 

@@ -22,7 +22,10 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
   // Validação min/max
   const minCents = parseInt((data.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
   const maxCents = parseInt((data.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
+  const MIN_SALE = 5_000_000; // R$ 50.000,00
   const hasRangeError = minCents > 0 && maxCents > 0 && maxCents < minCents;
+  const hasMinError = minCents > 0 && minCents < MIN_SALE;
+  const hasMaxError = maxCents > 0 && maxCents < MIN_SALE;
 
   return (
     <StepContainer
@@ -53,8 +56,8 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
                 value={data.buy?.budgetMin || ''}
                 onChange={(e) => updateFlowData('buy', { budgetMin: formatCurrencyWithLimits(e.target.value) })}
                 placeholder="R$ 100.000,00"
-                className={`h-12 ${hasRangeError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                aria-invalid={hasRangeError}
+                className={`h-12 ${(hasRangeError || hasMinError) ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                aria-invalid={hasRangeError || hasMinError}
               />
             </div>
 
@@ -68,11 +71,18 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
                 value={data.buy?.budgetMax || ''}
                 onChange={(e) => updateFlowData('buy', { budgetMax: formatCurrencyWithLimits(e.target.value) })}
                 placeholder="R$ 10.000.000,00"
-                className={`h-12 ${hasRangeError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                aria-invalid={hasRangeError}
+                className={`h-12 ${(hasRangeError || hasMaxError) ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                aria-invalid={hasRangeError || hasMaxError}
               />
             </div>
           </div>
+
+          {(hasMinError || hasMaxError) && (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              O valor mínimo para compra é R$ 50.000,00.
+            </p>
+          )}
 
           {hasRangeError && (
             <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">

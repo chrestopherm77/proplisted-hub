@@ -5,7 +5,7 @@ import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { OptionCard } from "../../OptionCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Check, X } from "lucide-react";
+import { DollarSign, Check, X, AlertCircle } from "lucide-react";
 import { formatCurrencyWithLimits } from "@/lib/validators";
 
 const includesOptions = [
@@ -24,6 +24,9 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
         : '';
     updateFlowData('rent', { ...updates, region });
   };
+
+  const rentCents = parseInt((data.rent?.maxRent || '').replace(/\D/g, '') || '0', 10);
+  const hasRentMinError = rentCents > 0 && rentCents < 40_000; // R$ 400,00
 
   return (
     <StepContainer
@@ -54,8 +57,15 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
             value={data.rent?.maxRent || ''}
             onChange={(e) => updateFlowData('rent', { maxRent: formatCurrencyWithLimits(e.target.value) })}
             placeholder="R$ 2.000,00"
-            className="h-12"
+            className={`h-12 ${hasRentMinError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+            aria-invalid={hasRentMinError}
           />
+          {hasRentMinError && (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              O valor mínimo de aluguel é R$ 400,00.
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
