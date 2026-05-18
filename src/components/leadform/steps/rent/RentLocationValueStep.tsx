@@ -57,8 +57,15 @@ export function RentLocationValueStep({ data, updateFlowData }: StepProps) {
             value={data.rent?.maxRent || ''}
             onChange={(e) => updateFlowData('rent', { maxRent: formatCurrencyWithLimits(e.target.value) })}
             placeholder="R$ 2.000,00"
-            className="h-12"
+            className={`h-12 ${hasRentMinError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+            aria-invalid={hasRentMinError}
           />
+          {hasRentMinError && (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              O valor mínimo de aluguel é R$ 400,00.
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
