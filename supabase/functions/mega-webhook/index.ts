@@ -177,7 +177,8 @@ Deno.serve(async (req) => {
         const intentionLabel = intentionMap[intentionRaw] || intentionRaw;
 
         const flowKey = intentionRaw === "BUY" ? "buy" : intentionRaw === "SELL" ? "sell" : intentionRaw === "RENT" ? "rent" : intentionRaw === "BUILD" ? "build" : null;
-        const flow = flowKey ? (fd[flowKey.toLowerCase()] as Record<string, unknown> | undefined) : null;
+        const flowRawGroup = flowKey ? fd[flowKey.toLowerCase()] : null;
+        const flow = (Array.isArray(flowRawGroup) ? flowRawGroup[0] : flowRawGroup) as Record<string, unknown> | undefined | null;
 
         // PT-BR translation maps
         const propLabels: Record<string, string> = {
