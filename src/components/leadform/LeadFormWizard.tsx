@@ -365,7 +365,11 @@ const flowSteps: StepDefinition[] = [
     id: 'rent-location-value', 
     component: RentLocationValueStep, 
     isVisible: (data) => data.intention === 'RENT',
-    validate: (data) => !!data.rent?.region && !!data.rent?.maxRent,
+    validate: (data) => {
+      if (!data.rent?.region) return false;
+      const v = parseInt((data.rent?.maxRent || '').replace(/\D/g, '') || '0', 10);
+      return v >= 40_000; // R$ 400,00
+    },
   },
   { 
     id: 'rent-guarantee', 
