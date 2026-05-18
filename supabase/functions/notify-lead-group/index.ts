@@ -68,7 +68,9 @@ Deno.serve(async (req) => {
     const intentionLabel = intentionMap[intentionRaw] || intentionRaw;
 
     const flowKey = intentionRaw.toLowerCase();
-    const flow = fd[flowKey] as Record<string, unknown> | undefined;
+    const flowRaw = fd[flowKey];
+    // form_data[flowKey] pode ser objeto único OU array (quando o lead foi mesclado com múltiplas preferências)
+    const flow = (Array.isArray(flowRaw) ? flowRaw[0] : flowRaw) as Record<string, unknown> | undefined;
 
     // PT-BR translation maps
     const propLabels: Record<string, string> = {

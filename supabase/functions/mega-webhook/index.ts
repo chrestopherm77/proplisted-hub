@@ -132,7 +132,8 @@ Deno.serve(async (req) => {
         const fd = leadForMatch.form_data as Record<string, unknown>;
         const intentionRaw = (fd.intention as string) || "";
         const flowKey = intentionRaw.toLowerCase();
-        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const flowRaw = fd[flowKey];
+        const flow = (Array.isArray(flowRaw) ? flowRaw[0] : flowRaw) as Record<string, unknown> | undefined;
         const matchCity = flow?.city as string | undefined;
         const matchUf = flow?.uf as string | undefined;
 
@@ -176,7 +177,8 @@ Deno.serve(async (req) => {
         const intentionLabel = intentionMap[intentionRaw] || intentionRaw;
 
         const flowKey = intentionRaw === "BUY" ? "buy" : intentionRaw === "SELL" ? "sell" : intentionRaw === "RENT" ? "rent" : intentionRaw === "BUILD" ? "build" : null;
-        const flow = flowKey ? (fd[flowKey.toLowerCase()] as Record<string, unknown> | undefined) : null;
+        const flowRawGroup = flowKey ? fd[flowKey.toLowerCase()] : null;
+        const flow = (Array.isArray(flowRawGroup) ? flowRawGroup[0] : flowRawGroup) as Record<string, unknown> | undefined | null;
 
         // PT-BR translation maps
         const propLabels: Record<string, string> = {
@@ -304,7 +306,8 @@ Deno.serve(async (req) => {
         const fd = leadForAlerts.form_data as Record<string, unknown>;
         const intentionRaw = (fd.intention as string) || "";
         const flowKey = intentionRaw.toLowerCase();
-        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const flowRawAlert = fd[flowKey];
+        const flow = (Array.isArray(flowRawAlert) ? flowRawAlert[0] : flowRawAlert) as Record<string, unknown> | undefined;
         const leadCity = (flow?.city as string || "").trim();
         const leadUF = (flow?.uf as string || "").trim().toUpperCase();
 
