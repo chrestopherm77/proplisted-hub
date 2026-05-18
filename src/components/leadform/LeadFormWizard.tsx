@@ -172,7 +172,10 @@ const flowSteps: StepDefinition[] = [
     id: 'sell-value', 
     component: SellValueStep, 
     isVisible: (data) => data.intention === 'SELL',
-    validate: (data) => !!data.sell?.expectedValue,
+    validate: (data) => {
+      const v = parseInt((data.sell?.expectedValue || '').replace(/\D/g, '') || '0', 10);
+      return v >= 5_000_000; // R$ 50.000,00
+    },
   },
   { 
     id: 'sell-payment-methods', 
