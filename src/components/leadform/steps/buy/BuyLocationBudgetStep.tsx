@@ -22,7 +22,10 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
   // Validação min/max
   const minCents = parseInt((data.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
   const maxCents = parseInt((data.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
+  const MIN_SALE = 5_000_000; // R$ 50.000,00
   const hasRangeError = minCents > 0 && maxCents > 0 && maxCents < minCents;
+  const hasMinError = minCents > 0 && minCents < MIN_SALE;
+  const hasMaxError = maxCents > 0 && maxCents < MIN_SALE;
 
   return (
     <StepContainer
