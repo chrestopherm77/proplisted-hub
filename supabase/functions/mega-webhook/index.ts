@@ -306,7 +306,8 @@ Deno.serve(async (req) => {
         const fd = leadForAlerts.form_data as Record<string, unknown>;
         const intentionRaw = (fd.intention as string) || "";
         const flowKey = intentionRaw.toLowerCase();
-        const flow = fd[flowKey] as Record<string, unknown> | undefined;
+        const flowRawAlert = fd[flowKey];
+        const flow = (Array.isArray(flowRawAlert) ? flowRawAlert[0] : flowRawAlert) as Record<string, unknown> | undefined;
         const leadCity = (flow?.city as string || "").trim();
         const leadUF = (flow?.uf as string || "").trim().toUpperCase();
 
