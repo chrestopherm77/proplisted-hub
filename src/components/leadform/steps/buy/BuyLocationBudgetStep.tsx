@@ -71,8 +71,8 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
                 value={data.buy?.budgetMax || ''}
                 onChange={(e) => updateFlowData('buy', { budgetMax: formatCurrencyWithLimits(e.target.value) })}
                 placeholder="R$ 10.000.000,00"
-                className={`h-12 ${hasRangeError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                aria-invalid={hasRangeError}
+                className={`h-12 ${(hasRangeError || hasMaxError) ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                aria-invalid={hasRangeError || hasMaxError}
               />
             </div>
           </div>
