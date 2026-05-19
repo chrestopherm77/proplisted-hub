@@ -104,3 +104,7 @@ verify_jwt = false
 
 [functions.og-property]
 verify_jwt = false
+
+[functions.send-lead-feedback]
+verify_jwt = false
+
