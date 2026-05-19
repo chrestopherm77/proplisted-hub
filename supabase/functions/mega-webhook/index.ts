@@ -32,9 +32,52 @@ Deno.serve(async (req) => {
 
     console.log("Selected row ID:", selectedRowId);
 
-    if (!selectedRowId || !selectedRowId.startsWith("confirm_")) {
+    if (!selectedRowId) {
       return new Response(
-        JSON.stringify({ ok: true, ignored: true, reason: "Not a confirmation response" }),
+        JSON.stringify({ ok: true, ignored: true, reason: "No rowId" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // ===== Feedback response (after 14 days) =====
+    if (selectedRowId.startsWith("feedback_done_") || selectedRowId.startsWith("feedback_pending_")) {
+      const isDone = selectedRowId.startsWith("feedback_done_");
+      const leadId = selectedRowId.replace(isDone ? "feedback_done_" : "feedback_pending_", "");
+      if (!leadId || leadId.length < 10) {
+        return new Response(JSON.stringify({ error: "Invalid lead ID" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const update: Record<string, unknown> = {
+        feedback_response: isDone ? "DONE" : "PENDING",
+        feedback_responded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (isDone) update.is_active = false;
+
+      const { error: fbErr } = await supabase.from("leads").update(update).eq("id", leadId);
+      if (fbErr) {
+        console.error("feedback update error:", fbErr);
+        return new Response(JSON.stringify({ error: fbErr.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`Feedback ${isDone ? "DONE (deactivated)" : "PENDING"} for lead ${leadId}`);
+      return new Response(JSON.stringify({ ok: true, feedback: isDone ? "DONE" : "PENDING" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!selectedRowId.startsWith("confirm_")) {
+      return new Response(
+        JSON.stringify({ ok: true, ignored: true, reason: "Unknown rowId" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -49,10 +92,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Activate the lead
     const { error: updateError } = await supabase

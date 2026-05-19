@@ -1022,6 +1022,10 @@ export type Database = {
           confirmation_whatsapp_status: string | null
           created_at: string | null
           description: string
+          feedback_attempts: number
+          feedback_responded_at: string | null
+          feedback_response: string | null
+          feedback_sent_at: string | null
           form_data: Json | null
           id: string
           is_active: boolean | null
@@ -1043,6 +1047,10 @@ export type Database = {
           confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description: string
+          feedback_attempts?: number
+          feedback_responded_at?: string | null
+          feedback_response?: string | null
+          feedback_sent_at?: string | null
           form_data?: Json | null
           id?: string
           is_active?: boolean | null
@@ -1064,6 +1072,10 @@ export type Database = {
           confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description?: string
+          feedback_attempts?: number
+          feedback_responded_at?: string | null
+          feedback_response?: string | null
+          feedback_sent_at?: string | null
           form_data?: Json | null
           id?: string
           is_active?: boolean | null

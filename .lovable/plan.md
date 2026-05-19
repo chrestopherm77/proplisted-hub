@@ -1,44 +1,92 @@
-## Ajustes em `notify-property-match` (WhatsApp "novo lead com perfil do seu imóvel")
+## Sistema de Feedback de Leads (14 dias)
 
-Dois ajustes pontuais na edge function `supabase/functions/notify-property-match/index.ts`. Sem mudanças de UI, sem migrations.
+Envia mensagem automática via Mega API para o lead que segue ativo há 14 dias, perguntando se já concretizou o negócio (comprar/alugar/vender/construir). A resposta do usuário inativa o lead ou mantém ativo.
 
-### 1. Corrigir formatação dos valores (real)
+### Fluxo
 
-Os valores do lead form (`budgetMin`, `budgetMax`, `maxRent`) são salvos **em centavos mascarados** (ex: "R$ 350.000,00" → 35000000). Hoje a função faz `parseInt(digits)` e exibe direto, gerando algo como "R$ 35.000.000" no WhatsApp.
-
-Correção:
-- `parseMoney` passa a dividir por 100 quando o valor veio do form mascarado.
-- `fmtMoney` formata com `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })`, resultando em "R$ 350.000".
-
-Resultado esperado na mensagem: `R$ 300.000 a R$ 500.000` ou `até R$ 2.500/mês`.
-
-### 2. Identificação do lead + link direto pro modal
-
-A página `/leads` já abre o modal automaticamente quando recebe `?leadId=<uuid>` na URL (verificado em `src/pages/Leads.tsx` linha 192). Vamos aproveitar isso.
-
-Mudanças na mensagem:
-- Incluir uma **marcação curta do lead** no topo: `🆔 Lead #<8 primeiros chars do UUID em maiúsculo>` (mesmo padrão usado no `LeadDetailsModal`).
-- Substituir o link genérico `https://www.conectaeimob.com.br/leads` por **link direto** que abre o modal do lead:  
-  `https://www.conectaeimob.com.br/leads?leadId=<uuid>`
-
-### Exemplo do novo texto
-
-```
-🎯 Novo lead com perfil pro seu imóvel!
-
-Olá, João!
-
-🆔 Lead #A1B2C3D4
-Imóvel: Casa Jardim Sumaré (Ref: A0123)
-Cidade: Ribeirão Preto
-
-Acabou de chegar um lead em Ribeirão Preto interessado em COMPRAR
-na faixa de R$ 300.000 a R$ 500.000.
-
-Veja os detalhes e compre agora:
-👉 https://www.conectaeimob.com.br/leads?leadId=8f3c...
+```text
+Lead criado e ativo
+        │
+        ▼
+14 dias ativo (sem feedback enviado)
+        │
+        ▼
+Cron diário roda → seleciona leads elegíveis
+        │
+        ▼
+Envia listMessage Mega API com 2 opções dinâmicas:
+   - BUY   → "Já comprei"      / "Ainda não comprei"
+   - RENT  → "Já aluguei"      / "Ainda não aluguei"
+   - SELL  → "Já vendi"        / "Ainda não vendi"
+   - BUILD → "Já contratei"    / "Ainda não contratei"
+        │
+        ▼
+Marca feedback_sent_at = now()
+        │
+        ▼
+Usuário responde no WhatsApp
+        │
+        ▼
+mega-webhook recebe listResponseMessage
+        │
+        ├── rowId "feedback_done_<leadId>"     → is_active=false,
+        │                                         feedback_response='DONE'
+        │
+        └── rowId "feedback_pending_<leadId>"  → mantém is_active=true,
+                                                  feedback_response='PENDING'
+                                                  (pode ser reagendado +14d)
 ```
 
-### Fora de escopo
-- Não altera `notify-alert-match`, `notify-lead-group`, nem nenhum outro disparo.
-- Não muda lógica de matching, nem o frontend.
+### Mudanças no banco
+
+Adicionar à tabela `leads`:
+- `feedback_sent_at` (timestamptz, nullable) — quando o feedback foi enviado
+- `feedback_response` (text, nullable) — 'DONE' ou 'PENDING'
+- `feedback_responded_at` (timestamptz, nullable)
+- `feedback_attempts` (integer, default 0) — para reenvio quando PENDING
+
+### Nova Edge Function: `send-lead-feedback`
+
+- Recebe `{ leadId }` (chamada manual via admin) **ou** roda em modo cron (sem body) buscando todos os leads elegíveis:
+  - `is_active = true`
+  - `whatsapp_confirmed = true`
+  - `is_exhausted = false`
+  - `created_at <= now() - interval '14 days'` (1ª vez) **ou** `feedback_response='PENDING' AND feedback_sent_at <= now() - interval '14 days'` (reenvio)
+  - `feedback_response IS NULL OR feedback_response = 'PENDING'`
+- Resolve intenção do `form_data.intention` (com fallback para arrays como já corrigido em `notify-lead-group`)
+- Monta texto e botões dinâmicos pelas labels acima
+- Chama `listMessage` da Mega API com `rowId` = `feedback_done_<leadId>` e `feedback_pending_<leadId>`
+- Atualiza `feedback_sent_at`, incrementa `feedback_attempts`
+- Respeita delay de 600ms entre chamadas (limite Mega API), conforme regra do projeto
+
+### Atualização em `mega-webhook`
+
+Estende o handler de `listResponseMessage` para reconhecer os novos `rowId`:
+- `feedback_done_<leadId>` → `UPDATE leads SET is_active=false, feedback_response='DONE', feedback_responded_at=now()` + envia mensagem de agradecimento simples
+- `feedback_pending_<leadId>` → `UPDATE leads SET feedback_response='PENDING', feedback_responded_at=now()` (lead segue ativo; será reavaliado em +14d pelo cron)
+- Mantém o comportamento atual de `confirm_<leadId>` intacto
+
+### Cron job (pg_cron + pg_net)
+
+Job diário às 10:00 BRT chamando `send-lead-feedback` sem body, para varrer todos os elegíveis.
+
+### Painel admin (opcional, leve)
+
+Em `LeadsManagement.tsx`, adicionar:
+- Badge mostrando estado do feedback (Enviado / Já fechou / Em aberto)
+- Botão "Pedir feedback agora" que invoca `send-lead-feedback` com `{ leadId }` para disparo manual
+
+### Arquivos afetados
+
+- `supabase/functions/send-lead-feedback/index.ts` (novo)
+- `supabase/functions/mega-webhook/index.ts` (estender switch de rowId)
+- `supabase/config.toml` (registrar nova função com `verify_jwt = false` para o cron; validação por `CRON_SECRET` no body/header conforme padrão do projeto)
+- Migração: 4 colunas em `leads`
+- Insert SQL (não-migração): agendar `cron.schedule` apontando para a função
+- `src/components/admin/LeadsManagement.tsx` (badge + botão manual — opcional)
+
+### Confirmações antes de implementar
+
+1. Janela de 14 dias conta a partir de `created_at` do lead, certo? (ou prefere `whatsapp_confirmed` data?)
+2. Quando o usuário responde "Ainda não", quer reenviar a cada +14d indefinidamente, ou parar após N tentativas (ex.: 3)?
+3. Posso incluir o ajuste no painel admin (badge + botão manual) nesta mesma entrega?
