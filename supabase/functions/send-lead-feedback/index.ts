@@ -41,7 +41,7 @@ async function sendListMessage(params: {
   const greeting = firstName(params.name);
   const text =
     `Olá ${greeting}! 👋\n\n` +
-    `Faz 14 dias que recebemos seu interesse em ${labels.verb}.\n\n` +
+    `Faz 7 dias que recebemos seu interesse em ${labels.verb}.\n\n` +
     `Pra gente te ajudar melhor, você já conseguiu fechar negócio?`;
 
   const body = {
@@ -148,8 +148,8 @@ Deno.serve(async (req) => {
   if (body.leadId) {
     query = query.eq("id", body.leadId);
   } else {
-    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    // Eligible: never sent and created >=14d ago, OR pending and last send >=14d ago
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Eligible: never sent and created >=7d ago, OR pending and last send >=7d ago
     query = query
       .or(`and(feedback_sent_at.is.null,created_at.lte.${cutoff}),and(feedback_response.eq.PENDING,feedback_sent_at.lte.${cutoff})`);
   }

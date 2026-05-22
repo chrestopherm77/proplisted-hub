@@ -328,13 +328,7 @@ const NewProperty = () => {
       console.warn('[geocode] dispatch error', e);
     }
 
-    // Notificação em grupo apenas em criação
-    if (!isEditMode) {
-      try {
-        supabase.functions.invoke('notify-property-group', { body: { propertyId: savedId } })
-          .catch(err => console.error('notify-property-group error:', err));
-      } catch {}
-    }
+    // Disparo em grupo desativado a pedido do cliente
 
     navigate(`/portal-imoveis/${savedId}`);
   };
