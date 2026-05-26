@@ -81,6 +81,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'FAQ', url: '/admin/faq', icon: HelpCircle, group: 'Conteúdo' },
   { title: 'Banners de Alerta', url: '/admin/alert-banners', icon: Megaphone, group: 'Conteúdo' },
   { title: 'Landing Pages', url: '/admin/landing-pages', icon: Globe, group: 'Conteúdo' },
+  { title: 'Opções do Formulário', url: '/admin/lead-form-intentions', icon: ListChecks, group: 'Conteúdo' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
   { title: 'Link Público', url: '/admin/public-videos', icon: Video, group: 'Conteúdo' },
   { title: 'Grupos WhatsApp', url: '/admin/whatsapp-groups', icon: MessageSquare, group: 'Conteúdo' },

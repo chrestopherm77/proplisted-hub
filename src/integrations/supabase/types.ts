@@ -978,6 +978,30 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_form_intentions: {
+        Row: {
+          intention: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          intention: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          intention?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_submissions: {
         Row: {
           created_at: string | null
