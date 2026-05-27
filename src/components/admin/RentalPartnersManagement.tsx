@@ -10,8 +10,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Search, X, CheckCircle2 } from 'lucide-react';
+
+interface ProfileOption {
+  id: string;
+  email: string | null;
+  name: string | null;
+}
 
 interface Partner {
   id: string;
