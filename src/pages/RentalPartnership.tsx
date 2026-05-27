@@ -70,7 +70,7 @@ const stripAccent = (s: string) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 export default function RentalPartnership() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { states, cities, fetchCities, clearCities } = useIBGELocation();
 
