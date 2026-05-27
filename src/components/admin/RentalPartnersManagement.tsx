@@ -1,0 +1,292 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+
+interface Partner {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  description: string | null;
+  commission_text: string | null;
+  whatsapp_phone: string;
+  state: string;
+  city: string;
+  is_active: boolean;
+  sort_order: number;
+  owner_user_id: string | null;
+}
+
+const emptyForm = {
+  id: '',
+  name: '',
+  slug: '',
+  logo_url: '',
+  description: '',
+  commission_text: '',
+  whatsapp_phone: '',
+  state: '',
+  city: '',
+  is_active: true,
+  sort_order: 0,
+  owner_email: '',
+};
+
+const slugify = (s: string) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+
+export function RentalPartnersManagement() {
+  const { toast } = useToast();
+  const [items, setItems] = useState<Partner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ ...emptyForm });
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rental_partners')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+    if (error) toast({ title: 'Erro ao carregar', description: error.message, variant: 'destructive' });
+    setItems((data as Partner[]) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openNew = () => {
+    setForm({ ...emptyForm });
+    setDialogOpen(true);
+  };
+
+  const openEdit = async (p: Partner) => {
+    let owner_email = '';
+    if (p.owner_user_id) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', p.owner_user_id)
+        .single();
+      owner_email = (data as any)?.email || '';
+    }
+    setForm({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      logo_url: p.logo_url || '',
+      description: p.description || '',
+      commission_text: p.commission_text || '',
+      whatsapp_phone: p.whatsapp_phone,
+      state: p.state,
+      city: p.city,
+      is_active: p.is_active,
+      sort_order: p.sort_order,
+      owner_email,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.whatsapp_phone || !form.state || !form.city) {
+      toast({ title: 'Preencha nome, WhatsApp, UF e cidade', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      let owner_user_id: string | null = null;
+      if (form.owner_email.trim()) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('email', form.owner_email.trim())
+          .maybeSingle();
+        if (!data) {
+          toast({ title: 'E-mail do dono não encontrado', variant: 'destructive' });
+          setSaving(false);
+          return;
+        }
+        owner_user_id = (data as any).id;
+      }
+
+      const slug = form.slug?.trim() || slugify(form.name);
+      const payload = {
+        name: form.name.trim(),
+        slug,
+        logo_url: form.logo_url.trim() || null,
+        description: form.description.trim() || null,
+        commission_text: form.commission_text.trim() || null,
+        whatsapp_phone: form.whatsapp_phone.replace(/\D/g, ''),
+        state: form.state.trim().toUpperCase().slice(0, 2),
+        city: form.city.trim(),
+        is_active: form.is_active,
+        sort_order: form.sort_order || 0,
+        owner_user_id,
+      };
+
+      const { error } = form.id
+        ? await supabase.from('rental_partners').update(payload).eq('id', form.id)
+        : await supabase.from('rental_partners').insert(payload);
+
+      if (error) throw error;
+      toast({ title: form.id ? 'Atualizado' : 'Criado' });
+      setDialogOpen(false);
+      load();
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async (p: Partner) => {
+    const { error } = await supabase
+      .from('rental_partners')
+      .update({ is_active: !p.is_active })
+      .eq('id', p.id);
+    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    load();
+  };
+
+  const handleDelete = async (p: Partner) => {
+    if (!confirm(`Excluir "${p.name}"?`)) return;
+    const { error } = await supabase.from('rental_partners').delete().eq('id', p.id);
+    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    load();
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Imobs Parceiras — Alugue em Parceria</CardTitle>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Nova parceira</Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Cidade/UF</TableHead>
+                <TableHead>WhatsApp</TableHead>
+                <TableHead>Comissão</TableHead>
+                <TableHead className="w-20">Ordem</TableHead>
+                <TableHead className="w-20">Ativo</TableHead>
+                <TableHead className="w-32 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma parceira cadastrada.</TableCell></TableRow>
+              ) : items.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell>{p.city}/{p.state}</TableCell>
+                  <TableCell className="font-mono text-xs">{p.whatsapp_phone}</TableCell>
+                  <TableCell className="text-xs">{p.commission_text || '—'}</TableCell>
+                  <TableCell>{p.sort_order}</TableCell>
+                  <TableCell><Switch checked={p.is_active} onCheckedChange={() => toggleActive(p)} /></TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => handleDelete(p)}><Trash2 className="h-4 w-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{form.id ? 'Editar parceira' : 'Nova parceira'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <div className="space-y-2 col-span-2">
+              <Label>Nome *</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Slug</Label>
+              <Input value={form.slug} placeholder="auto" onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Ordem</Label>
+              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value || '0', 10) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>UF *</Label>
+              <Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Cidade *</Label>
+              <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>WhatsApp (com DDD) *</Label>
+              <Input
+                value={form.whatsapp_phone}
+                placeholder="43996102805"
+                onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Será salvo apenas com dígitos.</p>
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Logo (URL)</Label>
+              <Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Descrição da modalidade</Label>
+              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Percentuais / Comissão (texto curto)</Label>
+              <Input
+                placeholder="Ex.: 50% sobre 1ª locação"
+                value={form.commission_text}
+                onChange={(e) => setForm({ ...form, commission_text: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>E-mail do dono (opcional)</Label>
+              <Input
+                type="email"
+                value={form.owner_email}
+                onChange={(e) => setForm({ ...form, owner_email: e.target.value })}
+                placeholder="Permite que a imob edite o próprio banner"
+              />
+            </div>
+            <div className="flex items-center gap-2 col-span-2">
+              <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+              <Label>Ativa</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
