@@ -23,7 +23,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Handshake, Loader2, MessageCircle, Building2, User } from 'lucide-react';
+import { Handshake, Loader2, MessageCircle, Building2, User, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface RentalPartner {
   id: string;
