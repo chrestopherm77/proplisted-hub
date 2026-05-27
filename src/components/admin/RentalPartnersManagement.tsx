@@ -85,13 +85,15 @@ export function RentalPartnersManagement() {
 
   const openEdit = async (p: Partner) => {
     let owner_email = '';
+    let owner_name = '';
     if (p.owner_user_id) {
       const { data } = await supabase
         .from('profiles')
-        .select('email')
+        .select('email,name')
         .eq('id', p.owner_user_id)
         .single();
       owner_email = (data as any)?.email || '';
+      owner_name = (data as any)?.name || '';
     }
     setForm({
       id: p.id,
@@ -105,7 +107,9 @@ export function RentalPartnersManagement() {
       city: p.city,
       is_active: p.is_active,
       sort_order: p.sort_order,
+      owner_user_id: p.owner_user_id || '',
       owner_email,
+      owner_name,
     });
     setDialogOpen(true);
   };
@@ -115,23 +119,16 @@ export function RentalPartnersManagement() {
       toast({ title: 'Preencha nome, WhatsApp, UF e cidade', variant: 'destructive' });
       return;
     }
+    if (!form.owner_user_id) {
+      toast({
+        title: 'Selecione a imobiliária dona',
+        description: 'Escolha um usuário cadastrado para liberar a publicação.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
     try {
-      let owner_user_id: string | null = null;
-      if (form.owner_email.trim()) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .ilike('email', form.owner_email.trim())
-          .maybeSingle();
-        if (!data) {
-          toast({ title: 'E-mail do dono não encontrado', variant: 'destructive' });
-          setSaving(false);
-          return;
-        }
-        owner_user_id = (data as any).id;
-      }
-
       const slug = form.slug?.trim() || slugify(form.name);
       const payload = {
         name: form.name.trim(),
@@ -144,7 +141,7 @@ export function RentalPartnersManagement() {
         city: form.city.trim(),
         is_active: form.is_active,
         sort_order: form.sort_order || 0,
-        owner_user_id,
+        owner_user_id: form.owner_user_id,
       };
 
       const { error } = form.id
