@@ -103,6 +103,8 @@ export function RentalPartnersManagement() {
 
   const openNew = () => {
     setForm({ ...emptyForm });
+    setOwnerSearch('');
+    setOwnerResults([]);
     setDialogOpen(true);
   };
 
