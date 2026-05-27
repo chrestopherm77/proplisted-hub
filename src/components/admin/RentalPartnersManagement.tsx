@@ -187,6 +187,14 @@ export function RentalPartnersManagement() {
   };
 
   const toggleActive = async (p: Partner) => {
+    if (!p.is_active && !p.owner_user_id) {
+      toast({
+        title: 'Vincule uma imobiliária',
+        description: 'Edite a parceira e selecione o usuário dono antes de publicar.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const { error } = await supabase
       .from('rental_partners')
       .update({ is_active: !p.is_active })
