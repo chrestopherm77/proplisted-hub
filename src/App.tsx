@@ -29,6 +29,7 @@ import Launches from "./pages/Launches";
 import LaunchDetail from "./pages/LaunchDetail";
 import NewLaunch from "./pages/NewLaunch";
 import Financing from "./pages/Financing";
+import RentalPartnership from "./pages/RentalPartnership";
 import MarketNews from "./pages/MarketNews";
 import NossaIA from "./pages/NossaIA";
 import BuyCredits from "./pages/BuyCredits";
@@ -122,6 +123,7 @@ const App = () => {
           <Route path="/admin/faq" element={<Admin section="faq" />} />
           <Route path="/admin/alert-banners" element={<Admin section="alert-banners" />} />
           <Route path="/admin/lead-form-intentions" element={<Admin section="lead-form-intentions" />} />
+          <Route path="/admin/rental-partners" element={<Admin section="rental-partners" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
           <Route path="/portal-modelo/:id" element={<PortalTemplatePreview />} />
@@ -139,6 +141,7 @@ const App = () => {
           <Route path="/launches/:id/edit" element={<NewLaunch />} />
           <Route path="/launches/:id" element={<LaunchDetail />} />
           <Route path="/financiamento" element={<Financing />} />
+          <Route path="/alugue-em-parceria" element={<RentalPartnership />} />
           <Route path="/giro-do-mercado" element={<MarketNews />} />
           <Route path="/nossa-ia" element={<NossaIA />} />
           <Route path="/comprar-creditos" element={<BuyCredits />} />
