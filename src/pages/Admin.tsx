@@ -28,6 +28,7 @@ import { EmailMarketingManagement } from '@/components/admin/EmailMarketingManag
 import { FaqManagement } from '@/components/admin/FaqManagement';
 import { AlertBannersManagement } from '@/components/admin/AlertBannersManagement';
 import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntentionsManagement';
+import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
 
 type Section =
   | 'dashboard'
@@ -58,7 +59,8 @@ type Section =
   | 'email-marketing'
   | 'faq'
   | 'alert-banners'
-  | 'lead-form-intentions';
+  | 'lead-form-intentions'
+  | 'rental-partners';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -90,6 +92,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   faq: FaqManagement,
   'alert-banners': AlertBannersManagement,
   'lead-form-intentions': LeadFormIntentionsManagement,
+  'rental-partners': RentalPartnersManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {

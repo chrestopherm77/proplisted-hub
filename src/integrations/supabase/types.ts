@@ -2037,6 +2037,57 @@ export type Database = {
           },
         ]
       }
+      rental_partners: {
+        Row: {
+          city: string
+          commission_text: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          owner_user_id: string | null
+          slug: string
+          sort_order: number
+          state: string
+          updated_at: string
+          whatsapp_phone: string
+        }
+        Insert: {
+          city: string
+          commission_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          owner_user_id?: string | null
+          slug: string
+          sort_order?: number
+          state: string
+          updated_at?: string
+          whatsapp_phone: string
+        }
+        Update: {
+          city?: string
+          commission_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_user_id?: string | null
+          slug?: string
+          sort_order?: number
+          state?: string
+          updated_at?: string
+          whatsapp_phone?: string
+        }
+        Relationships: []
+      }
       shopping_cart: {
         Row: {
           added_at: string | null
