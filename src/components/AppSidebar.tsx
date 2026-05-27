@@ -21,6 +21,7 @@ import {
   Sparkles,
   Building2,
   Crown,
+  Handshake,
 } from 'lucide-react';
 import {
   Sidebar,
