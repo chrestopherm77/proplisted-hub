@@ -63,6 +63,29 @@ export function RentalPartnersManagement() {
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [ownerResults, setOwnerResults] = useState<ProfileOption[]>([]);
+  const [searchingOwner, setSearchingOwner] = useState(false);
+
+  useEffect(() => {
+    const q = ownerSearch.trim();
+    if (!q || q.length < 2) { setOwnerResults([]); return; }
+    let cancel = false;
+    setSearchingOwner(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id,email,name')
+        .or(`email.ilike.%${q}%,name.ilike.%${q}%`)
+        .not('email', 'is', null)
+        .limit(15);
+      if (!cancel) {
+        setOwnerResults((data as ProfileOption[]) || []);
+        setSearchingOwner(false);
+      }
+    }, 250);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [ownerSearch]);
 
   const load = async () => {
     setLoading(true);
