@@ -23,7 +23,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Handshake, Loader2, MessageCircle, Building2, User } from 'lucide-react';
+import { Handshake, Loader2, MessageCircle, Building2, User, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface RentalPartner {
   id: string;
@@ -69,7 +70,7 @@ const stripAccent = (s: string) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 export default function RentalPartnership() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { states, cities, fetchCities, clearCities } = useIBGELocation();
 
@@ -256,10 +257,20 @@ export default function RentalPartnership() {
               e nós abrimos o WhatsApp dela já com seus dados.
             </p>
           </div>
-          <Button onClick={handleBecomePartner} variant="default" className="shrink-0">
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Quero me tornar uma imob parceira
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            {isAdmin && (
+              <Button asChild variant="secondary">
+                <Link to="/admin/rental-partners">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Publicar aluguel
+                </Link>
+              </Button>
+            )}
+            <Button onClick={handleBecomePartner} variant="default">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Quero me tornar uma imob parceira
+            </Button>
+          </div>
         </div>
 
         <Card>
