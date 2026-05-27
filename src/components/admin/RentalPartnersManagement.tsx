@@ -45,9 +45,11 @@ const emptyForm = {
   whatsapp_phone: '',
   state: '',
   city: '',
-  is_active: true,
+  is_active: false,
   sort_order: 0,
+  owner_user_id: '' as string,
   owner_email: '',
+  owner_name: '',
 };
 
 const slugify = (s: string) =>
