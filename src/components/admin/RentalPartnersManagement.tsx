@@ -298,17 +298,95 @@ export function RentalPartnersManagement() {
               />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label>E-mail do dono (opcional)</Label>
-              <Input
-                type="email"
-                value={form.owner_email}
-                onChange={(e) => setForm({ ...form, owner_email: e.target.value })}
-                placeholder="Permite que a imob edite o próprio banner"
-              />
+              <Label>Imobiliária dona (vincular a um usuário cadastrado) *</Label>
+              {form.owner_user_id ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                      <span className="truncate">{form.owner_name || '(sem nome)'}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate pl-6">{form.owner_email}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setForm({ ...form, owner_user_id: '', owner_email: '', owner_name: '' })}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Trocar
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      className="pl-8"
+                      placeholder="Buscar por e-mail ou nome…"
+                      value={ownerSearch}
+                      onChange={(e) => setOwnerSearch(e.target.value)}
+                    />
+                  </div>
+                  {ownerSearch.trim().length >= 2 && (
+                    <div className="border rounded-md max-h-48 overflow-auto divide-y">
+                      {searchingOwner ? (
+                        <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                        </div>
+                      ) : ownerResults.length === 0 ? (
+                        <div className="p-3 text-xs text-muted-foreground">Nenhum usuário encontrado.</div>
+                      ) : (
+                        ownerResults.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            className="w-full text-left p-2 hover:bg-muted/60 transition-colors"
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                owner_user_id: u.id,
+                                owner_email: u.email || '',
+                                owner_name: u.name || '',
+                              });
+                              setOwnerSearch('');
+                              setOwnerResults([]);
+                            }}
+                          >
+                            <div className="text-sm font-medium truncate">{u.name || '(sem nome)'}</div>
+                            <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Sem vínculo a um usuário cadastrado a parceira não pode ser publicada.
+                  </p>
+                </>
+              )}
             </div>
-            <div className="flex items-center gap-2 col-span-2">
-              <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-              <Label>Ativa</Label>
+            <div className="flex items-center justify-between gap-2 col-span-2 rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm">Publicada</Label>
+                <p className="text-xs text-muted-foreground">
+                  {form.owner_user_id
+                    ? 'Aparece na página /alugue-em-parceria quando ativada.'
+                    : 'Selecione a imobiliária dona para liberar a publicação.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {form.is_active && form.owner_user_id ? (
+                  <Badge variant="default">Publicada</Badge>
+                ) : (
+                  <Badge variant="secondary">Rascunho</Badge>
+                )}
+                <Switch
+                  checked={form.is_active}
+                  disabled={!form.owner_user_id}
+                  onCheckedChange={(v) => setForm({ ...form, is_active: v })}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
