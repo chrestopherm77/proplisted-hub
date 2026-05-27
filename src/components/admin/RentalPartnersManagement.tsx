@@ -136,6 +136,8 @@ export function RentalPartnersManagement() {
       owner_email,
       owner_name,
     });
+    setOwnerSearch('');
+    setOwnerResults([]);
     setDialogOpen(true);
   };
 
