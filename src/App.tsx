@@ -85,7 +85,8 @@ const App = () => {
         <AffiliateRefCapture />
         <PageViewTracker />
         <Routes>
-          <Route path="/" element={<BrokerDomainGate><Index /></BrokerDomainGate>} />
+          <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
+          <Route path="/corretor" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/leads" element={<Leads />} />

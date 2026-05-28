@@ -106,23 +106,24 @@ const ConectaEImobPortal = () => {
 const PortalHeader = () => (
   <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border">
     <div className="container mx-auto flex items-center justify-between py-4 gap-6">
-      <a href="#" className="font-display text-2xl font-bold tracking-tight text-[hsl(var(--portal-navy))]">
+      <Link to="/" className="font-display text-2xl font-bold tracking-tight text-[hsl(var(--portal-navy))]">
         ConectaEImob
-      </a>
+      </Link>
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
           <a href="#home" className="hover:opacity-70">Home</a>
-          <a href="#corretor" className="hover:opacity-70">Sou Corretor</a>
+          <Link to="/corretor" className="hover:opacity-70">Sou Corretor</Link>
           <a href="#sobre" className="hover:opacity-70">Sobre</a>
-          <a href="#blog" className="hover:opacity-70">Blog</a>
+          <Link to="/conectaeimob/noticias" className="hover:opacity-70">Blog</Link>
           <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
         </nav>
-        <button
+        <Link
+          to="/cadastro"
           data-cta="anunciar-gratis"
           className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
         >
           Anunciar Grátis
-        </button>
+        </Link>
       </div>
     </div>
   </header>
@@ -156,18 +157,20 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           Simples, rápido e seguro — do sonho à chave na mão.
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
-          <button
+          <Link
+            to="/portal-imoveis"
             data-cta="hero-buscar"
             className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-7 py-3.5 font-semibold transition"
           >
             Buscar Imóveis
-          </button>
-          <button
+          </Link>
+          <Link
+            to="/corretor"
             data-cta="hero-corretor"
             className="rounded-full border border-[hsl(var(--portal-navy))]/40 hover:bg-white text-[hsl(var(--portal-navy))] px-7 py-3.5 font-semibold transition inline-flex items-center gap-2"
           >
             Sou Corretor <ArrowRight className="h-4 w-4" />
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -285,13 +288,13 @@ const FindBanner = () => (
         <h3 className="font-display text-2xl md:text-3xl font-bold">Encontre o imóvel dos seus sonhos hoje mesmo</h3>
         <p className="text-white/90 text-sm mt-2">Mais de 48 mil imóveis esperando por você. Busca gratuita, sem cadastro obrigatório.</p>
       </div>
-      <button
+      <Link
+        to="/portal-imoveis"
         data-cta="banner-buscar"
         className="shrink-0 rounded-full bg-white text-[hsl(var(--portal-cta-red))] hover:bg-white/90 px-6 py-3 font-semibold inline-flex items-center gap-2 transition"
       >
         Buscar agora <ArrowRight className="h-4 w-4" />
-      </button>
-      <Home className="absolute right-32 top-1/2 -translate-y-1/2 h-32 w-32 text-white/15 hidden md:block" strokeWidth={1.2} />
+      </Link>
     </div>
   </section>
 );
@@ -325,12 +328,13 @@ const BrokerSection = () => {
           ))}
         </div>
 
-        <button
+        <Link
+          to="/cadastro"
           data-cta="cadastrar-corretor"
-          className="mt-10 rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-7 py-3.5 font-semibold transition"
+          className="mt-10 inline-block rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-7 py-3.5 font-semibold transition"
         >
           Cadastrar como corretor
-        </button>
+        </Link>
       </div>
     </section>
   );
@@ -473,12 +477,13 @@ const PartnerBanner = () => (
           Junte-se a mais de 12 mil corretores que já estão gerando negócios pela plataforma. Cadastro gratuito e sem burocracia.
         </p>
       </div>
-      <button
+      <Link
+        to="/cadastro"
         data-cta="banner-parceiro"
         className="shrink-0 rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-6 py-3 font-semibold inline-flex items-center gap-2 transition relative z-10"
       >
         Quero ser parceiro <ArrowRight className="h-4 w-4" />
-      </button>
+      </Link>
       <Key className="absolute right-44 top-1/2 -translate-y-1/2 h-28 w-28 text-white/10 hidden md:block" strokeWidth={1.2} />
     </div>
   </section>
