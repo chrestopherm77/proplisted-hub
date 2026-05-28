@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -60,6 +62,15 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 214 88% 35%;
     --sidebar-border: 214 20% 88%;
     --sidebar-ring: 214 88% 45%;
+
+    /* ConectaEImob portal tokens */
+    --portal-navy: 216 60% 14%;
+    --portal-navy-deep: 216 65% 9%;
+    --portal-card: 218 45% 22%;
+    --portal-cta-red: 354 78% 60%;
+    --portal-cta-red-hover: 354 78% 52%;
+    --portal-gold: 38 92% 56%;
+    --portal-muted: 216 25% 70%;
   }
 
   .dark {

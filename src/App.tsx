@@ -46,6 +46,7 @@ import CadastroRealizado from "./pages/CadastroRealizado";
 import Indicar from "./pages/Indicar";
 import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
+import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
@@ -156,7 +157,8 @@ const App = () => {
           <Route path="/primeiros-passos" element={<PrimeirosPassos />} />
           <Route path="/cadastro-realizado" element={<CadastroRealizado />} />
           <Route path="/indicar" element={<Indicar />} />
-          <Route path="/v/:slug" element={<PublicVideo />} />
+          <Route path="/conectaeimob" element={<ConectaEImobPortal />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
           <Route path="/:customSlug" element={<CustomLandingPage />} />
