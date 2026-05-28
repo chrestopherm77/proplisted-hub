@@ -356,12 +356,13 @@ const BlogSection = ({ news }: { news: NewsItem[] }) => {
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
             <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">Blog & Notícias</p>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold text-[hsl(var(--portal-navy))]">
-              Fique por dentro do mercado
-            </h2>
-          </div>
-          <button
+          <Link
+            to="/conectaeimob/noticias"
             data-cta="blog-ver-todas"
+            className="rounded-full border border-[hsl(var(--portal-navy))] text-[hsl(var(--portal-navy))] hover:bg-[hsl(var(--portal-navy))] hover:text-white px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2 transition"
+          >
+            Ver todas <ArrowRight className="h-4 w-4" />
+          </Link>
             className="rounded-full border border-[hsl(var(--portal-navy))] text-[hsl(var(--portal-navy))] hover:bg-[hsl(var(--portal-navy))] hover:text-white px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2 transition"
           >
             Ver todas <ArrowRight className="h-4 w-4" />
