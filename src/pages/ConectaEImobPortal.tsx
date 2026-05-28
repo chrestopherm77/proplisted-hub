@@ -7,6 +7,8 @@ import {
   Search, CheckSquare, MessageSquare, Calculator, Shield, Target,
   Home, Key, ArrowRight, MapPin,
 } from 'lucide-react';
+
+interface HeroProperty {
   id: string;
   title: string | null;
   price: number | null;
