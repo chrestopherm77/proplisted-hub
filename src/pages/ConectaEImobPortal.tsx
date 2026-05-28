@@ -478,7 +478,7 @@ const PartnerBanner = () => (
         </p>
       </div>
       <Link
-        to="/cadastro"
+        to="/lp-01"
         data-cta="banner-parceiro"
         className="shrink-0 rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-6 py-3 font-semibold inline-flex items-center gap-2 transition relative z-10"
       >
