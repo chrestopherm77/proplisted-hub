@@ -55,6 +55,7 @@ interface AdminNavItem {
 export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, group: 'Visão Geral' },
   { title: 'Leads', url: '/admin/leads', icon: Package, group: 'Visão Geral' },
+  { title: 'Pedidos de Financiamento', url: '/admin/financing-leads', icon: CreditCard, group: 'Visão Geral' },
   { title: 'Rastreamento', url: '/admin/tracking', icon: Activity, group: 'Visão Geral' },
   { title: 'Etapas de Cadastro', url: '/admin/signup-progress', icon: ListChecks, group: 'Visão Geral' },
   { title: 'Atividade dos Usuários', url: '/admin/user-activity', icon: History, group: 'Visão Geral' },
