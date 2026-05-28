@@ -93,8 +93,9 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'email-marketing': EmailMarketingManagement,
   faq: FaqManagement,
   'alert-banners': AlertBannersManagement,
-  'lead-form-intentions': LeadFormIntentionsManagement,
   'rental-partners': RentalPartnersManagement,
+  'financing-leads': FinancingLeadsManagement,
+};
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
