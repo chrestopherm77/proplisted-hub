@@ -127,6 +127,8 @@ const App = () => {
           <Route path="/admin/alert-banners" element={<Admin section="alert-banners" />} />
           <Route path="/admin/lead-form-intentions" element={<Admin section="lead-form-intentions" />} />
           <Route path="/admin/rental-partners" element={<Admin section="rental-partners" />} />
+          <Route path="/admin/financing-leads" element={<Admin section="financing-leads" />} />
+          <Route path="/admin/rental-partners" element={<Admin section="rental-partners" />} />
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
           <Route path="/portal-modelo/:id" element={<PortalTemplatePreview />} />
