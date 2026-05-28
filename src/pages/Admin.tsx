@@ -29,6 +29,7 @@ import { FaqManagement } from '@/components/admin/FaqManagement';
 import { AlertBannersManagement } from '@/components/admin/AlertBannersManagement';
 import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntentionsManagement';
 import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
+import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
 
 type Section =
   | 'dashboard'
