@@ -732,6 +732,54 @@ export type Database = {
           },
         ]
       }
+      financing_leads: {
+        Row: {
+          created_at: string
+          down_payment: string | null
+          id: string
+          modality: string | null
+          monthly_income: string | null
+          name: string
+          notes: string | null
+          property_value: string | null
+          source: string | null
+          status: string
+          term: string | null
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          down_payment?: string | null
+          id?: string
+          modality?: string | null
+          monthly_income?: string | null
+          name: string
+          notes?: string | null
+          property_value?: string | null
+          source?: string | null
+          status?: string
+          term?: string | null
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          down_payment?: string | null
+          id?: string
+          modality?: string | null
+          monthly_income?: string | null
+          name?: string
+          notes?: string | null
+          property_value?: string | null
+          source?: string | null
+          status?: string
+          term?: string | null
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       home_page_content: {
         Row: {
           content: Json
