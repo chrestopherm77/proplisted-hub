@@ -60,6 +60,7 @@ type Section =
   | 'email-marketing'
   | 'faq'
   | 'alert-banners'
+  | 'lead-form-intentions'
   | 'rental-partners'
   | 'financing-leads';
 
