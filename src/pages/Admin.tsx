@@ -29,6 +29,7 @@ import { FaqManagement } from '@/components/admin/FaqManagement';
 import { AlertBannersManagement } from '@/components/admin/AlertBannersManagement';
 import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntentionsManagement';
 import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
+import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
 
 type Section =
   | 'dashboard'
@@ -60,7 +61,8 @@ type Section =
   | 'faq'
   | 'alert-banners'
   | 'lead-form-intentions'
-  | 'rental-partners';
+  | 'rental-partners'
+  | 'financing-leads';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -93,6 +95,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'alert-banners': AlertBannersManagement,
   'lead-form-intentions': LeadFormIntentionsManagement,
   'rental-partners': RentalPartnersManagement,
+  'financing-leads': FinancingLeadsManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {

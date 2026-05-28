@@ -118,7 +118,7 @@ const PortalHeader = () => (
           <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
         </nav>
         <Link
-          to="/cadastro"
+          to="/lp-01"
           data-cta="anunciar-gratis"
           className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
         >
@@ -405,16 +405,62 @@ const BlogSection = ({ news }: { news: NewsItem[] }) => {
 /* ============================ FINANCING ============================ */
 const FinancingSection = () => {
   const chips = ['Caixa Econômica', 'FGTS', 'MCMV', 'SBPE', 'Resultado imediato'];
+  const [form, setForm] = useState({
+    name: '',
+    whatsapp: '',
+    property_value: '',
+    down_payment: '20',
+    term: '30 anos',
+    monthly_income: '',
+    modality: 'FGTS / Minha Casa Minha Vida',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const formatPhoneMask = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = form.name.trim();
+    const phoneDigits = form.whatsapp.replace(/\D/g, '');
+    if (!name || phoneDigits.length < 10) {
+      alert('Por favor, informe seu nome e WhatsApp.');
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from('financing_leads').insert({
+      name,
+      whatsapp: phoneDigits,
+      property_value: form.property_value || null,
+      down_payment: form.down_payment || null,
+      term: form.term || null,
+      monthly_income: form.monthly_income || null,
+      modality: form.modality || null,
+      source: 'conectaeimob-portal',
+    });
+    setSubmitting(false);
+    if (error) {
+      alert('Não foi possível enviar agora. Tente novamente.');
+      return;
+    }
+    setSubmitted(true);
+  };
+
   return (
     <section className="py-20 bg-[hsl(210_17%_97%)]">
       <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">Financiamento</p>
           <h2 className="mt-3 font-display text-3xl md:text-4xl font-bold text-[hsl(var(--portal-navy))]">
-            Simule seu financiamento e descubra quanto você pode pagar
+            Simule seu financiamento e fale com um especialista
           </h2>
           <p className="mt-4 text-muted-foreground max-w-lg">
-            Use nossa calculadora e veja condições de financiamento pelo FGTS, Minha Casa Minha Vida, SBPE e outros programas. Em segundos você sabe o valor das parcelas e o total de juros.
+            Deixe seu nome e WhatsApp que entramos em contato com as melhores condições para você — FGTS, Minha Casa Minha Vida, SBPE e outros programas.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {chips.map((c) => (
@@ -425,36 +471,95 @@ const FinancingSection = () => {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          data-cta="financing-form"
-          className="bg-white rounded-2xl shadow-lg border border-border p-7 space-y-4"
-        >
-          <h3 className="font-display text-xl font-bold text-[hsl(var(--portal-navy))]">Simulação rápida</h3>
-          <Field label="Valor do imóvel"><input className="input" placeholder="R$ 0,00" /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Entrada (%)"><input className="input" defaultValue="20" /></Field>
-            <Field label="Prazo (anos)">
-              <select className="input">
-                <option>20 anos</option><option>25 anos</option><option>30 anos</option><option>35 anos</option>
+        {submitted ? (
+          <div className="bg-white rounded-2xl shadow-lg border border-border p-8 text-center">
+            <div className="mx-auto h-14 w-14 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <CheckSquare className="h-7 w-7 text-green-600" />
+            </div>
+            <h3 className="font-display text-xl font-bold text-[hsl(var(--portal-navy))]">Pedido recebido!</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              Em breve nosso especialista entrará em contato pelo WhatsApp informado.
+            </p>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            data-cta="financing-form"
+            className="bg-white rounded-2xl shadow-lg border border-border p-7 space-y-4"
+          >
+            <h3 className="font-display text-xl font-bold text-[hsl(var(--portal-navy))]">Simulação rápida</h3>
+            <Field label="Nome completo *">
+              <input
+                className="input"
+                placeholder="Seu nome"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </Field>
+            <Field label="WhatsApp *">
+              <input
+                className="input"
+                placeholder="(00) 00000-0000"
+                value={form.whatsapp}
+                onChange={(e) => setForm({ ...form, whatsapp: formatPhoneMask(e.target.value) })}
+                required
+              />
+            </Field>
+            <Field label="Valor do imóvel">
+              <input
+                className="input"
+                placeholder="R$ 0,00"
+                value={form.property_value}
+                onChange={(e) => setForm({ ...form, property_value: e.target.value })}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Entrada (%)">
+                <input
+                  className="input"
+                  value={form.down_payment}
+                  onChange={(e) => setForm({ ...form, down_payment: e.target.value })}
+                />
+              </Field>
+              <Field label="Prazo (anos)">
+                <select
+                  className="input"
+                  value={form.term}
+                  onChange={(e) => setForm({ ...form, term: e.target.value })}
+                >
+                  <option>20 anos</option><option>25 anos</option><option>30 anos</option><option>35 anos</option>
+                </select>
+              </Field>
+            </div>
+            <Field label="Renda mensal familiar">
+              <input
+                className="input"
+                placeholder="R$ 0,00"
+                value={form.monthly_income}
+                onChange={(e) => setForm({ ...form, monthly_income: e.target.value })}
+              />
+            </Field>
+            <Field label="Modalidade">
+              <select
+                className="input"
+                value={form.modality}
+                onChange={(e) => setForm({ ...form, modality: e.target.value })}
+              >
+                <option>FGTS / Minha Casa Minha Vida</option>
+                <option>SBPE</option>
+                <option>Caixa Econômica</option>
               </select>
             </Field>
-          </div>
-          <Field label="Renda mensal familiar"><input className="input" placeholder="R$ 0,00" /></Field>
-          <Field label="Modalidade">
-            <select className="input">
-              <option>FGTS / Minha Casa Minha Vida</option>
-              <option>SBPE</option>
-              <option>Caixa Econômica</option>
-            </select>
-          </Field>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-[hsl(var(--portal-navy))] hover:bg-[hsl(var(--portal-navy-deep))] text-white py-3.5 font-semibold transition inline-flex items-center justify-center gap-2"
-          >
-            Simular agora <ArrowRight className="h-4 w-4" />
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-md bg-[hsl(var(--portal-navy))] hover:bg-[hsl(var(--portal-navy-deep))] text-white py-3.5 font-semibold transition inline-flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {submitting ? 'Enviando...' : <>Quero ser contatado <ArrowRight className="h-4 w-4" /></>}
+            </button>
+          </form>
+        )}
       </div>
     </section>
   );
