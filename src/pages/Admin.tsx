@@ -60,8 +60,8 @@ type Section =
   | 'email-marketing'
   | 'faq'
   | 'alert-banners'
-  | 'lead-form-intentions'
-  | 'rental-partners';
+  | 'rental-partners'
+  | 'financing-leads';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
