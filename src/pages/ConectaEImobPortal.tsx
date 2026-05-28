@@ -565,6 +565,13 @@ const FinancingSection = () => {
   );
 };
 
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <label className="block">
+    <span className="text-xs font-medium text-[hsl(var(--portal-navy))]">{label}</span>
+    <div className="mt-1.5">{children}</div>
+  </label>
+);
+
 /* ============================ PARTNER BANNER ============================ */
 const PartnerBanner = () => (
   <section className="container mx-auto py-12">
