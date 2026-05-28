@@ -291,9 +291,47 @@ export function RentalPartnersManagement() {
               <p className="text-xs text-muted-foreground">Será salvo apenas com dígitos.</p>
             </div>
             <div className="space-y-2 col-span-2">
-              <Label>Logo (URL)</Label>
-              <Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} />
+              <Label>Logo da imobiliária</Label>
+              <div className="flex items-center gap-3">
+                {form.logo_url ? (
+                  <img src={form.logo_url} alt="Logo" className="h-14 w-14 rounded-md object-contain border bg-muted" />
+                ) : (
+                  <div className="h-14 w-14 rounded-md border bg-muted flex items-center justify-center text-[10px] text-muted-foreground">sem logo</div>
+                )}
+                <div className="flex-1 space-y-1">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingLogo}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingLogo(true);
+                      try {
+                        const ext = file.name.split('.').pop() || 'png';
+                        const path = `rental-partners/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+                        const { error: upErr } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
+                        if (upErr) throw upErr;
+                        const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);
+                        setForm((f) => ({ ...f, logo_url: data.publicUrl }));
+                      } catch (err: any) {
+                        toast({ title: 'Erro ao enviar logo', description: err.message, variant: 'destructive' });
+                      } finally {
+                        setUploadingLogo(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <Input
+                    placeholder="ou cole uma URL"
+                    value={form.logo_url}
+                    onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                  />
+                </div>
+              </div>
+              {uploadingLogo && <p className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Enviando…</p>}
             </div>
+
             <div className="space-y-2 col-span-2">
               <Label>Descrição da modalidade</Label>
               <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
