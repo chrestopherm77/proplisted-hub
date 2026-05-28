@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { getCoverPhoto, PropertyPhoto } from '@/lib/propertyUtils';
 import { format } from 'date-fns';
@@ -8,8 +7,6 @@ import {
   Search, CheckSquare, MessageSquare, Calculator, Shield, Target,
   Home, Key, ArrowRight, MapPin,
 } from 'lucide-react';
-
-interface HeroProperty {
   id: string;
   title: string | null;
   price: number | null;
