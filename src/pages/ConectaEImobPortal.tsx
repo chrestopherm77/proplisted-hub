@@ -223,24 +223,11 @@ const Stats = () => (
           <p className="font-display text-4xl md:text-5xl font-bold text-[hsl(var(--portal-gold))]">{s.v}</p>
           <p className="text-sm text-[hsl(var(--portal-navy))]/70 mt-1">{s.l}</p>
         </div>
-
-/* ============================ STATS ============================ */
-const Stats = () => (
-  <section className="bg-[hsl(var(--portal-navy))] border-t border-white/10">
-    <div className="container mx-auto py-10 grid grid-cols-3 gap-6 text-white">
-      {[
-        { v: '45k', l: 'Imóveis anunciados' },
-        { v: '12k', l: 'Corretores ativos' },
-        { v: '98%', l: 'Clientes satisfeitos' },
-      ].map((s) => (
-        <div key={s.l}>
-          <p className="font-display text-4xl md:text-5xl font-bold text-[hsl(var(--portal-gold))]">{s.v}</p>
-          <p className="text-sm text-white/70 mt-1">{s.l}</p>
-        </div>
       ))}
     </div>
   </section>
 );
+
 
 /* ============================ WHY US ============================ */
 const WhyUs = () => {
