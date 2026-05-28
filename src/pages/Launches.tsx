@@ -222,7 +222,7 @@ const Launches = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Meus Alertas de Lançamentos</DialogTitle>
+                  <DialogTitle>Meus Alertas de Construtoras</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {alerts.length === 0 ? (
