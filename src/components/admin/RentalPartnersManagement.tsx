@@ -66,6 +66,7 @@ export function RentalPartnersManagement() {
   const [ownerSearch, setOwnerSearch] = useState('');
   const [ownerResults, setOwnerResults] = useState<ProfileOption[]>([]);
   const [searchingOwner, setSearchingOwner] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     const q = ownerSearch.trim();
