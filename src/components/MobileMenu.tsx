@@ -144,7 +144,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
               }`}
             >
               <Rocket className="h-5 w-5" />
-              <span className="font-medium">Lançamentos</span>
+              <span className="font-medium">Construtoras</span>
             </Link>
           )}
           <Link

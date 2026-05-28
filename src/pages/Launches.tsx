@@ -211,7 +211,7 @@ const Launches = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Lançamentos</h1>
+          <h1 className="text-2xl font-bold text-foreground">Construtoras</h1>
           <div className="flex gap-2">
             <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
               <DialogTrigger asChild>
@@ -222,7 +222,7 @@ const Launches = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Meus Alertas de Lançamentos</DialogTitle>
+                  <DialogTitle>Meus Alertas de Construtoras</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {alerts.length === 0 ? (

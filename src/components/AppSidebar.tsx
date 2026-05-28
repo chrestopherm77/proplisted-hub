@@ -91,7 +91,7 @@ export function AppSidebar() {
     { title: 'Leads Disponíveis', url: '/leads', icon: Package, show: true },
     { title: 'Venda em Parceria', url: '/property-searches', icon: Search, show: !isPartnerSite },
     { title: 'Portal de Imóveis', url: '/portal-imoveis', icon: Building2, show: !isPartnerSite },
-    { title: 'Lançamentos', url: '/launches', icon: Rocket, show: !isPartnerSite },
+    { title: 'Construtoras', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Alugue em Parceria', url: '/alugue-em-parceria', icon: Handshake, show: !isPartnerSite },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },
