@@ -305,21 +305,21 @@ const BrokerSection = () => {
     { n: '04', title: 'Plano gratuito para começar', desc: 'Cadastre-se sem custo e veja como a plataforma pode transformar seus resultados antes de investir.' },
   ];
   return (
-    <section id="corretor" className="bg-[hsl(var(--portal-navy))] text-white py-24">
+    <section id="corretor" className="bg-[hsl(var(--portal-soft))] text-[hsl(var(--portal-navy))] py-24">
       <div className="container mx-auto">
         <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-gold))] uppercase">Para corretores</p>
         <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold">Sua carteira de clientes começa aqui</h2>
-        <p className="mt-4 text-white/70 max-w-xl">
+        <p className="mt-4 text-[hsl(var(--portal-navy))]/70 max-w-xl">
           Conecte-se com compradores qualificados e aumente suas vendas com tecnologia.
         </p>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-5">
           {items.map((it) => (
-            <div key={it.n} className="rounded-xl bg-[hsl(var(--portal-card))] border border-white/5 p-6 flex gap-5">
+            <div key={it.n} className="rounded-xl bg-white border border-[hsl(var(--portal-navy))]/10 shadow-sm p-6 flex gap-5">
               <span className="font-display text-3xl font-bold text-[hsl(var(--portal-gold))] shrink-0">{it.n}</span>
               <div>
-                <h3 className="font-semibold text-white">{it.title}</h3>
-                <p className="text-sm text-white/70 mt-1.5 leading-relaxed">{it.desc}</p>
+                <h3 className="font-semibold text-[hsl(var(--portal-navy))]">{it.title}</h3>
+                <p className="text-sm text-[hsl(var(--portal-navy))]/70 mt-1.5 leading-relaxed">{it.desc}</p>
               </div>
             </div>
           ))}
