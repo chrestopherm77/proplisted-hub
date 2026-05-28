@@ -76,16 +76,13 @@ const ConectaEImobPortal = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    document.title = 'ConectaEImob — Conectamos quem compra e vende com corretores';
+  }, []);
+
   return (
     <div translate="no" className="min-h-screen bg-white text-foreground">
-      <Helmet>
-        <title>ConectaEImob — Conectamos quem compra e vende com corretores</title>
-        <meta
-          name="description"
-          content="Encontre o imóvel ideal ou o corretor perfeito para você. Simples, rápido e seguro — do sonho à chave na mão."
-        />
-        <link rel="canonical" href="https://conectaeimob.com.br/conectaeimob" />
-      </Helmet>
+
 
       <PortalHeader />
       <Hero properties={props} />
