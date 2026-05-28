@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getCoverPhoto, PropertyPhoto } from '@/lib/propertyUtils';
 import { format } from 'date-fns';
@@ -69,6 +70,7 @@ const ConectaEImobPortal = () => {
         .from('news_posts')
         .select('id, title, image_url, created_at')
         .eq('is_active', true)
+        .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
         .limit(4);
       if (data) {
@@ -103,23 +105,25 @@ const ConectaEImobPortal = () => {
 /* ============================ HEADER ============================ */
 const PortalHeader = () => (
   <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border">
-    <div className="container mx-auto flex items-center justify-between py-4">
+    <div className="container mx-auto flex items-center justify-between py-4 gap-6">
       <a href="#" className="font-display text-2xl font-bold tracking-tight text-[hsl(var(--portal-navy))]">
-        Conecta<span className="text-[hsl(var(--portal-cta-red))]">E</span>Imob
+        ConectaEImob
       </a>
-      <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[hsl(var(--portal-navy))]">
-        <a href="#home" className="hover:opacity-70">Home</a>
-        <a href="#corretor" className="hover:opacity-70">Sou Corretor</a>
-        <a href="#sobre" className="hover:opacity-70">Sobre</a>
-        <a href="#blog" className="hover:opacity-70">Blog</a>
-        <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
-      </nav>
-      <button
-        data-cta="anunciar-gratis"
-        className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
-      >
-        Anunciar Grátis
-      </button>
+      <div className="flex items-center gap-6 ml-auto">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
+          <a href="#home" className="hover:opacity-70">Home</a>
+          <a href="#corretor" className="hover:opacity-70">Sou Corretor</a>
+          <a href="#sobre" className="hover:opacity-70">Sobre</a>
+          <a href="#blog" className="hover:opacity-70">Blog</a>
+          <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
+        </nav>
+        <button
+          data-cta="anunciar-gratis"
+          className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
+        >
+          Anunciar Grátis
+        </button>
+      </div>
     </div>
   </header>
 );
@@ -482,9 +486,7 @@ const PortalFooter = () => (
   <footer className="bg-[hsl(var(--portal-navy-deep))] text-white/80 mt-8">
     <div className="container mx-auto py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
       <div>
-        <p className="font-display text-xl font-bold text-white">
-          Conecta<span className="text-[hsl(var(--portal-cta-red))]">E</span>Imob
-        </p>
+        <p className="font-display text-xl font-bold text-white">ConectaEImob</p>
         <p className="text-xs text-white/60 mt-3 leading-relaxed">
           A plataforma #1 em conexão imobiliária do Brasil. Compre, venda e alugue com segurança.
         </p>
