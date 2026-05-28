@@ -70,14 +70,16 @@ All colors MUST be HSL.
     --portal-cta-red: 214 88% 45%;
     --portal-cta-red-hover: 214 88% 35%;
     --portal-gold: 145 63% 42%;
+    /* ConectaEImob portal tokens — paleta neutra (azul, branco, verde Conectae) */
+    --portal-navy: 214 88% 35%;            /* texto/headings escuro */
+    --portal-navy-deep: 214 60% 25%;       /* footer */
+    --portal-soft: 210 90% 96%;            /* fundo azul clarinho (hero/sections) */
+    --portal-soft-deep: 210 80% 92%;       /* fundo azul clarinho um pouco mais forte */
+    --portal-card: 0 0% 100%;
+    --portal-cta-red: 214 88% 45%;
+    --portal-cta-red-hover: 214 88% 35%;
+    --portal-gold: 145 63% 42%;
     --portal-muted: 214 20% 60%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;

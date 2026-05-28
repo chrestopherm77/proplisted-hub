@@ -132,7 +132,7 @@ const PortalHeader = () => (
 const Hero = ({ properties }: { properties: HeroProperty[] }) => (
   <section
     id="home"
-    className="relative overflow-hidden bg-[hsl(var(--portal-navy))] text-white"
+    className="relative overflow-hidden bg-[hsl(var(--portal-soft))] text-[hsl(var(--portal-navy))]"
     style={{
       backgroundImage: `url("/images/world-map-bg.svg")`,
       backgroundSize: 'cover',
@@ -141,7 +141,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
   >
     <div className="container mx-auto py-20 lg:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative">
       <div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white border border-[hsl(var(--portal-navy))]/15 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[hsl(var(--portal-navy))]">
           <Home className="h-3.5 w-3.5 text-[hsl(var(--portal-gold))]" />
           Plataforma #1 em Conexão Imobiliária
         </span>
@@ -150,7 +150,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           <span className="text-[hsl(var(--portal-gold))]">comprar ou vender</span>{' '}
           com corretores de imóveis
         </h1>
-        <p className="mt-6 text-lg text-white/80 max-w-xl leading-relaxed">
+        <p className="mt-6 text-lg text-[hsl(var(--portal-navy))]/80 max-w-xl leading-relaxed">
           Encontre o imóvel ideal ou o corretor perfeito para você.
           <br />
           Simples, rápido e seguro — do sonho à chave na mão.
@@ -164,7 +164,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           </button>
           <button
             data-cta="hero-corretor"
-            className="rounded-full border border-white/40 hover:bg-white/10 text-white px-7 py-3.5 font-semibold transition inline-flex items-center gap-2"
+            className="rounded-full border border-[hsl(var(--portal-navy))]/40 hover:bg-white text-[hsl(var(--portal-navy))] px-7 py-3.5 font-semibold transition inline-flex items-center gap-2"
           >
             Sou Corretor <ArrowRight className="h-4 w-4" />
           </button>
@@ -182,23 +182,23 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           return (
             <div
               key={p.id}
-              className="absolute w-72 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[hsl(var(--portal-card))]"
+              className="absolute w-72 rounded-2xl overflow-hidden shadow-2xl border border-[hsl(var(--portal-navy))]/10 bg-white"
               style={{
                 transform: `translate(${offsets.x}px, ${offsets.y}px) rotate(${offsets.r}deg)`,
                 zIndex: offsets.z,
               }}
             >
-              <div className="h-44 bg-[hsl(var(--portal-navy-deep))] flex items-center justify-center">
+              <div className="h-44 bg-[hsl(var(--portal-soft-deep))] flex items-center justify-center">
                 {p.cover ? (
                   <img src={p.cover} alt={p.title || 'Imóvel'} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                  <Home className="h-16 w-16 text-white/30" />
+                  <Home className="h-16 w-16 text-[hsl(var(--portal-navy))]/30" />
                 )}
               </div>
               <div className="p-4">
-                <p className="text-sm font-semibold text-white truncate">{p.title || 'Imóvel'}</p>
+                <p className="text-sm font-semibold text-[hsl(var(--portal-navy))] truncate">{p.title || 'Imóvel'}</p>
                 <p className="text-[hsl(var(--portal-gold))] font-bold text-lg mt-1">{formatBRL(p.price)}</p>
-                <p className="text-xs text-white/70 mt-1 inline-flex items-center gap-1">
+                <p className="text-xs text-[hsl(var(--portal-navy))]/70 mt-1 inline-flex items-center gap-1">
                   <MapPin className="h-3 w-3" /> {p.neighborhood || p.city}{p.state ? `, ${p.state}` : ''}
                 </p>
               </div>
@@ -212,8 +212,8 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
 
 /* ============================ STATS ============================ */
 const Stats = () => (
-  <section className="bg-[hsl(var(--portal-navy))] border-t border-white/10">
-    <div className="container mx-auto py-10 grid grid-cols-3 gap-6 text-white">
+  <section className="bg-[hsl(var(--portal-soft-deep))] border-t border-[hsl(var(--portal-navy))]/10">
+    <div className="container mx-auto py-10 grid grid-cols-3 gap-6 text-[hsl(var(--portal-navy))]">
       {[
         { v: '45k', l: 'Imóveis anunciados' },
         { v: '12k', l: 'Corretores ativos' },
@@ -221,12 +221,13 @@ const Stats = () => (
       ].map((s) => (
         <div key={s.l}>
           <p className="font-display text-4xl md:text-5xl font-bold text-[hsl(var(--portal-gold))]">{s.v}</p>
-          <p className="text-sm text-white/70 mt-1">{s.l}</p>
+          <p className="text-sm text-[hsl(var(--portal-navy))]/70 mt-1">{s.l}</p>
         </div>
       ))}
     </div>
   </section>
 );
+
 
 /* ============================ WHY US ============================ */
 const WhyUs = () => {
@@ -304,21 +305,21 @@ const BrokerSection = () => {
     { n: '04', title: 'Plano gratuito para começar', desc: 'Cadastre-se sem custo e veja como a plataforma pode transformar seus resultados antes de investir.' },
   ];
   return (
-    <section id="corretor" className="bg-[hsl(var(--portal-navy))] text-white py-24">
+    <section id="corretor" className="bg-[hsl(var(--portal-soft))] text-[hsl(var(--portal-navy))] py-24">
       <div className="container mx-auto">
         <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-gold))] uppercase">Para corretores</p>
         <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold">Sua carteira de clientes começa aqui</h2>
-        <p className="mt-4 text-white/70 max-w-xl">
+        <p className="mt-4 text-[hsl(var(--portal-navy))]/70 max-w-xl">
           Conecte-se com compradores qualificados e aumente suas vendas com tecnologia.
         </p>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-5">
           {items.map((it) => (
-            <div key={it.n} className="rounded-xl bg-[hsl(var(--portal-card))] border border-white/5 p-6 flex gap-5">
+            <div key={it.n} className="rounded-xl bg-white border border-[hsl(var(--portal-navy))]/10 shadow-sm p-6 flex gap-5">
               <span className="font-display text-3xl font-bold text-[hsl(var(--portal-gold))] shrink-0">{it.n}</span>
               <div>
-                <h3 className="font-semibold text-white">{it.title}</h3>
-                <p className="text-sm text-white/70 mt-1.5 leading-relaxed">{it.desc}</p>
+                <h3 className="font-semibold text-[hsl(var(--portal-navy))]">{it.title}</h3>
+                <p className="text-sm text-[hsl(var(--portal-navy))]/70 mt-1.5 leading-relaxed">{it.desc}</p>
               </div>
             </div>
           ))}
