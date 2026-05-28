@@ -7,7 +7,7 @@ export const RESERVED_SLUGS = [
   'reset-password', 'property-searches', 'launches', 'financiamento',
   'giro-do-mercado', 'nossa-ia', 'comprar-creditos', 'calculadora',
   'criativos', 'portal-imoveis', 'imovel', 'planos',
-  'primeiros-passos', 'indicar', 'v', 'conectaeimob',
+  'primeiros-passos', 'indicar', 'v', 'conectaeimob', 'corretor',
   'api', 'assets', 'public', 'static',
 ];
 
