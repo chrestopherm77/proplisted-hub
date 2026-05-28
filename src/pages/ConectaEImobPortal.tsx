@@ -118,7 +118,7 @@ const PortalHeader = () => (
           <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
         </nav>
         <Link
-          to="/cadastro"
+          to="/lp-01"
           data-cta="anunciar-gratis"
           className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
         >
