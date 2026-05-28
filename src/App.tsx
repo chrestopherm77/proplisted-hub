@@ -47,6 +47,7 @@ import Indicar from "./pages/Indicar";
 import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
 import ConectaEImobPortal from "./pages/ConectaEImobPortal";
+import ConectaEImobNews from "./pages/ConectaEImobNews";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
@@ -158,6 +159,7 @@ const App = () => {
           <Route path="/cadastro-realizado" element={<CadastroRealizado />} />
           <Route path="/indicar" element={<Indicar />} />
           <Route path="/conectaeimob" element={<ConectaEImobPortal />} />
+          <Route path="/conectaeimob/noticias" element={<ConectaEImobNews />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
