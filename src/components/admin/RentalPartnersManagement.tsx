@@ -105,17 +105,10 @@ export function RentalPartnersManagement() {
       return;
     }
     try {
-      const res = await fetch(`https://servicodogeografiaeestatistica.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+      const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
       const data = res.ok ? await res.json() : [];
       setAreaCities((m) => ({ ...m, [idx]: data }));
-    } catch {
-      // fallback to public IBGE API
-      try {
-        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-        const data = await res.json();
-        setAreaCities((m) => ({ ...m, [idx]: data }));
-      } catch { /* ignore */ }
-    }
+    } catch { /* ignore */ }
   };
 
   const load = async () => {
