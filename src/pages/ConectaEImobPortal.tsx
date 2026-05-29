@@ -38,7 +38,7 @@ const formatBRL = (n: number | null) => {
   return `R$ ${n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
 };
 
-const ConectaEImobPortal = () => {
+const Conectae ImobPortal = () => {
   const [props, setProps] = useState<HeroProperty[]>(PLACEHOLDER_PROPS);
   const [news, setNews] = useState<NewsItem[]>([]);
 
@@ -81,7 +81,7 @@ const ConectaEImobPortal = () => {
   }, []);
 
   useEffect(() => {
-    document.title = 'ConectaEImob — Conectamos quem compra e vende com corretores';
+    document.title = 'Conectae Imob — Conectamos quem compra e vende com corretores';
   }, []);
 
   return (
@@ -107,7 +107,7 @@ const PortalHeader = () => (
   <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border">
     <div className="container mx-auto flex items-center justify-between py-4 gap-6">
       <Link to="/" className="font-display text-2xl font-bold tracking-tight text-[hsl(var(--portal-navy))]">
-        ConectaEImob
+        Conectae Imob
       </Link>
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
@@ -248,7 +248,7 @@ const WhyUs = () => {
         <div className="text-center max-w-2xl mx-auto">
           <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">Para você, cliente</p>
           <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold text-[hsl(var(--portal-navy))]">
-            Por que usar a ConectaEImob?
+            Por que usar a Conectae Imob?
           </h2>
           <p className="mt-4 text-muted-foreground">
             Comprar ou vender um imóvel nunca foi tão fácil. Veja tudo que preparamos pra você.
@@ -577,7 +577,7 @@ const PartnerBanner = () => (
   <section className="container mx-auto py-12">
     <div className="relative overflow-hidden rounded-2xl bg-[hsl(var(--portal-navy))] text-white p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
       <div className="relative z-10">
-        <h3 className="font-display text-2xl md:text-3xl font-bold">Seja um corretor parceiro ConectaEImob</h3>
+        <h3 className="font-display text-2xl md:text-3xl font-bold">Seja um corretor parceiro Conectae Imob</h3>
         <p className="text-white/80 text-sm mt-2">
           Junte-se a mais de 12 mil corretores que já estão gerando negócios pela plataforma. Cadastro gratuito e sem burocracia.
         </p>
@@ -599,7 +599,7 @@ const PortalFooter = () => (
   <footer className="bg-[hsl(var(--portal-navy-deep))] text-white/80 mt-8">
     <div className="container mx-auto py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
       <div>
-        <p className="font-display text-xl font-bold text-white">ConectaEImob</p>
+        <p className="font-display text-xl font-bold text-white">Conectae Imob</p>
         <p className="text-xs text-white/60 mt-3 leading-relaxed">
           A plataforma #1 em conexão imobiliária do Brasil. Compre, venda e alugue com segurança.
         </p>
@@ -610,7 +610,7 @@ const PortalFooter = () => (
     </div>
     <div className="border-t border-white/10">
       <div className="container mx-auto py-5 text-xs text-white/50 flex flex-wrap justify-between gap-2">
-        <span>© {new Date().getFullYear()} ConectaEImob. Todos os direitos reservados.</span>
+        <span>© {new Date().getFullYear()} Conectae Imob. Todos os direitos reservados.</span>
         <span>Feito com 💙 para o mercado imobiliário</span>
       </div>
     </div>
@@ -628,4 +628,4 @@ const FooterCol = ({ title, links }: { title: string; links: string[] }) => (
   </div>
 );
 
-export default ConectaEImobPortal;
+export default Conectae ImobPortal;
