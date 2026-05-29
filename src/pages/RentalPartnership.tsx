@@ -366,6 +366,7 @@ export default function RentalPartnership() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base leading-tight">{p.name}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
+                          <span className="font-medium">Cidades Atendidas:</span>{' '}
                           {areas.map((a) => `${a.city}/${a.state}`).join(' • ')}
                         </p>
                         {p.website_url && (
