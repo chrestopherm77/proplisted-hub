@@ -91,8 +91,8 @@ const ConectaEImobPortal = () => {
 const PortalHeader = () => (
   <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border">
     <div className="container mx-auto flex items-center justify-between py-4 gap-6">
-      <Link to="/" className="font-display text-2xl font-bold tracking-tight text-[hsl(var(--portal-navy))]">
-        Conectae Imob
+      <Link to="/" aria-label="Conectae Imob" className="flex items-center">
+        <BrandLogo size="md" />
       </Link>
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
