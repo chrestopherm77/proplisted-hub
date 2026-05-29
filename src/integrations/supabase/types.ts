@@ -2087,7 +2087,12 @@ export type Database = {
       }
       rental_partners: {
         Row: {
+          banner_url: string | null
           city: string
+          commission_owner_text: string | null
+          commission_owner_when: string | null
+          commission_tenant_text: string | null
+          commission_tenant_when: string | null
           commission_text: string | null
           created_at: string
           description: string | null
@@ -2096,14 +2101,21 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_user_id: string | null
+          service_areas: Json
           slug: string
           sort_order: number
           state: string
           updated_at: string
+          website_url: string | null
           whatsapp_phone: string
         }
         Insert: {
+          banner_url?: string | null
           city: string
+          commission_owner_text?: string | null
+          commission_owner_when?: string | null
+          commission_tenant_text?: string | null
+          commission_tenant_when?: string | null
           commission_text?: string | null
           created_at?: string
           description?: string | null
@@ -2112,14 +2124,21 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_user_id?: string | null
+          service_areas?: Json
           slug: string
           sort_order?: number
           state: string
           updated_at?: string
+          website_url?: string | null
           whatsapp_phone: string
         }
         Update: {
+          banner_url?: string | null
           city?: string
+          commission_owner_text?: string | null
+          commission_owner_when?: string | null
+          commission_tenant_text?: string | null
+          commission_tenant_when?: string | null
           commission_text?: string | null
           created_at?: string
           description?: string | null
@@ -2128,10 +2147,12 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_user_id?: string | null
+          service_areas?: Json
           slug?: string
           sort_order?: number
           state?: string
           updated_at?: string
+          website_url?: string | null
           whatsapp_phone?: string
         }
         Relationships: []

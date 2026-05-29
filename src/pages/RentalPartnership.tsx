@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
@@ -23,18 +22,27 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Handshake, Loader2, MessageCircle, Building2, User, Plus } from 'lucide-react';
+import { Handshake, Loader2, MessageCircle, Building2, User, Plus, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ZONE_OPTIONS } from '@/lib/propertyUtils';
+
+interface ServiceArea { state: string; city: string }
 
 interface RentalPartner {
   id: string;
   name: string;
   logo_url: string | null;
-  description: string | null;
+  banner_url: string | null;
+  website_url: string | null;
   commission_text: string | null;
+  commission_tenant_text: string | null;
+  commission_tenant_when: string | null;
+  commission_owner_text: string | null;
+  commission_owner_when: string | null;
   whatsapp_phone: string;
   state: string;
   city: string;
+  service_areas: ServiceArea[] | null;
 }
 
 const BECOME_PARTNER_PHONE = '5543996102805';
@@ -51,7 +59,6 @@ const PROPERTY_TYPES = [
 const normalizePhone = (raw: string) => {
   const digits = (raw || '').replace(/\D/g, '');
   if (!digits) return '';
-  // Aceita 10, 11, 12, 13 dígitos — devolve sempre 55 + DDD + número (drop 9 se 11 dígitos locais)
   let local = digits;
   if (local.startsWith('55') && local.length >= 12) local = local.slice(2);
   if (local.length === 11) local = local.slice(0, 2) + local.slice(3);
@@ -69,10 +76,20 @@ const formatCurrency = (value: string) => {
 const stripAccent = (s: string) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
+const whenLabel = (v: string | null | undefined) =>
+  v === 'FIRST_PAYMENT' ? 'no 1º pagamento' : v === 'RECURRING' ? 'recorrente' : '';
+
+const getAreas = (p: RentalPartner): ServiceArea[] => {
+  const arr = Array.isArray(p.service_areas) ? p.service_areas : [];
+  if (arr.length > 0) return arr;
+  return [{ state: p.state, city: p.city }];
+};
+
 export default function RentalPartnership() {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { states, cities, fetchCities, clearCities } = useIBGELocation();
+  const { cities: ownerCities, fetchCities: fetchOwnerCities, clearCities: clearOwnerCities } = useIBGELocation();
 
   const [loading, setLoading] = useState(true);
   const [partners, setPartners] = useState<RentalPartner[]>([]);
@@ -94,10 +111,8 @@ export default function RentalPartnership() {
     property_type: '',
     uf: '',
     city: '',
-    neighborhood: '',
+    zone: '',
     rent_value: '',
-    bedrooms: '',
-    notes: '',
   });
 
   useEffect(() => {
@@ -105,11 +120,11 @@ export default function RentalPartnership() {
       setLoading(true);
       const { data } = await supabase
         .from('rental_partners')
-        .select('id,name,logo_url,description,commission_text,whatsapp_phone,state,city')
+        .select('id,name,logo_url,banner_url,website_url,commission_text,commission_tenant_text,commission_tenant_when,commission_owner_text,commission_owner_when,whatsapp_phone,state,city,service_areas')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
-      setPartners((data as RentalPartner[]) || []);
+      setPartners((data as any as RentalPartner[]) || []);
       setLoading(false);
     };
     load();
@@ -143,8 +158,9 @@ export default function RentalPartnership() {
 
   const filtered = useMemo(() => {
     return partners.filter((p) => {
-      if (filterUf && p.state.toUpperCase() !== filterUf.toUpperCase()) return false;
-      if (filterCity && stripAccent(p.city) !== stripAccent(filterCity)) return false;
+      const areas = getAreas(p);
+      if (filterUf && !areas.some((a) => (a.state || '').toUpperCase() === filterUf.toUpperCase())) return false;
+      if (filterCity && !areas.some((a) => stripAccent(a.city) === stripAccent(filterCity))) return false;
       return true;
     });
   }, [partners, filterUf, filterCity]);
@@ -187,23 +203,30 @@ export default function RentalPartnership() {
       toast({ title: 'Complete seu perfil', description: 'Precisamos do seu nome e telefone.', variant: 'destructive' });
       return;
     }
+    const firstArea = getAreas(partner)[0];
     setOwnerForm({
       property_type: '',
-      uf: partner.state || '',
-      city: partner.city || '',
-      neighborhood: '',
+      uf: firstArea?.state || '',
+      city: firstArea?.city || '',
+      zone: '',
       rent_value: '',
-      bedrooms: '',
-      notes: '',
     });
+    clearOwnerCities();
+    if (firstArea?.state) fetchOwnerCities(firstArea.state);
     setOwnerDialog({ open: true, partner });
+  };
+
+  const handleOwnerUf = (val: string) => {
+    setOwnerForm((f) => ({ ...f, uf: val, city: '' }));
+    clearOwnerCities();
+    if (val) fetchOwnerCities(val);
   };
 
   const handleOwnerSubmit = () => {
     const { partner } = ownerDialog;
     if (!partner) return;
-    if (!ownerForm.property_type || !ownerForm.uf || !ownerForm.city || !ownerForm.rent_value) {
-      toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' });
+    if (!ownerForm.property_type || !ownerForm.uf || !ownerForm.city) {
+      toast({ title: 'Preencha tipo, UF e cidade', variant: 'destructive' });
       return;
     }
     const msg = [
@@ -212,10 +235,8 @@ export default function RentalPartnership() {
       `Olá, ${partner.name}! Tenho um imóvel para captação de parceria de locação.`,
       ``,
       `*Tipo:* ${ownerForm.property_type}`,
-      `*Localização:* ${ownerForm.city}/${ownerForm.uf}${ownerForm.neighborhood ? ` — ${ownerForm.neighborhood}` : ''}`,
-      `*Valor pretendido:* ${ownerForm.rent_value}`,
-      ownerForm.bedrooms ? `*Dormitórios:* ${ownerForm.bedrooms}` : '',
-      ownerForm.notes ? `*Observações:* ${ownerForm.notes}` : '',
+      `*Localização:* ${ownerForm.city}/${ownerForm.uf}${ownerForm.zone ? ` — Zona ${ownerForm.zone}` : ''}`,
+      ownerForm.rent_value ? `*Valor pretendido:* ${ownerForm.rent_value}` : '',
       brokerSignature(),
     ].filter(Boolean).join('\n');
     openWhats(partner.whatsapp_phone, msg);
@@ -245,16 +266,15 @@ export default function RentalPartnership() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Handshake className="h-6 w-6 text-primary" />
-              Alugue em Parceria
+              Alugue em Parceria: Ganhe Dinheiro com Indicações de Locação
             </h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Encontre imobiliárias parceiras para formar parcerias de locação.
-              Escolha a imob pela cidade, indique se você está com o locatário ou com o proprietário,
-              e nós abrimos o WhatsApp dela já com seus dados.
+              Indique clientes para imobiliárias que gerenciam carteiras de locação e receba comissões
+              (em taxa única ou recorrência mensal), sem se preocupar com a burocracia da administração.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
@@ -321,49 +341,86 @@ export default function RentalPartnership() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filtered.map((p) => (
-              <Card key={p.id} className="overflow-hidden">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-start gap-4">
-                    {p.logo_url ? (
-                      <img
-                        src={p.logo_url}
-                        alt={p.name}
-                        className="h-16 w-16 object-contain rounded-md border bg-white p-1 shrink-0"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center shrink-0">
-                        <Building2 className="h-7 w-7 text-muted-foreground" />
+            {filtered.map((p) => {
+              const areas = getAreas(p);
+              return (
+                <Card key={p.id} className="overflow-hidden">
+                  {p.banner_url && (
+                    <div className="w-full aspect-[4/1] bg-muted">
+                      <img src={p.banner_url} alt={`Banner ${p.name}`} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-start gap-4">
+                      {p.logo_url ? (
+                        <img
+                          src={p.logo_url}
+                          alt={p.name}
+                          className="h-16 w-16 object-contain rounded-md border bg-white p-1 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <Building2 className="h-7 w-7 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base leading-tight">{p.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {areas.map((a) => `${a.city}/${a.state}`).join(' • ')}
+                        </p>
+                        {p.website_url && (
+                          <a
+                            href={p.website_url.startsWith('http') ? p.website_url : `https://${p.website_url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                          >
+                            <Globe className="h-3 w-3" /> Site
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {(p.commission_tenant_text || p.commission_owner_text || p.commission_text) && (
+                      <div className="space-y-1 text-xs">
+                        {p.commission_tenant_text && (
+                          <p>
+                            <span className="font-medium text-primary">Indicação de Locatário:</span>{' '}
+                            {p.commission_tenant_text}
+                            {whenLabel(p.commission_tenant_when) && (
+                              <span className="text-muted-foreground"> ({whenLabel(p.commission_tenant_when)})</span>
+                            )}
+                          </p>
+                        )}
+                        {p.commission_owner_text && (
+                          <p>
+                            <span className="font-medium text-primary">Indicação de Proprietário:</span>{' '}
+                            {p.commission_owner_text}
+                            {whenLabel(p.commission_owner_when) && (
+                              <span className="text-muted-foreground"> ({whenLabel(p.commission_owner_when)})</span>
+                            )}
+                          </p>
+                        )}
+                        {!p.commission_tenant_text && !p.commission_owner_text && p.commission_text && (
+                          <p className="text-primary font-medium">{p.commission_text}</p>
+                        )}
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base leading-tight">{p.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{p.city}/{p.state}</p>
-                      {p.commission_text && (
-                        <p className="text-xs font-medium text-primary mt-1">{p.commission_text}</p>
-                      )}
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <Button variant="outline" onClick={() => handleTenantClick(p)}>
+                        <User className="h-4 w-4 mr-2" />
+                        Estou com locatário
+                      </Button>
+                      <Button onClick={() => openOwnerDialog(p)}>
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Estou com proprietário
+                      </Button>
                     </div>
-                  </div>
-
-                  {p.description && (
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                      {p.description}
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <Button variant="outline" onClick={() => handleTenantClick(p)}>
-                      <User className="h-4 w-4 mr-2" />
-                      Estou com locatário
-                    </Button>
-                    <Button onClick={() => openOwnerDialog(p)}>
-                      <Building2 className="h-4 w-4 mr-2" />
-                      Estou com proprietário
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
@@ -386,42 +443,46 @@ export default function RentalPartnership() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>UF *</Label>
-                <Input value={ownerForm.uf} onChange={(e) => setOwnerForm({ ...ownerForm, uf: e.target.value.toUpperCase().slice(0, 2) })} />
+                <Select value={ownerForm.uf} onValueChange={handleOwnerUf}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {states.map((s) => (
+                      <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Cidade *</Label>
-                <Input value={ownerForm.city} onChange={(e) => setOwnerForm({ ...ownerForm, city: e.target.value })} />
+                <Select
+                  value={ownerForm.city}
+                  onValueChange={(v) => setOwnerForm({ ...ownerForm, city: v })}
+                  disabled={!ownerForm.uf}
+                >
+                  <SelectTrigger><SelectValue placeholder={ownerForm.uf ? 'Selecione' : 'Selecione a UF'} /></SelectTrigger>
+                  <SelectContent>
+                    {ownerCities.map((c) => (
+                      <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Bairro</Label>
-              <Input value={ownerForm.neighborhood} onChange={(e) => setOwnerForm({ ...ownerForm, neighborhood: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Valor pretendido *</Label>
-                <Input
-                  placeholder="R$ 0,00"
-                  value={ownerForm.rent_value}
-                  onChange={(e) => setOwnerForm({ ...ownerForm, rent_value: formatCurrency(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Dormitórios</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={ownerForm.bedrooms}
-                  onChange={(e) => setOwnerForm({ ...ownerForm, bedrooms: e.target.value })}
-                />
-              </div>
+              <Label>Zona</Label>
+              <Select value={ownerForm.zone} onValueChange={(v) => setOwnerForm({ ...ownerForm, zone: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {ZONE_OPTIONS.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label>Observações</Label>
-              <Textarea
-                rows={3}
-                value={ownerForm.notes}
-                onChange={(e) => setOwnerForm({ ...ownerForm, notes: e.target.value })}
+              <Label>Valor pretendido</Label>
+              <Input
+                placeholder="R$ 0,00"
+                value={ownerForm.rent_value}
+                onChange={(e) => setOwnerForm({ ...ownerForm, rent_value: formatCurrency(e.target.value) })}
               />
             </div>
           </div>
