@@ -47,27 +47,8 @@ const ConectaEImobPortal = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('properties')
-        .select('id, title, price, city, state, neighborhood, photos')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (data && data.length) {
-        setProps(
-          data.map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            price: p.price,
-            city: p.city,
-            state: p.state,
-            neighborhood: p.neighborhood,
-            cover: getCoverPhoto(Array.isArray(p.photos) ? (p.photos as PropertyPhoto[]) : []),
-          })),
-        );
-      }
-    })();
+    // Hero usa imagens fixas (PLACEHOLDER_PROPS) — não sobrescreve com dados ao vivo
+
 
     (async () => {
       const { data } = await supabase
