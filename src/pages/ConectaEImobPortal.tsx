@@ -8,6 +8,9 @@ import {
   Search, CheckSquare, MessageSquare, Calculator, Shield, Target,
   Home, Key, ArrowRight, MapPin,
 } from 'lucide-react';
+import heroStudio from '@/assets/hero-studio.webp';
+import heroMansao from '@/assets/hero-mansao.avif';
+import heroCasaPiscina from '@/assets/hero-casa-piscina.jpg';
 
 interface HeroProperty {
   id: string;
@@ -27,10 +30,11 @@ interface NewsItem {
   category: string;
 }
 
+// Studio fica por último para aparecer na frente do stack (z-index maior)
 const PLACEHOLDER_PROPS: HeroProperty[] = [
-  { id: 'p1', title: 'Casa de campo — Barueri', price: 1200000, city: 'Barueri', state: 'SP', neighborhood: 'Tamboré', cover: null },
-  { id: 'p2', title: 'Vila moderna — Granja', price: 890000, city: 'São Paulo', state: 'SP', neighborhood: 'Granja Viana', cover: null },
-  { id: 'p3', title: 'Studio moderno — Pinheiros', price: 420000, city: 'São Paulo', state: 'SP', neighborhood: 'Pinheiros', cover: null },
+  { id: 'p1', title: 'Mansão à beira-mar — Costa Rica', price: 4500000, city: 'Florianópolis', state: 'SC', neighborhood: 'Jurerê Internacional', cover: heroMansao },
+  { id: 'p2', title: 'Casa com piscina — Granja Viana', price: 1890000, city: 'São Paulo', state: 'SP', neighborhood: 'Granja Viana', cover: heroCasaPiscina },
+  { id: 'p3', title: 'Studio moderno — Pinheiros', price: 420000, city: 'São Paulo', state: 'SP', neighborhood: 'Pinheiros', cover: heroStudio },
 ];
 
 const formatBRL = (n: number | null) => {
