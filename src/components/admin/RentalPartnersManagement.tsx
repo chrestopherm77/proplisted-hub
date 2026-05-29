@@ -3,53 +3,61 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { Plus, Pencil, Trash2, Loader2, Search, X, CheckCircle2 } from 'lucide-react';
 
-interface ProfileOption {
-  id: string;
-  email: string | null;
-  name: string | null;
-}
+interface ProfileOption { id: string; email: string | null; name: string | null }
+
+interface ServiceArea { state: string; city: string }
 
 interface Partner {
   id: string;
   name: string;
   slug: string;
   logo_url: string | null;
-  description: string | null;
+  banner_url: string | null;
+  website_url: string | null;
   commission_text: string | null;
+  commission_tenant_text: string | null;
+  commission_tenant_when: string | null;
+  commission_owner_text: string | null;
+  commission_owner_when: string | null;
   whatsapp_phone: string;
   state: string;
   city: string;
   is_active: boolean;
   sort_order: number;
   owner_user_id: string | null;
+  service_areas: ServiceArea[] | null;
 }
 
 const emptyForm = {
   id: '',
   name: '',
-  slug: '',
   logo_url: '',
-  description: '',
-  commission_text: '',
+  banner_url: '',
+  website_url: '',
+  commission_tenant_text: '',
+  commission_tenant_when: 'FIRST_PAYMENT',
+  commission_owner_text: '',
+  commission_owner_when: 'FIRST_PAYMENT',
   whatsapp_phone: '',
-  state: '',
-  city: '',
   is_active: false,
-  sort_order: 0,
   owner_user_id: '' as string,
   owner_email: '',
   owner_name: '',
+  service_areas: [{ state: '', city: '' }] as ServiceArea[],
 };
 
 const slugify = (s: string) =>
@@ -58,6 +66,7 @@ const slugify = (s: string) =>
 
 export function RentalPartnersManagement() {
   const { toast } = useToast();
+  const { states } = useIBGELocation();
   const [items, setItems] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,6 +76,8 @@ export function RentalPartnersManagement() {
   const [ownerResults, setOwnerResults] = useState<ProfileOption[]>([]);
   const [searchingOwner, setSearchingOwner] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [areaCities, setAreaCities] = useState<Record<number, { id: number; nome: string }[]>>({});
 
   useEffect(() => {
     const q = ownerSearch.trim();
@@ -88,6 +99,25 @@ export function RentalPartnersManagement() {
     return () => { cancel = true; clearTimeout(t); };
   }, [ownerSearch]);
 
+  const fetchCitiesFor = async (idx: number, uf: string) => {
+    if (!uf) {
+      setAreaCities((m) => ({ ...m, [idx]: [] }));
+      return;
+    }
+    try {
+      const res = await fetch(`https://servicodogeografiaeestatistica.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+      const data = res.ok ? await res.json() : [];
+      setAreaCities((m) => ({ ...m, [idx]: data }));
+    } catch {
+      // fallback to public IBGE API
+      try {
+        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+        const data = await res.json();
+        setAreaCities((m) => ({ ...m, [idx]: data }));
+      } catch { /* ignore */ }
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -96,16 +126,22 @@ export function RentalPartnersManagement() {
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
     if (error) toast({ title: 'Erro ao carregar', description: error.message, variant: 'destructive' });
-    setItems((data as Partner[]) || []);
+    setItems((data as any as Partner[]) || []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
+  const initFormAreas = async (areas: ServiceArea[]) => {
+    setAreaCities({});
+    await Promise.all(areas.map((a, i) => a.state ? fetchCitiesFor(i, a.state) : Promise.resolve()));
+  };
+
   const openNew = () => {
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, service_areas: [{ state: '', city: '' }] });
     setOwnerSearch('');
     setOwnerResults([]);
+    setAreaCities({});
     setDialogOpen(true);
   };
 
@@ -121,30 +157,54 @@ export function RentalPartnersManagement() {
       owner_email = (data as any)?.email || '';
       owner_name = (data as any)?.name || '';
     }
+    const areas: ServiceArea[] = (Array.isArray(p.service_areas) && p.service_areas.length > 0)
+      ? p.service_areas
+      : [{ state: p.state || '', city: p.city || '' }];
     setForm({
       id: p.id,
       name: p.name,
-      slug: p.slug,
       logo_url: p.logo_url || '',
-      description: p.description || '',
-      commission_text: p.commission_text || '',
+      banner_url: p.banner_url || '',
+      website_url: p.website_url || '',
+      commission_tenant_text: p.commission_tenant_text || '',
+      commission_tenant_when: p.commission_tenant_when || 'FIRST_PAYMENT',
+      commission_owner_text: p.commission_owner_text || '',
+      commission_owner_when: p.commission_owner_when || 'FIRST_PAYMENT',
       whatsapp_phone: p.whatsapp_phone,
-      state: p.state,
-      city: p.city,
       is_active: p.is_active,
-      sort_order: p.sort_order,
       owner_user_id: p.owner_user_id || '',
       owner_email,
       owner_name,
+      service_areas: areas,
     });
     setOwnerSearch('');
     setOwnerResults([]);
     setDialogOpen(true);
+    initFormAreas(areas);
+  };
+
+  const updateArea = (idx: number, patch: Partial<ServiceArea>) => {
+    setForm((f) => ({
+      ...f,
+      service_areas: f.service_areas.map((a, i) => i === idx ? { ...a, ...patch } : a),
+    }));
+  };
+
+  const addArea = () => {
+    setForm((f) => ({ ...f, service_areas: [...f.service_areas, { state: '', city: '' }] }));
+  };
+
+  const removeArea = (idx: number) => {
+    setForm((f) => ({
+      ...f,
+      service_areas: f.service_areas.length === 1 ? f.service_areas : f.service_areas.filter((_, i) => i !== idx),
+    }));
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.whatsapp_phone || !form.state || !form.city) {
-      toast({ title: 'Preencha nome, WhatsApp, UF e cidade', variant: 'destructive' });
+    const validAreas = form.service_areas.filter((a) => a.state && a.city);
+    if (!form.name || !form.whatsapp_phone || validAreas.length === 0) {
+      toast({ title: 'Preencha nome, WhatsApp e ao menos uma região (UF + cidade)', variant: 'destructive' });
       return;
     }
     if (!form.owner_user_id) {
@@ -157,19 +217,23 @@ export function RentalPartnersManagement() {
     }
     setSaving(true);
     try {
-      const slug = form.slug?.trim() || slugify(form.name);
+      const primary = validAreas[0];
       const payload = {
         name: form.name.trim(),
-        slug,
+        slug: slugify(form.name) || `parceira-${Date.now()}`,
         logo_url: form.logo_url.trim() || null,
-        description: form.description.trim() || null,
-        commission_text: form.commission_text.trim() || null,
+        banner_url: form.banner_url.trim() || null,
+        website_url: form.website_url.trim() || null,
+        commission_tenant_text: form.commission_tenant_text.trim() || null,
+        commission_tenant_when: form.commission_tenant_text.trim() ? form.commission_tenant_when : null,
+        commission_owner_text: form.commission_owner_text.trim() || null,
+        commission_owner_when: form.commission_owner_text.trim() ? form.commission_owner_when : null,
         whatsapp_phone: form.whatsapp_phone.replace(/\D/g, ''),
-        state: form.state.trim().toUpperCase().slice(0, 2),
-        city: form.city.trim(),
+        state: primary.state.toUpperCase().slice(0, 2),
+        city: primary.city,
         is_active: form.is_active,
-        sort_order: form.sort_order || 0,
         owner_user_id: form.owner_user_id,
+        service_areas: validAreas.map((a) => ({ state: a.state.toUpperCase().slice(0, 2), city: a.city })),
       };
 
       const { error } = form.id
@@ -211,6 +275,15 @@ export function RentalPartnersManagement() {
     load();
   };
 
+  const uploadImage = async (file: File, prefix: string) => {
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `rental-partners/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
+    if (upErr) throw upErr;
+    const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -225,64 +298,49 @@ export function RentalPartnersManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Cidade/UF</TableHead>
+                <TableHead>Regiões</TableHead>
                 <TableHead>WhatsApp</TableHead>
-                <TableHead>Comissão</TableHead>
-                <TableHead className="w-20">Ordem</TableHead>
                 <TableHead className="w-20">Ativo</TableHead>
                 <TableHead className="w-32 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma parceira cadastrada.</TableCell></TableRow>
-              ) : items.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>{p.city}/{p.state}</TableCell>
-                  <TableCell className="font-mono text-xs">{p.whatsapp_phone}</TableCell>
-                  <TableCell className="text-xs">{p.commission_text || '—'}</TableCell>
-                  <TableCell>{p.sort_order}</TableCell>
-                  <TableCell><Switch checked={p.is_active} onCheckedChange={() => toggleActive(p)} /></TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => handleDelete(p)}><Trash2 className="h-4 w-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhuma parceira cadastrada.</TableCell></TableRow>
+              ) : items.map((p) => {
+                const areas = (Array.isArray(p.service_areas) && p.service_areas.length > 0)
+                  ? p.service_areas
+                  : [{ state: p.state, city: p.city }];
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="text-xs">{areas.map((a) => `${a.city}/${a.state}`).join(' • ')}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.whatsapp_phone}</TableCell>
+                    <TableCell><Switch checked={p.is_active} onCheckedChange={() => toggleActive(p)} /></TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDelete(p)}><Trash2 className="h-4 w-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? 'Editar parceira' : 'Nova parceira'}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 py-2">
-
-            <div className="space-y-2 col-span-2">
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
               <Label>Nome *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
+
             <div className="space-y-2">
-              <Label>Slug</Label>
-              <Input value={form.slug} placeholder="auto" onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Ordem</Label>
-              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value || '0', 10) })} />
-            </div>
-            <div className="space-y-2">
-              <Label>UF *</Label>
-              <Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cidade *</Label>
-              <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-            </div>
-            <div className="space-y-2 col-span-2">
               <Label>WhatsApp (com DDD) *</Label>
               <Input
                 value={form.whatsapp_phone}
@@ -291,8 +349,74 @@ export function RentalPartnersManagement() {
               />
               <p className="text-xs text-muted-foreground">Será salvo apenas com dígitos.</p>
             </div>
-            <div className="space-y-2 col-span-2">
+
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input
+                placeholder="https://imobiliaria.com.br"
+                value={form.website_url}
+                onChange={(e) => setForm({ ...form, website_url: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Regiões atendidas *</Label>
+                <Button type="button" size="sm" variant="outline" onClick={addArea}>
+                  <Plus className="h-3 w-3 mr-1" /> Adicionar
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">A imobiliária pode atender várias cidades/estados.</p>
+              {form.service_areas.map((area, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-end border rounded-md p-2 bg-muted/30">
+                  <div className="space-y-1">
+                    <Label className="text-xs">UF</Label>
+                    <Select
+                      value={area.state}
+                      onValueChange={(v) => {
+                        updateArea(idx, { state: v, city: '' });
+                        fetchCitiesFor(idx, v);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                      <SelectContent>
+                        {states.map((s) => (
+                          <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cidade</Label>
+                    <Select
+                      value={area.city}
+                      onValueChange={(v) => updateArea(idx, { city: v })}
+                      disabled={!area.state}
+                    >
+                      <SelectTrigger><SelectValue placeholder={area.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
+                      <SelectContent>
+                        {(areaCities[idx] || []).map((c) => (
+                          <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeArea(idx)}
+                    disabled={form.service_areas.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
               <Label>Logo da imobiliária</Label>
+              <p className="text-xs text-muted-foreground">Tamanho ideal: 200×200px (quadrado, fundo transparente).</p>
               <div className="flex items-center gap-3">
                 {form.logo_url ? (
                   <img src={form.logo_url} alt="Logo" className="h-14 w-14 rounded-md object-contain border bg-muted" />
@@ -309,12 +433,8 @@ export function RentalPartnersManagement() {
                       if (!file) return;
                       setUploadingLogo(true);
                       try {
-                        const ext = file.name.split('.').pop() || 'png';
-                        const path = `rental-partners/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-                        const { error: upErr } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
-                        if (upErr) throw upErr;
-                        const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);
-                        setForm((f) => ({ ...f, logo_url: data.publicUrl }));
+                        const url = await uploadImage(file, 'logo');
+                        setForm((f) => ({ ...f, logo_url: url }));
                       } catch (err: any) {
                         toast({ title: 'Erro ao enviar logo', description: err.message, variant: 'destructive' });
                       } finally {
@@ -333,19 +453,86 @@ export function RentalPartnersManagement() {
               {uploadingLogo && <p className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Enviando…</p>}
             </div>
 
-            <div className="space-y-2 col-span-2">
-              <Label>Descrição da modalidade</Label>
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <div className="space-y-2">
+              <Label>Banner</Label>
+              <p className="text-xs text-muted-foreground">Tamanho ideal: 1200×300px (proporção 4:1).</p>
+              <div className="space-y-2">
+                {form.banner_url && (
+                  <img src={form.banner_url} alt="Banner" className="w-full aspect-[4/1] object-cover rounded-md border bg-muted" />
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingBanner}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingBanner(true);
+                    try {
+                      const url = await uploadImage(file, 'banner');
+                      setForm((f) => ({ ...f, banner_url: url }));
+                    } catch (err: any) {
+                      toast({ title: 'Erro ao enviar banner', description: err.message, variant: 'destructive' });
+                    } finally {
+                      setUploadingBanner(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <Input
+                  placeholder="ou cole uma URL"
+                  value={form.banner_url}
+                  onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
+                />
+              </div>
+              {uploadingBanner && <p className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Enviando…</p>}
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label>Percentuais / Comissão (texto curto)</Label>
+
+            <div className="space-y-3 rounded-md border p-3">
+              <Label className="text-sm">Percentuais / Comissão — Indicação de Locatário</Label>
               <Input
                 placeholder="Ex.: 50% sobre 1ª locação"
-                value={form.commission_text}
-                onChange={(e) => setForm({ ...form, commission_text: e.target.value })}
+                value={form.commission_tenant_text}
+                onChange={(e) => setForm({ ...form, commission_tenant_text: e.target.value })}
               />
+              <div className="space-y-1">
+                <Label className="text-xs">Quando ocorre</Label>
+                <Select
+                  value={form.commission_tenant_when}
+                  onValueChange={(v) => setForm({ ...form, commission_tenant_when: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIRST_PAYMENT">No 1º Pagamento</SelectItem>
+                    <SelectItem value="RECURRING">Recorrente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2 col-span-2">
+
+            <div className="space-y-3 rounded-md border p-3">
+              <Label className="text-sm">Percentuais / Comissão — Indicação de Proprietário</Label>
+              <Input
+                placeholder="Ex.: 30% sobre 1ª locação"
+                value={form.commission_owner_text}
+                onChange={(e) => setForm({ ...form, commission_owner_text: e.target.value })}
+              />
+              <div className="space-y-1">
+                <Label className="text-xs">Quando ocorre</Label>
+                <Select
+                  value={form.commission_owner_when}
+                  onValueChange={(v) => setForm({ ...form, commission_owner_when: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIRST_PAYMENT">No 1º Pagamento</SelectItem>
+                    <SelectItem value="RECURRING">Recorrente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label>Imobiliária dona (vincular a um usuário cadastrado) *</Label>
               {form.owner_user_id ? (
                 <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-2">
@@ -414,7 +601,8 @@ export function RentalPartnersManagement() {
                 </>
               )}
             </div>
-            <div className="flex items-center justify-between gap-2 col-span-2 rounded-md border p-3">
+
+            <div className="flex items-center justify-between gap-2 rounded-md border p-3">
               <div className="space-y-0.5">
                 <Label className="text-sm">Publicada</Label>
                 <p className="text-xs text-muted-foreground">
