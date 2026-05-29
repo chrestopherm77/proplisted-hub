@@ -38,7 +38,7 @@ const formatBRL = (n: number | null) => {
   return `R$ ${n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
 };
 
-const Conectae ImobPortal = () => {
+const ConectaEImobPortal = () => {
   const [props, setProps] = useState<HeroProperty[]>(PLACEHOLDER_PROPS);
   const [news, setNews] = useState<NewsItem[]>([]);
 
@@ -628,4 +628,4 @@ const FooterCol = ({ title, links }: { title: string; links: string[] }) => (
   </div>
 );
 
-export default Conectae ImobPortal;
+export default ConectaEImobPortal;
