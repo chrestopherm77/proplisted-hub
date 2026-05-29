@@ -1,101 +1,62 @@
-# Página /conectaeimob — Portal público estilo "ConectaEImob"
+## Mudanças
 
-Replicar fielmente o layout do HTML enviado (5 prints), trocando a paleta para as cores oficiais da Conectae. Página React standalone (sem Layout do app), rota pública, com dados reais de imóveis e notícias.
+### 1) Página `/alugue-em-parceria` (`src/pages/RentalPartnership.tsx`)
 
-## Rota e arquivo
+**Slogan (header):**
+- Título: `Alugue em Parceria: Ganhe Dinheiro com Indicações de Locação`
+- Subtítulo: `Indique clientes para imobiliárias que gerenciam carteiras de locação e receba comissões (em taxa única ou recorrência mensal), sem se preocupar com a burocracia da administração.`
 
-- Nova rota pública em `src/App.tsx`: `/conectaeimob` → `<ConectaEImobPortal />`.
-- Adicionar `conectaeimob` em `src/lib/reservedSlugs.ts` para impedir conflito com landing pages customizadas.
-- Novo componente: `src/pages/ConectaEImobPortal.tsx` (página standalone, sem `<Layout>`).
-- Sub-componentes em `src/components/conectaeimob-portal/`:
-  - `PortalHeader.tsx`, `HeroSection.tsx`, `WhyUsSection.tsx`, `FindCtaBanner.tsx`,
-    `BrokerSection.tsx`, `BlogSection.tsx`, `FinancingSection.tsx`, `PartnerCtaBanner.tsx`, `PortalFooter.tsx`.
+**Modal "Dados do imóvel" (Estou com proprietário):**
+- `Tipo de imóvel`: já é Select — manter.
+- `UF`: trocar Input por Select usando `useIBGELocation` (states).
+- `Cidade`: trocar Input por Select dependente da UF (cities via IBGE).
+- `Bairro` → renomear para `Zona`, Select com `ZONE_OPTIONS` de `@/lib/propertyUtils`.
+- `Valor pretendido`: tirar o `*`, deixar opcional (remover da validação).
+- `Dormitórios`: **remover**.
+- `Observações`: **remover**.
+- Atualizar mensagem WhatsApp para refletir os campos restantes (sem dormitórios/obs, valor só se preenchido, "Zona" no lugar de "bairro").
 
-## Estrutura visual (1:1 com os prints)
+**Cards de parceira:**
+- Mostrar múltiplas cidades/UFs (lista de regiões atendidas) em vez de uma única.
+- Mostrar website (se houver) como link discreto.
+- Exibir banner topo do card (se houver), estilo Lançamentos (faixa de imagem acima do conteúdo).
+- Mostrar os dois novos campos de comissão (Locatário / Proprietário) quando preenchidos, cada um com "(no 1º pagamento)" ou "(recorrente)".
 
-1. **Header fixo** — logo "Conecta**E**Imob" (E em destaque na cor de acento) + nav (Home, Sou Corretor, Sobre, Blog, Ajuda) + botão "Anunciar Grátis" (CTA accent arredondado).
-2. **Hero** — fundo navy escuro com padrão de mapa-múndi sutil (reaproveitar `public/images/world-map-bg.svg`). Pílula "PLATAFORMA #1 EM CONEXÃO IMOBILIÁRIA". Título grande serif: "Conectamos pessoas que buscam *comprar ou vender* com corretores de imóveis" (palavras "comprar ou vender" em accent). Subtítulo. Botões "Buscar Imóveis" (accent) e "Sou Corretor →" (outline). À direita: stack de 3 cards de imóveis empilhados/rotacionados (dados reais).
-3. **Faixa de stats** — "45k Imóveis anunciados · 12k Corretores ativos · 98% Clientes satisfeitos" sobre o navy.
-4. **"Por que usar a ConectaEImob?"** — eyebrow accent, título serif, subtítulo, grid de 6 cards brancos com ícones (Search, CheckSquare, MessageSquare, Calculator, Shield, Target) e barra superior em gradiente. Copy idêntica aos prints.
-5. **Banner CTA vermelho** — "Encontre o imóvel dos seus sonhos hoje mesmo" + botão branco "Buscar agora →", com ícone de casa em outline à direita.
-6. **"Sua carteira de clientes começa aqui"** — fundo navy, eyebrow "PARA CORRETORES", 4 cards numerados (01–04) com a copy exata dos prints. Botão accent "Cadastrar como corretor".
-7. **"Fique por dentro do mercado"** (Blog) — 4 cards de notícias reais (`news_posts`, últimas 4 ativas), com tag de categoria accent, título e data em pt-BR. Botão "Ver todas →" no canto.
-8. **"Simule seu financiamento…"** — split: à esquerda copy + chips (Caixa Econômica, FGTS, MCMV, SBPE, Resultado imediato); à direita card branco com form simulado (valor, entrada, prazo, renda, modalidade) e botão navy "Simular agora →".
-9. **Banner CTA navy** — "Seja um corretor parceiro ConectaEImob" + botão accent "Quero ser parceiro →", ícone de chave em outline.
-10. **Footer** — colunas com links institucionais e redes sociais (copy genérica baseada no padrão dos prints).
+**Filtros UF/Cidade:** ajustar `filtered` para considerar a lista de regiões atendidas (match se qualquer região bate).
 
-## Cores e tipografia
+### 2) Admin (`src/components/admin/RentalPartnersManagement.tsx`)
 
-Aplicar paleta da marca Conectae já definida em `src/index.css` (HSL):
+Modal "Nova/Editar parceira":
+- **Remover** campos visíveis `Slug` e `Ordem` (continuam existindo internamente: slug gerado auto pelo `slugify(name)`, sort_order default `0`).
+- `UF` / `Cidade` **principal**: trocar Inputs por Selects (IBGE).
+- **Novo bloco "Regiões atendidas"**: lista dinâmica de pares UF+Cidade (Selects IBGE) com botões adicionar/remover. A primeira é a cidade principal. Salvar em coluna nova `service_areas jsonb` (array `[{state,city}]`).
+- **Logo**: adicionar dica "Tamanho ideal: 200x200px (quadrado, fundo transparente)".
+- **Banner**: novo upload de imagem (bucket `brand-logos` ou `launches`), dica "Tamanho ideal: 1200x300px". Salvar em `banner_url`.
+- **Remover** campo `Descrição da modalidade`.
+- Substituir único `Percentuais / Comissão` por **dois pares**:
+  - `Percentuais / Comissão — Indicação de Locatário` + Select "Quando ocorre" (`No 1º Pagamento` | `Recorrente`).
+  - `Percentuais / Comissão — Indicação de Proprietário` + Select "Quando ocorre" (`No 1º Pagamento` | `Recorrente`).
+  - Salvar em colunas novas: `commission_tenant_text`, `commission_tenant_when`, `commission_owner_text`, `commission_owner_when`. Manter `commission_text` por compatibilidade (não exibir).
+- **Novo campo Website** (`website_url`, URL).
 
-- Fundo principal navy: `hsl(var(--primary))` (navy escuro da Conectae).
-- Accent vermelho/coral dos botões e destaques: `hsl(var(--accent))`.
-- Accent amarelo/laranja das palavras destacadas no hero e eyebrows: `hsl(var(--secondary))` ou novo token `--brand-gold` se necessário.
-- Cards "Por que usar" com barra superior em gradiente usando `--gradient-primary`.
-- Tipografia: heading serif (ex.: Playfair Display ou DM Serif Display via Google Fonts importada em `index.css`); corpo sans (Inter já no projeto). Adicionar `font-display` ao `tailwind.config.ts`.
-- Tokens novos no `index.css` se faltarem: `--portal-hero-bg`, `--portal-card`, `--portal-cta-red`, `--portal-cta-navy`. Tudo em HSL, sem cores hardcoded em componentes.
+### 3) Migration de banco
 
-## Dados reais
+Adicionar à tabela `rental_partners`:
+- `banner_url text`
+- `website_url text`
+- `commission_tenant_text text`
+- `commission_tenant_when text` (valores: `FIRST_PAYMENT` | `RECURRING`)
+- `commission_owner_text text`
+- `commission_owner_when text`
+- `service_areas jsonb default '[]'::jsonb` (array de `{state, city}`)
 
-- **Cards de imóveis do hero (3 cards empilhados):**
-  ```ts
-  supabase.from('properties')
-    .select('id, title, price, city, state, neighborhood, cover_image_url, photos')
-    .eq('is_active', true).eq('status', 'ATIVO')
-    .order('created_at', { ascending: false }).limit(3)
-  ```
-  Preço formatado `R$ x.xxx.xxx`, localização "Bairro, Cidade/UF". Fallback: placeholders idênticos aos prints se vier vazio.
-- **Cards do blog:**
-  ```ts
-  supabase.from('news_posts')
-    .select('id, title, category, cover_image_url, published_at')
-    .eq('is_active', true)
-    .order('published_at', { ascending: false }).limit(4)
-  ```
-  Data formatada via `date-fns/locale/pt-BR` ("15 mai 2025").
-- **Stats** (45k / 12k / 98%): fixos por enquanto (não há agregação no schema atual).
+Backfill `service_areas` com `[{state, city}]` existentes para registros já criados.
 
-## Botões / CTAs
+### 4) types.ts
 
-Conforme escolhido, **todos os botões ficam visualmente prontos mas sem rota definida** (`href="#"` ou `onClick` vazio com `data-cta` para você apontar depois). Lista de CTAs entregue no commit para você nos passar os destinos:
+Será regenerado automaticamente após a migration.
 
-1. Header "Anunciar Grátis"
-2. Hero "Buscar Imóveis"
-3. Hero "Sou Corretor →"
-4. Banner vermelho "Buscar agora →"
-5. Corretores "Cadastrar como corretor"
-6. Blog "Ver todas →"
-7. Financing "Simular agora →" (form sem submit real)
-8. Banner navy "Quero ser parceiro →"
-9. Footer links
+## Observações
 
-## SEO
-
-- `<title>` "ConectaEImob — Conectamos quem compra e vende com corretores"
-- `meta description` < 160 chars com a copy do hero
-- H1 único no hero
-- `lang="pt-BR"` herdado, `translate="no"` no root da página
-- Alt text descritivo nas fotos dos imóveis e nas capas das notícias
-- Imagens com `loading="lazy"` exceto o hero
-
-## Detalhes técnicos
-
-- Página standalone: NÃO usa `<Layout>` nem `<Sidebar>`. Renderiza header/footer próprios.
-- Responsivo: hero vira coluna única no mobile, grid 6→2 nos benefícios, grid 4→2→1 no blog, 4→2→1 nos cards de corretor.
-- Animações sutis com Framer Motion (já no projeto): fade-up nos blocos ao entrar em viewport.
-- Sem alterações em banco, edge functions ou autenticação.
-
-## Arquivos afetados
-
-- ✏️ `src/App.tsx` — adicionar rota `/conectaeimob`
-- ✏️ `src/lib/reservedSlugs.ts` — incluir `'conectaeimob'`
-- ✏️ `src/index.css` — tokens HSL específicos do portal + import de fonte serif
-- ✏️ `tailwind.config.ts` — `font-display` serif
-- ➕ `src/pages/ConectaEImobPortal.tsx`
-- ➕ `src/components/conectaeimob-portal/*.tsx` (9 componentes listados acima)
-
-## Fora de escopo
-
-- Editor admin para essa página (é React fixa).
-- Backend novo, tabelas, edge functions, autenticação.
-- Submit real do formulário de simulação (visual apenas — você já tem `/calculadora` para a versão funcional, podemos plugar depois).
+- O usuário pediu que o parceiro cadastre as próprias informações sem ver Slug/Ordem — por ora o cadastro continua sendo no admin (tela atual já permite que o `owner` edite via RLS); apenas escondemos esses campos do modal. Um portal de auto-atendimento do parceiro fica para depois.
+- "Tipo de imóvel" no formulário do proprietário **mantém** a lista atual (já é select).
