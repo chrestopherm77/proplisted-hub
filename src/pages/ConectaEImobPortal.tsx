@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BrandLogo } from '@/components/BrandLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { getCoverPhoto, PropertyPhoto } from '@/lib/propertyUtils';
 import { format } from 'date-fns';
