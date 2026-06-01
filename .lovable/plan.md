@@ -1,72 +1,81 @@
-# Módulo "Procura-se de Terrenos"
+## Objetivo
 
-Plataforma onde construtoras/incorporadoras divulgam terrenos de interesse para compra. Cadastro feito apenas pelo Admin. Usuários free veem tudo, mas o contato (nome, WhatsApp, e-mail) fica borrado com CTA "Assine para ver". Usuários pagos e Admin veem tudo.
+Diferenciar leads de **lançamentos / imóveis novos** no formulário de captura (residencial em `/LP`), refletir essa decisão nos leads e filtros, trocar o filtro de **Bairro** por **Zona**, e corrigir a opção em inglês no filtro **Objetivo**.
 
-## 1. Banco de dados (migração)
+## 1. Nova árvore de perguntas (fluxo Comprar — residencial)
 
-**Tabela `land_searches`** (um anúncio por construtora/terreno desejado)
-- `company_name` — Construtora/Incorporadora/Fundo
-- `contact_name`, `contact_whatsapp` (12 dígitos), `contact_email`
-- `min_area_m2` (numérico)
-- `notes` (observações opcionais)
-- `logo_url` (opcional)
-- `is_active`, `sort_order`
+Inserir, **logo após** o passo "Qual tipo de imóvel" (quando for `HOUSE`/`APARTMENT`/`KITNET`), dois novos passos:
 
-**Tabela `land_search_areas`** (múltiplas regiões por anúncio)
-- `land_search_id` (FK)
-- `state` (UF), `city`, `zone`, `neighborhood` (opcional)
+**Passo A — "Qual o tipo do imóvel?"** (sempre que for residencial)
+- Novo
+- Novo ou Usado
+- Usado
 
-**Segurança (RLS + GRANTs):**
-- `land_searches`: SELECT liberado para `authenticated` (todos veem a linha), porém os campos `contact_*` são protegidos por uma **view** `land_searches_public` que omite contato para free. O frontend consulta a base apenas se o usuário tiver plano pago ou for admin; caso contrário consulta a view.
-- Implementação simples: política de SELECT base = `has_role('MASTER_ADMIN')` OR `has_active_paid_plan(auth.uid())`. View pública (security_invoker) sem campos de contato, acessível a `authenticated` e `anon`.
-- ALL (insert/update/delete) restrito a `MASTER_ADMIN`.
-- `land_search_areas`: SELECT público (authenticated/anon); ALL restrito a admin.
+**Passo B — "O imóvel que você busca está:"** (condicional: só se o tipo for `Novo` ou `Novo ou Usado`)
+- Em Construção
+- Pronto para morar
+- Em construção ou pronto para morar
 
-**Função auxiliar** `public.has_active_paid_plan(uuid)` — security definer, retorna true se o usuário tem `user_subscriptions.status='ACTIVE'` com plano `price > 0`.
+Quando o usuário escolher **Usado**, o Passo B é pulado.
 
-## 2. Admin — `LandSearchesManagement.tsx`
+O passo atual "O imóvel que você busca é (Pronto / Na planta / Aceito mais de uma opção)" hoje dentro de `BuyResidentialPrefsStep` será **removido de lá** e migrado para o Passo B acima, com os textos padronizados conforme o fluxograma.
 
-Espelha o padrão de `RentalPartnersManagement`:
-- Lista em tabela com filtros (cidade, construtora, ativo).
-- Formulário (Dialog) com: empresa, contato, WhatsApp (validação 12 dígitos), e-mail, área mínima, observações, upload de logo, switch ativo, ordem.
-- Bloco dinâmico de "Regiões de interesse": botão **Adicionar região** → linha com UF (select IBGE) + Cidade (select IBGE dependente) + Zona (texto) + Bairro (texto opcional). N linhas por anúncio.
-- Registrar no `Admin.tsx` com a chave `land-searches` e rota `/admin/land-searches` no `App.tsx`, mais item no `AppSidebar.tsx`.
+### Modelo de dados
 
-## 3. Página pública — `/procura-se-terrenos`
+Em `src/components/leadform/types.ts → BuyFlowData`:
+- Adicionar `propertyCondition?: 'NEW' | 'USED' | 'BOTH'`
+- Manter `propertyReadyStatus?: 'READY' | 'UNDER_CONSTRUCTION' | 'BOTH'` (já existe), porém com rótulos atualizados ("Pronto para morar" / "Em Construção" / "Em construção ou pronto para morar").
 
-Nova página `LandSearches.tsx` no menu principal:
-- Hero curto explicando o módulo.
-- Filtros: UF, Cidade, Zona, Bairro, Construtora, Área mínima.
-- **Tabela** (estilo Órulo) com colunas: Construtora • Localização (UF/Cidade/Zona/Bairro — todas regiões resumidas) • Área Mín. • Contato.
-- Em telas pequenas vira lista de cards.
-- Coluna "Contato":
-  - **Pago/Admin:** Nome + botão WhatsApp + botão E-mail.
-  - **Free/Deslogado:** texto borrado (`blur-sm select-none`) + botão "Assine para ver" → `/planos`.
-- Hook `useLandSearches` busca via base ou view conforme permissão; usa `useSubscriptionLimits` para detectar plano pago.
+## 2. Identificação clara no lead
 
-## 4. Integrações e rotas
+No `LeadDetailsModal` e nas views de detalhe (`formatFormData.ts`) destacar:
+- **Tipo do imóvel:** Novo / Usado / Ambos
+- **Status da obra:** Em construção / Pronto para morar / Ambos
 
-- Adicionar rota `/procura-se-terrenos` em `App.tsx`.
-- Adicionar link no menu principal (header/sidebar do app autenticado e no portal público se aplicável).
-- Reservar slug `procura-se-terrenos` em `src/lib/reservedSlugs.ts`.
+Quando o lead for **Novo** ou **Ambos**, exibir um **badge "Lançamento"** no card do lead em `Leads.tsx`, `MyLeads.tsx` e no header do `LeadDetailsModal`, para facilitar a identificação visual.
 
-## 5. Arquivos a criar/modificar
+## 3. Novo filtro "Tipo de imóvel" no marketplace
 
-**Criar:**
-- `supabase/migrations/<ts>_land_searches.sql`
-- `src/components/admin/LandSearchesManagement.tsx`
-- `src/pages/LandSearches.tsx`
-- `src/hooks/useLandSearches.ts`
+Em `src/pages/Leads.tsx`:
+- Adicionar filtro **Tipo de imóvel** com opções: Todos / Novo / Usado / Ambos.
+- Extração via `formData.buy.propertyCondition` (com fallback: leads antigos sem essa info ficam como "Não informado" e passam por qualquer filtro exceto quando o usuário seleciona um valor específico).
+- Incluir esse filtro também na função de **Salvar Alerta** e na exibição dos alertas existentes.
 
-**Modificar:**
-- `src/App.tsx` (rotas)
-- `src/pages/Admin.tsx` (seção)
-- `src/components/AppSidebar.tsx` (item de menu)
-- `src/lib/reservedSlugs.ts`
+## 4. Filtro "Zona" no lugar de "Bairro"
 
-## Detalhes técnicos
+Atualmente o formulário captura `neighborhood` mas não há campo de **zona**. Para suportar o filtro:
 
-- Storage: reaproveitar bucket existente de logos de parceiros (ou criar `land-search-logos` público se necessário).
-- WhatsApp: normalização 12 dígitos conforme regra Core do projeto; link `https://wa.me/<num>`.
-- UI 100% PT-BR, `translate="no"`.
-- Sem alterações em outras features.
+- Adicionar campo opcional `zone` em `BuyFlowData` e `RentFlowData`.
+- No `BuyLocationBudgetStep` (e no equivalente de aluguel), adicionar um seletor "Zona" (Norte / Sul / Leste / Oeste / Centro / Outra) **acima** do campo Bairro, opcional.
+- Em `Leads.tsx`: remover o filtro de Bairro e substituir por filtro **Zona**, alimentado por `formData.[intention].zone`. Leads sem zona aparecem em "Todas".
+- Ajustar `lead_alerts` (chave `bairro` → `zone`) e migrar alertas existentes silenciosamente (alertas antigos com `bairro` ficam ignorados, sem quebrar).
+
+## 5. Correção da opção em inglês no filtro "Objetivo"
+
+Em `src/pages/Leads.tsx` o filtro lista valores de `intention` (`SELL/BUY/BUILD/RENT`) traduzidos via `objectiveLabels`. Vou:
+- Garantir `extractObjective` normalize para upper-case e ignore valores nulos/vazios.
+- Adicionar fallback: qualquer valor não mapeado é exibido como **"Outro"** em vez de mostrar a string em inglês.
+- Conferir se a opção em inglês citada não vem de `purpose` (HOUSING/INVESTMENT/COMMERCIAL/TEMPORARY) sendo exibido por engano em algum lugar; se sim, aplicar `purposeLabels`.
+
+## 6. Aplicação em `/LP`
+
+O wizard usado pelas rotas `/LP` (e `/LP01`) é compartilhado (`LeadFormWizard.tsx`), então as mudanças dos itens 1 e 4 valem automaticamente para `/LP`.
+
+## Arquivos a alterar
+
+- `src/components/leadform/types.ts` — novos campos `propertyCondition`, `zone`.
+- `src/components/leadform/steps/buy/BuyPropertyConditionStep.tsx` *(novo)* — Passo A.
+- `src/components/leadform/steps/buy/BuyPropertyReadyStatusStep.tsx` *(novo)* — Passo B (extraído do prefs).
+- `src/components/leadform/steps/buy/BuyResidentialPrefsStep.tsx` — remover o bloco "pronto/planta".
+- `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx` — adicionar seletor de Zona.
+- `src/components/leadform/LeadFormWizard.tsx` — registrar novos passos com visibilidade condicional.
+- `src/pages/Leads.tsx` — filtro Tipo de imóvel, filtro Zona substituindo Bairro, badge "Lançamento", correção do label de Objetivo, ajustes em alertas.
+- `src/pages/MyLeads.tsx` — badge "Lançamento" no card.
+- `src/components/marketplace/LeadDetailsModal.tsx` — exibir Tipo do imóvel e Status da obra.
+- `src/lib/formatFormData.ts` — rótulos `propertyConditionLabels`, ajustes em `propertyReadyStatus`, suporte a `zone`.
+
+## Pontos a confirmar com você
+
+1. **Zona** deve ser um seletor fixo (Norte/Sul/Leste/Oeste/Centro/Outra) ou texto livre?
+2. O filtro **Tipo de imóvel** deve valer para todos os objetivos ou apenas para `Comprar`? (Sugiro só `Comprar`, mas confirma.)
+3. Sobre a opção em inglês no filtro **Objetivo**: você lembra qual texto aparece (ex.: "BUY", "HOUSING", "Other")? Isso ajuda a apontar a origem exata.

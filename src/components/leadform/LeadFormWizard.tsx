@@ -62,6 +62,8 @@ import { SellDeadlineStep } from "./steps/sell/SellDeadlineStep";
 // Buy steps
 import { BuyPurposeStep } from "./steps/buy/BuyPurposeStep";
 import { BuyPropertyTypeStep } from "./steps/buy/BuyPropertyTypeStep";
+import { BuyPropertyConditionStep } from "./steps/buy/BuyPropertyConditionStep";
+import { BuyPropertyReadyStatusStep } from "./steps/buy/BuyPropertyReadyStatusStep";
 import { BuyResidentialPrefsStep } from "./steps/buy/BuyResidentialPrefsStep";
 import { BuyCommercialPrefsStep } from "./steps/buy/BuyCommercialPrefsStep";
 import { BuyLandPrefsStep } from "./steps/buy/BuyLandPrefsStep";
@@ -214,6 +216,21 @@ const flowSteps: StepDefinition[] = [
     component: BuyPropertyTypeStep, 
     isVisible: (data) => data.intention === 'BUY',
     validate: (data) => !!data.buy?.propertyType,
+  },
+  {
+    id: 'buy-property-condition',
+    component: BuyPropertyConditionStep,
+    isVisible: (data) => data.intention === 'BUY' && ['HOUSE', 'APARTMENT', 'KITNET'].includes(data.buy?.propertyType || ''),
+    validate: (data) => !!data.buy?.propertyCondition,
+  },
+  {
+    id: 'buy-property-ready-status',
+    component: BuyPropertyReadyStatusStep,
+    isVisible: (data) =>
+      data.intention === 'BUY' &&
+      ['HOUSE', 'APARTMENT', 'KITNET'].includes(data.buy?.propertyType || '') &&
+      (data.buy?.propertyCondition === 'NEW' || data.buy?.propertyCondition === 'BOTH'),
+    validate: (data) => !!data.buy?.propertyReadyStatus,
   },
   { 
     id: 'buy-residential-prefs', 

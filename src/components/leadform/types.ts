@@ -53,6 +53,8 @@ export interface SellFlowData {
 export interface BuyFlowData {
   purpose?: 'HOUSING' | 'INVESTMENT' | 'COMMERCIAL';
   propertyType?: string;
+  // Condição (novo/usado)
+  propertyCondition?: 'NEW' | 'USED' | 'BOTH';
   // Residential prefs
   prefersGatedCommunity?: boolean;
   bedrooms?: string;
@@ -69,6 +71,7 @@ export interface BuyFlowData {
   region?: string;
   uf?: string;
   city?: string;
+  zone?: string;
   neighborhood?: string;
   budgetMin?: string;
   budgetMax?: string;
@@ -125,6 +128,7 @@ export interface RentFlowData {
   region?: string;
   uf?: string;
   city?: string;
+  zone?: string;
   neighborhood?: string;
   maxRent?: string;
   includesCondoAndTax?: boolean;

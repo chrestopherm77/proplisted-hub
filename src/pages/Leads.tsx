@@ -59,6 +59,13 @@ const objectiveLabels: Record<string, string> = {
   'RENT': 'Alugar',
 };
 
+// Property condition (Novo / Usado / Ambos)
+const propertyConditionLabels: Record<string, string> = {
+  'NEW': 'Novo',
+  'USED': 'Usado',
+  'BOTH': 'Novo ou Usado',
+};
+
 // Normalize form_data that might be string or object
 function normalizeFormData(raw: any): any {
   if (!raw) return null;
@@ -117,8 +124,25 @@ function extractBairro(formData: any): string {
   return intentionData?.neighborhood || '';
 }
 
+function extractZone(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  return intentionData?.zone || '';
+}
+
+function extractPropertyCondition(formData: any): string {
+  if (!formData) return '';
+  const buy = formData?.buy || formData?.BUY;
+  if (!buy) return '';
+  const raw = String(buy.propertyCondition || '').toUpperCase();
+  return ['NEW', 'USED', 'BOTH'].includes(raw) ? raw : '';
+}
+
 function extractObjective(formData: any): string {
-  return formData?.intention || '';
+  const raw = String(formData?.intention || '').toUpperCase();
+  if (['SELL', 'BUY', 'BUILD', 'RENT'].includes(raw)) return raw;
+  return '';
 }
 
 function extractValue(formData: any): number | null {
@@ -172,14 +196,16 @@ export default function Leads() {
   // Temporary filter states
   const [tempUF, setTempUF] = useState<string>('all');
   const [tempCity, setTempCity] = useState<string>('all');
-  const [tempBairro, setTempBairro] = useState<string>('all');
+  const [tempZone, setTempZone] = useState<string>('all');
+  const [tempCondition, setTempCondition] = useState<string>('all');
   const [tempObjective, setTempObjective] = useState<string>('all');
   const [tempValueRange, setTempValueRange] = useState<string>('all');
   
   // Applied filter states
   const [filterUF, setFilterUF] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
-  const [filterBairro, setFilterBairro] = useState<string>('all');
+  const [filterZone, setFilterZone] = useState<string>('all');
+  const [filterCondition, setFilterCondition] = useState<string>('all');
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
@@ -230,7 +256,8 @@ export default function Leads() {
     setSavingAlert(true);
     try {
       const filters: Record<string, string> = { state: tempUF, city: tempCity };
-      if (tempBairro !== 'all') filters.bairro = tempBairro;
+      if (tempZone !== 'all') filters.zone = tempZone;
+      if (tempCondition !== 'all') filters.condition = tempCondition;
       if (tempObjective !== 'all') filters.objective = tempObjective;
       if (tempValueRange !== 'all') filters.valueRange = tempValueRange;
 
@@ -344,23 +371,23 @@ export default function Leads() {
   const filterOptions = useMemo(() => {
     const ufs = new Set<string>();
     const cities = new Set<string>();
-    const bairros = new Set<string>();
+    const zones = new Set<string>();
     const objectives = new Set<string>();
     leads.forEach(lead => {
       const formData = normalizeFormData(lead.form_data);
       const uf = extractUFFromFormData(formData);
       const city = extractCityFromFormData(formData);
-      const bairro = extractBairro(formData);
+      const zone = extractZone(formData);
       const objective = extractObjective(formData);
       if (uf) ufs.add(uf);
       if (city) cities.add(city);
-      if (bairro) bairros.add(bairro);
+      if (zone) zones.add(zone);
       if (objective) objectives.add(objective);
     });
     return {
       uniqueUFs: Array.from(ufs).sort(),
       uniqueCities: Array.from(cities).sort(),
-      uniqueBairros: Array.from(bairros).sort(),
+      uniqueZones: Array.from(zones).sort(),
       uniqueObjectives: Array.from(objectives).sort(),
     };
   }, [leads]);
@@ -380,15 +407,16 @@ export default function Leads() {
   const applyFilters = () => {
     setFilterUF(tempUF);
     setFilterCity(tempCity);
-    setFilterBairro(tempBairro);
+    setFilterZone(tempZone);
+    setFilterCondition(tempCondition);
     setFilterObjective(tempObjective);
     setFilterValueRange(tempValueRange);
   };
 
   const clearFilters = () => {
-    setTempUF('all'); setTempCity('all'); setTempBairro('all');
+    setTempUF('all'); setTempCity('all'); setTempZone('all'); setTempCondition('all');
     setTempObjective('all'); setTempValueRange('all');
-    setFilterUF('all'); setFilterCity('all'); setFilterBairro('all');
+    setFilterUF('all'); setFilterCity('all'); setFilterZone('all'); setFilterCondition('all');
     setFilterObjective('all'); setFilterValueRange('all');
   };
 
@@ -400,12 +428,14 @@ export default function Leads() {
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
       const leadCity = extractCityFromFormData(formData);
-      const leadBairro = extractBairro(formData);
+      const leadZone = extractZone(formData);
+      const leadCondition = extractPropertyCondition(formData);
       const leadObjective = extractObjective(formData);
       const leadValue = extractValue(formData);
       if (filterUF !== 'all' && leadUF !== filterUF) return false;
       if (filterCity !== 'all' && leadCity !== filterCity) return false;
-      if (filterBairro !== 'all' && leadBairro !== filterBairro) return false;
+      if (filterZone !== 'all' && leadZone !== filterZone) return false;
+      if (filterCondition !== 'all' && leadCondition !== filterCondition) return false;
       if (filterObjective !== 'all' && leadObjective !== filterObjective) return false;
       if (filterValueRange !== 'all' && leadValue !== null) {
         const ranges = leadObjective === 'RENT' ? rentValueRanges : valueRanges;
@@ -414,7 +444,7 @@ export default function Leads() {
       }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterBairro, filterObjective, filterValueRange]);
+  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
@@ -501,7 +531,7 @@ export default function Leads() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">UF</label>
               <Select value={tempUF} onValueChange={handleUFChange}>
@@ -523,12 +553,24 @@ export default function Leads() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">Bairro</label>
-              <Select value={tempBairro} onValueChange={setTempBairro}>
-                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os bairros" /></SelectTrigger>
+              <label className="text-xs text-muted-foreground">Zona</label>
+              <Select value={tempZone} onValueChange={setTempZone}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todas as zonas" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os bairros</SelectItem>
-                  {filterOptions.uniqueBairros.map(bairro => <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>)}
+                  <SelectItem value="all">Todas as zonas</SelectItem>
+                  {filterOptions.uniqueZones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Tipo de imóvel</label>
+              <Select value={tempCondition} onValueChange={setTempCondition}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="NEW">Novo</SelectItem>
+                  <SelectItem value="USED">Usado</SelectItem>
+                  <SelectItem value="BOTH">Novo ou Usado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -538,7 +580,7 @@ export default function Leads() {
                 <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os objetivos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os objetivos</SelectItem>
-                  {filterOptions.uniqueObjectives.map(obj => <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || obj}</SelectItem>)}
+                  {filterOptions.uniqueObjectives.map(obj => <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || 'Outro'}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -575,6 +617,9 @@ export default function Leads() {
           {filteredLeads.map((lead) => {
             const parsed = parseDescription(lead.description);
             const leadCredits = Math.round(lead.price);
+            const leadFormData = normalizeFormData(lead.form_data);
+            const leadCondition = extractPropertyCondition(leadFormData);
+            const isLaunch = leadCondition === 'NEW' || leadCondition === 'BOTH';
             return (
               <Card 
                 key={lead.id} 
@@ -582,11 +627,18 @@ export default function Leads() {
                 onClick={() => openLeadDetails(lead)}
               >
                 <CardHeader className="pb-2">
-                  {lead.is_promotion && (
-                    <Badge className="w-fit mb-1 animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-xs">
-                      🔥 PROMOÇÃO
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {lead.is_promotion && (
+                      <Badge className="animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-xs">
+                        🔥 PROMOÇÃO
+                      </Badge>
+                    )}
+                    {isLaunch && (
+                      <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white border-transparent text-xs">
+                        ✨ Lançamento
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
@@ -712,8 +764,9 @@ export default function Leads() {
                     <div key={alert.id} className="flex items-start justify-between p-3 border rounded-lg">
                       <div className="text-sm space-y-0.5">
                         <p className="font-medium">{f.city} - {f.state}</p>
-                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || f.objective}</p>}
-                        {f.bairro && <p className="text-muted-foreground">Bairro: {f.bairro}</p>}
+                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || 'Outro'}</p>}
+                        {f.zone && <p className="text-muted-foreground">Zona: {f.zone}</p>}
+                        {f.condition && <p className="text-muted-foreground">Tipo: {propertyConditionLabels[f.condition] || f.condition}</p>}
                         {f.valueRange && f.valueRange !== 'all' && (
                           <p className="text-muted-foreground">
                             Valor: {(f.objective === 'RENT' ? rentValueRanges : valueRanges).find(r => r.value === f.valueRange)?.label || f.valueRange}
