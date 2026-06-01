@@ -256,7 +256,8 @@ export default function Leads() {
     setSavingAlert(true);
     try {
       const filters: Record<string, string> = { state: tempUF, city: tempCity };
-      if (tempBairro !== 'all') filters.bairro = tempBairro;
+      if (tempZone !== 'all') filters.zone = tempZone;
+      if (tempCondition !== 'all') filters.condition = tempCondition;
       if (tempObjective !== 'all') filters.objective = tempObjective;
       if (tempValueRange !== 'all') filters.valueRange = tempValueRange;
 
