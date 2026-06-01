@@ -92,6 +92,7 @@ export const Layout = ({ children }: LayoutProps) => {
       </div>
       <SupportChatWidget />
       <CompleteProfileReminder />
+      <ValidationPromptModal />
     </SidebarProvider>
   );
 };
