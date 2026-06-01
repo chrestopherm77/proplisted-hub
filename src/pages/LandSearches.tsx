@@ -210,29 +210,18 @@ export default function LandSearches() {
               </CardContent>
             </Card>
 
-            {/* Mobile: cards */}
-            <div className="grid gap-3 md:hidden">
+            {/* Mobile: lista simples */}
+            <div className="md:hidden divide-y rounded-md border bg-card">
               {filtered.map((item) => (
-                <Card key={item.id}>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      {item.logo_url ? (
-                        <img src={item.logo_url} alt={item.company_name} className="h-12 w-12 rounded-md object-contain border bg-muted shrink-0" />
-                      ) : (
-                        <div className="h-12 w-12 rounded-md border bg-muted flex items-center justify-center shrink-0">
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold">{item.company_name}</div>
-                        <Badge variant="secondary" className="mt-1">{formatArea(item.min_area_m2)}</Badge>
-                      </div>
-                    </div>
-                    {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
-                    <div className="border-t pt-3">{renderAreas(item.areas)}</div>
-                    <div className="border-t pt-3"><ContactCell item={item} /></div>
-                  </CardContent>
-                </Card>
+                <div key={item.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-semibold">{item.company_name}</div>
+                    <Badge variant="secondary" className="shrink-0">{formatArea(item.min_area_m2)}</Badge>
+                  </div>
+                  {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
+                  {renderAreas(item.areas)}
+                  <div className="pt-2"><ContactCell item={item} /></div>
+                </div>
               ))}
             </div>
           </>
