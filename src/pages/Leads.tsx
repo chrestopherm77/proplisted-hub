@@ -59,6 +59,13 @@ const objectiveLabels: Record<string, string> = {
   'RENT': 'Alugar',
 };
 
+// Property condition (Novo / Usado / Ambos)
+const propertyConditionLabels: Record<string, string> = {
+  'NEW': 'Novo',
+  'USED': 'Usado',
+  'BOTH': 'Novo ou Usado',
+};
+
 // Normalize form_data that might be string or object
 function normalizeFormData(raw: any): any {
   if (!raw) return null;
@@ -117,8 +124,25 @@ function extractBairro(formData: any): string {
   return intentionData?.neighborhood || '';
 }
 
+function extractZone(formData: any): string {
+  if (!formData) return '';
+  const intention = formData?.intention;
+  const intentionData = formData?.[intention?.toLowerCase?.()] || formData?.[intention];
+  return intentionData?.zone || '';
+}
+
+function extractPropertyCondition(formData: any): string {
+  if (!formData) return '';
+  const buy = formData?.buy || formData?.BUY;
+  if (!buy) return '';
+  const raw = String(buy.propertyCondition || '').toUpperCase();
+  return ['NEW', 'USED', 'BOTH'].includes(raw) ? raw : '';
+}
+
 function extractObjective(formData: any): string {
-  return formData?.intention || '';
+  const raw = String(formData?.intention || '').toUpperCase();
+  if (['SELL', 'BUY', 'BUILD', 'RENT'].includes(raw)) return raw;
+  return '';
 }
 
 function extractValue(formData: any): number | null {
