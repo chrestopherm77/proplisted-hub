@@ -30,6 +30,7 @@ import { AlertBannersManagement } from '@/components/admin/AlertBannersManagemen
 import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntentionsManagement';
 import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
 import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
+import { LandSearchesManagement } from '@/components/admin/LandSearchesManagement';
 
 type Section =
   | 'dashboard'
@@ -62,7 +63,8 @@ type Section =
   | 'alert-banners'
   | 'lead-form-intentions'
   | 'rental-partners'
-  | 'financing-leads';
+  | 'financing-leads'
+  | 'land-searches';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -96,6 +98,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'lead-form-intentions': LeadFormIntentionsManagement,
   'rental-partners': RentalPartnersManagement,
   'financing-leads': FinancingLeadsManagement,
+  'land-searches': LandSearchesManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
