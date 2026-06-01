@@ -45,6 +45,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const [creditBalance, setCreditBalance] = useState(0);
+  const [canPublishLandSearch, setCanPublishLandSearch] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
