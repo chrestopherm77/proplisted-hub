@@ -4,8 +4,12 @@ import { LocationSelector } from "../../LocationSelector";
 import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, AlertCircle } from "lucide-react";
+import { DollarSign, AlertCircle, Compass } from "lucide-react";
 import { formatCurrencyWithLimits } from "@/lib/validators";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const ZONE_OPTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Outra'];
+
 
 export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
   // Gera o campo region para compatibilidade
@@ -37,12 +41,32 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
           uf={data.buy?.uf || ''}
           city={data.buy?.city || ''}
           neighborhood={data.buy?.neighborhood || ''}
-          onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '' })}
+          onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '', zone: undefined })}
           onCityChange={(city) => updateLocationAndRegion({ city })}
           onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
           allowedStates={ALLOWED_STATES}
           allowedCities={ALLOWED_CITIES}
         />
+
+        <div className="space-y-2">
+          <Label htmlFor="zone" className="flex items-center gap-2">
+            <Compass className="h-4 w-4" />
+            Zona <span className="text-xs text-muted-foreground">(opcional)</span>
+          </Label>
+          <Select
+            value={data.buy?.zone || ''}
+            onValueChange={(value) => updateFlowData('buy', { zone: value })}
+          >
+            <SelectTrigger id="zone" className="h-12">
+              <SelectValue placeholder="Selecione a zona da cidade" />
+            </SelectTrigger>
+            <SelectContent>
+              {ZONE_OPTIONS.map((z) => (
+                <SelectItem key={z} value={z}>{z}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div>
           <div className="grid grid-cols-2 gap-4">
