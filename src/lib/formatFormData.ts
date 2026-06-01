@@ -157,7 +157,13 @@ const guaranteeLabels: Record<string, string> = {
 const propertyReadyStatusLabels: Record<string, string> = {
   'READY': 'Pronto para morar',
   'UNDER_CONSTRUCTION': 'Em construção',
-  'BOTH': 'Pronto ou em construção',
+  'BOTH': 'Em construção ou pronto para morar',
+};
+
+const propertyConditionLabels: Record<string, string> = {
+  'NEW': 'Novo',
+  'USED': 'Usado',
+  'BOTH': 'Novo ou Usado',
 };
 
 const tradeOfferTypeLabels: Record<string, string> = {
@@ -591,6 +597,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     const intentFields: FormField[] = [];
     if (buy.purpose) intentFields.push({ label: 'Finalidade', value: purposeLabels[buy.purpose] || buy.purpose });
     if (buy.propertyType) intentFields.push({ label: 'Tipo de imóvel', value: propertyTypeLabels[buy.propertyType] || buy.propertyType });
+    if (buy.propertyCondition) intentFields.push({ label: 'Imóvel Novo/Usado', value: propertyConditionLabels[buy.propertyCondition] || buy.propertyCondition });
     if (intentFields.length > 0) {
       sections.push({ title: 'Intenção', icon: '🎯', fields: intentFields });
     }
@@ -602,7 +609,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     if (buy.bedrooms) prefFields.push({ label: 'Dormitórios', value: String(buy.bedrooms) });
     if (buy.bathrooms) prefFields.push({ label: 'Banheiros', value: String(buy.bathrooms) });
     if (buy.parkingSpots) prefFields.push({ label: 'Vagas', value: String(buy.parkingSpots) });
-    if (buy.propertyReadyStatus) prefFields.push({ label: 'Status', value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus });
+    if (buy.propertyReadyStatus) prefFields.push({ label: 'Status da obra', value: propertyReadyStatusLabels[buy.propertyReadyStatus] || buy.propertyReadyStatus });
     if (buy.commercialType) prefFields.push({ label: 'Tipo comercial', value: commercialTypeLabels[buy.commercialType] || buy.commercialType });
     if (buy.minSize) prefFields.push({ label: 'Tamanho mínimo', value: String(buy.minSize) });
     if (buy.landMinSize) prefFields.push({ label: 'Tamanho mínimo do terreno', value: String(buy.landMinSize) });
