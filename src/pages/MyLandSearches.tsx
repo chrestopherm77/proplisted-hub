@@ -19,12 +19,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { Plus, Pencil, Trash2, Loader2, Building2 } from 'lucide-react';
 
-interface Area { state: string; city: string; zone: string; neighborhood: string; }
+interface Area {
+  state: string;
+  city: string;
+  zone: string;
+  neighborhood: string;
+  min_area_m2: string;
+}
 
-const emptyArea: Area = { state: '', city: '', zone: '', neighborhood: '' };
+const emptyArea: Area = { state: '', city: '', zone: '', neighborhood: '', min_area_m2: '' };
 const emptyForm = {
   id: '', company_name: '', contact_name: '', contact_whatsapp: '',
-  contact_email: '', min_area_m2: '', notes: '',
+  contact_email: '', notes: '',
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -39,6 +45,7 @@ export default function MyLandSearches() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [areaCities, setAreaCities] = useState<Record<number, { id: number; nome: string }[]>>({});
+  const [profile, setProfile] = useState<{ name?: string; phone?: string; email?: string } | null>(null);
 
   const fetchCitiesFor = async (idx: number, uf: string) => {
     if (!uf) { setAreaCities((m) => ({ ...m, [idx]: [] })); return; }
@@ -57,6 +64,16 @@ export default function MyLandSearches() {
       .select('id').eq('user_id', user.id).maybeSingle();
     setAllowed(!!data);
   }, [user, isAdmin]);
+
+  const loadProfile = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, phone, email')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data) setProfile({ name: data.name || '', phone: data.phone || '', email: data.email || user.email || '' });
+  }, [user]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -77,17 +94,33 @@ export default function MyLandSearches() {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { checkPermission(); load(); }, [checkPermission, load]);
+  useEffect(() => { checkPermission(); load(); loadProfile(); }, [checkPermission, load, loadProfile]);
 
-  const openNew = () => { setForm({ ...emptyForm, areas: [{ ...emptyArea }] }); setAreaCities({}); setDialogOpen(true); };
+  const openNew = () => {
+    setForm({
+      ...emptyForm,
+      contact_name: profile?.name || '',
+      contact_whatsapp: profile?.phone || '',
+      contact_email: profile?.email || '',
+      areas: [{ ...emptyArea }],
+    });
+    setAreaCities({});
+    setDialogOpen(true);
+  };
   const openEdit = async (item: any) => {
-    const areas = item.areas?.length > 0 ? item.areas.map((a: any) => ({
-      state: a.state || '', city: a.city || '', zone: a.zone || '', neighborhood: a.neighborhood || '',
+    const areas: Area[] = item.areas?.length > 0 ? item.areas.map((a: any) => ({
+      state: a.state || '', city: a.city || '', zone: a.zone || '',
+      neighborhood: a.neighborhood || '',
+      min_area_m2: a.min_area_m2?.toString() || '',
     })) : [{ ...emptyArea }];
     setForm({
-      id: item.id, company_name: item.company_name, contact_name: item.contact_name,
-      contact_whatsapp: item.contact_whatsapp, contact_email: item.contact_email,
-      min_area_m2: item.min_area_m2?.toString() || '', notes: item.notes || '', areas,
+      id: item.id,
+      company_name: item.company_name,
+      contact_name: item.contact_name || profile?.name || '',
+      contact_whatsapp: item.contact_whatsapp || profile?.phone || '',
+      contact_email: item.contact_email || profile?.email || '',
+      notes: item.notes || '',
+      areas,
     });
     setAreaCities({});
     setDialogOpen(true);
@@ -115,13 +148,12 @@ export default function MyLandSearches() {
     }
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         user_id: user.id,
         company_name: form.company_name.trim(),
         contact_name: form.contact_name.trim(),
         contact_whatsapp: whatsapp,
         contact_email: form.contact_email.trim().toLowerCase(),
-        min_area_m2: form.min_area_m2 ? Number(form.min_area_m2.replace(/\D/g, '')) : null,
         notes: form.notes.trim() || null,
       };
       let id = form.id;
@@ -140,6 +172,7 @@ export default function MyLandSearches() {
         city: a.city,
         zone: a.zone.trim() || null,
         neighborhood: a.neighborhood.trim() || null,
+        min_area_m2: a.min_area_m2 ? Number(a.min_area_m2.toString().replace(/\D/g, '')) : null,
       }));
       if (areasPayload.length > 0) {
         const { error } = await supabase.from('land_search_areas' as any).insert(areasPayload);
@@ -172,7 +205,7 @@ export default function MyLandSearches() {
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground" />
               <h1 className="text-xl font-semibold">Publicação restrita</h1>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                A publicação de anúncios em "Procura-se de Terrenos" precisa ser liberada manualmente pelo administrador.
+                A publicação de anúncios em "Procuram-se Terrenos" precisa ser liberada manualmente pelo administrador.
                 Entre em contato com o suporte para solicitar acesso.
               </p>
               <Button asChild variant="outline"><Link to="/procura-se-terrenos">Ver anúncios</Link></Button>
@@ -189,7 +222,7 @@ export default function MyLandSearches() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Meus anúncios de Procura-se de Terrenos</CardTitle>
+              <CardTitle>Meus anúncios de Procuram-se Terrenos</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">Gerencie os anúncios da sua construtora/incorporadora.</p>
             </div>
             <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo anúncio</Button>
@@ -202,21 +235,21 @@ export default function MyLandSearches() {
                 <TableHeader><TableRow>
                   <TableHead>Construtora/Incorporadora</TableHead>
                   <TableHead>Regiões</TableHead>
-                  <TableHead>Área mín.</TableHead>
                   <TableHead className="w-32 text-right">Ações</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                       Nenhum anúncio. Clique em "Novo anúncio" para publicar.
                     </TableCell></TableRow>
                   ) : items.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.company_name}</TableCell>
                       <TableCell className="text-xs">
-                        {item.areas.length === 0 ? '—' : item.areas.map((a: any) => `${a.city}/${a.state}`).join(' • ')}
+                        {item.areas.length === 0 ? '—' : item.areas.map((a: any) =>
+                          `${a.city}/${a.state}${a.min_area_m2 ? ` (${Number(a.min_area_m2).toLocaleString('pt-BR')} m²)` : ''}`
+                        ).join(' • ')}
                       </TableCell>
-                      <TableCell className="text-xs">{item.min_area_m2 ? `${Number(item.min_area_m2).toLocaleString('pt-BR')} m²` : '—'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(item)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(item)}><Trash2 className="h-4 w-4" /></Button>
@@ -248,17 +281,13 @@ export default function MyLandSearches() {
                     onChange={(e) => setForm({ ...form, contact_whatsapp: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>E-mail *</Label>
-                  <Input type="email" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Área mínima (m²)</Label>
-                  <Input type="number" value={form.min_area_m2}
-                    onChange={(e) => setForm({ ...form, min_area_m2: e.target.value })} />
-                </div>
+              <div className="space-y-2">
+                <Label>E-mail *</Label>
+                <Input type="email" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} />
               </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Nome, WhatsApp e e-mail foram preenchidos com base no seu cadastro — edite se desejar.
+              </p>
               <div className="space-y-2">
                 <Label>Observações</Label>
                 <Textarea rows={3} value={form.notes}
@@ -269,42 +298,55 @@ export default function MyLandSearches() {
                 <div className="flex items-center justify-between">
                   <Label>Regiões de interesse *</Label>
                   <Button type="button" size="sm" variant="outline" onClick={addArea}>
-                    <Plus className="h-3 w-3 mr-1" /> Adicionar
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar região
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Adicione várias regiões e informe a metragem mínima desejada em cada uma.
+                </p>
                 {form.areas.map((area, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_2fr_1fr_2fr_auto] gap-2 items-end border rounded-md p-2 bg-muted/30">
-                    <div className="space-y-1">
-                      <Label className="text-xs">UF</Label>
-                      <Select value={area.state}
-                        onValueChange={(v) => { updateArea(idx, { state: v, city: '' }); fetchCitiesFor(idx, v); }}>
-                        <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-                        <SelectContent>
-                          {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                  <div key={idx} className="border rounded-md p-3 bg-muted/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Região {idx + 1}</span>
+                      <Button type="button" size="icon" variant="ghost"
+                        onClick={() => removeArea(idx)} disabled={form.areas.length === 1}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Cidade</Label>
-                      <Select value={area.city} onValueChange={(v) => updateArea(idx, { city: v })} disabled={!area.state}>
-                        <SelectTrigger><SelectValue placeholder={area.state ? 'Selecione' : 'UF primeiro'} /></SelectTrigger>
-                        <SelectContent>
-                          {(areaCities[idx] || []).map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">UF</Label>
+                        <Select value={area.state}
+                          onValueChange={(v) => { updateArea(idx, { state: v, city: '' }); fetchCitiesFor(idx, v); }}>
+                          <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                          <SelectContent>
+                            {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1 col-span-1 md:col-span-2">
+                        <Label className="text-xs">Cidade</Label>
+                        <Select value={area.city} onValueChange={(v) => updateArea(idx, { city: v })} disabled={!area.state}>
+                          <SelectTrigger><SelectValue placeholder={area.state ? 'Selecione' : 'UF primeiro'} /></SelectTrigger>
+                          <SelectContent>
+                            {(areaCities[idx] || []).map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Zona</Label>
+                        <Input value={area.zone} placeholder="Sul" onChange={(e) => updateArea(idx, { zone: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Bairro (opcional)</Label>
+                        <Input value={area.neighborhood} onChange={(e) => updateArea(idx, { neighborhood: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Área mínima (m²)</Label>
+                        <Input type="number" value={area.min_area_m2} placeholder="Ex: 300"
+                          onChange={(e) => updateArea(idx, { min_area_m2: e.target.value })} />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Zona</Label>
-                      <Input value={area.zone} placeholder="Sul" onChange={(e) => updateArea(idx, { zone: e.target.value })} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Bairro (opcional)</Label>
-                      <Input value={area.neighborhood} onChange={(e) => updateArea(idx, { neighborhood: e.target.value })} />
-                    </div>
-                    <Button type="button" size="icon" variant="ghost"
-                      onClick={() => removeArea(idx)} disabled={form.areas.length === 1}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
