@@ -82,6 +82,8 @@ export function LeadDetailsModal({
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
   const leadCredits = Math.round(lead.price);
   const canAfford = creditBalance >= leadCredits;
+  const buyCondition = String(normalizedFormData?.buy?.propertyCondition || '').toUpperCase();
+  const isLaunch = buyCondition === 'NEW' || buyCondition === 'BOTH';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,6 +94,11 @@ export function LeadDetailsModal({
               {lead.is_promotion && (
                 <Badge className="animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-sm">
                   🔥 PROMOÇÃO
+                </Badge>
+              )}
+              {isLaunch && (
+                <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white border-transparent text-sm">
+                  ✨ Lançamento
                 </Badge>
               )}
               <div>
