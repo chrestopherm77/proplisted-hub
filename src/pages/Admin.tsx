@@ -65,7 +65,8 @@ type Section =
   | 'lead-form-intentions'
   | 'rental-partners'
   | 'financing-leads'
-  | 'land-searches';
+  | 'land-searches'
+  | 'land-search-access';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
