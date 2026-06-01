@@ -36,10 +36,6 @@ export default function LandSearches() {
       .select('id').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => setCanPublish(!!data));
   }, [user, isAdmin]);
-  const [filterState, setFilterState] = useState<string>('all');
-  const [filterCity, setFilterCity] = useState<string>('all');
-  const [filterCompany, setFilterCompany] = useState('');
-  const [filterMinArea, setFilterMinArea] = useState<string>('');
 
   const allStates = useMemo(() => {
     const s = new Set<string>();
