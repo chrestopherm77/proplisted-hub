@@ -31,6 +31,7 @@ import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntenti
 import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
 import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
 import { LandSearchesManagement } from '@/components/admin/LandSearchesManagement';
+import { LandSearchAccessManagement } from '@/components/admin/LandSearchAccessManagement';
 
 type Section =
   | 'dashboard'
