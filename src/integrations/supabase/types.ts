@@ -845,6 +845,30 @@ export type Database = {
           },
         ]
       }
+      land_search_publish_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       land_searches: {
         Row: {
           company_name: string
@@ -859,6 +883,7 @@ export type Database = {
           notes: string | null
           sort_order: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           company_name: string
@@ -873,6 +898,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           company_name?: string
@@ -887,6 +913,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2806,6 +2833,7 @@ export type Database = {
         }
         Returns: Json
       }
+      can_publish_land_search: { Args: { _user_id: string }; Returns: boolean }
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
       consume_credits_for_creative: {
         Args: { p_amount?: number; p_creative_id: string; p_user_id: string }
