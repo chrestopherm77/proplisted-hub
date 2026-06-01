@@ -151,9 +151,6 @@ export function LandSearchesManagement() {
         contact_email: form.contact_email.trim().toLowerCase(),
         min_area_m2: form.min_area_m2 ? Number(form.min_area_m2.replace(/\D/g, '')) : null,
         notes: form.notes.trim() || null,
-        logo_url: form.logo_url.trim() || null,
-        is_active: form.is_active,
-        sort_order: Number(form.sort_order) || 0,
       };
 
       let landSearchId = form.id;
