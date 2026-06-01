@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,17 +12,30 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { useLandSearches } from '@/hooks/useLandSearches';
-import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings } from 'lucide-react';
 
 const formatArea = (n: number | null) =>
   n == null ? '—' : `${Number(n).toLocaleString('pt-BR')} m²`;
 
 export default function LandSearches() {
   const { items, loading, isPaid, isLoggedIn } = useLandSearches();
+  const { user, isAdmin } = useAuth();
+  const [canPublish, setCanPublish] = useState(false);
   const [filterState, setFilterState] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
   const [filterCompany, setFilterCompany] = useState('');
   const [filterMinArea, setFilterMinArea] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) { setCanPublish(false); return; }
+    if (isAdmin) { setCanPublish(true); return; }
+    supabase
+      .from('land_search_publish_permissions' as any)
+      .select('id').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setCanPublish(!!data));
+  }, [user, isAdmin]);
 
   const allStates = useMemo(() => {
     const s = new Set<string>();
@@ -132,6 +145,13 @@ export default function LandSearches() {
                 </div>
               )}
             </div>
+            {canPublish && (
+              <Button asChild variant="outline" className="shrink-0">
+                <Link to="/meus-terrenos-procurados">
+                  <Settings className="h-4 w-4 mr-2" /> Meus anúncios
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 

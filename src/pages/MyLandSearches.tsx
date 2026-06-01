@@ -29,7 +29,7 @@ const emptyForm = {
 };
 
 export default function MyLandSearches() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { toast } = useToast();
   const { states } = useIBGELocation();
   const [allowed, setAllowed] = useState<boolean | null>(null);
@@ -51,11 +51,12 @@ export default function MyLandSearches() {
 
   const checkPermission = useCallback(async () => {
     if (!user) return;
+    if (isAdmin) { setAllowed(true); return; }
     const { data } = await supabase
       .from('land_search_publish_permissions' as any)
       .select('id').eq('user_id', user.id).maybeSingle();
     setAllowed(!!data);
-  }, [user]);
+  }, [user, isAdmin]);
 
   const load = useCallback(async () => {
     if (!user) return;
