@@ -87,6 +87,7 @@ export function BuyResidentialPrefsStep({ data, updateFlowData }: StepProps) {
               />
             ))}
           </div>
+        </div>
       </div>
     </StepContainer>
   );
