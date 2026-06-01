@@ -1,62 +1,72 @@
-## Mudanças
+# Módulo "Procura-se de Terrenos"
 
-### 1) Página `/alugue-em-parceria` (`src/pages/RentalPartnership.tsx`)
+Plataforma onde construtoras/incorporadoras divulgam terrenos de interesse para compra. Cadastro feito apenas pelo Admin. Usuários free veem tudo, mas o contato (nome, WhatsApp, e-mail) fica borrado com CTA "Assine para ver". Usuários pagos e Admin veem tudo.
 
-**Slogan (header):**
-- Título: `Alugue em Parceria: Ganhe Dinheiro com Indicações de Locação`
-- Subtítulo: `Indique clientes para imobiliárias que gerenciam carteiras de locação e receba comissões (em taxa única ou recorrência mensal), sem se preocupar com a burocracia da administração.`
+## 1. Banco de dados (migração)
 
-**Modal "Dados do imóvel" (Estou com proprietário):**
-- `Tipo de imóvel`: já é Select — manter.
-- `UF`: trocar Input por Select usando `useIBGELocation` (states).
-- `Cidade`: trocar Input por Select dependente da UF (cities via IBGE).
-- `Bairro` → renomear para `Zona`, Select com `ZONE_OPTIONS` de `@/lib/propertyUtils`.
-- `Valor pretendido`: tirar o `*`, deixar opcional (remover da validação).
-- `Dormitórios`: **remover**.
-- `Observações`: **remover**.
-- Atualizar mensagem WhatsApp para refletir os campos restantes (sem dormitórios/obs, valor só se preenchido, "Zona" no lugar de "bairro").
+**Tabela `land_searches`** (um anúncio por construtora/terreno desejado)
+- `company_name` — Construtora/Incorporadora/Fundo
+- `contact_name`, `contact_whatsapp` (12 dígitos), `contact_email`
+- `min_area_m2` (numérico)
+- `notes` (observações opcionais)
+- `logo_url` (opcional)
+- `is_active`, `sort_order`
 
-**Cards de parceira:**
-- Mostrar múltiplas cidades/UFs (lista de regiões atendidas) em vez de uma única.
-- Mostrar website (se houver) como link discreto.
-- Exibir banner topo do card (se houver), estilo Lançamentos (faixa de imagem acima do conteúdo).
-- Mostrar os dois novos campos de comissão (Locatário / Proprietário) quando preenchidos, cada um com "(no 1º pagamento)" ou "(recorrente)".
+**Tabela `land_search_areas`** (múltiplas regiões por anúncio)
+- `land_search_id` (FK)
+- `state` (UF), `city`, `zone`, `neighborhood` (opcional)
 
-**Filtros UF/Cidade:** ajustar `filtered` para considerar a lista de regiões atendidas (match se qualquer região bate).
+**Segurança (RLS + GRANTs):**
+- `land_searches`: SELECT liberado para `authenticated` (todos veem a linha), porém os campos `contact_*` são protegidos por uma **view** `land_searches_public` que omite contato para free. O frontend consulta a base apenas se o usuário tiver plano pago ou for admin; caso contrário consulta a view.
+- Implementação simples: política de SELECT base = `has_role('MASTER_ADMIN')` OR `has_active_paid_plan(auth.uid())`. View pública (security_invoker) sem campos de contato, acessível a `authenticated` e `anon`.
+- ALL (insert/update/delete) restrito a `MASTER_ADMIN`.
+- `land_search_areas`: SELECT público (authenticated/anon); ALL restrito a admin.
 
-### 2) Admin (`src/components/admin/RentalPartnersManagement.tsx`)
+**Função auxiliar** `public.has_active_paid_plan(uuid)` — security definer, retorna true se o usuário tem `user_subscriptions.status='ACTIVE'` com plano `price > 0`.
 
-Modal "Nova/Editar parceira":
-- **Remover** campos visíveis `Slug` e `Ordem` (continuam existindo internamente: slug gerado auto pelo `slugify(name)`, sort_order default `0`).
-- `UF` / `Cidade` **principal**: trocar Inputs por Selects (IBGE).
-- **Novo bloco "Regiões atendidas"**: lista dinâmica de pares UF+Cidade (Selects IBGE) com botões adicionar/remover. A primeira é a cidade principal. Salvar em coluna nova `service_areas jsonb` (array `[{state,city}]`).
-- **Logo**: adicionar dica "Tamanho ideal: 200x200px (quadrado, fundo transparente)".
-- **Banner**: novo upload de imagem (bucket `brand-logos` ou `launches`), dica "Tamanho ideal: 1200x300px". Salvar em `banner_url`.
-- **Remover** campo `Descrição da modalidade`.
-- Substituir único `Percentuais / Comissão` por **dois pares**:
-  - `Percentuais / Comissão — Indicação de Locatário` + Select "Quando ocorre" (`No 1º Pagamento` | `Recorrente`).
-  - `Percentuais / Comissão — Indicação de Proprietário` + Select "Quando ocorre" (`No 1º Pagamento` | `Recorrente`).
-  - Salvar em colunas novas: `commission_tenant_text`, `commission_tenant_when`, `commission_owner_text`, `commission_owner_when`. Manter `commission_text` por compatibilidade (não exibir).
-- **Novo campo Website** (`website_url`, URL).
+## 2. Admin — `LandSearchesManagement.tsx`
 
-### 3) Migration de banco
+Espelha o padrão de `RentalPartnersManagement`:
+- Lista em tabela com filtros (cidade, construtora, ativo).
+- Formulário (Dialog) com: empresa, contato, WhatsApp (validação 12 dígitos), e-mail, área mínima, observações, upload de logo, switch ativo, ordem.
+- Bloco dinâmico de "Regiões de interesse": botão **Adicionar região** → linha com UF (select IBGE) + Cidade (select IBGE dependente) + Zona (texto) + Bairro (texto opcional). N linhas por anúncio.
+- Registrar no `Admin.tsx` com a chave `land-searches` e rota `/admin/land-searches` no `App.tsx`, mais item no `AppSidebar.tsx`.
 
-Adicionar à tabela `rental_partners`:
-- `banner_url text`
-- `website_url text`
-- `commission_tenant_text text`
-- `commission_tenant_when text` (valores: `FIRST_PAYMENT` | `RECURRING`)
-- `commission_owner_text text`
-- `commission_owner_when text`
-- `service_areas jsonb default '[]'::jsonb` (array de `{state, city}`)
+## 3. Página pública — `/procura-se-terrenos`
 
-Backfill `service_areas` com `[{state, city}]` existentes para registros já criados.
+Nova página `LandSearches.tsx` no menu principal:
+- Hero curto explicando o módulo.
+- Filtros: UF, Cidade, Zona, Bairro, Construtora, Área mínima.
+- **Tabela** (estilo Órulo) com colunas: Construtora • Localização (UF/Cidade/Zona/Bairro — todas regiões resumidas) • Área Mín. • Contato.
+- Em telas pequenas vira lista de cards.
+- Coluna "Contato":
+  - **Pago/Admin:** Nome + botão WhatsApp + botão E-mail.
+  - **Free/Deslogado:** texto borrado (`blur-sm select-none`) + botão "Assine para ver" → `/planos`.
+- Hook `useLandSearches` busca via base ou view conforme permissão; usa `useSubscriptionLimits` para detectar plano pago.
 
-### 4) types.ts
+## 4. Integrações e rotas
 
-Será regenerado automaticamente após a migration.
+- Adicionar rota `/procura-se-terrenos` em `App.tsx`.
+- Adicionar link no menu principal (header/sidebar do app autenticado e no portal público se aplicável).
+- Reservar slug `procura-se-terrenos` em `src/lib/reservedSlugs.ts`.
 
-## Observações
+## 5. Arquivos a criar/modificar
 
-- O usuário pediu que o parceiro cadastre as próprias informações sem ver Slug/Ordem — por ora o cadastro continua sendo no admin (tela atual já permite que o `owner` edite via RLS); apenas escondemos esses campos do modal. Um portal de auto-atendimento do parceiro fica para depois.
-- "Tipo de imóvel" no formulário do proprietário **mantém** a lista atual (já é select).
+**Criar:**
+- `supabase/migrations/<ts>_land_searches.sql`
+- `src/components/admin/LandSearchesManagement.tsx`
+- `src/pages/LandSearches.tsx`
+- `src/hooks/useLandSearches.ts`
+
+**Modificar:**
+- `src/App.tsx` (rotas)
+- `src/pages/Admin.tsx` (seção)
+- `src/components/AppSidebar.tsx` (item de menu)
+- `src/lib/reservedSlugs.ts`
+
+## Detalhes técnicos
+
+- Storage: reaproveitar bucket existente de logos de parceiros (ou criar `land-search-logos` público se necessário).
+- WhatsApp: normalização 12 dígitos conforme regra Core do projeto; link `https://wa.me/<num>`.
+- UI 100% PT-BR, `translate="no"`.
+- Sem alterações em outras features.

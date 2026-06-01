@@ -8,6 +8,7 @@ export const RESERVED_SLUGS = [
   'giro-do-mercado', 'nossa-ia', 'comprar-creditos', 'calculadora',
   'criativos', 'portal-imoveis', 'imovel', 'planos',
   'primeiros-passos', 'indicar', 'v', 'conectaeimob', 'corretor',
+  'procura-se-terrenos',
   'api', 'assets', 'public', 'static',
 ];
 

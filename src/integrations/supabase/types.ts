@@ -807,6 +807,89 @@ export type Database = {
         }
         Relationships: []
       }
+      land_search_areas: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          land_search_id: string
+          neighborhood: string | null
+          state: string
+          zone: string | null
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          land_search_id: string
+          neighborhood?: string | null
+          state: string
+          zone?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          land_search_id?: string
+          neighborhood?: string | null
+          state?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_search_areas_land_search_id_fkey"
+            columns: ["land_search_id"]
+            isOneToOne: false
+            referencedRelation: "land_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_searches: {
+        Row: {
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_whatsapp: string
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          min_area_m2: number | null
+          notes: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_whatsapp: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_whatsapp?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       launch_alerts: {
         Row: {
           created_at: string | null
@@ -2744,6 +2827,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      has_active_paid_plan: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2766,6 +2850,18 @@ export type Database = {
           is_now_active: boolean
           max_purchases: number
           new_count: number
+        }[]
+      }
+      list_land_searches_public: {
+        Args: never
+        Returns: {
+          company_name: string
+          created_at: string
+          id: string
+          logo_url: string
+          min_area_m2: number
+          notes: string
+          sort_order: number
         }[]
       }
       log_user_activity: {

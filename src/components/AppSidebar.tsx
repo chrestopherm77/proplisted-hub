@@ -94,6 +94,7 @@ export function AppSidebar() {
     { title: 'Construtoras', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Alugue em Parceria', url: '/alugue-em-parceria', icon: Handshake, show: !isPartnerSite },
+    { title: 'Procura-se de Terrenos', url: '/procura-se-terrenos', icon: Building2, show: !isPartnerSite },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },
     { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: !!isAdmin },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },
