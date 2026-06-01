@@ -101,6 +101,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'rental-partners': RentalPartnersManagement,
   'financing-leads': FinancingLeadsManagement,
   'land-searches': LandSearchesManagement,
+  'land-search-access': LandSearchAccessManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
