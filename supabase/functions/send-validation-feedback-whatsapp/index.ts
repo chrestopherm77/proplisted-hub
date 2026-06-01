@@ -116,8 +116,11 @@ Deno.serve(async (req) => {
   // --- Test mode: send a single message to a phone ---
   if (body.testPhone) {
     const expected = Deno.env.get("CRON_SECRET");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const provided = req.headers.get("x-cron-secret") || body.cronSecret;
-    if (expected && provided !== expected) {
+    const auth = req.headers.get("authorization") || "";
+    const isService = serviceKey && auth === `Bearer ${serviceKey}`;
+    if (!isService && expected && provided !== expected) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
