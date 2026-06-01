@@ -531,7 +531,7 @@ export default function Leads() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">UF</label>
               <Select value={tempUF} onValueChange={handleUFChange}>
@@ -553,12 +553,24 @@ export default function Leads() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">Bairro</label>
-              <Select value={tempBairro} onValueChange={setTempBairro}>
-                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os bairros" /></SelectTrigger>
+              <label className="text-xs text-muted-foreground">Zona</label>
+              <Select value={tempZone} onValueChange={setTempZone}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todas as zonas" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os bairros</SelectItem>
-                  {filterOptions.uniqueBairros.map(bairro => <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>)}
+                  <SelectItem value="all">Todas as zonas</SelectItem>
+                  {filterOptions.uniqueZones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">Tipo de imóvel</label>
+              <Select value={tempCondition} onValueChange={setTempCondition}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="NEW">Novo</SelectItem>
+                  <SelectItem value="USED">Usado</SelectItem>
+                  <SelectItem value="BOTH">Novo ou Usado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -568,7 +580,7 @@ export default function Leads() {
                 <SelectTrigger className="bg-background"><SelectValue placeholder="Todos os objetivos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os objetivos</SelectItem>
-                  {filterOptions.uniqueObjectives.map(obj => <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || obj}</SelectItem>)}
+                  {filterOptions.uniqueObjectives.map(obj => <SelectItem key={obj} value={obj}>{objectiveLabels[obj] || 'Outro'}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
