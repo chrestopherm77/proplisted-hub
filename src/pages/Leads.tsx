@@ -764,8 +764,9 @@ export default function Leads() {
                     <div key={alert.id} className="flex items-start justify-between p-3 border rounded-lg">
                       <div className="text-sm space-y-0.5">
                         <p className="font-medium">{f.city} - {f.state}</p>
-                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || f.objective}</p>}
-                        {f.bairro && <p className="text-muted-foreground">Bairro: {f.bairro}</p>}
+                        {f.objective && <p className="text-muted-foreground">Objetivo: {objectiveLabels[f.objective] || 'Outro'}</p>}
+                        {f.zone && <p className="text-muted-foreground">Zona: {f.zone}</p>}
+                        {f.condition && <p className="text-muted-foreground">Tipo: {propertyConditionLabels[f.condition] || f.condition}</p>}
                         {f.valueRange && f.valueRange !== 'all' && (
                           <p className="text-muted-foreground">
                             Valor: {(f.objective === 'RENT' ? rentValueRanges : valueRanges).find(r => r.value === f.valueRange)?.label || f.valueRange}
