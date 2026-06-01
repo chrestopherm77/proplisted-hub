@@ -371,23 +371,23 @@ export default function Leads() {
   const filterOptions = useMemo(() => {
     const ufs = new Set<string>();
     const cities = new Set<string>();
-    const bairros = new Set<string>();
+    const zones = new Set<string>();
     const objectives = new Set<string>();
     leads.forEach(lead => {
       const formData = normalizeFormData(lead.form_data);
       const uf = extractUFFromFormData(formData);
       const city = extractCityFromFormData(formData);
-      const bairro = extractBairro(formData);
+      const zone = extractZone(formData);
       const objective = extractObjective(formData);
       if (uf) ufs.add(uf);
       if (city) cities.add(city);
-      if (bairro) bairros.add(bairro);
+      if (zone) zones.add(zone);
       if (objective) objectives.add(objective);
     });
     return {
       uniqueUFs: Array.from(ufs).sort(),
       uniqueCities: Array.from(cities).sort(),
-      uniqueBairros: Array.from(bairros).sort(),
+      uniqueZones: Array.from(zones).sort(),
       uniqueObjectives: Array.from(objectives).sort(),
     };
   }, [leads]);
@@ -407,15 +407,16 @@ export default function Leads() {
   const applyFilters = () => {
     setFilterUF(tempUF);
     setFilterCity(tempCity);
-    setFilterBairro(tempBairro);
+    setFilterZone(tempZone);
+    setFilterCondition(tempCondition);
     setFilterObjective(tempObjective);
     setFilterValueRange(tempValueRange);
   };
 
   const clearFilters = () => {
-    setTempUF('all'); setTempCity('all'); setTempBairro('all');
+    setTempUF('all'); setTempCity('all'); setTempZone('all'); setTempCondition('all');
     setTempObjective('all'); setTempValueRange('all');
-    setFilterUF('all'); setFilterCity('all'); setFilterBairro('all');
+    setFilterUF('all'); setFilterCity('all'); setFilterZone('all'); setFilterCondition('all');
     setFilterObjective('all'); setFilterValueRange('all');
   };
 
@@ -427,12 +428,14 @@ export default function Leads() {
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
       const leadCity = extractCityFromFormData(formData);
-      const leadBairro = extractBairro(formData);
+      const leadZone = extractZone(formData);
+      const leadCondition = extractPropertyCondition(formData);
       const leadObjective = extractObjective(formData);
       const leadValue = extractValue(formData);
       if (filterUF !== 'all' && leadUF !== filterUF) return false;
       if (filterCity !== 'all' && leadCity !== filterCity) return false;
-      if (filterBairro !== 'all' && leadBairro !== filterBairro) return false;
+      if (filterZone !== 'all' && leadZone !== filterZone) return false;
+      if (filterCondition !== 'all' && leadCondition !== filterCondition) return false;
       if (filterObjective !== 'all' && leadObjective !== filterObjective) return false;
       if (filterValueRange !== 'all' && leadValue !== null) {
         const ranges = leadObjective === 'RENT' ? rentValueRanges : valueRanges;
@@ -441,7 +444,7 @@ export default function Leads() {
       }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterBairro, filterObjective, filterValueRange]);
+  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
