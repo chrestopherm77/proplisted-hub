@@ -196,14 +196,16 @@ export default function Leads() {
   // Temporary filter states
   const [tempUF, setTempUF] = useState<string>('all');
   const [tempCity, setTempCity] = useState<string>('all');
-  const [tempBairro, setTempBairro] = useState<string>('all');
+  const [tempZone, setTempZone] = useState<string>('all');
+  const [tempCondition, setTempCondition] = useState<string>('all');
   const [tempObjective, setTempObjective] = useState<string>('all');
   const [tempValueRange, setTempValueRange] = useState<string>('all');
   
   // Applied filter states
   const [filterUF, setFilterUF] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
-  const [filterBairro, setFilterBairro] = useState<string>('all');
+  const [filterZone, setFilterZone] = useState<string>('all');
+  const [filterCondition, setFilterCondition] = useState<string>('all');
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
