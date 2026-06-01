@@ -48,6 +48,7 @@ import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
 import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import LandSearches from "./pages/LandSearches";
+import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
