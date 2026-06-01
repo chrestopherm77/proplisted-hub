@@ -47,9 +47,6 @@ const emptyForm = {
   contact_email: '',
   min_area_m2: '',
   notes: '',
-  logo_url: '',
-  is_active: true,
-  sort_order: 0,
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -61,8 +58,8 @@ export function LandSearchesManagement() {
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [areaCities, setAreaCities] = useState<Record<number, { id: number; nome: string }[]>>({});
+
 
   const fetchCitiesFor = async (idx: number, uf: string) => {
     if (!uf) { setAreaCities((m) => ({ ...m, [idx]: [] })); return; }
