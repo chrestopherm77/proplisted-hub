@@ -843,13 +843,6 @@ export type Database = {
             referencedRelation: "land_searches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "land_search_areas_land_search_id_fkey"
-            columns: ["land_search_id"]
-            isOneToOne: false
-            referencedRelation: "land_searches_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       land_searches: {
@@ -2801,42 +2794,7 @@ export type Database = {
       }
     }
     Views: {
-      land_searches_public: {
-        Row: {
-          company_name: string | null
-          created_at: string | null
-          id: string | null
-          is_active: boolean | null
-          logo_url: string | null
-          min_area_m2: number | null
-          notes: string | null
-          sort_order: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          logo_url?: string | null
-          min_area_m2?: number | null
-          notes?: string | null
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          logo_url?: string | null
-          min_area_m2?: number | null
-          notes?: string | null
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_credits_atomic: {
@@ -2892,6 +2850,18 @@ export type Database = {
           is_now_active: boolean
           max_purchases: number
           new_count: number
+        }[]
+      }
+      list_land_searches_public: {
+        Args: never
+        Returns: {
+          company_name: string
+          created_at: string
+          id: string
+          logo_url: string
+          min_area_m2: number
+          notes: string
+          sort_order: number
         }[]
       }
       log_user_activity: {
