@@ -107,7 +107,3 @@ verify_jwt = false
 
 [functions.send-lead-feedback]
 verify_jwt = false
-
-
-[functions.send-validation-feedback-whatsapp]
-verify_jwt = false
