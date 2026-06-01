@@ -620,6 +620,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     // Localização e orçamento
     const budgetFields: FormField[] = [];
     if (buy.region) budgetFields.push({ label: 'Região', value: buy.region });
+    if (buy.zone) budgetFields.push({ label: 'Zona', value: buy.zone });
     if (buy.budgetMin) budgetFields.push({ label: 'Orçamento mínimo', value: buy.budgetMin });
     if (buy.budgetMax) budgetFields.push({ label: 'Orçamento máximo', value: buy.budgetMax });
     if (budgetFields.length > 0) {
