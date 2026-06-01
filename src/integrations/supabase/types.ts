@@ -813,6 +813,7 @@ export type Database = {
           created_at: string
           id: string
           land_search_id: string
+          min_area_m2: number | null
           neighborhood: string | null
           state: string
           zone: string | null
@@ -822,6 +823,7 @@ export type Database = {
           created_at?: string
           id?: string
           land_search_id: string
+          min_area_m2?: number | null
           neighborhood?: string | null
           state: string
           zone?: string | null
@@ -831,6 +833,7 @@ export type Database = {
           created_at?: string
           id?: string
           land_search_id?: string
+          min_area_m2?: number | null
           neighborhood?: string | null
           state?: string
           zone?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.land_search_areas ADD COLUMN IF NOT EXISTS min_area_m2 integer;
