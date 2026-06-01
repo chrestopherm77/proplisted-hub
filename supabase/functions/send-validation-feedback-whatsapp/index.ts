@@ -120,8 +120,9 @@ Deno.serve(async (req) => {
     const provided = req.headers.get("x-cron-secret") || body.cronSecret;
     const auth = req.headers.get("authorization") || "";
     const isService = serviceKey && auth === `Bearer ${serviceKey}`;
+    console.log(`auth_debug isService=${isService} hasExpected=${!!expected} hasAuth=${!!auth} providedMatch=${provided === expected}`);
     if (!isService && expected && provided !== expected) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Unauthorized", debug: { isService, hasAuth: !!auth } }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
