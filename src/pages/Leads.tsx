@@ -617,6 +617,9 @@ export default function Leads() {
           {filteredLeads.map((lead) => {
             const parsed = parseDescription(lead.description);
             const leadCredits = Math.round(lead.price);
+            const leadFormData = normalizeFormData(lead.form_data);
+            const leadCondition = extractPropertyCondition(leadFormData);
+            const isLaunch = leadCondition === 'NEW' || leadCondition === 'BOTH';
             return (
               <Card 
                 key={lead.id} 
@@ -624,11 +627,18 @@ export default function Leads() {
                 onClick={() => openLeadDetails(lead)}
               >
                 <CardHeader className="pb-2">
-                  {lead.is_promotion && (
-                    <Badge className="w-fit mb-1 animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-xs">
-                      🔥 PROMOÇÃO
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {lead.is_promotion && (
+                      <Badge className="animate-pulse bg-orange-500 hover:bg-orange-500 text-white border-transparent text-xs">
+                        🔥 PROMOÇÃO
+                      </Badge>
+                    )}
+                    {isLaunch && (
+                      <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white border-transparent text-xs">
+                        ✨ Lançamento
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
