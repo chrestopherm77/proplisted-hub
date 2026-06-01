@@ -45,6 +45,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const [creditBalance, setCreditBalance] = useState(0);
+  const [canPublishLandSearch, setCanPublishLandSearch] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -79,6 +80,14 @@ export function AppSidebar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  useEffect(() => {
+    if (!user) { setCanPublishLandSearch(false); return; }
+    supabase
+      .from('land_search_publish_permissions' as any)
+      .select('id').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setCanPublishLandSearch(!!data));
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -95,6 +104,7 @@ export function AppSidebar() {
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Alugue em Parceria', url: '/alugue-em-parceria', icon: Handshake, show: !isPartnerSite },
     { title: 'Procura-se de Terrenos', url: '/procura-se-terrenos', icon: Building2, show: !isPartnerSite },
+    { title: 'Meus Anúncios de Terrenos', url: '/meus-terrenos-procurados', icon: Building2, show: !isPartnerSite && (canPublishLandSearch || !!isAdmin) },
     { title: 'Giro do Mercado', url: '/giro-do-mercado', icon: Newspaper, show: true },
     { title: 'Nossa IA', url: '/nossa-ia', icon: Bot, show: !!isAdmin },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },

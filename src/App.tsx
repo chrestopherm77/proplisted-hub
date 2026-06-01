@@ -48,6 +48,7 @@ import PublicVideo from "./pages/PublicVideo";
 import NotFound from "./pages/NotFound";
 import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import LandSearches from "./pages/LandSearches";
+import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
@@ -130,7 +131,10 @@ const App = () => {
           <Route path="/admin/rental-partners" element={<Admin section="rental-partners" />} />
           <Route path="/admin/financing-leads" element={<Admin section="financing-leads" />} />
           <Route path="/admin/land-searches" element={<Admin section="land-searches" />} />
+          <Route path="/admin/land-search-access" element={<Admin section="land-search-access" />} />
           <Route path="/procura-se-terrenos" element={<LandSearches />} />
+          <Route path="/meus-terrenos-procurados" element={<MyLandSearches />} />
+
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
           <Route path="/portal-modelo/:id" element={<PortalTemplatePreview />} />

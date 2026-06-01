@@ -85,6 +85,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Opções do Formulário', url: '/admin/lead-form-intentions', icon: ListChecks, group: 'Conteúdo' },
   { title: 'Imobs Parceiras (Locação)', url: '/admin/rental-partners', icon: Handshake, group: 'Conteúdo' },
   { title: 'Procura-se de Terrenos', url: '/admin/land-searches', icon: Handshake, group: 'Conteúdo' },
+  { title: 'Liberar Procura-se Terrenos', url: '/admin/land-search-access', icon: KeyRound, group: 'Pessoas' },
   { title: 'Primeiros Passos', url: '/admin/onboarding-video', icon: PlayCircle, group: 'Conteúdo' },
   { title: 'Link Público', url: '/admin/public-videos', icon: Video, group: 'Conteúdo' },
   { title: 'Grupos WhatsApp', url: '/admin/whatsapp-groups', icon: MessageSquare, group: 'Conteúdo' },

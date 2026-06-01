@@ -47,9 +47,6 @@ const emptyForm = {
   contact_email: '',
   min_area_m2: '',
   notes: '',
-  logo_url: '',
-  is_active: true,
-  sort_order: 0,
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -61,8 +58,8 @@ export function LandSearchesManagement() {
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [areaCities, setAreaCities] = useState<Record<number, { id: number; nome: string }[]>>({});
+
 
   const fetchCitiesFor = async (idx: number, uf: string) => {
     if (!uf) { setAreaCities((m) => ({ ...m, [idx]: [] })); return; }
@@ -117,15 +114,13 @@ export function LandSearchesManagement() {
       contact_email: item.contact_email,
       min_area_m2: item.min_area_m2?.toString() || '',
       notes: item.notes || '',
-      logo_url: item.logo_url || '',
-      is_active: item.is_active,
-      sort_order: item.sort_order,
       areas,
     });
     setAreaCities({});
     setDialogOpen(true);
     await Promise.all(areas.map((a, i) => a.state ? fetchCitiesFor(i, a.state) : Promise.resolve()));
   };
+
 
   const updateArea = (idx: number, patch: Partial<Area>) => {
     setForm((f) => ({ ...f, areas: f.areas.map((a, i) => i === idx ? { ...a, ...patch } : a) }));
@@ -156,9 +151,6 @@ export function LandSearchesManagement() {
         contact_email: form.contact_email.trim().toLowerCase(),
         min_area_m2: form.min_area_m2 ? Number(form.min_area_m2.replace(/\D/g, '')) : null,
         notes: form.notes.trim() || null,
-        logo_url: form.logo_url.trim() || null,
-        is_active: form.is_active,
-        sort_order: Number(form.sort_order) || 0,
       };
 
       let landSearchId = form.id;
@@ -362,54 +354,6 @@ export function LandSearchesManagement() {
                   </Button>
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Logo</Label>
-              <div className="flex items-center gap-3">
-                {form.logo_url ? (
-                  <img src={form.logo_url} alt="Logo" className="h-14 w-14 rounded-md object-contain border bg-muted" />
-                ) : (
-                  <div className="h-14 w-14 rounded-md border bg-muted flex items-center justify-center text-[10px] text-muted-foreground">sem logo</div>
-                )}
-                <div className="flex-1 space-y-1">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingLogo}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploadingLogo(true);
-                      try {
-                        const url = await uploadLogo(file);
-                        setForm((f) => ({ ...f, logo_url: url }));
-                      } catch (err: any) {
-                        toast({ title: 'Erro ao enviar logo', description: err.message, variant: 'destructive' });
-                      } finally {
-                        setUploadingLogo(false);
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                  <Input
-                    placeholder="ou cole uma URL"
-                    value={form.logo_url}
-                    onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 items-end">
-              <div className="space-y-2">
-                <Label>Ordem</Label>
-                <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) || 0 })} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                <Label>Ativo (visível no site)</Label>
-              </div>
             </div>
           </div>
           <DialogFooter>

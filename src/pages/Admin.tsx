@@ -31,6 +31,7 @@ import { LeadFormIntentionsManagement } from '@/components/admin/LeadFormIntenti
 import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManagement';
 import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
 import { LandSearchesManagement } from '@/components/admin/LandSearchesManagement';
+import { LandSearchAccessManagement } from '@/components/admin/LandSearchAccessManagement';
 
 type Section =
   | 'dashboard'
@@ -64,7 +65,8 @@ type Section =
   | 'lead-form-intentions'
   | 'rental-partners'
   | 'financing-leads'
-  | 'land-searches';
+  | 'land-searches'
+  | 'land-search-access';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -99,6 +101,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'rental-partners': RentalPartnersManagement,
   'financing-leads': FinancingLeadsManagement,
   'land-searches': LandSearchesManagement,
+  'land-search-access': LandSearchAccessManagement,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
