@@ -1808,9 +1808,12 @@ export type Database = {
           city: string
           condo_fee: number | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_reason: string | null
           id: string
           iptu: number | null
           is_active: boolean
+          last_validated_at: string
           latitude: number | null
           longitude: number | null
           neighborhood: string | null
@@ -1841,9 +1844,12 @@ export type Database = {
           city: string
           condo_fee?: number | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           id?: string
           iptu?: number | null
           is_active?: boolean
+          last_validated_at?: string
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
@@ -1874,9 +1880,12 @@ export type Database = {
           city?: string
           condo_fee?: number | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           id?: string
           iptu?: number | null
           is_active?: boolean
+          last_validated_at?: string
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
@@ -1994,11 +2003,14 @@ export type Database = {
           city: string
           condominium: string | null
           created_at: string | null
+          deactivated_at: string | null
+          deactivated_reason: string | null
           floor: string | null
           headline: string | null
           house_type: string | null
           id: string
           is_active: boolean | null
+          last_validated_at: string
           neighborhood: string | null
           observation: string | null
           offer_count: number
@@ -2020,11 +2032,14 @@ export type Database = {
           city: string
           condominium?: string | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           floor?: string | null
           headline?: string | null
           house_type?: string | null
           id?: string
           is_active?: boolean | null
+          last_validated_at?: string
           neighborhood?: string | null
           observation?: string | null
           offer_count?: number
@@ -2046,11 +2061,14 @@ export type Database = {
           city?: string
           condominium?: string | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           floor?: string | null
           headline?: string | null
           house_type?: string | null
           id?: string
           is_active?: boolean | null
+          last_validated_at?: string
           neighborhood?: string | null
           observation?: string | null
           offer_count?: number

@@ -12,6 +12,7 @@ import { FaqButton } from '@/components/FaqButton';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { CompleteProfileReminder } from '@/components/profile/CompleteProfileReminder';
 import { AlertBanner } from '@/components/AlertBanner';
+import { ValidationPromptModal } from '@/components/validation/ValidationPromptModal';
 
 interface LayoutProps {
   children: ReactNode;
@@ -91,6 +92,7 @@ export const Layout = ({ children }: LayoutProps) => {
       </div>
       <SupportChatWidget />
       <CompleteProfileReminder />
+      <ValidationPromptModal />
     </SidebarProvider>
   );
 };
