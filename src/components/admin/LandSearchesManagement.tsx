@@ -121,13 +121,6 @@ export function LandSearchesManagement() {
     await Promise.all(areas.map((a, i) => a.state ? fetchCitiesFor(i, a.state) : Promise.resolve()));
   };
 
-  const _unused = () => {
-      areas,
-    });
-    setAreaCities({});
-    setDialogOpen(true);
-    await Promise.all(areas.map((a, i) => a.state ? fetchCitiesFor(i, a.state) : Promise.resolve()));
-  };
 
   const updateArea = (idx: number, patch: Partial<Area>) => {
     setForm((f) => ({ ...f, areas: f.areas.map((a, i) => i === idx ? { ...a, ...patch } : a) }));
