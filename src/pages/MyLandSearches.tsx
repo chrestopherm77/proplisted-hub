@@ -44,7 +44,8 @@ export default function MyLandSearches() {
     if (!uf) { setAreaCities((m) => ({ ...m, [idx]: [] })); return; }
     try {
       const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
-      setAreaCities((m) => ({ ...m, [idx]: res.ok ? await res.json() : [] }));
+      const data = res.ok ? await res.json() : [];
+      setAreaCities((m) => ({ ...m, [idx]: data }));
     } catch {}
   };
 
