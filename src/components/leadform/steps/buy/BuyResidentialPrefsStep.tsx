@@ -1,7 +1,7 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { OptionCard } from "../../OptionCard";
-import { Shield, ShieldOff, Bed, Bath, Car, Home, HardHat, Layers } from "lucide-react";
+import { Shield, ShieldOff, Bed, Bath, Car } from "lucide-react";
 
 const gatedOptions = [
   { value: 'yes', label: 'Sim', icon: <Shield className="h-6 w-6" /> },
@@ -12,11 +12,6 @@ const bedroomOptions = ['1', '2', '3', '4+'];
 const bathroomOptions = ['1', '2', '3', '4+'];
 const parkingOptions = ['0', '1', '2', '3+'];
 
-const readyStatusOptions = [
-  { value: 'READY', label: 'Pronto para morar', icon: <Home className="h-6 w-6" /> },
-  { value: 'UNDER_CONSTRUCTION', label: 'Na planta', icon: <HardHat className="h-6 w-6" /> },
-  { value: 'BOTH', label: 'Aceito mais de uma opção', icon: <Layers className="h-6 w-6" /> },
-];
 
 export function BuyResidentialPrefsStep({ data, updateFlowData }: StepProps) {
   return (
@@ -92,22 +87,6 @@ export function BuyResidentialPrefsStep({ data, updateFlowData }: StepProps) {
               />
             ))}
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">O imóvel que você busca é:</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {readyStatusOptions.map((option) => (
-              <OptionCard
-                key={option.value}
-                label={option.label}
-                icon={option.icon}
-                isSelected={data.buy?.propertyReadyStatus === option.value}
-                onClick={() => updateFlowData('buy', { propertyReadyStatus: option.value as any })}
-              />
-            ))}
-          </div>
-        </div>
       </div>
     </StepContainer>
   );
