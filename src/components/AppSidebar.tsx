@@ -80,6 +80,14 @@ export function AppSidebar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  useEffect(() => {
+    if (!user) { setCanPublishLandSearch(false); return; }
+    supabase
+      .from('land_search_publish_permissions' as any)
+      .select('id').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setCanPublishLandSearch(!!data));
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
