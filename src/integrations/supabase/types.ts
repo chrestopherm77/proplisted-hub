@@ -807,6 +807,96 @@ export type Database = {
         }
         Relationships: []
       }
+      land_search_areas: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          land_search_id: string
+          neighborhood: string | null
+          state: string
+          zone: string | null
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          land_search_id: string
+          neighborhood?: string | null
+          state: string
+          zone?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          land_search_id?: string
+          neighborhood?: string | null
+          state?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_search_areas_land_search_id_fkey"
+            columns: ["land_search_id"]
+            isOneToOne: false
+            referencedRelation: "land_searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_search_areas_land_search_id_fkey"
+            columns: ["land_search_id"]
+            isOneToOne: false
+            referencedRelation: "land_searches_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_searches: {
+        Row: {
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_whatsapp: string
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          min_area_m2: number | null
+          notes: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_whatsapp: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_whatsapp?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       launch_alerts: {
         Row: {
           created_at: string | null
@@ -2711,7 +2801,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      land_searches_public: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          logo_url: string | null
+          min_area_m2: number | null
+          notes: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          min_area_m2?: number | null
+          notes?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_credits_atomic: {
@@ -2744,6 +2869,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      has_active_paid_plan: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
