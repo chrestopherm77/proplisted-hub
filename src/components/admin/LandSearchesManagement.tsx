@@ -114,9 +114,14 @@ export function LandSearchesManagement() {
       contact_email: item.contact_email,
       min_area_m2: item.min_area_m2?.toString() || '',
       notes: item.notes || '',
-      logo_url: item.logo_url || '',
-      is_active: item.is_active,
-      sort_order: item.sort_order,
+      areas,
+    });
+    setAreaCities({});
+    setDialogOpen(true);
+    await Promise.all(areas.map((a, i) => a.state ? fetchCitiesFor(i, a.state) : Promise.resolve()));
+  };
+
+  const _unused = () => {
       areas,
     });
     setAreaCities({});
