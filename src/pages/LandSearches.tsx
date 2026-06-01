@@ -195,19 +195,8 @@ export default function LandSearches() {
                     {filtered.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="align-top">
-                          <div className="flex items-start gap-3">
-                            {item.logo_url ? (
-                              <img src={item.logo_url} alt={item.company_name} className="h-12 w-12 rounded-md object-contain border bg-muted shrink-0" />
-                            ) : (
-                              <div className="h-12 w-12 rounded-md border bg-muted flex items-center justify-center shrink-0">
-                                <Building2 className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-semibold">{item.company_name}</div>
-                              {item.notes && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.notes}</div>}
-                            </div>
-                          </div>
+                          <div className="font-semibold">{item.company_name}</div>
+                          {item.notes && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.notes}</div>}
                         </TableCell>
                         <TableCell className="align-top">{renderAreas(item.areas)}</TableCell>
                         <TableCell className="align-top">
