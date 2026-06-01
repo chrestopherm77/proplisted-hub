@@ -356,54 +356,6 @@ export function LandSearchesManagement() {
               ))}
             </div>
 
-            <div className="space-y-2">
-              <Label>Logo</Label>
-              <div className="flex items-center gap-3">
-                {form.logo_url ? (
-                  <img src={form.logo_url} alt="Logo" className="h-14 w-14 rounded-md object-contain border bg-muted" />
-                ) : (
-                  <div className="h-14 w-14 rounded-md border bg-muted flex items-center justify-center text-[10px] text-muted-foreground">sem logo</div>
-                )}
-                <div className="flex-1 space-y-1">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingLogo}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploadingLogo(true);
-                      try {
-                        const url = await uploadLogo(file);
-                        setForm((f) => ({ ...f, logo_url: url }));
-                      } catch (err: any) {
-                        toast({ title: 'Erro ao enviar logo', description: err.message, variant: 'destructive' });
-                      } finally {
-                        setUploadingLogo(false);
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                  <Input
-                    placeholder="ou cole uma URL"
-                    value={form.logo_url}
-                    onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 items-end">
-              <div className="space-y-2">
-                <Label>Ordem</Label>
-                <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) || 0 })} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                <Label>Ativo (visível no site)</Label>
-              </div>
-            </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>
