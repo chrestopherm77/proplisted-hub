@@ -1,81 +1,51 @@
-## Objetivo
+## Feedback periódico de validade (30 dias)
 
-Diferenciar leads de **lançamentos / imóveis novos** no formulário de captura (residencial em `/LP`), refletir essa decisão nos leads e filtros, trocar o filtro de **Bairro** por **Zona**, e corrigir a opção em inglês no filtro **Objetivo**.
+Após o login, mostrar um modal pedindo confirmação de cada **imóvel** (tabela `properties`) e cada **interesse de venda em parceria** (tabela `property_searches`) do corretor que esteja ativo (`is_active = true`) e cuja última confirmação tenha mais de **30 dias**. Para cada item:
 
-## 1. Nova árvore de perguntas (fluxo Comprar — residencial)
+- **"Ainda está válido"** → atualiza data de confirmação, segue ativo.
+- **"Já foi vendido / não é mais válido"** → marca `is_active = false` e registra motivo + data.
 
-Inserir, **logo após** o passo "Qual tipo de imóvel" (quando for `HOUSE`/`APARTMENT`/`KITNET`), dois novos passos:
+### 1. Banco de dados
 
-**Passo A — "Qual o tipo do imóvel?"** (sempre que for residencial)
-- Novo
-- Novo ou Usado
-- Usado
+Adicionar em ambas as tabelas:
+- `last_validated_at timestamptz` (default `now()` para registros existentes e novos)
+- `deactivated_reason text` (`SOLD`, `NO_LONGER_VALID`, `OTHER`)
+- `deactivated_at timestamptz`
 
-**Passo B — "O imóvel que você busca está:"** (condicional: só se o tipo for `Novo` ou `Novo ou Usado`)
-- Em Construção
-- Pronto para morar
-- Em construção ou pronto para morar
+Index parcial para acelerar a busca de pendências:
+```
+WHERE is_active = true AND (last_validated_at IS NULL OR last_validated_at < now() - interval '30 days')
+```
 
-Quando o usuário escolher **Usado**, o Passo B é pulado.
+Trigger: ao `UPDATE` com `is_active = false` vindo do fluxo de feedback, gravar `deactivated_at = now()`.
 
-O passo atual "O imóvel que você busca é (Pronto / Na planta / Aceito mais de uma opção)" hoje dentro de `BuyResidentialPrefsStep` será **removido de lá** e migrado para o Passo B acima, com os textos padronizados conforme o fluxograma.
+### 2. Hook `usePendingValidations`
 
-### Modelo de dados
+- Roda quando `user` carrega.
+- Busca `properties` e `property_searches` do `user_id` atual onde `is_active = true` e `last_validated_at < now() - 30d` (ou null).
+- Retorna `{ pending: Array<{kind, id, title, ...}>, loading, refresh }`.
+- Throttle por sessão: guardar `lastShownAt` em `localStorage` para não reabrir o modal a cada navegação no mesmo dia (mas reabre no próximo login/dia se houver pendência).
 
-Em `src/components/leadform/types.ts → BuyFlowData`:
-- Adicionar `propertyCondition?: 'NEW' | 'USED' | 'BOTH'`
-- Manter `propertyReadyStatus?: 'READY' | 'UNDER_CONSTRUCTION' | 'BOTH'` (já existe), porém com rótulos atualizados ("Pronto para morar" / "Em Construção" / "Em construção ou pronto para morar").
+### 3. Componente `ValidationPromptModal`
 
-## 2. Identificação clara no lead
+Renderizado dentro do `Layout` (mesmo lugar de `CompleteProfileModal`). Aparece uma vez por sessão, mostrando um card por item com:
+- Título + cidade/bairro + link "ver detalhes".
+- Botões: **Ainda está disponível** / **Já foi vendido** / **Não é mais válido**.
+- Botão **"Revisar depois"** que fecha o modal mas mantém pendência para próximo login.
 
-No `LeadDetailsModal` e nas views de detalhe (`formatFormData.ts`) destacar:
-- **Tipo do imóvel:** Novo / Usado / Ambos
-- **Status da obra:** Em construção / Pronto para morar / Ambos
+Cada confirmação faz `update` direto via Supabase respeitando RLS existente (`auth.uid() = user_id`).
 
-Quando o lead for **Novo** ou **Ambos**, exibir um **badge "Lançamento"** no card do lead em `Leads.tsx`, `MyLeads.tsx` e no header do `LeadDetailsModal`, para facilitar a identificação visual.
+### 4. Local da exibição
 
-## 3. Novo filtro "Tipo de imóvel" no marketplace
+`src/components/Layout.tsx` — montar `<ValidationPromptModal />` quando `user && pending.length > 0 && !shownThisSession`.
 
-Em `src/pages/Leads.tsx`:
-- Adicionar filtro **Tipo de imóvel** com opções: Todos / Novo / Usado / Ambos.
-- Extração via `formData.buy.propertyCondition` (com fallback: leads antigos sem essa info ficam como "Não informado" e passam por qualquer filtro exceto quando o usuário seleciona um valor específico).
-- Incluir esse filtro também na função de **Salvar Alerta** e na exibição dos alertas existentes.
+### 5. Arquivos
 
-## 4. Filtro "Zona" no lugar de "Bairro"
+- **Migration**: novas colunas + índices nas duas tabelas.
+- **Novo**: `src/hooks/usePendingValidations.ts`, `src/components/validation/ValidationPromptModal.tsx`.
+- **Editar**: `src/components/Layout.tsx`.
 
-Atualmente o formulário captura `neighborhood` mas não há campo de **zona**. Para suportar o filtro:
+### Perguntas
 
-- Adicionar campo opcional `zone` em `BuyFlowData` e `RentFlowData`.
-- No `BuyLocationBudgetStep` (e no equivalente de aluguel), adicionar um seletor "Zona" (Norte / Sul / Leste / Oeste / Centro / Outra) **acima** do campo Bairro, opcional.
-- Em `Leads.tsx`: remover o filtro de Bairro e substituir por filtro **Zona**, alimentado por `formData.[intention].zone`. Leads sem zona aparecem em "Todas".
-- Ajustar `lead_alerts` (chave `bairro` → `zone`) e migrar alertas existentes silenciosamente (alertas antigos com `bairro` ficam ignorados, sem quebrar).
-
-## 5. Correção da opção em inglês no filtro "Objetivo"
-
-Em `src/pages/Leads.tsx` o filtro lista valores de `intention` (`SELL/BUY/BUILD/RENT`) traduzidos via `objectiveLabels`. Vou:
-- Garantir `extractObjective` normalize para upper-case e ignore valores nulos/vazios.
-- Adicionar fallback: qualquer valor não mapeado é exibido como **"Outro"** em vez de mostrar a string em inglês.
-- Conferir se a opção em inglês citada não vem de `purpose` (HOUSING/INVESTMENT/COMMERCIAL/TEMPORARY) sendo exibido por engano em algum lugar; se sim, aplicar `purposeLabels`.
-
-## 6. Aplicação em `/LP`
-
-O wizard usado pelas rotas `/LP` (e `/LP01`) é compartilhado (`LeadFormWizard.tsx`), então as mudanças dos itens 1 e 4 valem automaticamente para `/LP`.
-
-## Arquivos a alterar
-
-- `src/components/leadform/types.ts` — novos campos `propertyCondition`, `zone`.
-- `src/components/leadform/steps/buy/BuyPropertyConditionStep.tsx` *(novo)* — Passo A.
-- `src/components/leadform/steps/buy/BuyPropertyReadyStatusStep.tsx` *(novo)* — Passo B (extraído do prefs).
-- `src/components/leadform/steps/buy/BuyResidentialPrefsStep.tsx` — remover o bloco "pronto/planta".
-- `src/components/leadform/steps/buy/BuyLocationBudgetStep.tsx` — adicionar seletor de Zona.
-- `src/components/leadform/LeadFormWizard.tsx` — registrar novos passos com visibilidade condicional.
-- `src/pages/Leads.tsx` — filtro Tipo de imóvel, filtro Zona substituindo Bairro, badge "Lançamento", correção do label de Objetivo, ajustes em alertas.
-- `src/pages/MyLeads.tsx` — badge "Lançamento" no card.
-- `src/components/marketplace/LeadDetailsModal.tsx` — exibir Tipo do imóvel e Status da obra.
-- `src/lib/formatFormData.ts` — rótulos `propertyConditionLabels`, ajustes em `propertyReadyStatus`, suporte a `zone`.
-
-## Pontos a confirmar com você
-
-1. **Zona** deve ser um seletor fixo (Norte/Sul/Leste/Oeste/Centro/Outra) ou texto livre?
-2. O filtro **Tipo de imóvel** deve valer para todos os objetivos ou apenas para `Comprar`? (Sugiro só `Comprar`, mas confirma.)
-3. Sobre a opção em inglês no filtro **Objetivo**: você lembra qual texto aparece (ex.: "BUY", "HOUSING", "Other")? Isso ajuda a apontar a origem exata.
+1. **Reativação**: se o corretor depois quiser reativar um anúncio marcado como "vendido", isso já é tratado pela edição normal em "Meus Imóveis" — ok manter assim?
+2. **Periodicidade no painel admin**: quer um relatório/contador no admin mostrando quantos itens estão pendentes de validação por usuário, ou só o fluxo do corretor já basta nesse momento?
