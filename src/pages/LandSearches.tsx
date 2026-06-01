@@ -145,6 +145,13 @@ export default function LandSearches() {
                 </div>
               )}
             </div>
+            {canPublish && (
+              <Button asChild variant="outline" className="shrink-0">
+                <Link to="/meus-terrenos-procurados">
+                  <Settings className="h-4 w-4 mr-2" /> Meus anúncios
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
