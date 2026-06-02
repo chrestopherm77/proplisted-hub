@@ -12,10 +12,10 @@ const SEND_DELAY_MS = 700;
 type Intention = "BUY" | "RENT" | "SELL" | "BUILD";
 
 const LABELS: Record<Intention, { verb: string; done: string; pending: string }> = {
-  BUY:   { verb: "comprar o imóvel", done: "Já comprei",   pending: "Ainda não comprei" },
-  RENT:  { verb: "alugar o imóvel",  done: "Já aluguei",   pending: "Ainda não aluguei" },
-  SELL:  { verb: "vender o imóvel",  done: "Já vendi",     pending: "Ainda não vendi" },
-  BUILD: { verb: "iniciar a obra",   done: "Já contratei", pending: "Ainda não contratei" },
+  BUY:   { verb: "comprar um imóvel",   done: "Já não estou procurando", pending: "Ainda estou procurando" },
+  RENT:  { verb: "alugar um imóvel",    done: "Já não estou procurando", pending: "Ainda estou procurando" },
+  SELL:  { verb: "vender um imóvel",    done: "Já não preciso",          pending: "Ainda preciso" },
+  BUILD: { verb: "iniciar uma obra",    done: "Já não preciso",          pending: "Ainda preciso" },
 };
 
 function firstName(full: string | null | undefined): string {
