@@ -204,8 +204,36 @@ Deno.serve(async (req) => {
     await new Promise((res) => setTimeout(res, SEND_DELAY_MS));
   }
 
+  // Deactivate leads that exhausted feedback attempts without response
+  let deactivated = 0;
+  if (isCronMode) {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: stale, error: staleErr } = await sb
+      .from("leads")
+      .select("id")
+      .eq("is_active", true)
+      .gte("feedback_attempts", MAX_ATTEMPTS)
+      .lte("feedback_sent_at", cutoff)
+      .or("feedback_response.is.null,feedback_response.eq.PENDING")
+      .limit(200);
+
+    if (!staleErr && stale && stale.length > 0) {
+      const ids = stale.map((l: { id: string }) => l.id);
+      const { error: updErr } = await sb
+        .from("leads")
+        .update({
+          is_active: false,
+          feedback_response: "NO_RESPONSE",
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", ids);
+      if (!updErr) deactivated = ids.length;
+      console.log(`feedback deactivated ${deactivated} leads`);
+    }
+  }
+
   return new Response(
-    JSON.stringify({ processed: results.length, results }),
+    JSON.stringify({ processed: results.length, deactivated, results }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
