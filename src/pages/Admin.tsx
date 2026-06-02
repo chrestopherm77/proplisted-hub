@@ -104,6 +104,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'financing-leads': FinancingLeadsManagement,
   'land-searches': LandSearchesManagement,
   'land-search-access': LandSearchAccessManagement,
+  'lead-contact-tracking': LeadContactTracking,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {
