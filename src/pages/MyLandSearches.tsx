@@ -141,7 +141,16 @@ export default function MyLandSearches() {
       toast({ title: 'Preencha empresa, contato, WhatsApp, e-mail e ao menos uma região (UF + cidade)', variant: 'destructive' });
       return;
     }
-    const whatsapp = form.contact_whatsapp.replace(/\D/g, '');
+    let whatsapp = form.contact_whatsapp.replace(/\D/g, '');
+    if (whatsapp.startsWith('55') && (whatsapp.length === 12 || whatsapp.length === 13)) {
+      whatsapp = whatsapp.slice(2);
+    }
+    if (whatsapp.length === 11) {
+      whatsapp = whatsapp.slice(0, 2) + whatsapp.slice(3);
+    }
+    if (whatsapp.length === 10) {
+      whatsapp = '55' + whatsapp;
+    }
     if (whatsapp.length !== 12) {
       toast({ title: 'WhatsApp inválido', description: 'Use 12 dígitos (55 + DDD + número).', variant: 'destructive' });
       return;
