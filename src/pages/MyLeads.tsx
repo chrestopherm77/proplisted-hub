@@ -58,7 +58,7 @@ export default function MyLeads() {
       // 1) purchases PAID com lead
       const { data: purchases, error: pErr } = await supabase
         .from('purchases')
-        .select(`id, amount, purchased_at, lead_id,
+        .select(`id, amount, purchased_at, lead_id, first_contact_at,
           leads ( id, name, phone, description, form_data )`)
         .eq('user_id', user.id)
         .eq('status', 'PAID')
