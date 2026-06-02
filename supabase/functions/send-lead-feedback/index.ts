@@ -41,8 +41,8 @@ async function sendListMessage(params: {
   const greeting = firstName(params.name);
   const text =
     `Olá ${greeting}! 👋\n\n` +
-    `Faz 7 dias que recebemos seu interesse em ${labels.verb}.\n\n` +
-    `Pra gente te ajudar melhor, você já conseguiu fechar negócio?`;
+    `Faz alguns dias que recebemos seu interesse em ${labels.verb}.\n\n` +
+    `Você ainda está procurando? Toque em uma das opções abaixo:`;
 
   const body = {
     messageData: {
