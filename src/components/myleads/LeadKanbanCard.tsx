@@ -1,32 +1,46 @@
+import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle, StickyNote, Calendar } from 'lucide-react';
-import { CrmLead, STAGE_LABEL } from './types';
+import { MessageCircle, StickyNote, Calendar, CheckCircle2 } from 'lucide-react';
+import { CrmLead } from './types';
 import { buildWaLink } from '@/lib/whatsapp';
+import { registerLeadContact } from '@/lib/leadContact';
 
 interface Props {
   lead: CrmLead;
   onClick: () => void;
+  onContacted?: (purchaseId: string) => void;
 }
 
-export function LeadKanbanCard({ lead, onClick }: Props) {
+export function LeadKanbanCard({ lead, onClick, onContacted }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.crmId,
   });
+  const [contactedAt, setContactedAt] = useState<string | null>(lead.firstContactAt || null);
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
 
-  const handleWhatsApp = (e: React.MouseEvent) => {
+  const handleWhatsApp = async (e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(buildWaLink(lead.phone), '_blank');
+    if (!lead.isManual && lead.purchaseId) {
+      await registerLeadContact(lead.purchaseId);
+      if (!contactedAt) {
+        const now = new Date().toISOString();
+        setContactedAt(now);
+        onContacted?.(lead.purchaseId);
+      }
+    }
   };
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const formatDateTime = (date: string) =>
+    new Date(date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
   return (
     <Card
@@ -46,18 +60,19 @@ export function LeadKanbanCard({ lead, onClick }: Props) {
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-        <Phone className="h-3 w-3" />
-        <span className="truncate">{lead.phone}</span>
-      </div>
-
       <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{lead.description}</p>
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
           <Calendar className="h-2.5 w-2.5 mr-1" />
           {formatDate(lead.purchasedAt)}
         </Badge>
+        {contactedAt && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 text-green-700 border-green-300">
+            <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
+            {formatDateTime(contactedAt)}
+          </Badge>
+        )}
       </div>
 
       <Button

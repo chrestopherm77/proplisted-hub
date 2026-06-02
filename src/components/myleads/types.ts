@@ -10,6 +10,7 @@ export interface CrmLead {
   purchaseId: string;
   amount: number;
   purchasedAt: string;
+  firstContactAt?: string | null;
   // lead
   leadId: string;
   name: string;

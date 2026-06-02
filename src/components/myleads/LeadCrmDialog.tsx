@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Phone, Mail, Calendar, DollarSign, MessageCircle, Loader2, Check } from 'lucide-react';
+import { Phone, Mail, Calendar, DollarSign, MessageCircle, Loader2, Check, CheckCircle2 } from 'lucide-react';
 import { formatFormDataToSections } from '@/lib/formatFormData';
 import { LeadPreferencesView } from '@/components/marketplace/LeadPreferencesView';
 import { buildWaLink } from '@/lib/whatsapp';
+import { registerLeadContact } from '@/lib/leadContact';
 import { CrmLead, CrmStage, STAGES, STAGE_LABEL } from './types';
 
 interface Props {
@@ -118,14 +119,23 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
           </div>
 
           <div className="space-y-2 pt-2">
-            <div className="flex items-center gap-2 text-foreground">
-              <Phone className="h-4 w-4 text-primary" />
-              <span className="font-medium">{lead.phone}</span>
+            <div className="flex items-center gap-2 text-foreground flex-wrap">
+              {lead.firstContactAt ? (
+                <span className="text-xs text-green-700 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Contato em {new Date(lead.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Ainda sem contato registrado</span>
+              )}
               <Button
                 size="sm"
                 variant="outline"
                 className="ml-auto h-7 text-xs text-green-700 border-green-300 hover:bg-green-50"
-                onClick={() => window.open(buildWaLink(lead.phone), '_blank')}
+                onClick={async () => {
+                  window.open(buildWaLink(lead.phone), '_blank');
+                  if (!lead.isManual && lead.purchaseId) await registerLeadContact(lead.purchaseId);
+                }}
               >
                 <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
               </Button>
