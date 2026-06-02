@@ -108,6 +108,7 @@ export default function MyLeads() {
           purchaseId: p.id,
           amount: Number(p.amount),
           purchasedAt: p.purchased_at,
+          firstContactAt: p.first_contact_at,
           leadId: p.leads.id,
           name: p.leads.name,
           phone: p.leads.phone,
