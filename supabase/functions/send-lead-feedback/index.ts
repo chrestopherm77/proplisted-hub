@@ -6,16 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 2;
 const SEND_DELAY_MS = 700;
 
 type Intention = "BUY" | "RENT" | "SELL" | "BUILD";
 
 const LABELS: Record<Intention, { verb: string; done: string; pending: string }> = {
-  BUY:   { verb: "comprar o imóvel", done: "Já comprei",   pending: "Ainda não comprei" },
-  RENT:  { verb: "alugar o imóvel",  done: "Já aluguei",   pending: "Ainda não aluguei" },
-  SELL:  { verb: "vender o imóvel",  done: "Já vendi",     pending: "Ainda não vendi" },
-  BUILD: { verb: "iniciar a obra",   done: "Já contratei", pending: "Ainda não contratei" },
+  BUY:   { verb: "comprar um imóvel",   done: "Já não estou procurando", pending: "Ainda estou procurando" },
+  RENT:  { verb: "alugar um imóvel",    done: "Já não estou procurando", pending: "Ainda estou procurando" },
+  SELL:  { verb: "vender um imóvel",    done: "Já não preciso",          pending: "Ainda preciso" },
+  BUILD: { verb: "iniciar uma obra",    done: "Já não preciso",          pending: "Ainda preciso" },
 };
 
 function firstName(full: string | null | undefined): string {
@@ -41,8 +41,8 @@ async function sendListMessage(params: {
   const greeting = firstName(params.name);
   const text =
     `Olá ${greeting}! 👋\n\n` +
-    `Faz 7 dias que recebemos seu interesse em ${labels.verb}.\n\n` +
-    `Pra gente te ajudar melhor, você já conseguiu fechar negócio?`;
+    `Faz alguns dias que recebemos seu interesse em ${labels.verb}.\n\n` +
+    `Você ainda está procurando? Toque em uma das opções abaixo:`;
 
   const body = {
     messageData: {
@@ -204,8 +204,36 @@ Deno.serve(async (req) => {
     await new Promise((res) => setTimeout(res, SEND_DELAY_MS));
   }
 
+  // Deactivate leads that exhausted feedback attempts without response
+  let deactivated = 0;
+  if (isCronMode) {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: stale, error: staleErr } = await sb
+      .from("leads")
+      .select("id")
+      .eq("is_active", true)
+      .gte("feedback_attempts", MAX_ATTEMPTS)
+      .lte("feedback_sent_at", cutoff)
+      .or("feedback_response.is.null,feedback_response.eq.PENDING")
+      .limit(200);
+
+    if (!staleErr && stale && stale.length > 0) {
+      const ids = stale.map((l: { id: string }) => l.id);
+      const { error: updErr } = await sb
+        .from("leads")
+        .update({
+          is_active: false,
+          feedback_response: "NO_RESPONSE",
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", ids);
+      if (!updErr) deactivated = ids.length;
+      console.log(`feedback deactivated ${deactivated} leads`);
+    }
+  }
+
   return new Response(
-    JSON.stringify({ processed: results.length, results }),
+    JSON.stringify({ processed: results.length, deactivated, results }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
