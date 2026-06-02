@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 2;
 const SEND_DELAY_MS = 700;
 
 type Intention = "BUY" | "RENT" | "SELL" | "BUILD";
