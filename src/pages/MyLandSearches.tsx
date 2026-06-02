@@ -249,7 +249,7 @@ export default function MyLandSearches() {
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                       Nenhum anúncio. Clique em "Novo anúncio" para publicar.
                     </TableCell></TableRow>
                   ) : items.map((item) => (
@@ -257,7 +257,12 @@ export default function MyLandSearches() {
                       <TableCell className="font-medium">{item.company_name}</TableCell>
                       <TableCell className="text-xs">
                         {item.areas.length === 0 ? '—' : item.areas.map((a: any) =>
-                          `${a.city}/${a.state}${a.min_area_m2 ? ` (${Number(a.min_area_m2).toLocaleString('pt-BR')} m²)` : ''}`
+                          `${a.city}/${a.state}${a.zone ? ` - ${a.zone}` : ''}${a.neighborhood ? ` - ${a.neighborhood}` : ''}`
+                        ).join(' • ')}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {item.areas.length === 0 ? '—' : item.areas.map((a: any) =>
+                          a.min_area_m2 ? `${Number(a.min_area_m2).toLocaleString('pt-BR')} m²` : '—'
                         ).join(' • ')}
                       </TableCell>
                       <TableCell className="text-right space-x-1">
