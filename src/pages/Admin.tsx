@@ -67,7 +67,8 @@ type Section =
   | 'rental-partners'
   | 'financing-leads'
   | 'land-searches'
-  | 'land-search-access';
+  | 'land-search-access'
+  | 'lead-contact-tracking';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
