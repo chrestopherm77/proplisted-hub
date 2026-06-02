@@ -32,6 +32,7 @@ import { RentalPartnersManagement } from '@/components/admin/RentalPartnersManag
 import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManagement';
 import { LandSearchesManagement } from '@/components/admin/LandSearchesManagement';
 import { LandSearchAccessManagement } from '@/components/admin/LandSearchAccessManagement';
+import { LeadContactTracking } from '@/components/admin/LeadContactTracking';
 
 type Section =
   | 'dashboard'
