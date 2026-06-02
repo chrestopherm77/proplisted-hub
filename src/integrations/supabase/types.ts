@@ -2159,7 +2159,9 @@ export type Database = {
           asaas_checkout_id: string | null
           asaas_customer_id: string | null
           asaas_payment_id: string | null
+          contact_count: number
           coupon_code: string | null
+          first_contact_at: string | null
           id: string
           lead_id: string
           partner_id: string | null
@@ -2174,7 +2176,9 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
+          contact_count?: number
           coupon_code?: string | null
+          first_contact_at?: string | null
           id?: string
           lead_id: string
           partner_id?: string | null
@@ -2189,7 +2193,9 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_payment_id?: string | null
+          contact_count?: number
           coupon_code?: string | null
+          first_contact_at?: string | null
           id?: string
           lead_id?: string
           partner_id?: string | null
@@ -2955,6 +2961,7 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
+      register_lead_contact: { Args: { p_purchase_id: string }; Returns: Json }
       touch_completion_reminder: {
         Args: { p_user_id: string }
         Returns: undefined
