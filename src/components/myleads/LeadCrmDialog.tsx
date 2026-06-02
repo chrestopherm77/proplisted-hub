@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Phone, Mail, Calendar, DollarSign, MessageCircle, Loader2, Check } from 'lucide-react';
+import { Phone, Mail, Calendar, DollarSign, MessageCircle, Loader2, Check, CheckCircle2 } from 'lucide-react';
 import { formatFormDataToSections } from '@/lib/formatFormData';
 import { LeadPreferencesView } from '@/components/marketplace/LeadPreferencesView';
 import { buildWaLink } from '@/lib/whatsapp';
+import { registerLeadContact } from '@/lib/leadContact';
 import { CrmLead, CrmStage, STAGES, STAGE_LABEL } from './types';
 
 interface Props {
