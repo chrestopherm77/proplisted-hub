@@ -244,6 +244,7 @@ export default function MyLandSearches() {
                 <TableHeader><TableRow>
                   <TableHead>Construtora/Incorporadora</TableHead>
                   <TableHead>Regiões</TableHead>
+                  <TableHead>Metragem mínima</TableHead>
                   <TableHead className="w-32 text-right">Ações</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
