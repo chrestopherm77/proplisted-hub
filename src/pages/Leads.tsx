@@ -635,7 +635,6 @@ export default function Leads() {
                     )}
                   </div>
 
-                  </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">
                       Lead #{lead.id.slice(0, 5).toUpperCase()}
