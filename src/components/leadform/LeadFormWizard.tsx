@@ -9,12 +9,12 @@ import { generateDescription } from "@/lib/formatFormData";
 
 // Lead pricing by intention (in credits — 1 real = 5 credits)
 const LEAD_PRICE_MAP: Record<string, number> = {
-  BUY: 140,
-  RENT: 110,
-  SELL: 110,
-  BUILD: 120,
+  BUY: 70,
+  RENT: 70,
+  SELL: 70,
+  BUILD: 70,
 };
-const DEFAULT_LEAD_PRICE = 140;
+const DEFAULT_LEAD_PRICE = 70;
 
 const createClientUuid = () => {
   // Prefer the native UUID implementation when available
