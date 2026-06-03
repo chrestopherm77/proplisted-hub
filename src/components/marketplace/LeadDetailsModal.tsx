@@ -96,11 +96,6 @@ export function LeadDetailsModal({
                   🔥 PROMOÇÃO
                 </Badge>
               )}
-              {isLaunch && (
-                <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white border-transparent text-sm">
-                  ✨ Lançamento
-                </Badge>
-              )}
               <div>
                 <DialogTitle className="text-2xl">
                   Lead #{lead.id.slice(0, 8).toUpperCase()}
