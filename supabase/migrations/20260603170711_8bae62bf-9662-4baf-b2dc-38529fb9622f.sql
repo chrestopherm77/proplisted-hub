@@ -1,0 +1,1 @@
+UPDATE public.leads SET price = 70 WHERE price = 140;
