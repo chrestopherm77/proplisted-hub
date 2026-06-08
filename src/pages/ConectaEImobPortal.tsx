@@ -58,7 +58,7 @@ const ConectaEImobPortal = () => {
         .eq('is_active', true)
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(8);
       if (data) {
         const cats = ['MERCADO', 'FINANCIAMENTO', 'LOCALIZAÇÃO', 'DICAS'];
         setNews(data.map((n: any, i: number) => ({ ...n, category: cats[i % cats.length] })));
