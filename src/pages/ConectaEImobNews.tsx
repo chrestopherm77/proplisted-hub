@@ -156,6 +156,77 @@ const ConectaEImobNews = () => {
             )}
           </div>
         )}
+          </div>
+
+          {/* Sidebar */}
+          <aside className="lg:col-span-4 space-y-5">
+            <div className="lg:sticky lg:top-24 space-y-5">
+              {/* CTA Cadastro */}
+              <div className="rounded-xl bg-gradient-to-br from-[hsl(var(--portal-cta-red))] to-[hsl(var(--portal-cta-red-hover))] text-white p-6 shadow-lg">
+                <div className="h-10 w-10 rounded-full bg-white/15 flex items-center justify-center mb-3">
+                  <Search className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-lg font-bold leading-tight">Encontre o imóvel ideal</h3>
+                <p className="text-sm text-white/90 mt-2 leading-relaxed">
+                  Conte o que você procura e receba opções de corretores verificados na sua região.
+                </p>
+                <Link
+                  to="/lp"
+                  data-cta="news-sidebar-buscar"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-white text-[hsl(var(--portal-cta-red))] hover:bg-white/90 px-5 py-2.5 text-sm font-semibold transition"
+                >
+                  Buscar agora <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              {/* Indicadores do mercado */}
+              <div className="rounded-xl bg-white border border-border shadow-sm p-6">
+                <h3 className="font-semibold text-[hsl(var(--portal-navy))] flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-[hsl(var(--portal-gold))]" />
+                  Indicadores do Mercado
+                </h3>
+                <ul className="mt-4 divide-y divide-border">
+                  {[
+                    { name: 'Selic', value: '10,50% a.a.', delta: 'down', change: '−0,25 p.p.' },
+                    { name: 'IPCA (12m)', value: '4,12%', delta: 'up', change: '+0,18 p.p.' },
+                    { name: 'IGP-M (12m)', value: '3,85%', delta: 'down', change: '−0,42 p.p.' },
+                    { name: 'CUB/m² (médio)', value: 'R$ 2.640', delta: 'up', change: '+0,9%' },
+                  ].map((ind) => {
+                    const Icon = ind.delta === 'up' ? TrendingUp : ind.delta === 'down' ? TrendingDown : Minus;
+                    const tone = ind.delta === 'up' ? 'text-emerald-600' : ind.delta === 'down' ? 'text-rose-600' : 'text-muted-foreground';
+                    return (
+                      <li key={ind.name} className="py-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-[hsl(var(--portal-navy))]">{ind.name}</p>
+                          <p className={`text-xs ${tone} inline-flex items-center gap-1 mt-0.5`}>
+                            <Icon className="h-3 w-3" /> {ind.change}
+                          </p>
+                        </div>
+                        <p className="font-display text-base font-bold text-[hsl(var(--portal-navy))]">{ind.value}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-4 text-[11px] text-muted-foreground">Atualizado em jun/2026 · valores de referência</p>
+              </div>
+
+              {/* Banner secundário */}
+              <div className="rounded-xl bg-[hsl(var(--portal-navy))] text-white p-6">
+                <h3 className="font-display text-lg font-bold leading-tight">É corretor?</h3>
+                <p className="text-sm text-white/80 mt-2">
+                  Receba leads qualificados e amplie sua carteira de clientes.
+                </p>
+                <Link
+                  to="/cadastro"
+                  data-cta="news-sidebar-corretor"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--portal-gold))] hover:opacity-90 text-[hsl(var(--portal-navy))] px-5 py-2.5 text-sm font-semibold transition"
+                >
+                  Cadastrar grátis <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
