@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '@/components/BrandLogo';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,10 @@ import {
   Search, CheckSquare, MessageSquare, Calculator, Shield, Target,
   Home, Key, ArrowRight, MapPin,
 } from 'lucide-react';
+import Autoplay from 'embla-carousel-autoplay';
+import {
+  Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi,
+} from '@/components/ui/carousel';
 import heroStudio from '@/assets/hero-studio.webp';
 import heroMansao from '@/assets/hero-mansao.avif';
 import heroCasaPiscina from '@/assets/hero-casa-piscina.jpg';
