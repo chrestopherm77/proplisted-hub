@@ -2876,6 +2876,14 @@ export type Database = {
         Args: { p_city: string; p_uf: string }
         Returns: string
       }
+      get_lead_buyers: {
+        Args: { p_lead_id: string }
+        Returns: {
+          buyer_name: string
+          purchased_at: string
+          user_id: string
+        }[]
+      }
       get_profile_phone: { Args: { p_user_id: string }; Returns: string }
       get_public_property: { Args: { p_slug: string }; Returns: Json }
       grant_referral_bonus_if_eligible: {

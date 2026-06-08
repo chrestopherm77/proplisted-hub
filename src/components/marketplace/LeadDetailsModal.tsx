@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Loader2, X } from "lucide-react";
+import { Coins, Loader2, X, Users } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
 import { LeadPreferencesView } from "./LeadPreferencesView";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
   id: string;
@@ -85,6 +86,27 @@ export function LeadDetailsModal({
   const buyCondition = String(normalizedFormData?.buy?.propertyCondition || '').toUpperCase();
   const isLaunch = buyCondition === 'NEW' || buyCondition === 'BOTH';
 
+  const [buyers, setBuyers] = useState<Array<{ buyer_name: string; purchased_at: string }>>([]);
+  const [buyersLoading, setBuyersLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !lead?.id) return;
+    let cancelled = false;
+    setBuyersLoading(true);
+    supabase
+      .rpc('get_lead_buyers', { p_lead_id: lead.id })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && Array.isArray(data)) {
+          setBuyers(data as any);
+        } else {
+          setBuyers([]);
+        }
+        setBuyersLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, lead?.id]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
@@ -118,6 +140,37 @@ export function LeadDetailsModal({
         <div className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="px-6">
+              <div className="py-3">
+                <div className="rounded-lg border bg-muted/40 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">
+                      Quem já comprou este lead {buyers.length > 0 && `(${buyers.length})`}
+                    </span>
+                  </div>
+                  {buyersLoading ? (
+                    <p className="text-sm text-muted-foreground">Carregando...</p>
+                  ) : buyers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Ninguém comprou este lead ainda. Seja o primeiro!
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {buyers.map((b, i) => (
+                        <li key={i} className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{b.buyer_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(b.purchased_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Verifique se sua imobiliária já comprou este lead para evitar duplicidade.
+                  </p>
+                </div>
+              </div>
               {hasFormData ? (
                 <div className="py-3">
                   <LeadPreferencesView
