@@ -86,6 +86,27 @@ export function LeadDetailsModal({
   const buyCondition = String(normalizedFormData?.buy?.propertyCondition || '').toUpperCase();
   const isLaunch = buyCondition === 'NEW' || buyCondition === 'BOTH';
 
+  const [buyers, setBuyers] = useState<Array<{ buyer_name: string; purchased_at: string }>>([]);
+  const [buyersLoading, setBuyersLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !lead?.id) return;
+    let cancelled = false;
+    setBuyersLoading(true);
+    supabase
+      .rpc('get_lead_buyers', { p_lead_id: lead.id })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && Array.isArray(data)) {
+          setBuyers(data as any);
+        } else {
+          setBuyers([]);
+        }
+        setBuyersLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, lead?.id]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl h-[90vh] flex flex-col overflow-hidden p-0">
