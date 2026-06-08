@@ -140,6 +140,37 @@ export function LeadDetailsModal({
         <div className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="px-6">
+              <div className="py-3">
+                <div className="rounded-lg border bg-muted/40 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">
+                      Quem já comprou este lead {buyers.length > 0 && `(${buyers.length})`}
+                    </span>
+                  </div>
+                  {buyersLoading ? (
+                    <p className="text-sm text-muted-foreground">Carregando...</p>
+                  ) : buyers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Ninguém comprou este lead ainda. Seja o primeiro!
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {buyers.map((b, i) => (
+                        <li key={i} className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{b.buyer_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(b.purchased_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Verifique se sua imobiliária já comprou este lead para evitar duplicidade.
+                  </p>
+                </div>
+              </div>
               {hasFormData ? (
                 <div className="py-3">
                   <LeadPreferencesView
