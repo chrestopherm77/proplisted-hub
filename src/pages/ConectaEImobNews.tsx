@@ -87,11 +87,14 @@ const ConectaEImobNews = () => {
         </div>
       </header>
 
-      <div className="container mx-auto max-w-2xl py-10 px-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Newspaper className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-bold text-[hsl(var(--portal-navy))]">Notícias do Mercado</h1>
-        </div>
+      <div className="container mx-auto py-10 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto">
+          {/* Coluna principal */}
+          <div className="lg:col-span-8">
+            <div className="flex items-center gap-2 mb-6">
+              <Newspaper className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-bold text-[hsl(var(--portal-navy))]">Notícias do Mercado</h1>
+            </div>
 
         {loading && posts.length === 0 ? (
           <div className="flex justify-center py-20">
