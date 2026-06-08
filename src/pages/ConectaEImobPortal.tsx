@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '@/components/BrandLogo';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,10 @@ import {
   Search, CheckSquare, MessageSquare, Calculator, Shield, Target,
   Home, Key, ArrowRight, MapPin,
 } from 'lucide-react';
+import Autoplay from 'embla-carousel-autoplay';
+import {
+  Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi,
+} from '@/components/ui/carousel';
 import heroStudio from '@/assets/hero-studio.webp';
 import heroMansao from '@/assets/hero-mansao.avif';
 import heroCasaPiscina from '@/assets/hero-casa-piscina.jpg';
@@ -58,7 +62,7 @@ const ConectaEImobPortal = () => {
         .eq('is_active', true)
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(8);
       if (data) {
         const cats = ['MERCADO', 'FINANCIAMENTO', 'LOCALIZAÇÃO', 'DICAS'];
         setNews(data.map((n: any, i: number) => ({ ...n, category: cats[i % cats.length] })));
@@ -104,11 +108,11 @@ const PortalHeader = () => (
           <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
         </nav>
         <Link
-          to="/lp-01"
-          data-cta="anunciar-gratis"
+          to="/lp"
+          data-cta="header-buscar-imovel"
           className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-5 py-2.5 text-sm font-semibold transition"
         >
-          Anunciar Grátis
+          Buscar imóvel
         </Link>
       </div>
     </div>
@@ -361,30 +365,82 @@ const BlogSection = ({ news }: { news: NewsItem[] }) => {
         </div>
 
 
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {items.map((n, i) => (
-            <article key={n.id} className="rounded-xl overflow-hidden border border-border bg-white shadow-sm hover:shadow-md transition">
-              <div className={`h-48 bg-gradient-to-br ${tones[i % tones.length]} flex items-center justify-center`}>
-                {n.image_url ? (
-                  <img src={n.image_url} alt={n.title || 'Notícia'} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <Home className="h-12 w-12 text-white/30" />
-                )}
-              </div>
-              <div className="p-5">
-                <p className="text-[10px] font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">{n.category}</p>
-                <h3 className="mt-2 font-semibold text-sm text-[hsl(var(--portal-navy))] leading-snug line-clamp-3">
-                  {n.title}
-                </h3>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {n.created_at ? format(new Date(n.created_at), "d 'de' MMM yyyy", { locale: ptBR }) : ''}
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
+        <BlogCarousel items={items} tones={tones} />
       </div>
     </section>
+  );
+};
+
+const BlogCarousel = ({ items, tones }: { items: NewsItem[]; tones: string[] }) => {
+  const autoplay = useRef(Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true }));
+  const [api, setApi] = useState<CarouselApi>();
+  const [selected, setSelected] = useState(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    setCount(api.scrollSnapList().length);
+    setSelected(api.selectedScrollSnap());
+    const onSel = () => setSelected(api.selectedScrollSnap());
+    api.on('select', onSel);
+    api.on('reInit', () => setCount(api.scrollSnapList().length));
+    return () => { api.off('select', onSel); };
+  }, [api]);
+
+  return (
+    <div className="mt-12">
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true, align: 'start' }}
+        plugins={[autoplay.current]}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          {items.map((n, i) => (
+            <CarouselItem key={n.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+              <Link
+                to="/conectaeimob/noticias"
+                data-cta="blog-card"
+                className="block rounded-xl overflow-hidden border border-border bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition h-full"
+              >
+                <div className={`h-48 bg-gradient-to-br ${tones[i % tones.length]} flex items-center justify-center`}>
+                  {n.image_url ? (
+                    <img src={n.image_url} alt={n.title || 'Notícia'} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <Home className="h-12 w-12 text-white/30" />
+                  )}
+                </div>
+                <div className="p-5">
+                  <p className="text-[10px] font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">{n.category}</p>
+                  <h3 className="mt-2 font-semibold text-sm text-[hsl(var(--portal-navy))] leading-snug line-clamp-3">
+                    {n.title}
+                  </h3>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {n.created_at ? format(new Date(n.created_at), "d 'de' MMM yyyy", { locale: ptBR }) : ''}
+                  </p>
+                </div>
+              </Link>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="hidden md:flex -left-4" />
+        <CarouselNext className="hidden md:flex -right-4" />
+      </Carousel>
+      {count > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {Array.from({ length: count }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => api?.scrollTo(i)}
+              aria-label={`Ir para slide ${i + 1}`}
+              className={`h-2 rounded-full transition-all ${
+                i === selected ? 'w-6 bg-[hsl(var(--portal-cta-red))]' : 'w-2 bg-[hsl(var(--portal-navy))]/20'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
