@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, Newspaper } from 'lucide-react';
+import { ArrowLeft, Newspaper, Search, TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
 
 interface NewsPost {
   id: string;
