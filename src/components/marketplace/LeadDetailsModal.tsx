@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Loader2, X } from "lucide-react";
+import { Coins, Loader2, X, Users } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
 import { LeadPreferencesView } from "./LeadPreferencesView";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
   id: string;
