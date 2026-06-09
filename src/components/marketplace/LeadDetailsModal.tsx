@@ -157,11 +157,8 @@ export function LeadDetailsModal({
                   ) : (
                     <ul className="space-y-1">
                       {buyers.map((b, i) => (
-                        <li key={i} className="flex items-center justify-between text-sm">
+                        <li key={i} className="text-sm">
                           <span className="font-medium">{b.buyer_name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(b.purchased_at).toLocaleDateString('pt-BR')}
-                          </span>
                         </li>
                       ))}
                     </ul>
