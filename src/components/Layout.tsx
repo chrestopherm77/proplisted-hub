@@ -13,6 +13,7 @@ import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { CompleteProfileReminder } from '@/components/profile/CompleteProfileReminder';
 import { AlertBanner } from '@/components/AlertBanner';
 import { ValidationPromptModal } from '@/components/validation/ValidationPromptModal';
+import { StalePropertiesReminder } from '@/components/properties/StalePropertiesReminder';
 
 interface LayoutProps {
   children: ReactNode;
@@ -93,6 +94,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <SupportChatWidget />
       <CompleteProfileReminder />
       <ValidationPromptModal />
+      <StalePropertiesReminder />
     </SidebarProvider>
   );
 };
