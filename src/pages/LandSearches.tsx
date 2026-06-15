@@ -231,9 +231,24 @@ export default function LandSearches() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Construtora / Incorporadora</TableHead>
+                      <TableHead>
+                        <button
+                          type="button"
+                          onClick={toggleSortName}
+                          className="inline-flex items-center gap-1 font-medium hover:text-primary transition-colors"
+                          title="Ordenar A-Z"
+                        >
+                          Construtora / Incorporadora
+                          <ArrowUpDown className="h-3 w-3" />
+                          {sortByName !== 'none' && (
+                            <span className="text-[10px] font-semibold text-primary ml-1">
+                              {sortByName === 'asc' ? 'A-Z' : 'Z-A'}
+                            </span>
+                          )}
+                        </button>
+                      </TableHead>
                       <TableHead>Regiões de interesse</TableHead>
-                      <TableHead className="w-32">Área mínima</TableHead>
+                      <TableHead className="w-36">Área mínima</TableHead>
                       <TableHead className="w-64">Contato</TableHead>
                     </TableRow>
                   </TableHeader>
