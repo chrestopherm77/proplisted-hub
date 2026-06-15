@@ -379,7 +379,20 @@ export function LeadsManagement() {
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                 <div className="flex-1">
-                  <CardTitle className="text-base md:text-lg">{lead.name}</CardTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-base md:text-lg">{lead.name}</CardTitle>
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-mono cursor-pointer hover:bg-muted"
+                      title="Clique para copiar o ID completo"
+                      onClick={() => {
+                        navigator.clipboard.writeText(lead.id);
+                        toast({ title: 'ID copiado', description: lead.id });
+                      }}
+                    >
+                      Lead #{lead.id.slice(0, 5).toUpperCase()}
+                    </Badge>
+                  </div>
                   <CardDescription className="text-sm">
                     {lead.phone}
                     {lead.created_at && (
