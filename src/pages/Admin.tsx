@@ -33,6 +33,7 @@ import { FinancingLeadsManagement } from '@/components/admin/FinancingLeadsManag
 import { LandSearchesManagement } from '@/components/admin/LandSearchesManagement';
 import { LandSearchAccessManagement } from '@/components/admin/LandSearchAccessManagement';
 import { LeadContactTracking } from '@/components/admin/LeadContactTracking';
+import { LeadFeedbackTracking } from '@/components/admin/LeadFeedbackTracking';
 
 type Section =
   | 'dashboard'
@@ -68,7 +69,8 @@ type Section =
   | 'financing-leads'
   | 'land-searches'
   | 'land-search-access'
-  | 'lead-contact-tracking';
+  | 'lead-contact-tracking'
+  | 'lead-feedback';
 
 const COMPONENTS: Record<Section, React.ComponentType> = {
   dashboard: DashboardStats,
@@ -105,6 +107,7 @@ const COMPONENTS: Record<Section, React.ComponentType> = {
   'land-searches': LandSearchesManagement,
   'land-search-access': LandSearchAccessManagement,
   'lead-contact-tracking': LeadContactTracking,
+  'lead-feedback': LeadFeedbackTracking,
 };
 
 export default function AdminPage({ section = 'dashboard' }: { section?: Section }) {

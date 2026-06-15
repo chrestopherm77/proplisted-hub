@@ -1,43 +1,42 @@
-## Mudanças no `/corretor` (`src/pages/ConectaEImobPortal.tsx`)
+## Painel de Feedback de Leads no Admin
 
-### 1. Header — renomear CTA
-- Trocar texto do botão `Anunciar Grátis` por `Buscar imóvel`.
-- Manter destino atual em `/lp` (atualizar de `/lp-01` → `/lp` conforme escolhido).
-- Os botões "Buscar Imóveis" (hero) e "Buscar agora" (banner vermelho) continuam indo para `/portal-imoveis` — sem alteração.
+Adicionar uma nova aba no painel Admin que mostra o status da automação de feedback por WhatsApp enviada para os leads (função `send-lead-feedback`).
 
-### 2. Seção Blog — virar carrossel clicável
-Substituir o `grid` atual de 4 cards estáticos por um carrossel usando o componente `@/components/ui/carousel` (embla) já existente:
-- Auto-play a cada ~5s (plugin `embla-carousel-autoplay`, instalar via `bun add embla-carousel-autoplay`).
-- Setas de navegação (`CarouselPrevious` / `CarouselNext`) e dots customizados abaixo.
-- Cada card vira `<Link to="/conectaeimob/noticias">` (a página de notícias hoje não tem rota de detalhe individual; manter o clique levando para a listagem completa, com âncora no topo).
-- Buscar mais notícias no `useEffect` (limit 8 em vez de 4) para o carrossel ter conteúdo.
-- Em desktop mostrar 3 cards por slide, tablet 2, mobile 1 (via `basis-full sm:basis-1/2 lg:basis-1/3`).
-- Pausa o auto-play no hover (opção `stopOnInteraction: true`).
+### Onde aparece
+- Nova aba **"Feedback de Leads"** dentro do `AdminLayout` (junto das outras abas de gestão).
 
-### 3. Página de Notícias (`src/pages/ConectaEImobNews.tsx`) — sidebar lateral
-Hoje a página é uma coluna única `max-w-2xl`. Reorganizar em layout 2 colunas em telas md+:
-- Coluna principal (≈8/12): lista de notícias atual, sem alterar a lógica.
-- Coluna lateral (≈4/12, sticky `top-20`): adicionar 2 cards.
+### O que mostra (por lead)
+Tabela com:
+- Nome e telefone do lead
+- Intenção (Comprar/Alugar/Vender/Construir) e cidade
+- **Status do envio**: `Não enviado` / `Enviado` (com data) / `Reenviado` (tentativas > 1)
+- **Tentativas** (0, 1 ou 2)
+- **Resposta**:
+  - `Pendente de resposta` (enviado e ainda sem reply)
+  - `Ainda procurando` (PENDING — clicou no botão "Ainda estou procurando")
+  - `Já não precisa` (DONE — clicou em "Já não estou procurando")
+- Data da resposta
+- Data de criação do lead
 
-**Card 1 — CTA Cadastro/LP**
-- Fundo gradient `--portal-cta-red` → `--portal-cta-red-hover`, texto branco.
-- Título: "Encontre o imóvel ideal".
-- Subtítulo curto.
-- Botão "Buscar agora" → `/lp`.
+### Cards de resumo no topo
+- Total de leads elegíveis
+- Enviados
+- Respondidos (DONE + PENDING)
+- Sem resposta após 2 tentativas
 
-**Card 2 — Indicadores do Mercado**
-- Card branco com borda + título "Indicadores do Mercado".
-- Lista estática (hardcoded por enquanto) de 4 indicadores:
-  - Selic, IPCA (12m), IGP-M (12m), CUB/m² médio.
-- Cada linha: nome do indicador + valor em destaque + variação (seta verde/vermelha).
-- Rodapé pequeno: "Atualizado em jun/2026" (texto estático, fácil de editar manualmente).
+### Filtros
+- Status de resposta (Todos / Sem envio / Enviado sem resposta / Respondeu "Ainda procurando" / Respondeu "Já não precisa")
+- Período de criação do lead
+- Busca por nome ou telefone
 
-Mobile: a sidebar aparece abaixo da lista (stack natural com `grid` responsivo).
+### Detalhes técnicos
+- **Novo componente**: `src/components/admin/LeadFeedbackTracking.tsx`
+- **Registro no Admin**: adicionar a aba em `src/components/admin/AdminLayout.tsx` (e renderizar em `src/pages/Admin.tsx` se necessário, seguindo o padrão das outras abas)
+- **Fonte de dados**: SELECT direto na tabela `leads` (colunas já existentes: `feedback_sent_at`, `feedback_attempts`, `feedback_response`, `feedback_responded_at`, mais `name`, `phone`, `form_data`, `is_active`, `is_exhausted`, `created_at`). Sem novas tabelas, sem migration, sem mudança em edge functions.
+- Acesso restrito via `has_role('MASTER_ADMIN')` (padrão já usado nas outras abas Admin).
+- 100% PT-BR.
 
-## Resumo de arquivos
-
-- **edit** `src/pages/ConectaEImobPortal.tsx` — renomear CTA, mudar destino para `/lp`, refatorar `BlogSection` para carrossel autoplay com cards clicáveis, aumentar `limit` da query de notícias para 8.
-- **edit** `src/pages/ConectaEImobNews.tsx` — wrapper grid 2 colunas + componentes `CtaCard` e `MarketIndicatorsCard` inline.
-- **dep** adicionar `embla-carousel-autoplay`.
-
-Sem mudanças de banco, edge functions ou lógica de negócio.
+### Fora do escopo (conforme sua resposta)
+- Feedback do corretor — fica para depois.
+- Botão de reenvio manual.
+- Marcar "removido do sistema" como coluna dedicada (o status `is_active=false` continua sendo gerenciado pelo fluxo atual).
