@@ -261,7 +261,7 @@ export default function LandSearches() {
                         </TableCell>
                         <TableCell className="align-top">{renderAreas(item.areas)}</TableCell>
                         <TableCell className="align-top">
-                          <Badge variant="secondary">{formatArea(item.min_area_m2)}</Badge>
+                          <Badge variant="secondary">{formatArea(computeMinArea(item))}</Badge>
                         </TableCell>
                         <TableCell className="align-top"><ContactCell item={item} /></TableCell>
                       </TableRow>
@@ -277,7 +277,7 @@ export default function LandSearches() {
                 <div key={item.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-semibold">{item.company_name}</div>
-                    <Badge variant="secondary" className="shrink-0">{formatArea(item.min_area_m2)}</Badge>
+                    <Badge variant="secondary" className="shrink-0">{formatArea(computeMinArea(item))}</Badge>
                   </div>
                   {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
                   {renderAreas(item.areas)}
