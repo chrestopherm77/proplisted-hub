@@ -14,10 +14,16 @@ import {
 import { useLandSearches } from '@/hooks/useLandSearches';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings } from 'lucide-react';
+import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings, ArrowUpDown } from 'lucide-react';
 
-const formatArea = (n: number | null) =>
+const formatArea = (n: number | null | undefined) =>
   n == null ? '—' : `${Number(n).toLocaleString('pt-BR')} m²`;
+
+const computeMinArea = (item: { min_area_m2: number | null; areas: { min_area_m2?: number | null }[] }) => {
+  if (item.min_area_m2 != null) return item.min_area_m2;
+  const vals = (item.areas || []).map((a) => a.min_area_m2).filter((v): v is number => v != null && v > 0);
+  return vals.length ? Math.min(...vals) : null;
+};
 
 export default function LandSearches() {
   const { items, loading, isPaid, isLoggedIn } = useLandSearches();
@@ -27,6 +33,7 @@ export default function LandSearches() {
   const [filterCity, setFilterCity] = useState<string>('all');
   const [filterCompany, setFilterCompany] = useState('');
   const [filterMinArea, setFilterMinArea] = useState<string>('');
+  const [sortByName, setSortByName] = useState<'none' | 'asc' | 'desc'>('none');
 
   useEffect(() => {
     if (!user) { setCanPublish(false); return; }
