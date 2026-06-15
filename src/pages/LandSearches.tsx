@@ -14,10 +14,16 @@ import {
 import { useLandSearches } from '@/hooks/useLandSearches';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings } from 'lucide-react';
+import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings, ArrowUpDown } from 'lucide-react';
 
-const formatArea = (n: number | null) =>
+const formatArea = (n: number | null | undefined) =>
   n == null ? '—' : `${Number(n).toLocaleString('pt-BR')} m²`;
+
+const computeMinArea = (item: { min_area_m2: number | null; areas: { min_area_m2?: number | null }[] }) => {
+  if (item.min_area_m2 != null) return item.min_area_m2;
+  const vals = (item.areas || []).map((a) => a.min_area_m2).filter((v): v is number => v != null && v > 0);
+  return vals.length ? Math.min(...vals) : null;
+};
 
 export default function LandSearches() {
   const { items, loading, isPaid, isLoggedIn } = useLandSearches();
@@ -27,6 +33,7 @@ export default function LandSearches() {
   const [filterCity, setFilterCity] = useState<string>('all');
   const [filterCompany, setFilterCompany] = useState('');
   const [filterMinArea, setFilterMinArea] = useState<string>('');
+  const [sortByName, setSortByName] = useState<'none' | 'asc' | 'desc'>('none');
 
   useEffect(() => {
     if (!user) { setCanPublish(false); return; }
@@ -53,14 +60,27 @@ export default function LandSearches() {
 
   const filtered = useMemo(() => {
     const minArea = filterMinArea ? Number(filterMinArea.replace(/\D/g, '')) : null;
-    return items.filter((i) => {
+    const list = items.filter((i) => {
       if (filterCompany && !i.company_name.toLowerCase().includes(filterCompany.toLowerCase())) return false;
-      if (minArea != null && (i.min_area_m2 ?? 0) > minArea) return false;
+      if (minArea != null) {
+        const m = computeMinArea(i);
+        if (m == null || m > minArea) return false;
+      }
       if (filterState !== 'all' && !i.areas.some((a) => a.state === filterState)) return false;
       if (filterCity !== 'all' && !i.areas.some((a) => a.city === filterCity)) return false;
       return true;
     });
-  }, [items, filterCompany, filterMinArea, filterState, filterCity]);
+    if (sortByName !== 'none') {
+      list.sort((a, b) => {
+        const cmp = a.company_name.localeCompare(b.company_name, 'pt-BR', { sensitivity: 'base' });
+        return sortByName === 'asc' ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [items, filterCompany, filterMinArea, filterState, filterCity, sortByName]);
+
+  const toggleSortName = () =>
+    setSortByName((s) => (s === 'asc' ? 'desc' : s === 'desc' ? 'none' : 'asc'));
 
   const renderAreas = (areas: typeof items[number]['areas']) => {
     if (areas.length === 0) return <span className="text-muted-foreground text-xs">—</span>;
@@ -73,12 +93,18 @@ export default function LandSearches() {
               <span className="font-medium">{a.city}/{a.state}</span>
               {a.zone && <span className="text-muted-foreground"> · Zona {a.zone}</span>}
               {a.neighborhood && <span className="text-muted-foreground"> · {a.neighborhood}</span>}
+              {a.min_area_m2 != null && a.min_area_m2 > 0 && (
+                <span className="ml-1 inline-block rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold">
+                  {formatArea(a.min_area_m2)}
+                </span>
+              )}
             </span>
           </div>
         ))}
       </div>
     );
   };
+
 
   const ContactCell = ({ item }: { item: typeof items[number] }) => {
     if (!isPaid) {
@@ -205,9 +231,24 @@ export default function LandSearches() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Construtora / Incorporadora</TableHead>
+                      <TableHead>
+                        <button
+                          type="button"
+                          onClick={toggleSortName}
+                          className="inline-flex items-center gap-1 font-medium hover:text-primary transition-colors"
+                          title="Ordenar A-Z"
+                        >
+                          Construtora / Incorporadora
+                          <ArrowUpDown className="h-3 w-3" />
+                          {sortByName !== 'none' && (
+                            <span className="text-[10px] font-semibold text-primary ml-1">
+                              {sortByName === 'asc' ? 'A-Z' : 'Z-A'}
+                            </span>
+                          )}
+                        </button>
+                      </TableHead>
                       <TableHead>Regiões de interesse</TableHead>
-                      <TableHead className="w-32">Área mínima</TableHead>
+                      <TableHead className="w-36">Área mínima</TableHead>
                       <TableHead className="w-64">Contato</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -220,7 +261,7 @@ export default function LandSearches() {
                         </TableCell>
                         <TableCell className="align-top">{renderAreas(item.areas)}</TableCell>
                         <TableCell className="align-top">
-                          <Badge variant="secondary">{formatArea(item.min_area_m2)}</Badge>
+                          <Badge variant="secondary">{formatArea(computeMinArea(item))}</Badge>
                         </TableCell>
                         <TableCell className="align-top"><ContactCell item={item} /></TableCell>
                       </TableRow>
@@ -236,7 +277,7 @@ export default function LandSearches() {
                 <div key={item.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-semibold">{item.company_name}</div>
-                    <Badge variant="secondary" className="shrink-0">{formatArea(item.min_area_m2)}</Badge>
+                    <Badge variant="secondary" className="shrink-0">{formatArea(computeMinArea(item))}</Badge>
                   </div>
                   {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
                   {renderAreas(item.areas)}

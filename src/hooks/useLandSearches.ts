@@ -10,6 +10,7 @@ export interface LandSearchArea {
   city: string;
   zone: string | null;
   neighborhood: string | null;
+  min_area_m2: number | null;
 }
 
 export interface LandSearch {
@@ -57,7 +58,7 @@ export function useLandSearches() {
       if (ids.length > 0) {
         const { data } = await supabase
           .from('land_search_areas' as any)
-          .select('id, land_search_id, state, city, zone, neighborhood')
+          .select('id, land_search_id, state, city, zone, neighborhood, min_area_m2')
           .in('land_search_id', ids);
         areas = (data as any) || [];
       }
