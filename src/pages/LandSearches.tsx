@@ -60,14 +60,27 @@ export default function LandSearches() {
 
   const filtered = useMemo(() => {
     const minArea = filterMinArea ? Number(filterMinArea.replace(/\D/g, '')) : null;
-    return items.filter((i) => {
+    const list = items.filter((i) => {
       if (filterCompany && !i.company_name.toLowerCase().includes(filterCompany.toLowerCase())) return false;
-      if (minArea != null && (i.min_area_m2 ?? 0) > minArea) return false;
+      if (minArea != null) {
+        const m = computeMinArea(i);
+        if (m == null || m > minArea) return false;
+      }
       if (filterState !== 'all' && !i.areas.some((a) => a.state === filterState)) return false;
       if (filterCity !== 'all' && !i.areas.some((a) => a.city === filterCity)) return false;
       return true;
     });
-  }, [items, filterCompany, filterMinArea, filterState, filterCity]);
+    if (sortByName !== 'none') {
+      list.sort((a, b) => {
+        const cmp = a.company_name.localeCompare(b.company_name, 'pt-BR', { sensitivity: 'base' });
+        return sortByName === 'asc' ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [items, filterCompany, filterMinArea, filterState, filterCity, sortByName]);
+
+  const toggleSortName = () =>
+    setSortByName((s) => (s === 'asc' ? 'desc' : s === 'desc' ? 'none' : 'asc'));
 
   const renderAreas = (areas: typeof items[number]['areas']) => {
     if (areas.length === 0) return <span className="text-muted-foreground text-xs">—</span>;
@@ -80,12 +93,18 @@ export default function LandSearches() {
               <span className="font-medium">{a.city}/{a.state}</span>
               {a.zone && <span className="text-muted-foreground"> · Zona {a.zone}</span>}
               {a.neighborhood && <span className="text-muted-foreground"> · {a.neighborhood}</span>}
+              {a.min_area_m2 != null && a.min_area_m2 > 0 && (
+                <span className="ml-1 inline-block rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold">
+                  {formatArea(a.min_area_m2)}
+                </span>
+              )}
             </span>
           </div>
         ))}
       </div>
     );
   };
+
 
   const ContactCell = ({ item }: { item: typeof items[number] }) => {
     if (!isPaid) {
