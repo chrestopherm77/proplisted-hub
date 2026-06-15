@@ -350,7 +350,23 @@ export default function MyLandSearches() {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Zona</Label>
-                        <Input value={area.zone} placeholder="Sul" onChange={(e) => updateArea(idx, { zone: e.target.value })} />
+                        <Select value={area.zone || 'none'} onValueChange={(v) => updateArea(idx, { zone: v === 'none' ? '' : v })}>
+                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Não especificar</SelectItem>
+                            <SelectItem value="Sul">Zona Sul</SelectItem>
+                            <SelectItem value="Norte">Zona Norte</SelectItem>
+                            <SelectItem value="Leste">Zona Leste</SelectItem>
+                            <SelectItem value="Oeste">Zona Oeste</SelectItem>
+                            <SelectItem value="Centro">Centro</SelectItem>
+                            <SelectItem value="Centro-Sul">Centro-Sul</SelectItem>
+                            <SelectItem value="Centro-Norte">Centro-Norte</SelectItem>
+                            <SelectItem value="Nordeste">Nordeste</SelectItem>
+                            <SelectItem value="Noroeste">Noroeste</SelectItem>
+                            <SelectItem value="Sudeste">Sudeste</SelectItem>
+                            <SelectItem value="Sudoeste">Sudoeste</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Bairro (opcional)</Label>
