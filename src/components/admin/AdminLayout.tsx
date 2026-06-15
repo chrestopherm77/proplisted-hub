@@ -43,7 +43,9 @@ import {
   Mail,
   HelpCircle,
   Megaphone,
+  MessageCircle,
 } from 'lucide-react';
+
 
 interface AdminNavItem {
   title: string;
@@ -63,6 +65,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { title: 'Compras (Créditos)', url: '/admin/purchases', icon: CreditCard, group: 'Financeiro' },
   { title: 'Compra de Leads', url: '/admin/lead-purchases', icon: ShoppingCart, group: 'Financeiro' },
   { title: 'Rastreio de Contato', url: '/admin/lead-contact-tracking', icon: Activity, group: 'Financeiro' },
+  { title: 'Feedback de Leads', url: '/admin/lead-feedback', icon: MessageCircle, group: 'Visão Geral' },
   { title: 'Assinaturas', url: '/admin/subscriptions', icon: Repeat, group: 'Financeiro' },
   { title: 'Pendentes', url: '/admin/pending', icon: Clock, group: 'Financeiro' },
   { title: 'Vouchers', url: '/admin/vouchers', icon: Ticket, group: 'Financeiro' },
