@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { StepProps } from "../types";
 import { StepContainer } from "../StepContainer";
 import { OptionCard } from "../OptionCard";
-import { Tag, ShoppingCart, HardHat, Key } from "lucide-react";
+import { Tag, ShoppingCart, HardHat, Key, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ICONS: Record<string, JSX.Element> = {
@@ -50,6 +50,14 @@ export function IntentionStep({ data, updateData }: StepProps) {
             onClick={() => updateData({ intention: option.intention as any })}
           />
         ))}
+        <OptionCard
+          label="Sou corretor"
+          icon={<Briefcase className="h-8 w-8" />}
+          isSelected={false}
+          onClick={() => {
+            window.location.href = "https://conectaeimob.com.br";
+          }}
+        />
       </div>
     </StepContainer>
   );
