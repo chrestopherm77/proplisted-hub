@@ -50,6 +50,14 @@ export function IntentionStep({ data, updateData }: StepProps) {
             onClick={() => updateData({ intention: option.intention as any })}
           />
         ))}
+        <OptionCard
+          label="Sou corretor"
+          icon={<Briefcase className="h-8 w-8" />}
+          isSelected={false}
+          onClick={() => {
+            window.location.href = "https://conectaeimob.com.br";
+          }}
+        />
       </div>
     </StepContainer>
   );
