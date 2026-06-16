@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { StepProps } from "../types";
 import { StepContainer } from "../StepContainer";
 import { OptionCard } from "../OptionCard";
-import { Tag, ShoppingCart, HardHat, Key } from "lucide-react";
+import { Tag, ShoppingCart, HardHat, Key, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ICONS: Record<string, JSX.Element> = {
