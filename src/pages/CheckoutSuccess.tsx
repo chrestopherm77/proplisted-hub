@@ -27,7 +27,8 @@ export default function CheckoutSuccess() {
   const [pollFailed, setPollFailed] = useState(false);
   const [checkingManually, setCheckingManually] = useState(false);
   const pollRef = useRef(false);
-  const checkoutStartedAtRef = useRef(new Date().toISOString());
+  // Look back 2h to catch the purchase row created when checkout started (before redirect to Asaas)
+  const checkoutStartedAtRef = useRef(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
 
   const confirmCreditPurchase = (balance: number) => {
     setNewBalance(balance);
