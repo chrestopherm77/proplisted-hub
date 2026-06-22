@@ -8,6 +8,8 @@ import { AlertTriangle } from 'lucide-react';
 
 const SNOOZE_KEY = 'stale_properties_reminder_snooze';
 const SNOOZE_HOURS = 24;
+const LONG_SNOOZE_KEY = 'stale_properties_reminder_long_snooze';
+const LONG_SNOOZE_DAYS = 30;
 
 export const StalePropertiesReminder = () => {
   const { user } = useAuth();
@@ -16,6 +18,12 @@ export const StalePropertiesReminder = () => {
 
   useEffect(() => {
     if (!user) return;
+
+    const longSnoozedAt = localStorage.getItem(`${LONG_SNOOZE_KEY}_${user.id}`);
+    if (longSnoozedAt) {
+      const elapsedMs = Date.now() - parseInt(longSnoozedAt, 10);
+      if (elapsedMs < LONG_SNOOZE_DAYS * 24 * 60 * 60 * 1000) return;
+    }
 
     const snoozedAt = localStorage.getItem(`${SNOOZE_KEY}_${user.id}`);
     if (snoozedAt) {
@@ -46,6 +54,13 @@ export const StalePropertiesReminder = () => {
     setOpen(false);
   };
 
+  const handleLongSnooze = () => {
+    if (user) {
+      localStorage.setItem(`${LONG_SNOOZE_KEY}_${user.id}`, String(Date.now()));
+    }
+    setOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose(true)}>
       <DialogContent translate="no">
@@ -63,7 +78,10 @@ export const StalePropertiesReminder = () => {
             Manter o portal atualizado garante mais credibilidade e melhores resultados.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-2">
+          <Button variant="ghost" size="sm" onClick={handleLongSnooze} className="text-muted-foreground">
+            Não mostrar por 30 dias
+          </Button>
           <Button variant="outline" onClick={() => handleClose(true)}>
             Lembrar depois
           </Button>
