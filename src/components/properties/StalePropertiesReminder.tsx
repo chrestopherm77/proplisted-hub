@@ -19,6 +19,12 @@ export const StalePropertiesReminder = () => {
   useEffect(() => {
     if (!user) return;
 
+    const longSnoozedAt = localStorage.getItem(`${LONG_SNOOZE_KEY}_${user.id}`);
+    if (longSnoozedAt) {
+      const elapsedMs = Date.now() - parseInt(longSnoozedAt, 10);
+      if (elapsedMs < LONG_SNOOZE_DAYS * 24 * 60 * 60 * 1000) return;
+    }
+
     const snoozedAt = localStorage.getItem(`${SNOOZE_KEY}_${user.id}`);
     if (snoozedAt) {
       const elapsedMs = Date.now() - parseInt(snoozedAt, 10);
