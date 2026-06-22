@@ -8,6 +8,8 @@ import { AlertTriangle } from 'lucide-react';
 
 const SNOOZE_KEY = 'stale_properties_reminder_snooze';
 const SNOOZE_HOURS = 24;
+const LONG_SNOOZE_KEY = 'stale_properties_reminder_long_snooze';
+const LONG_SNOOZE_DAYS = 30;
 
 export const StalePropertiesReminder = () => {
   const { user } = useAuth();
