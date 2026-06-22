@@ -54,6 +54,13 @@ export const StalePropertiesReminder = () => {
     setOpen(false);
   };
 
+  const handleLongSnooze = () => {
+    if (user) {
+      localStorage.setItem(`${LONG_SNOOZE_KEY}_${user.id}`, String(Date.now()));
+    }
+    setOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose(true)}>
       <DialogContent translate="no">
