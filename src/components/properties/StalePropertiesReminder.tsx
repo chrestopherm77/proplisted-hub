@@ -78,7 +78,10 @@ export const StalePropertiesReminder = () => {
             Manter o portal atualizado garante mais credibilidade e melhores resultados.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-2">
+          <Button variant="ghost" size="sm" onClick={handleLongSnooze} className="text-muted-foreground">
+            Não mostrar por 30 dias
+          </Button>
           <Button variant="outline" onClick={() => handleClose(true)}>
             Lembrar depois
           </Button>
