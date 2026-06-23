@@ -17,12 +17,50 @@ Deno.serve(async (req) => {
 
     const messageType = payload?.messageType;
 
+    // Detecta problemas de saúde da MegaAPI (sessão restrita / desconectada)
+    // e dispara alerta para os admins (fire-and-forget).
+    try {
+      const connectionState = payload?.connection_state;
+      const accountRestricted = payload?.account_restricted === true;
+      const isHealthEvent =
+        messageType === "whatsapp_information" ||
+        typeof connectionState === "string" ||
+        accountRestricted;
+
+      if (isHealthEvent) {
+        const disconnected = typeof connectionState === "string" && connectionState !== "connected";
+        if (accountRestricted || disconnected) {
+          const reportUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/report-mega-error`;
+          const msg = accountRestricted
+            ? `WhatsApp restrito (${payload?.enforcement_type || "RESTRICTED"})`
+            : `WhatsApp desconectado (estado: ${connectionState})`;
+          fetch(reportUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              source: "mega-webhook",
+              alert_type: accountRestricted ? "account_restricted" : "disconnected",
+              message: msg,
+              details: payload,
+            }),
+          }).catch((e) => console.error("report-mega-error failed:", e));
+        }
+      }
+    } catch (healthErr) {
+      console.error("MegaAPI health check error (non-blocking):", healthErr);
+    }
+
     if (messageType !== "listResponseMessage") {
       return new Response(
         JSON.stringify({ ok: true, ignored: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+
 
     const selectedRowId =
       payload?.listResponseMessage?.singleSelectReply?.selectedRowId ||
