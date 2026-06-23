@@ -57,6 +57,8 @@ import BrokerPortal from "./pages/BrokerPortal";
 import SolicitarPortal from "./pages/SolicitarPortal";
 import PortalTemplatePreview from "./pages/PortalTemplatePreview";
 import { BrokerDomainGate } from "./components/broker-portal/BrokerDomainGate";
+import { MegaApiAlertModal } from "./components/admin/MegaApiAlertModal";
+
 
 const queryClient = new QueryClient();
 
