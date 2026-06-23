@@ -101,11 +101,11 @@ const PortalHeader = () => (
       </Link>
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
-          <a href="#home" className="hover:opacity-70">Home</a>
-          <Link to="/corretor" className="hover:opacity-70">Sou Corretor</Link>
-          <a href="#sobre" className="hover:opacity-70">Sobre</a>
+          <Link to="/" className="hover:opacity-70">Home</Link>
+          <a href="https://conectaeimob.com.br/corretor" className="hover:opacity-70">Sou Corretor</a>
+          <a href="#para-cliente" className="hover:opacity-70">Sobre</a>
           <Link to="/conectaeimob/noticias" className="hover:opacity-70">Blog</Link>
-          <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
+          <a href="https://wa.me/5516992456258" target="_blank" rel="noreferrer" className="hover:opacity-70">Ajuda</a>
         </nav>
         <Link
           to="/lp"
