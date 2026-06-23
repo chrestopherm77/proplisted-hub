@@ -88,6 +88,7 @@ const App = () => {
         <RedirectHandler />
         <AffiliateRefCapture />
         <PageViewTracker />
+        <MegaApiAlertModal />
         <Routes>
           <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
           <Route path="/corretor" element={<Index />} />
