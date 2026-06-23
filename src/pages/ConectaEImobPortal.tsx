@@ -101,11 +101,11 @@ const PortalHeader = () => (
       </Link>
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
-          <a href="#home" className="hover:opacity-70">Home</a>
-          <Link to="/corretor" className="hover:opacity-70">Sou Corretor</Link>
-          <a href="#sobre" className="hover:opacity-70">Sobre</a>
+          <Link to="/" className="hover:opacity-70">Home</Link>
+          <a href="https://conectaeimob.com.br/corretor" className="hover:opacity-70">Sou Corretor</a>
+          <a href="#para-cliente" className="hover:opacity-70">Sobre</a>
           <Link to="/conectaeimob/noticias" className="hover:opacity-70">Blog</Link>
-          <a href="#ajuda" className="hover:opacity-70">Ajuda</a>
+          <a href="https://wa.me/5516992456258" target="_blank" rel="noreferrer" className="hover:opacity-70">Ajuda</a>
         </nav>
         <Link
           to="/lp"
@@ -136,7 +136,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           <Home className="h-3.5 w-3.5 text-[hsl(var(--portal-gold))]" />
           Plataforma #1 em Conexão Imobiliária
         </span>
-        <h1 className="mt-6 font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05]">
+        <h1 className="mt-6 font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.15] tracking-normal [word-spacing:0.05em]">
           Conectamos pessoas que buscam{' '}
           <span className="text-[hsl(var(--portal-gold))]">comprar ou vender</span>{' '}
           com corretores de imóveis
@@ -233,7 +233,7 @@ const WhyUs = () => {
     { icon: Target, title: 'Match com o corretor ideal', desc: 'Nossa tecnologia conecta você ao corretor especialista no tipo de imóvel e região que você procura.' },
   ];
   return (
-    <section className="py-24 bg-white">
+    <section id="para-cliente" className="py-24 bg-white">
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto">
           <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">Para você, cliente</p>
