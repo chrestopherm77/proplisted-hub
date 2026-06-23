@@ -1387,6 +1387,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mega_api_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          details: Json
+          email_sent_at: string | null
+          id: string
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+        }
+        Insert: {
+          alert_type?: string
+          created_at?: string
+          details?: Json
+          email_sent_at?: string | null
+          id?: string
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          details?: Json
+          email_sent_at?: string | null
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       news_comments: {
         Row: {
           content: string

@@ -57,6 +57,8 @@ import BrokerPortal from "./pages/BrokerPortal";
 import SolicitarPortal from "./pages/SolicitarPortal";
 import PortalTemplatePreview from "./pages/PortalTemplatePreview";
 import { BrokerDomainGate } from "./components/broker-portal/BrokerDomainGate";
+import { MegaApiAlertModal } from "./components/admin/MegaApiAlertModal";
+
 
 const queryClient = new QueryClient();
 
@@ -86,6 +88,7 @@ const App = () => {
         <RedirectHandler />
         <AffiliateRefCapture />
         <PageViewTracker />
+        <MegaApiAlertModal />
         <Routes>
           <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
           <Route path="/corretor" element={<Index />} />
