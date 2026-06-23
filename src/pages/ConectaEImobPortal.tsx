@@ -136,7 +136,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
           <Home className="h-3.5 w-3.5 text-[hsl(var(--portal-gold))]" />
           Plataforma #1 em Conexão Imobiliária
         </span>
-        <h1 className="mt-6 font-['Poppins'] text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.4] tracking-tight pb-2">
+        <h1 className="mt-6 font-sans text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.6] tracking-tight pb-2">
           Conectamos pessoas que buscam{' '}
           <span className="text-[hsl(var(--portal-gold))]">comprar ou vender</span>{' '}
           com corretores de imóveis
