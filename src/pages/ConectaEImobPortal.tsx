@@ -233,7 +233,7 @@ const WhyUs = () => {
     { icon: Target, title: 'Match com o corretor ideal', desc: 'Nossa tecnologia conecta você ao corretor especialista no tipo de imóvel e região que você procura.' },
   ];
   return (
-    <section className="py-24 bg-white">
+    <section id="para-cliente" className="py-24 bg-white">
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto">
           <p className="text-xs font-bold tracking-widest text-[hsl(var(--portal-cta-red))] uppercase">Para você, cliente</p>
