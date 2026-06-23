@@ -124,6 +124,22 @@ serve(async (req) => {
     if (!megaResponse.ok) {
       const errorData = await megaResponse.text();
       console.error('Mega API error:', errorData);
+      // Reporta erro para admins (fire-and-forget)
+      try {
+        fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/report-mega-error`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+          body: JSON.stringify({
+            source: 'send-whatsapp-code',
+            alert_type: 'send_error',
+            message: `MegaAPI retornou ${megaResponse.status} ao enviar código de verificação`,
+            details: { status: megaResponse.status, body: errorData.substring(0, 500) },
+          }),
+        }).catch(() => {});
+      } catch { /* noop */ }
       return new Response(JSON.stringify({
         error: 'Não foi possível enviar o código. Verifique se o número está correto e tem WhatsApp ativo.'
       }), {
@@ -131,6 +147,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
 
     console.log('WhatsApp message sent successfully');
 
