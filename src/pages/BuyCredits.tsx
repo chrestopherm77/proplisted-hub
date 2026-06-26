@@ -161,9 +161,9 @@ export default function BuyCredits() {
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-lg">{pkg.name}</p>
-                  <p className="text-sm text-muted-foreground">{pkg.credits} créditos</p>
+                  <p className="text-sm text-muted-foreground">{effCredits(pkg.credits)} créditos</p>
                 </div>
-                <p className="text-2xl font-bold text-primary">{formatPrice(pkg.price)}</p>
+                <p className="text-2xl font-bold text-primary">{formatPrice(effPrice(pkg.price))}</p>
               </CardContent>
             </Card>
           )}
