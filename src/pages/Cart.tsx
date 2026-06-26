@@ -99,7 +99,7 @@ export default function Cart() {
   };
 
   const buyAllWithCredits = async () => {
-    const totalCredits = cartItems.reduce((sum, item) => sum + Math.round(Number(item.leads.price)), 0);
+    const totalCredits = cartItems.reduce((sum, item) => sum + Math.round(Number(item.leads.price)) * priceMultiplier, 0);
     if (totalCredits > creditBalance) {
       toast({ title: 'Créditos insuficientes', description: `Precisa de ${totalCredits}, saldo: ${creditBalance}`, variant: 'destructive' });
       navigate('/comprar-creditos');
