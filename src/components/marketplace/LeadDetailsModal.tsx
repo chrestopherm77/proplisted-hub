@@ -71,6 +71,7 @@ export function LeadDetailsModal({
   isSoldOut,
   isPurchased = false,
   isAdmin = false,
+  isPaidSubscriber = false,
   creditBalance = 0,
   buyingLeadId = null,
   onBuyWithCredits,
@@ -82,7 +83,8 @@ export function LeadDetailsModal({
 
   const normalizedFormData = normalizeFormData(lead.form_data);
   const hasFormData = normalizedFormData && typeof normalizedFormData === 'object' && Object.keys(normalizedFormData).length > 0;
-  const leadCredits = Math.round(lead.price);
+  const basePrice = Math.round(lead.price);
+  const leadCredits = isPaidSubscriber ? basePrice : basePrice * 2;
   const canAfford = creditBalance >= leadCredits;
   const buyCondition = String(normalizedFormData?.buy?.propertyCondition || '').toUpperCase();
   const isLaunch = buyCondition === 'NEW' || buyCondition === 'BOTH';
