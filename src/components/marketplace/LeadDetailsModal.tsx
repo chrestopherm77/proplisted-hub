@@ -190,10 +190,20 @@ export function LeadDetailsModal({
 
         <div className="flex-shrink-0 px-6 py-3 border-t flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{leadCredits}</p>
-              <span className="text-sm text-muted-foreground">créditos</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{leadCredits}</p>
+                <span className="text-sm text-muted-foreground">créditos</span>
+              </div>
+              {!isPaidSubscriber && (
+                <a
+                  href="/planos"
+                  className="text-[11px] text-yellow-700 dark:text-yellow-400 underline hover:opacity-80"
+                >
+                  Assine e pague apenas {basePrice} créditos
+                </a>
+              )}
             </div>
             <span className="text-sm text-muted-foreground">· {lead.purchase_count} vendidos</span>
           </div>
