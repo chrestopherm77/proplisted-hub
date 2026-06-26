@@ -722,6 +722,7 @@ export default function Leads() {
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
           isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
           isAdmin={isAdmin === true}
+          isPaidSubscriber={isPaidSubscriber}
           creditBalance={creditBalance}
           buyingLeadId={buyingLeadId}
           onBuyWithCredits={(leadId) => buyWithCredits(leadId)}
