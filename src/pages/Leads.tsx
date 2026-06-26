@@ -211,6 +211,8 @@ export default function Leads() {
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
   const { user, loading: authLoading, isAdmin } = useAuth();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
+  const priceMultiplier = isPaidSubscriber ? 1 : 2;
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
