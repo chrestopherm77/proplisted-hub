@@ -306,12 +306,12 @@ export default function BuyCredits() {
                   </div>
                 )}
                 <CardHeader className="text-center pb-2 pt-6">
-                  <p className="text-3xl font-bold text-primary mt-2">{formatPrice(pkg.price)}</p>
+                  <p className="text-3xl font-bold text-primary mt-2">{formatPrice(effPrice(pkg.price))}</p>
                 </CardHeader>
                 <CardContent className="flex-grow text-center space-y-3">
                   <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-400">
                     <Coins className="h-5 w-5" />
-                    <span className="text-xl font-bold">{pkg.credits.toLocaleString('pt-BR')} créditos</span>
+                    <span className="text-xl font-bold">{effCredits(pkg.credits).toLocaleString('pt-BR')} créditos</span>
                   </div>
                   <Button className="w-full mt-4" size="lg">
                     <Zap className="h-4 w-4 mr-2" />
