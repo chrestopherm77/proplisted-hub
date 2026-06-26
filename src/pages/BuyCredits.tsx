@@ -264,6 +264,29 @@ export default function BuyCredits() {
           </p>
         </div>
 
+        {!isPaidSubscriber && (
+          <Card className="mb-6 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
+            <CardContent className="p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold text-yellow-900 dark:text-yellow-200">
+                  Assine um plano e pague metade do preço!
+                </p>
+                <p className="text-yellow-800 dark:text-yellow-300">
+                  Assinantes pagam o valor cheio do pacote (50% mais barato por crédito).{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/planos')}
+                    className="underline font-semibold hover:opacity-80"
+                  >
+                    Ver planos
+                  </button>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg, idx) => {
             const isBestValue = idx === bestValueIdx && packages.length > 2;
