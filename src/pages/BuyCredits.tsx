@@ -49,8 +49,14 @@ export default function BuyCredits() {
   });
 
   const { user, loading: authLoading } = useAuth();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Multiplicador: não-assinantes pagam 2x preço e recebem 2x créditos
+  const mult = isPaidSubscriber ? 1 : 2;
+  const effPrice = (p: number) => p * mult;
+  const effCredits = (c: number) => c * mult;
 
   useEffect(() => {
     if (authLoading) return;
