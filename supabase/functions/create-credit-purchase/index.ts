@@ -127,8 +127,8 @@ serve(async (req) => {
     await supabaseClient.from('credit_purchases').insert({
       user_id: user.id,
       package_id: pkg.id,
-      credits: pkg.credits,
-      amount: Number(pkg.price),
+      credits: effectiveCredits,
+      amount: effectivePrice,
       asaas_payment_id: orderId,
       asaas_checkout_id: checkoutData.id,
       status: 'PENDING',
