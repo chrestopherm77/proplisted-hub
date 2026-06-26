@@ -697,6 +697,15 @@ export default function Leads() {
                         Comprar
                       </Button>
                     )}
+                    {!isPaidSubscriber && !isPurchased(lead.id) && !isSoldOut(lead) && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate('/planos'); }}
+                        className="text-[11px] text-yellow-700 dark:text-yellow-400 underline mt-1 w-full text-center hover:opacity-80"
+                      >
+                        Assine e pague apenas {basePrice} créditos
+                      </button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
