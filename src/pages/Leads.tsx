@@ -11,6 +11,7 @@ import { Coins, Filter, Loader2, Bell, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface Lead {
   id: string;
@@ -210,6 +211,8 @@ export default function Leads() {
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   
   const { user, loading: authLoading, isAdmin } = useAuth();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
+  const priceMultiplier = isPaidSubscriber ? 1 : 2;
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -616,7 +619,8 @@ export default function Leads() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredLeads.map((lead) => {
             const parsed = parseDescription(lead.description);
-            const leadCredits = Math.round(lead.price);
+            const basePrice = Math.round(lead.price);
+            const leadCredits = basePrice * priceMultiplier;
             const leadFormData = normalizeFormData(lead.form_data);
             const leadCondition = extractPropertyCondition(leadFormData);
             const isLaunch = leadCondition === 'NEW' || leadCondition === 'BOTH';
@@ -693,6 +697,15 @@ export default function Leads() {
                         Comprar
                       </Button>
                     )}
+                    {!isPaidSubscriber && !isPurchased(lead.id) && !isSoldOut(lead) && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate('/planos'); }}
+                        className="text-[11px] text-yellow-700 dark:text-yellow-400 underline mt-1 w-full text-center hover:opacity-80"
+                      >
+                        Assine e pague apenas {basePrice} créditos
+                      </button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -709,6 +722,7 @@ export default function Leads() {
           isSoldOut={selectedLead ? isSoldOut(selectedLead) : false}
           isPurchased={selectedLead ? isPurchased(selectedLead.id) : false}
           isAdmin={isAdmin === true}
+          isPaidSubscriber={isPaidSubscriber}
           creditBalance={creditBalance}
           buyingLeadId={buyingLeadId}
           onBuyWithCredits={(leadId) => buyWithCredits(leadId)}

@@ -53,6 +53,15 @@ serve(async (req) => {
 
     if (pkgError || !pkg) throw new Error('Pacote não encontrado ou inativo');
 
+    // Verifica se é assinante de plano pago — se não for, dobra preço e créditos
+    const { data: isSubscriberData } = await supabaseClient.rpc('has_active_paid_plan', { _user_id: user.id });
+    const { data: isAdminData } = await supabaseClient.rpc('has_role', { _user_id: user.id, _role: 'MASTER_ADMIN' });
+    const isSubscriber = Boolean(isSubscriberData) || Boolean(isAdminData);
+
+    const effectivePrice = isSubscriber ? Number(pkg.price) : Number(pkg.price) * 2;
+    const effectiveCredits = isSubscriber ? pkg.credits : pkg.credits * 2;
+    const effectiveName = isSubscriber ? pkg.name : `${pkg.name} (sem assinatura)`;
+
     const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';
     const ASAAS_API_KEY = isSandbox ? Deno.env.get('ASAAS_SANDBOX_API_KEY') : Deno.env.get('ASAAS_API_KEY');
     const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
@@ -69,9 +78,9 @@ serve(async (req) => {
       minutesToExpire: 60,
       externalReference: orderId,
       items: [{
-        name: pkg.name,
-        value: Number(pkg.price),
-        description: `${pkg.credits} créditos Conectae`,
+        name: effectiveName,
+        value: effectivePrice,
+        description: `${effectiveCredits} créditos Conectae`,
         quantity: 1,
       }],
       callback: {
@@ -118,8 +127,8 @@ serve(async (req) => {
     await supabaseClient.from('credit_purchases').insert({
       user_id: user.id,
       package_id: pkg.id,
-      credits: pkg.credits,
-      amount: Number(pkg.price),
+      credits: effectiveCredits,
+      amount: effectivePrice,
       asaas_payment_id: orderId,
       asaas_checkout_id: checkoutData.id,
       status: 'PENDING',

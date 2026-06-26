@@ -1,86 +1,51 @@
-## Troca da conta Asaas
+## Objetivo
+Aplicar precificação dupla baseada em assinatura:
+- **Pacotes avulsos**: não-assinante paga 2x o preço e recebe 2x os créditos (mantém a relação R$/crédito).
+- **Leads**: lead custa 70 créditos para assinantes; para não-assinantes é exibido e cobrado 140 créditos (dobro).
+- "Assinante" = qualquer plano pago ativo (já temos `has_active_paid_plan`).
 
-O sistema só depende da **conta Asaas via chaves de API + webhook** — não há `walletId`, split, nem dados da conta gravados no banco. A estrutura permanece igual, basta substituir as credenciais e reconfigurar o webhook na nova conta. Abaixo está tudo que você precisa fazer.
+## Mudanças no banco
 
----
+1. **`credit_packages`** — atualizar os 4 pacotes ativos para representar a oferta do **assinante** (base):
+   - 1 Lead: R$14 / 70 cr (já está)
+   - 5 Leads: R$65 / 350 cr (já está)
+   - 10 Leads: R$115 / 700 cr (já está)
+   - 25 Leads: R$250 / 1750 cr (já está)
+   
+   Nenhuma alteração de schema. A duplicação será aplicada em runtime quando o usuário não for assinante.
 
-### 1. Variáveis usadas pelo sistema (já existem nos Secrets)
+2. **`purchase_lead_with_credits` (RPC)** — ajustar para cobrar `price * 2` quando o comprador não tiver plano pago ativo (usando `has_active_paid_plan`). Registrar o valor real debitado em `credit_transactions`.
 
-| Secret | Para que serve | Onde é usado |
-|---|---|---|
-| `ASAAS_API_KEY` | Chave de **produção** da conta Asaas | create-payment, create-credit-purchase, create-subscription, cancel-subscription, asaas-webhook, check-credit-status, reconcile-asaas-payments |
-| `ASAAS_SANDBOX_API_KEY` | Chave de **sandbox** (testes) | mesmas funções acima |
-| `ASAAS_SANDBOX_MODE` | `true` → usa sandbox · `false` (ou vazio) → usa produção | mesmas funções acima |
-| `ASAAS_WEBHOOK_SECRET` | Token enviado pelo Asaas no header `asaas-access-token` e validado pelo webhook | asaas-webhook |
+3. **Helper SQL** novo `get_effective_lead_price(p_user_id, p_lead_id)` (opcional) ou expor `has_active_paid_plan` para o front via select existente — já chamável.
 
-> Não há `wallet_id`, conta bancária, CPF/CNPJ do recebedor nem split configurado no código. Toda receita cai diretamente na conta dona da `ASAAS_API_KEY`.
+## Mudanças no front
 
----
+4. **`useSubscriptionLimits` / novo hook `useIsPaidSubscriber`**: expor flag `isPaidSubscriber` (plano com `price > 0` ativo). Admin conta como assinante.
 
-### 2. Passo a passo na NOVA conta Asaas
+5. **`BuyCredits.tsx`**:
+   - Buscar pacotes normalmente.
+   - Se `!isPaidSubscriber`, exibir e enviar para checkout valores dobrados (`price*2`, `credits*2`, nome ajustado, ex.: "2 Leads").
+   - Banner no topo: "Assine um plano e pague metade do preço por crédito."
 
-**A) Criar a chave de API de produção**
-1. Entrar na nova conta em https://www.asaas.com (Produção).
-2. Menu **Integrações → Chave da API → Gerar nova chave**.
-3. Copiar a chave (`$aact_prod_...`).
+6. **`create-credit-purchase` (edge function)**:
+   - Receber `packageId` + recalcular server-side: se usuário não tem plano pago ativo, dobrar `price` e `credits` antes de criar o checkout Asaas e o registro em `credit_purchases`. Nunca confiar em valor enviado pelo cliente.
+   - `asaas-webhook` ao confirmar usa o `credits` salvo em `credit_purchases` (já é assim) — então basta gravar correto.
 
-**B) (Opcional) Criar a chave de Sandbox**
-1. Entrar em https://sandbox.asaas.com com a mesma conta/e-mail.
-2. **Integrações → Chave da API → Gerar nova chave**.
-3. Copiar a chave (`$aact_hmlg_...`).
+7. **`Leads.tsx` + `LeadDetailsModal.tsx`**:
+   - Calcular `displayCredits = isPaidSubscriber ? lead.price : lead.price * 2`.
+   - Card e modal mostram `displayCredits` cr.
+   - Para não-assinante: adicionar CTA/badge "Assine e pague apenas {lead.price} cr" linkando para `/planos`.
 
-**C) Configurar o Webhook na nova conta** (precisa ser feito tanto em Produção quanto em Sandbox, se for usar os dois)
-1. **Integrações → Webhooks → Adicionar webhook**.
-2. **URL**: `https://hmcpfedcvkurttyolurv.supabase.co/functions/v1/asaas-webhook`
-3. **Versão da API**: v3
-4. **Email para notificações de falha**: e-mail seu/do time.
-5. **Habilitar autenticação personalizada (Token de acesso)**:
-   - Nome do header: `asaas-access-token`
-   - Valor: **o mesmo valor que vai ficar em `ASAAS_WEBHOOK_SECRET`** (você pode manter o atual, gerar um novo é opcional).
-6. **Eventos a marcar** (todos os que o sistema processa hoje):
-   - `CHECKOUT_CREATED`
-   - `CHECKOUT_PAID`
-   - `CHECKOUT_CONFIRMED`
-   - `CHECKOUT_EXPIRED`
-   - `CHECKOUT_CANCELED`
-   - `PAYMENT_CREATED`
-   - `PAYMENT_RECEIVED`
-   - `PAYMENT_CONFIRMED`
-   - `PAYMENT_OVERDUE`
-   - `PAYMENT_REFUNDED`
-   - `PAYMENT_DELETED`
-   - `SUBSCRIPTION_CREATED`
-   - `SUBSCRIPTION_UPDATED`
-   - `SUBSCRIPTION_DELETED`
+8. **Compra com créditos** (`purchase-lead-with-credits` → RPC): já tratada no item 2; UI deve refletir o valor dobrado no botão "Comprar por X créditos".
 
-**D) Atualizar os Secrets no Lovable Cloud**
-- `ASAAS_API_KEY` → nova chave de produção
-- `ASAAS_SANDBOX_API_KEY` → nova chave de sandbox (se for usar)
-- `ASAAS_WEBHOOK_SECRET` → mesmo valor que você colocou no header do webhook
-- `ASAAS_SANDBOX_MODE` → `false` para produção / `true` para sandbox (deixe como está hoje)
+9. **Compra via dinheiro** (`create-payment`): mesma lógica — server-side, se o usuário não é assinante, dobrar `price` por item antes do checkout e gravar `amount` real em `purchases`. (Hoje o fluxo de dinheiro usa `lead.price` em reais; manter compatível.)
 
-> Não precisa mexer em código, edge functions, banco ou domínio. As funções leem o secret em runtime.
+## Pontos de validação
+- Admin é tratado como assinante (acesso total já implícito).
+- Carrinho (`shopping_cart`) precisa refletir o preço efetivo no resumo — usar mesmo cálculo no `Cart.tsx`.
+- `LeadKanbanCard`/CRM não afetados (apenas exibição pós-compra).
 
----
-
-### 3. Importante sobre dados já existentes
-
-Pagamentos antigos têm `asaas_payment_id`, `asaas_customer_id` e `asaas_checkout_id` **da conta antiga** salvos em `purchases`, `credit_purchases`, `subscription_payments` e `user_subscriptions`. Depois da troca:
-
-- **Cobranças avulsas antigas (pendentes)** que ainda não pagaram **não serão mais confirmadas** automaticamente — o webhook só recebe eventos da conta nova. Recomendação: deixar a chave antiga acessível por alguns dias só para reconciliação manual via `reconcile-asaas-payments`, ou cancelar essas cobranças no painel antigo.
-- **Assinaturas recorrentes ativas (créditos mensais)** rodam dentro do Asaas. Como a conta vai mudar, elas **não serão cobradas pela conta nova automaticamente**. Tem dois caminhos:
-  1. **Migrar manualmente**: criar novas assinaturas na conta nova para cada cliente ativo (a função `create-subscription` faz isso quando o cliente acessa o checkout de novo).
-  2. **Manter as antigas rodando** na conta velha até cada uma vencer naturalmente — para isso a conta antiga precisa continuar ativa e o webhook dela apontando para o mesmo endpoint (o webhook do sistema aceita qualquer evento que bata com o token).
-
-> Decida qual estratégia quer usar para as assinaturas antes da troca para não derrubar a renovação dos clientes.
-
----
-
-### 4. Plano de execução (sem código novo)
-
-1. Você cria a nova conta + chaves + webhook conforme passos A–C acima.
-2. Quando estiver pronto, eu chamo `update_secret` para `ASAAS_API_KEY`, `ASAAS_SANDBOX_API_KEY` e (se quiser mudar) `ASAAS_WEBHOOK_SECRET`. Você cola os valores no formulário seguro.
-3. Validamos com um pagamento de teste em sandbox (ou um PIX baixo em produção) e olhamos os logs de `asaas-webhook` para confirmar o `200 OK`.
-4. Decidir o que fazer com assinaturas/cobranças pendentes da conta antiga.
-
-Sem alterações em arquivos, migrations, ou edge functions — só rotação de secrets e config no painel do Asaas.
+## Detalhes técnicos
+- Toda decisão de preço é **recalculada no servidor** (RPC e edge functions). O front só exibe.
+- Nenhuma migração estrutural; apenas alteração de RPC `purchase_lead_with_credits` e edge functions `create-credit-purchase` e `create-payment`.
+- Hook `useIsPaidSubscriber` reutiliza dados já carregados em `useSubscriptionLimits` (`plan.price > 0` ou `isAdmin`).

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, ShoppingBag, Coins, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface CartItem {
   id: string;
@@ -28,6 +29,8 @@ export default function Cart() {
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
+  const priceMultiplier = isPaidSubscriber ? 1 : 2;
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,7 +99,7 @@ export default function Cart() {
   };
 
   const buyAllWithCredits = async () => {
-    const totalCredits = cartItems.reduce((sum, item) => sum + Math.round(Number(item.leads.price)), 0);
+    const totalCredits = cartItems.reduce((sum, item) => sum + Math.round(Number(item.leads.price)) * priceMultiplier, 0);
     if (totalCredits > creditBalance) {
       toast({ title: 'Créditos insuficientes', description: `Precisa de ${totalCredits}, saldo: ${creditBalance}`, variant: 'destructive' });
       navigate('/comprar-creditos');
@@ -110,7 +113,7 @@ export default function Cart() {
   };
 
   const calculateTotalCredits = () =>
-    cartItems.reduce((total, item) => total + Math.round(Number(item.leads.price)), 0);
+    cartItems.reduce((total, item) => total + Math.round(Number(item.leads.price)) * priceMultiplier, 0);
 
   if (loading) {
     return (
@@ -153,7 +156,7 @@ export default function Cart() {
         ) : (
           <div className="space-y-4">
             {cartItems.map((item) => {
-              const credits = Math.round(Number(item.leads.price));
+              const credits = Math.round(Number(item.leads.price)) * priceMultiplier;
               return (
                 <Card key={item.id}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

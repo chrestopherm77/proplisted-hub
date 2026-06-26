@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Coins, CreditCard, QrCode, Loader2, Star, Zap } from 'lucide-react';
+import { Coins, CreditCard, QrCode, Loader2, Star, Zap, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface CreditPackage {
   id: string;
@@ -48,8 +49,14 @@ export default function BuyCredits() {
   });
 
   const { user, loading: authLoading } = useAuth();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Multiplicador: não-assinantes pagam 2x preço e recebem 2x créditos
+  const mult = isPaidSubscriber ? 1 : 2;
+  const effPrice = (p: number) => p * mult;
+  const effCredits = (c: number) => c * mult;
 
   useEffect(() => {
     if (authLoading) return;
@@ -154,9 +161,9 @@ export default function BuyCredits() {
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-lg">{pkg.name}</p>
-                  <p className="text-sm text-muted-foreground">{pkg.credits} créditos</p>
+                  <p className="text-sm text-muted-foreground">{effCredits(pkg.credits)} créditos</p>
                 </div>
-                <p className="text-2xl font-bold text-primary">{formatPrice(pkg.price)}</p>
+                <p className="text-2xl font-bold text-primary">{formatPrice(effPrice(pkg.price))}</p>
               </CardContent>
             </Card>
           )}
@@ -237,7 +244,7 @@ export default function BuyCredits() {
 
           <Button onClick={handlePayment} disabled={processing} className="w-full" size="lg">
             {processing ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-            {processing ? 'Processando...' : `Pagar ${pkg ? formatPrice(pkg.price) : ''}`}
+            {processing ? 'Processando...' : `Pagar ${pkg ? formatPrice(effPrice(pkg.price)) : ''}`}
           </Button>
         </div>
       </Layout>
@@ -256,6 +263,29 @@ export default function BuyCredits() {
             Adquira créditos para comprar leads instantaneamente.
           </p>
         </div>
+
+        {!isPaidSubscriber && (
+          <Card className="mb-6 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
+            <CardContent className="p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold text-yellow-900 dark:text-yellow-200">
+                  Assine um plano e pague metade do preço!
+                </p>
+                <p className="text-yellow-800 dark:text-yellow-300">
+                  Assinantes pagam o valor cheio do pacote (50% mais barato por crédito).{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/planos')}
+                    className="underline font-semibold hover:opacity-80"
+                  >
+                    Ver planos
+                  </button>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg, idx) => {
@@ -276,12 +306,12 @@ export default function BuyCredits() {
                   </div>
                 )}
                 <CardHeader className="text-center pb-2 pt-6">
-                  <p className="text-3xl font-bold text-primary mt-2">{formatPrice(pkg.price)}</p>
+                  <p className="text-3xl font-bold text-primary mt-2">{formatPrice(effPrice(pkg.price))}</p>
                 </CardHeader>
                 <CardContent className="flex-grow text-center space-y-3">
                   <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-400">
                     <Coins className="h-5 w-5" />
-                    <span className="text-xl font-bold">{pkg.credits.toLocaleString('pt-BR')} créditos</span>
+                    <span className="text-xl font-bold">{effCredits(pkg.credits).toLocaleString('pt-BR')} créditos</span>
                   </div>
                   <Button className="w-full mt-4" size="lg">
                     <Zap className="h-4 w-4 mr-2" />
