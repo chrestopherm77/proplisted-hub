@@ -29,6 +29,7 @@ interface LeadDetailsModalProps {
   isSoldOut: boolean;
   isPurchased?: boolean;
   isAdmin?: boolean;
+  isPaidSubscriber?: boolean;
   creditBalance?: number;
   buyingLeadId?: string | null;
   onBuyWithCredits?: (leadId: string) => void;
