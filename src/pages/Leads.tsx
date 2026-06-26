@@ -619,7 +619,8 @@ export default function Leads() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredLeads.map((lead) => {
             const parsed = parseDescription(lead.description);
-            const leadCredits = Math.round(lead.price);
+            const basePrice = Math.round(lead.price);
+            const leadCredits = basePrice * priceMultiplier;
             const leadFormData = normalizeFormData(lead.form_data);
             const leadCondition = extractPropertyCondition(leadFormData);
             const isLaunch = leadCondition === 'NEW' || leadCondition === 'BOTH';
