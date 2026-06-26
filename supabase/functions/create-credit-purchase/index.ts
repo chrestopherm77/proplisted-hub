@@ -78,9 +78,9 @@ serve(async (req) => {
       minutesToExpire: 60,
       externalReference: orderId,
       items: [{
-        name: pkg.name,
-        value: Number(pkg.price),
-        description: `${pkg.credits} créditos Conectae`,
+        name: effectiveName,
+        value: effectivePrice,
+        description: `${effectiveCredits} créditos Conectae`,
         quantity: 1,
       }],
       callback: {
