@@ -244,7 +244,7 @@ export default function BuyCredits() {
 
           <Button onClick={handlePayment} disabled={processing} className="w-full" size="lg">
             {processing ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-            {processing ? 'Processando...' : `Pagar ${pkg ? formatPrice(pkg.price) : ''}`}
+            {processing ? 'Processando...' : `Pagar ${pkg ? formatPrice(effPrice(pkg.price)) : ''}`}
           </Button>
         </div>
       </Layout>
