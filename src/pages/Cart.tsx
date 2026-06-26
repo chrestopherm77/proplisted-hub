@@ -29,6 +29,8 @@ export default function Cart() {
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isPaidSubscriber } = useIsPaidSubscriber();
+  const priceMultiplier = isPaidSubscriber ? 1 : 2;
   const { toast } = useToast();
 
   useEffect(() => {
