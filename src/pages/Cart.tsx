@@ -156,7 +156,7 @@ export default function Cart() {
         ) : (
           <div className="space-y-4">
             {cartItems.map((item) => {
-              const credits = Math.round(Number(item.leads.price));
+              const credits = Math.round(Number(item.leads.price)) * priceMultiplier;
               return (
                 <Card key={item.id}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
