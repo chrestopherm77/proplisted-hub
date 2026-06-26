@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Coins, CreditCard, QrCode, Loader2, Star, Zap } from 'lucide-react';
+import { Coins, CreditCard, QrCode, Loader2, Star, Zap, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import InputMask from 'react-input-mask';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface CreditPackage {
   id: string;
