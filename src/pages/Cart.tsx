@@ -113,7 +113,7 @@ export default function Cart() {
   };
 
   const calculateTotalCredits = () =>
-    cartItems.reduce((total, item) => total + Math.round(Number(item.leads.price)), 0);
+    cartItems.reduce((total, item) => total + Math.round(Number(item.leads.price)) * priceMultiplier, 0);
 
   if (loading) {
     return (
