@@ -11,6 +11,7 @@ import { Coins, Filter, Loader2, Bell, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface Lead {
   id: string;
