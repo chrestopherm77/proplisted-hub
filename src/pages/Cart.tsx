@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, ShoppingBag, Coins, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsPaidSubscriber } from '@/hooks/useIsPaidSubscriber';
 
 interface CartItem {
   id: string;
