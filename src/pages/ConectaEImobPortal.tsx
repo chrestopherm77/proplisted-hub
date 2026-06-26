@@ -103,7 +103,7 @@ const PortalHeader = () => (
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--portal-navy))]">
           <Link to="/" className="hover:opacity-70">Home</Link>
           <a href="https://conectaeimob.com.br/corretor" className="hover:opacity-70">Sou Corretor</a>
-          <a href="#para-cliente" className="hover:opacity-70">Sobre</a>
+          
           <Link to="/conectaeimob/noticias" className="hover:opacity-70">Blog</Link>
           <a href="https://wa.me/5516992456258" target="_blank" rel="noreferrer" className="hover:opacity-70">Ajuda</a>
         </nav>
@@ -148,7 +148,7 @@ const Hero = ({ properties }: { properties: HeroProperty[] }) => (
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
           <Link
-            to="/portal-imoveis"
+            to="/lp"
             data-cta="hero-buscar"
             className="rounded-full bg-[hsl(var(--portal-cta-red))] hover:bg-[hsl(var(--portal-cta-red-hover))] text-white px-7 py-3.5 font-semibold transition"
           >
