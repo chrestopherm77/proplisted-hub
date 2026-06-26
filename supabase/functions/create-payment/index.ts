@@ -59,6 +59,13 @@ serve(async (req) => {
     }
 
     const leadMap = new Map(dbLeads.map((lead: any) => [lead.id, lead]));
+
+    // Verifica se é assinante de plano pago — se não for, dobra preço de cada lead
+    const { data: isSubscriberData } = await supabaseClient.rpc('has_active_paid_plan', { _user_id: user.id });
+    const { data: isAdminData } = await supabaseClient.rpc('has_role', { _user_id: user.id, _role: 'MASTER_ADMIN' });
+    const isSubscriber = Boolean(isSubscriberData) || Boolean(isAdminData);
+    const priceMultiplier = isSubscriber ? 1 : 2;
+
     const validatedItems = [];
 
     for (const cartItem of cartItems) {
@@ -69,7 +76,7 @@ serve(async (req) => {
 
       validatedItems.push({
         lead_id: dbLead.id,
-        price: Number(dbLead.price),
+        price: Number(dbLead.price) * priceMultiplier,
         name: dbLead.name,
         description: dbLead.description,
       });
