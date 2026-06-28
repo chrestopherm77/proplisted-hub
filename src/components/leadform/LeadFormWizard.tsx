@@ -418,6 +418,8 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [valueConfirm, setValueConfirm] = useState<{ messages: string[] } | null>(null);
+  const valueConfirmedRef = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
