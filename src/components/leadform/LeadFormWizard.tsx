@@ -6,6 +6,16 @@ import { LeadFormNavigation } from "./LeadFormNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateDescription } from "@/lib/formatFormData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Lead pricing by intention (in credits — 1 real = 5 credits)
 const LEAD_PRICE_MAP: Record<string, number> = {
@@ -408,6 +418,8 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [valueConfirm, setValueConfirm] = useState<{ messages: string[] } | null>(null);
+  const valueConfirmedRef = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -650,6 +662,32 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
       return;
     }
 
+    // Confirmação de valores fora da faixa esperada (R$ 150.000,00 – R$ 1.000.000,00)
+    if (!valueConfirmedRef.current) {
+      const LOW = 15_000_000; // R$ 150.000,00 em centavos
+      const HIGH = 100_000_000; // R$ 1.000.000,00 em centavos
+      const fmt = (cents: number) =>
+        (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const outliers: string[] = [];
+
+      if (currentStep.id === 'buy-location-budget') {
+        const min = parseInt((formData.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
+        const max = parseInt((formData.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
+        if (min > 0 && (min < LOW || min > HIGH)) outliers.push(`Valor mínimo: ${fmt(min)}`);
+        if (max > 0 && (max < LOW || max > HIGH)) outliers.push(`Valor máximo: ${fmt(max)}`);
+      } else if (currentStep.id === 'sell-value') {
+        const v = parseInt((formData.sell?.expectedValue || '').replace(/\D/g, '') || '0', 10);
+        if (v > 0 && (v < LOW || v > HIGH)) outliers.push(`Valor de venda: ${fmt(v)}`);
+      }
+
+      if (outliers.length > 0) {
+        setValueConfirm({ messages: outliers });
+        return;
+      }
+    }
+    valueConfirmedRef.current = false;
+
+
     if (isLastStep) {
       setIsSubmitting(true);
       try {
@@ -789,6 +827,34 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
         isLastStep={isLastStep}
         isSubmitting={isSubmitting}
       />
+
+      <AlertDialog open={!!valueConfirm} onOpenChange={(open) => { if (!open) setValueConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirma o valor informado?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>O(s) valor(es) abaixo está(ão) fora da faixa mais comum (R$ 150.000,00 a R$ 1.000.000,00). Confira se está correto antes de continuar:</p>
+                <ul className="list-disc pl-5 font-medium text-foreground">
+                  {valueConfirm?.messages.map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Revisar valor</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                valueConfirmedRef.current = true;
+                setValueConfirm(null);
+                setTimeout(() => handleNext(), 0);
+              }}
+            >
+              Sim, está correto
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
