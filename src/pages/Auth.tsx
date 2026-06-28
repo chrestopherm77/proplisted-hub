@@ -95,7 +95,7 @@ export default function Auth() {
         }
         navigate(`/planos?plan=${pending}`);
       } else {
-        navigate('/leads');
+        navigate('/portal-imoveis');
       }
     } catch (error: any) {
       const isNetworkError =
