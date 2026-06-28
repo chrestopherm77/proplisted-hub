@@ -86,7 +86,7 @@ export default function Auth() {
               .in('status', ['ACTIVE', 'OVERDUE'])
               .maybeSingle();
             if (existingSub) {
-              navigate('/leads');
+              navigate('/portal-imoveis');
               return;
             }
           }
