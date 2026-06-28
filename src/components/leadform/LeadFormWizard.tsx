@@ -6,6 +6,16 @@ import { LeadFormNavigation } from "./LeadFormNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateDescription } from "@/lib/formatFormData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Lead pricing by intention (in credits — 1 real = 5 credits)
 const LEAD_PRICE_MAP: Record<string, number> = {
