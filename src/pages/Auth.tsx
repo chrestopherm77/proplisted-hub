@@ -86,7 +86,7 @@ export default function Auth() {
               .in('status', ['ACTIVE', 'OVERDUE'])
               .maybeSingle();
             if (existingSub) {
-              navigate('/leads');
+              navigate('/portal-imoveis');
               return;
             }
           }
@@ -95,7 +95,7 @@ export default function Auth() {
         }
         navigate(`/planos?plan=${pending}`);
       } else {
-        navigate('/leads');
+        navigate('/portal-imoveis');
       }
     } catch (error: any) {
       const isNetworkError =
