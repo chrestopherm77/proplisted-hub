@@ -662,6 +662,32 @@ export function LeadFormWizard({ contactAtEnd = false, thankYouPath = '/lp-obrig
       return;
     }
 
+    // Confirmação de valores fora da faixa esperada (R$ 150.000,00 – R$ 1.000.000,00)
+    if (!valueConfirmedRef.current) {
+      const LOW = 15_000_000; // R$ 150.000,00 em centavos
+      const HIGH = 100_000_000; // R$ 1.000.000,00 em centavos
+      const fmt = (cents: number) =>
+        (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const outliers: string[] = [];
+
+      if (currentStep.id === 'buy-location-budget') {
+        const min = parseInt((formData.buy?.budgetMin || '').replace(/\D/g, '') || '0', 10);
+        const max = parseInt((formData.buy?.budgetMax || '').replace(/\D/g, '') || '0', 10);
+        if (min > 0 && (min < LOW || min > HIGH)) outliers.push(`Valor mínimo: ${fmt(min)}`);
+        if (max > 0 && (max < LOW || max > HIGH)) outliers.push(`Valor máximo: ${fmt(max)}`);
+      } else if (currentStep.id === 'sell-value') {
+        const v = parseInt((formData.sell?.expectedValue || '').replace(/\D/g, '') || '0', 10);
+        if (v > 0 && (v < LOW || v > HIGH)) outliers.push(`Valor de venda: ${fmt(v)}`);
+      }
+
+      if (outliers.length > 0) {
+        setValueConfirm({ messages: outliers });
+        return;
+      }
+    }
+    valueConfirmedRef.current = false;
+
+
     if (isLastStep) {
       setIsSubmitting(true);
       try {
