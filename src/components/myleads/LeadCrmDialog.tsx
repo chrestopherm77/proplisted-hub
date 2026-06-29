@@ -212,14 +212,26 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
           <Button
             variant="outline"
             className="w-full text-green-700 border-green-300 hover:bg-green-50"
-            onClick={() => {
-              const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}.`;
-              window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
-            }}
+            onClick={() => setPolicyOpen(true)}
           >
             <MessageCircle className="h-4 w-4 mr-1" />
             Não consegui contato com o lead
           </Button>
+        </div>
+        <RefundPolicyDialog
+          open={policyOpen}
+          onOpenChange={setPolicyOpen}
+          onAccept={() => {
+            const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}. Li e aceitei a Política de Estorno e Garantia de Leads.`;
+            window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+            setPolicyOpen(false);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
         </div>
       </DialogContent>
     </Dialog>
