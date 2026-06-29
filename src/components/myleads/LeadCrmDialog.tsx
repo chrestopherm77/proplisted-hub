@@ -12,6 +12,7 @@ import { LeadPreferencesView } from '@/components/marketplace/LeadPreferencesVie
 import { buildWaLink } from '@/lib/whatsapp';
 import { registerLeadContact } from '@/lib/leadContact';
 import { CrmLead, CrmStage, STAGES, STAGE_LABEL } from './types';
+import { RefundPolicyDialog } from './RefundPolicyDialog';
 
 interface Props {
   lead: CrmLead | null;
@@ -60,6 +61,7 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialNotesRef = useRef('');
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -210,15 +212,21 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
           <Button
             variant="outline"
             className="w-full text-green-700 border-green-300 hover:bg-green-50"
-            onClick={() => {
-              const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}.`;
-              window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
-            }}
+            onClick={() => setPolicyOpen(true)}
           >
             <MessageCircle className="h-4 w-4 mr-1" />
             Não consegui contato com o lead
           </Button>
         </div>
+        <RefundPolicyDialog
+          open={policyOpen}
+          onOpenChange={setPolicyOpen}
+          onAccept={() => {
+            const msg = `Olá, sou o corretor ${userName || ''} (${userPhone || ''}) e não consegui contato com o Lead ${lead.name}. Li e aceitei a Política de Estorno e Garantia de Leads.`;
+            window.open(`https://wa.me/553192472750?text=${encodeURIComponent(msg)}`, '_blank');
+            setPolicyOpen(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
