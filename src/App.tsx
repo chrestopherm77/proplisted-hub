@@ -50,6 +50,7 @@ import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import LandSearches from "./pages/LandSearches";
 import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
+import Events from "./pages/Events";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
@@ -139,6 +140,8 @@ const App = () => {
           <Route path="/admin/land-search-access" element={<Admin section="land-search-access" />} />
           <Route path="/procura-se-terrenos" element={<LandSearches />} />
           <Route path="/meus-terrenos-procurados" element={<MyLandSearches />} />
+          <Route path="/admin/events" element={<Admin section="events" />} />
+          <Route path="/eventos" element={<Events />} />
 
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
