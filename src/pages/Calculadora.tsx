@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import DOMPurify from "dompurify";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -856,7 +857,7 @@ export default function Calculadora() {
                 {parsed.extraInformation && (
                   <div
                     className="rounded-lg bg-muted/40 border border-border p-4 text-sm text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:underline [&_b]:text-foreground"
-                    dangerouslySetInnerHTML={{ __html: parsed.extraInformation }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(parsed.extraInformation, { ALLOWED_TAGS: ["a","b","strong","i","em","br","p","ul","ol","li","span"], ALLOWED_ATTR: ["href","target","rel"] }) }}
                   />
                 )}
 

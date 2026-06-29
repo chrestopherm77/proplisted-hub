@@ -693,9 +693,41 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    // CORS restriction limits which domains can call this endpoint
+  // Auth: require internal-secret OR admin JWT
+  const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+  const providedInternal = req.headers.get("x-internal-secret");
+  let authorized = !!internalSecret && providedInternal === internalSecret;
+  if (!authorized) {
+    const authHeader = req.headers.get("Authorization") || "";
+    if (authHeader.startsWith("Bearer ")) {
+      try {
+        const sbAuth = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const jwt = authHeader.replace("Bearer ", "");
+        const { data: c } = await sbAuth.auth.getClaims(jwt);
+        const uid = c?.claims?.sub;
+        if (uid) {
+          const sbSvc = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          );
+          const { data: isAdmin } = await sbSvc.rpc("has_role", { _user_id: uid, _role: "MASTER_ADMIN" });
+          authorized = !!isAdmin;
+        }
+      } catch { /* noop */ }
+    }
+  }
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
 
+  try {
     const body = await req.json();
     let { leadId, city, uf, intention, description, formData } = body || {};
 

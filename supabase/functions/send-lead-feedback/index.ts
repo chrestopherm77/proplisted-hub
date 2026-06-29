@@ -124,11 +124,39 @@ Deno.serve(async (req) => {
 
   const isCronMode = !body.leadId;
 
-  // Cron mode requires CRON_SECRET (header or body)
+  // Cron mode requires CRON_SECRET. Single-lead mode requires INTERNAL_FUNCTION_SECRET or admin JWT.
   if (isCronMode) {
     const expected = Deno.env.get("CRON_SECRET");
     const provided = req.headers.get("x-cron-secret") || body.cronSecret;
-    if (expected && provided !== expected) {
+    if (!expected || provided !== expected) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  } else {
+    const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const providedInternal = req.headers.get("x-internal-secret");
+    let authorized = !!internalSecret && providedInternal === internalSecret;
+    if (!authorized) {
+      const authHeader = req.headers.get("Authorization") || "";
+      if (authHeader.startsWith("Bearer ")) {
+        try {
+          const sbAuth = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_ANON_KEY")!,
+            { global: { headers: { Authorization: authHeader } } }
+          );
+          const { data: c } = await sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
+          const uid = c?.claims?.sub;
+          if (uid) {
+            const { data: isAdmin } = await sb.rpc("has_role", { _user_id: uid, _role: "MASTER_ADMIN" });
+            authorized = !!isAdmin;
+          }
+        } catch { /* noop */ }
+      }
+    }
+    if (!authorized) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },

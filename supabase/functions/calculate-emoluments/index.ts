@@ -1,4 +1,5 @@
 import { z } from "https://esm.sh/zod@3.23.8";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated user (paid external API)
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return respond({ ok: false, error: "Não autenticado." }, 401);
+    }
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claims, error: authErr } = await sb.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+    if (authErr || !claims?.claims?.sub) {
+      return respond({ ok: false, error: "Não autenticado." }, 401);
+    }
+
     const token = Deno.env.get("CALCULADORA_API_TOKEN");
     if (!token) {
       return respond({

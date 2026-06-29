@@ -13,6 +13,20 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Internal-only endpoint: require INTERNAL_FUNCTION_SECRET OR service-role bearer
+  const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+  const providedInternal = req.headers.get("x-internal-secret");
+  const authHeader = req.headers.get("Authorization") || "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const isInternal = !!internalSecret && providedInternal === internalSecret;
+  const isServiceRole = !!serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`;
+  if (!isInternal && !isServiceRole) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const source = String(body?.source || "unknown").substring(0, 100);
