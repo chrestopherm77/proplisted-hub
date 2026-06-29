@@ -11,6 +11,19 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require shared secret from MegaAPI (configure on MegaAPI side as a custom header)
+  const expectedSecret = Deno.env.get("MEGA_WEBHOOK_SECRET");
+  const providedSecret =
+    req.headers.get("x-mega-secret") ||
+    req.headers.get("x-webhook-secret") ||
+    new URL(req.url).searchParams.get("secret");
+  if (!expectedSecret || providedSecret !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const payload = await req.json();
     console.log("Mega webhook received:", JSON.stringify(payload).substring(0, 500));
