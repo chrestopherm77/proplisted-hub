@@ -670,6 +670,57 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          city: string
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          event_date: string
+          external_url: string
+          id: string
+          is_active: boolean
+          location_name: string | null
+          sort_order: number
+          state: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_date: string
+          external_url: string
+          id?: string
+          is_active?: boolean
+          location_name?: string | null
+          sort_order?: number
+          state: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_date?: string
+          external_url?: string
+          id?: string
+          is_active?: boolean
+          location_name?: string | null
+          sort_order?: number
+          state?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       faq_categories: {
         Row: {
           created_at: string
