@@ -792,7 +792,9 @@ const allLabelMaps: Record<string, Record<string, string>> = {
   residentialTopography: topographySellLabels,
   terrainPosition: terrainPositionLabels,
   access: accessLabels,
+  propertyCondition: propertyConditionLabels,
 };
+
 
 // Human-readable field names
 const fieldNameLabels: Record<string, string> = {
@@ -866,7 +868,9 @@ const fieldNameLabels: Record<string, string> = {
   state: 'Estado',
   country: 'País',
   address: 'Endereço',
+  propertyCondition: 'Imóvel Novo/Usado',
 };
+
 
 // Fields that represent area/size - should have m² suffix
 const AREA_FIELDS = ['size', 'minSize', 'landMinSize', 'area'];

@@ -250,13 +250,13 @@ const PropertyDetail = () => {
             <div className="flex items-center gap-2">
               {isOwner && (
                 <Button
-                  variant="secondary"
                   onClick={() => navigate(`/portal-imoveis/${property.id}/editar`)}
-                  className="bg-background/80 backdrop-blur-sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Pencil className="h-4 w-4" /> Editar
                 </Button>
               )}
+
               <Badge className="text-sm bg-foreground/80 text-background backdrop-blur-sm border-0">Ref: {property.reference_code}</Badge>
             </div>
           </div>
