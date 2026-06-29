@@ -141,36 +141,35 @@ export default function Events() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((e) => (
               <Card key={e.id} className="overflow-hidden flex flex-col">
                 {e.cover_image_url ? (
-                  <div className="w-full aspect-[16/9] bg-muted">
+                  <div className="w-full aspect-[16/10] bg-muted">
                     <img src={e.cover_image_url} alt={e.title} className="w-full h-full object-cover" />
                   </div>
                 ) : (
-                  <div className="w-full aspect-[16/9] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <CalendarDays className="h-12 w-12 text-primary/40" />
+                  <div className="w-full aspect-[16/10] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <CalendarDays className="h-8 w-8 text-primary/40" />
                   </div>
                 )}
-                <CardContent className="p-5 space-y-3 flex-1 flex flex-col">
+                <CardContent className="p-3 space-y-2 flex-1 flex flex-col">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-base leading-tight">{e.title}</h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" /> {fmtDate(e.event_date)}
-                      {e.end_date && <> — {fmtDate(e.end_date)}</>}
+                    <h3 className="font-semibold text-sm leading-tight line-clamp-2">{e.title}</h3>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3 shrink-0" /> {fmtDate(e.event_date)}
                     </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> {e.location_name ? `${e.location_name} — ` : ''}{e.city}/{e.state}
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3 shrink-0" /> {e.location_name ? `${e.location_name} — ` : ''}{e.city}/{e.state}
                     </p>
                   </div>
                   {e.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{e.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{e.description}</p>
                   )}
-                  <div className="pt-2 mt-auto">
-                    <Button asChild className="w-full">
+                  <div className="pt-1 mt-auto">
+                    <Button asChild size="sm" className="w-full">
                       <a href={e.external_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                         Acessar evento
                       </a>
                     </Button>
