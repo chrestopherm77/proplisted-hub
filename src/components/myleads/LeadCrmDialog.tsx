@@ -231,9 +231,3 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
     </Dialog>
   );
 }
-
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
