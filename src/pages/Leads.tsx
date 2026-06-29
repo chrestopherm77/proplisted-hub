@@ -573,8 +573,8 @@ export default function Leads() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="NEW">Novo</SelectItem>
                   <SelectItem value="USED">Usado</SelectItem>
-                  <SelectItem value="BOTH">Novo ou Usado</SelectItem>
                 </SelectContent>
+
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
