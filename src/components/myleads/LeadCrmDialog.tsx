@@ -61,6 +61,7 @@ export function LeadCrmDialog({ lead, open, onOpenChange, onUpdate, userName, us
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialNotesRef = useRef('');
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     if (lead) {
