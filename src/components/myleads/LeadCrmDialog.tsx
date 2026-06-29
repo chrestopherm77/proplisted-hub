@@ -12,6 +12,7 @@ import { LeadPreferencesView } from '@/components/marketplace/LeadPreferencesVie
 import { buildWaLink } from '@/lib/whatsapp';
 import { registerLeadContact } from '@/lib/leadContact';
 import { CrmLead, CrmStage, STAGES, STAGE_LABEL } from './types';
+import { RefundPolicyDialog } from './RefundPolicyDialog';
 
 interface Props {
   lead: CrmLead | null;
