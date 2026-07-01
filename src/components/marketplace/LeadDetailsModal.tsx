@@ -201,7 +201,7 @@ export function LeadDetailsModal({
                   href="/planos"
                   className="text-[11px] text-yellow-700 dark:text-yellow-400 underline hover:opacity-80"
                 >
-                  Assine e pague apenas {basePrice} créditos
+                  Assine o plano Essencial e ganhe 50% de desconto nos leads
                 </a>
               )}
             </div>
