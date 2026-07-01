@@ -1,0 +1,1 @@
+UPDATE public.subscription_plans SET price = ROUND(price / 2, 2) WHERE price > 0;
