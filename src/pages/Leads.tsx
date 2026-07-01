@@ -703,7 +703,7 @@ export default function Leads() {
                         onClick={(e) => { e.stopPropagation(); navigate('/planos'); }}
                         className="text-[11px] text-yellow-700 dark:text-yellow-400 underline mt-1 w-full text-center hover:opacity-80"
                       >
-                        Assine e pague apenas {basePrice} créditos
+                        Assine o plano Essencial e ganhe 50% de desconto nos leads
                       </button>
                     )}
                   </div>
