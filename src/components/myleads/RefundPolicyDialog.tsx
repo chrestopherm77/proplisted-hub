@@ -104,8 +104,7 @@ export function RefundPolicyDialog({ open, onOpenChange, onAccept }: Props) {
               <p>A equipe de auditoria da Conectae reserva-se o direito de realizar contatos por amostragem com os leads reportados como "inviáveis" ou "sem resposta".</p>
               <p>Caso o setor de qualidade consiga contato com o lead e seja constatado que houve manipulação de informações, omissão de respostas ou que o corretor já está em negociação com o cliente por vias externas, a conta do profissional sofrerá bloqueio imediato de 7 dias. Em caso de reincidência, o corretor será banido definitivamente da plataforma, sem direito a reembolso de créditos remanescentes.</p>
             </section>
-          </div>
-        </ScrollArea>
+        </div>
 
         <div className="flex items-start gap-2 pt-2 border-t">
           <Checkbox
