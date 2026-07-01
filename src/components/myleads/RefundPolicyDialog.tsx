@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -36,12 +35,11 @@ export function RefundPolicyDialog({ open, onOpenChange, onAccept }: Props) {
           <DialogTitle>Política de Estorno e Garantia de Leads – Conectae</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[60vh] pr-4">
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="text-sm space-y-4 leading-relaxed text-foreground/90"
-          >
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex-1 min-h-0 overflow-y-auto pr-4 text-sm space-y-4 leading-relaxed text-foreground/90"
+        >
             <section>
               <h3 className="font-semibold text-base mb-1">1. Objetivo e Premissas</h3>
               <p>Esta política define as regras de devolução de créditos referentes à aquisição de leads na plataforma Conectae. Nosso compromisso é fornecer dados de contato íntegros e de clientes com intenção de compra latente.</p>
@@ -106,8 +104,7 @@ export function RefundPolicyDialog({ open, onOpenChange, onAccept }: Props) {
               <p>A equipe de auditoria da Conectae reserva-se o direito de realizar contatos por amostragem com os leads reportados como "inviáveis" ou "sem resposta".</p>
               <p>Caso o setor de qualidade consiga contato com o lead e seja constatado que houve manipulação de informações, omissão de respostas ou que o corretor já está em negociação com o cliente por vias externas, a conta do profissional sofrerá bloqueio imediato de 7 dias. Em caso de reincidência, o corretor será banido definitivamente da plataforma, sem direito a reembolso de créditos remanescentes.</p>
             </section>
-          </div>
-        </ScrollArea>
+        </div>
 
         <div className="flex items-start gap-2 pt-2 border-t">
           <Checkbox
