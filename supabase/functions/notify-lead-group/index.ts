@@ -188,6 +188,70 @@ Deno.serve(async (req) => {
     }
 
     const anySuccess = results.some((r) => r.success);
+    const failedGroups = results.filter((r) => !r.success);
+
+    // Alerta ADM se qualquer grupo falhou (mesmo com sucesso parcial)
+    if (failedGroups.length > 0) {
+      try {
+        await supabase.from("admin_alerts").insert({
+          type: "LEAD_DISPATCH_FAILED",
+          severity: anySuccess ? "WARNING" : "CRITICAL",
+          message: anySuccess
+            ? `Disparo parcial: ${failedGroups.length}/${results.length} grupo(s) falharam para o lead em ${city || "?"}/${uf || "?"}`
+            : `Disparo TOTALMENTE FALHOU para o lead em ${city || "?"}/${uf || "?"} (MegaAPI instável)`,
+          payload: {
+            lead_id: leadId,
+            city, uf,
+            total_groups: results.length,
+            failed_count: failedGroups.length,
+            failed_groups: failedGroups.map((f) => ({ groupId: f.groupId, details: f.details.substring(0, 200) })),
+          },
+        });
+
+        // E-mail para todos os admins via Resend
+        const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+        if (RESEND_API_KEY) {
+          const { data: admins } = await supabase
+            .from("user_roles")
+            .select("user_id, profiles:profiles!inner(email, name)")
+            .eq("role", "MASTER_ADMIN");
+          const emails = (admins || [])
+            .map((a: any) => a?.profiles?.email)
+            .filter((e: any) => typeof e === "string" && e.includes("@"));
+          if (emails.length > 0) {
+            const html = `
+              <h2>⚠️ Falha no disparo de lead nos grupos WhatsApp</h2>
+              <p><b>Lead:</b> ${leadId}</p>
+              <p><b>Cidade:</b> ${city || "?"} / ${uf || "?"}</p>
+              <p><b>Grupos com falha:</b> ${failedGroups.length} de ${results.length}</p>
+              <p><b>Status geral:</b> ${anySuccess ? "Parcial (alguns grupos receberam)" : "TOTAL — nenhum grupo recebeu"}</p>
+              <pre style="background:#f4f4f4;padding:12px;font-size:12px;overflow:auto">${JSON.stringify(failedGroups, null, 2)}</pre>
+              <p>Verifique a saúde da MegaAPI ou se os grupos ainda existem.</p>
+            `;
+            for (const to of emails) {
+              try {
+                await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    from: "Conectaeimob <alertas@conectaeimob.com.br>",
+                    to,
+                    subject: `⚠️ Falha disparo lead ${city || ""}/${uf || ""}`,
+                    html,
+                  }),
+                });
+                await new Promise((r) => setTimeout(r, 650)); // Resend rate limit
+              } catch (mailErr) {
+                console.error("Falha ao enviar e-mail admin:", mailErr);
+              }
+            }
+          }
+        }
+      } catch (alertErr) {
+        console.error("Falha ao registrar alerta admin:", alertErr);
+      }
+    }
+
     if (!anySuccess) {
       return new Response(JSON.stringify({
         error: "Falha ao enviar para todos os grupos após 3 tentativas. A API do WhatsApp pode estar instável.",
