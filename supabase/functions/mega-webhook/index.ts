@@ -11,6 +11,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Log every hit BEFORE secret validation so we can tell if MegaAPI is calling at all
+  console.log(`mega-webhook hit: method=${req.method} url=${req.url}`);
+
   // Require shared secret from MegaAPI (configure on MegaAPI side as a custom header)
   const expectedSecret = Deno.env.get("MEGA_WEBHOOK_SECRET");
   const providedSecret =
@@ -18,6 +21,7 @@ Deno.serve(async (req) => {
     req.headers.get("x-webhook-secret") ||
     new URL(req.url).searchParams.get("secret");
   if (!expectedSecret || providedSecret !== expectedSecret) {
+    console.warn(`mega-webhook UNAUTHORIZED: hasExpected=${!!expectedSecret} hasProvided=${!!providedSecret}`);
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,7 +30,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log("Mega webhook received:", JSON.stringify(payload).substring(0, 500));
+    console.log("Mega webhook received:", JSON.stringify(payload).substring(0, 800));
 
     const messageType = payload?.messageType;
 
@@ -66,20 +70,91 @@ Deno.serve(async (req) => {
       console.error("MegaAPI health check error (non-blocking):", healthErr);
     }
 
-    if (messageType !== "listResponseMessage") {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // ---- Extrai selectedRowId de mensagens interativas ----
+    let selectedRowId: string | null =
+      payload?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+      payload?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+      payload?.singleSelectReply?.selectedRowId ||
+      null;
+
+    // ---- Fallback: reply de texto ("SIM", "OK", "YES"...) do lead confirmando ----
+    // Alguns aparelhos/celulares não renderizam a lista interativa e o usuário responde por texto.
+    // Nesse caso, buscamos o lead mais recente NÃO confirmado pelo telefone remetente.
+    if (!selectedRowId) {
+      const rawText: string =
+        payload?.message?.conversation ||
+        payload?.message?.extendedTextMessage?.text ||
+        payload?.conversation ||
+        payload?.extendedTextMessage?.text ||
+        payload?.text ||
+        payload?.body ||
+        "";
+      const normalizedText = String(rawText || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const isConfirmationText = ["sim", "s", "yes", "y", "ok", "confirmo", "confirmar", "quero", "liberar"].includes(normalizedText);
+
+      // Remetente (jid) — vários formatos possíveis
+      const senderJid: string =
+        payload?.key?.remoteJid ||
+        payload?.message?.key?.remoteJid ||
+        payload?.remoteJid ||
+        payload?.from ||
+        payload?.sender ||
+        "";
+      const senderDigits = String(senderJid).split("@")[0].replace(/\D/g, "");
+      // Ignora se veio de grupo (jid termina em @g.us)
+      const isGroup = String(senderJid).includes("@g.us");
+      // Ignora se a própria conta enviou (fromMe)
+      const fromMe = payload?.key?.fromMe === true || payload?.message?.key?.fromMe === true || payload?.fromMe === true;
+
+      console.log(`Text fallback check: text="${rawText}" normalized="${normalizedText}" isConfirmation=${isConfirmationText} sender=${senderDigits} isGroup=${isGroup} fromMe=${fromMe}`);
+
+      if (isConfirmationText && senderDigits.length >= 10 && !isGroup && !fromMe) {
+        // Tenta casar com o telefone do lead (o formato salvo geralmente é "(16) 99999-9999",
+        // mas comparamos por dígitos. O sender chega com DDI 55 + DDD + 9 + número).
+        // Cria variações plausíveis dos últimos 10-11 dígitos (com/sem o 9).
+        const last11 = senderDigits.slice(-11); // ex: 16991234567
+        const last10 = senderDigits.slice(-10); // ex: 1691234567 (sem 9)
+        // Busca leads pendentes recentes (últimas 72h) e compara por dígitos no app
+        const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+        const { data: pending, error: pendingErr } = await supabase
+          .from("leads")
+          .select("id, phone, created_at")
+          .eq("whatsapp_confirmed", false)
+          .eq("is_active", false)
+          .gte("created_at", cutoff)
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (pendingErr) console.error("pending leads query error:", pendingErr);
+
+        const match = (pending || []).find((l) => {
+          const d = String(l.phone || "").replace(/\D/g, "");
+          if (!d) return false;
+          return d.endsWith(last11) || d.endsWith(last10) || last11.endsWith(d) || last10.endsWith(d);
+        });
+
+        if (match) {
+          selectedRowId = `confirm_${match.id}`;
+          console.log(`Text reply matched lead ${match.id} by phone ${senderDigits}`);
+        } else {
+          console.log(`Text reply from ${senderDigits} did NOT match any pending lead`);
+        }
+      }
+    }
+
+    if (messageType !== "listResponseMessage" && !selectedRowId) {
       return new Response(
         JSON.stringify({ ok: true, ignored: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-
-
-    const selectedRowId =
-      payload?.listResponseMessage?.singleSelectReply?.selectedRowId ||
-      payload?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
-      payload?.singleSelectReply?.selectedRowId ||
-      null;
 
     console.log("Selected row ID:", selectedRowId);
 
@@ -89,11 +164,6 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // ===== Feedback response (after 14 days) =====
     if (selectedRowId.startsWith("feedback_done_") || selectedRowId.startsWith("feedback_pending_")) {
@@ -142,6 +212,8 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+
 
 
     // Activate the lead
