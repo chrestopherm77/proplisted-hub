@@ -82,13 +82,20 @@ export function EventsManagement() {
     setDialogOpen(true);
   };
 
+  const toLocalInput = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const openEdit = (e: EventRow) => {
     setForm({
       id: e.id,
       title: e.title,
       description: e.description || '',
-      event_date: e.event_date ? e.event_date.slice(0, 16) : '',
-      end_date: e.end_date ? e.end_date.slice(0, 16) : '',
+      event_date: toLocalInput(e.event_date),
+      end_date: toLocalInput(e.end_date),
       state: e.state,
       city: e.city,
       location_name: e.location_name || '',
