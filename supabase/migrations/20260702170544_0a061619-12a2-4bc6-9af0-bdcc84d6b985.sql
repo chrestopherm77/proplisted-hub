@@ -1,0 +1,1 @@
+UPDATE public.leads SET is_active = true, whatsapp_confirmed = true, updated_at = now() WHERE id IN ('bd66015a-c760-4f26-8d34-7f05bcec16e2','b4a682c9-5f0b-4335-8e2f-454519a3e394','184922fa-3dfb-4a65-a1c5-1dd24751f462','794b79a4-cce4-44fa-8b7d-ed31334f353c','56626d90-f950-4989-a059-cdbcf79f9426');
