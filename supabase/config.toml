@@ -107,9 +107,3 @@ verify_jwt = false
 
 [functions.send-lead-feedback]
 verify_jwt = false
-
-[functions.test-send-confirmation]
-verify_jwt = false
-
-[functions.reveal-mega-secret]
-verify_jwt = false
