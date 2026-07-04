@@ -1,7 +1,6 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { LocationSelector } from "../../LocationSelector";
-import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 
 export function BuildLocationStep({ data, updateFlowData }: StepProps) {
   // Gera o campo location para compatibilidade
@@ -28,8 +27,6 @@ export function BuildLocationStep({ data, updateFlowData }: StepProps) {
           onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '' })}
           onCityChange={(city) => updateLocationAndRegion({ city })}
           onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
-          allowedStates={ALLOWED_STATES}
-          allowedCities={ALLOWED_CITIES}
         />
       </div>
     </StepContainer>

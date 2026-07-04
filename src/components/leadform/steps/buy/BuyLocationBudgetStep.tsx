@@ -1,7 +1,6 @@
 import { StepProps } from "../../types";
 import { StepContainer } from "../../StepContainer";
 import { LocationSelector } from "../../LocationSelector";
-import { ALLOWED_STATES, ALLOWED_CITIES } from "../../allowedRegions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign, AlertCircle, Compass } from "lucide-react";
@@ -44,8 +43,6 @@ export function BuyLocationBudgetStep({ data, updateFlowData }: StepProps) {
           onUFChange={(uf) => updateLocationAndRegion({ uf, city: '', neighborhood: '', zone: undefined })}
           onCityChange={(city) => updateLocationAndRegion({ city })}
           onNeighborhoodChange={(neighborhood) => updateLocationAndRegion({ neighborhood })}
-          allowedStates={ALLOWED_STATES}
-          allowedCities={ALLOWED_CITIES}
         />
 
         <div className="space-y-2">
