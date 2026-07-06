@@ -143,7 +143,7 @@ export default function Events() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((e) => (
-              <Card key={e.id} className="overflow-hidden flex flex-col">
+              <Card key={e.id} className="overflow-hidden flex flex-col h-full">
                 {e.cover_image_url ? (
                   <div className="w-full aspect-[16/10] bg-muted">
                     <img src={e.cover_image_url} alt={e.title} className="w-full h-full object-cover" />
@@ -155,7 +155,7 @@ export default function Events() {
                 )}
                 <CardContent className="p-3 space-y-2 flex-1 flex flex-col">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-sm leading-tight line-clamp-2">{e.title}</h3>
+                    <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">{e.title}</h3>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <CalendarDays className="h-3 w-3 shrink-0" /> {fmtDate(e.event_date)}
                     </p>
@@ -163,9 +163,9 @@ export default function Events() {
                       <MapPin className="h-3 w-3 shrink-0" /> {e.location_name ? `${e.location_name} — ` : ''}{e.city}/{e.state}
                     </p>
                   </div>
-                  {e.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{e.description}</p>
-                  )}
+                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">
+                    {e.description || ''}
+                  </p>
                   <div className="pt-1 mt-auto">
                     <Button asChild size="sm" className="w-full">
                       <a href={e.external_url} target="_blank" rel="noopener noreferrer">
