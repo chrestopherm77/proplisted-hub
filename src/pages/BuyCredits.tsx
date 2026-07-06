@@ -270,10 +270,9 @@ export default function BuyCredits() {
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-semibold text-yellow-900 dark:text-yellow-200">
-                  Assine um plano e pague metade do preço!
+                  Assine o plano Essencial e ganhe 50% de desconto nos leads
                 </p>
                 <p className="text-yellow-800 dark:text-yellow-300">
-                  Assinantes pagam o valor cheio do pacote (50% mais barato por crédito).{' '}
                   <button
                     type="button"
                     onClick={() => navigate('/planos')}
