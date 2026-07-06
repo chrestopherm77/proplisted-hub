@@ -144,15 +144,19 @@ export default function Events() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((e) => (
               <Card key={e.id} className="overflow-hidden flex flex-col h-full">
-                {e.cover_image_url ? (
-                  <div className="w-full aspect-[16/10] bg-muted">
-                    <img src={e.cover_image_url} alt={e.title} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-full aspect-[16/10] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <CalendarDays className="h-8 w-8 text-primary/40" />
-                  </div>
-                )}
+                <div className="w-full h-44 bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {e.cover_image_url ? (
+                    <img
+                      src={e.cover_image_url}
+                      alt={e.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <CalendarDays className="h-8 w-8 text-primary/40" />
+                    </div>
+                  )}
+                </div>
                 <CardContent className="p-3 space-y-2 flex-1 flex flex-col">
                   <div className="space-y-1">
                     <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">{e.title}</h3>
