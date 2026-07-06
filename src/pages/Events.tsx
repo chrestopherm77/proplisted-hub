@@ -99,18 +99,20 @@ export default function Events() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="space-y-2">
                 <Label>UF</Label>
-                <Select value={filterUf} onValueChange={handleUf}>
+                <Select value={filterUf || 'all'} onValueChange={(v) => handleUf(v === 'all' ? '' : v)}>
                   <SelectTrigger><SelectValue placeholder="Todas as UFs" /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todos os estados</SelectItem>
                     {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Cidade</Label>
-                <Select value={filterCity} onValueChange={setFilterCity} disabled={!filterUf}>
+                <Select value={filterCity || 'all'} onValueChange={(v) => setFilterCity(v === 'all' ? '' : v)} disabled={!filterUf}>
                   <SelectTrigger><SelectValue placeholder={filterUf ? 'Todas' : 'Selecione a UF'} /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todas as cidades</SelectItem>
                     {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
