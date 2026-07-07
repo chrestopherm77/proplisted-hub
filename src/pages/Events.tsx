@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Loader2, MapPin, ExternalLink } from 'lucide-react';
+import { isPrivateEventCoverUrl, resolveEventCoverUrl } from '@/lib/eventCoverImages';
 
 interface EventRow {
   id: string;
@@ -34,6 +35,7 @@ export default function Events() {
   const [filterUf, setFilterUf] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [coverUrls, setCoverUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -48,6 +50,24 @@ export default function Events() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveCovers = async () => {
+      const entries = await Promise.all(
+        events.map(async (event) => [event.id, await resolveEventCoverUrl(event.cover_image_url)] as const)
+      );
+
+      if (active) {
+        setCoverUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))));
+      }
+    };
+
+    resolveCovers();
+
+    return () => { active = false; };
+  }, [events]);
 
   const handleUf = (v: string) => {
     setFilterUf(v);
@@ -147,9 +167,9 @@ export default function Events() {
             {filtered.map((e) => (
               <Card key={e.id} className="overflow-hidden flex flex-col h-full">
                 <div className="w-full aspect-[16/10] bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                  {e.cover_image_url ? (
+                  {coverUrls[e.id] || (e.cover_image_url && !isPrivateEventCoverUrl(e.cover_image_url)) ? (
                     <img
-                      src={e.cover_image_url}
+                      src={coverUrls[e.id] || e.cover_image_url || ''}
                       alt={e.title}
                       loading="lazy"
                       className="w-full h-full object-contain"

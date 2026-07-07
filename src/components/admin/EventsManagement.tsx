@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { resolveEventCoverUrl } from '@/lib/eventCoverImages';
 
 interface EventRow {
   id: string;
@@ -43,6 +44,59 @@ const emptyForm = {
   sort_order: 0,
 };
 
+const COVER_WIDTH = 1600;
+const COVER_HEIGHT = 1000;
+
+const normalizeCoverImage = (file: File) => new Promise<File>((resolve, reject) => {
+  if (!file.type.startsWith('image/')) {
+    reject(new Error('Envie um arquivo de imagem.'));
+    return;
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+
+  image.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = COVER_WIDTH;
+      canvas.height = COVER_HEIGHT;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Não foi possível preparar a imagem.');
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, COVER_WIDTH, COVER_HEIGHT);
+
+      const scale = Math.min(COVER_WIDTH / image.naturalWidth, COVER_HEIGHT / image.naturalHeight);
+      const width = Math.round(image.naturalWidth * scale);
+      const height = Math.round(image.naturalHeight * scale);
+      const x = Math.round((COVER_WIDTH - width) / 2);
+      const y = Math.round((COVER_HEIGHT - height) / 2);
+
+      ctx.drawImage(image, x, y, width, height);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(objectUrl);
+        if (!blob) {
+          reject(new Error('Não foi possível converter a imagem.'));
+          return;
+        }
+        resolve(new File([blob], 'capa-evento.jpg', { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.88);
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    }
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('Não foi possível ler essa imagem. Tente enviar em JPG ou PNG.'));
+  };
+
+  image.src = objectUrl;
+});
+
 export function EventsManagement() {
   const { toast } = useToast();
   const { states } = useIBGELocation();
@@ -53,6 +107,7 @@ export function EventsManagement() {
   const [form, setForm] = useState({ ...emptyForm });
   const [cities, setCities] = useState<{ id: number; nome: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [previewCoverUrl, setPreviewCoverUrl] = useState('');
 
   const fetchCities = async (uf: string) => {
     if (!uf) { setCities([]); return; }
@@ -75,6 +130,16 @@ export function EventsManagement() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    resolveEventCoverUrl(form.cover_image_url).then((url) => {
+      if (active) setPreviewCoverUrl(url);
+    });
+
+    return () => { active = false; };
+  }, [form.cover_image_url]);
 
   const openNew = () => {
     setForm({ ...emptyForm });
@@ -156,14 +221,11 @@ export function EventsManagement() {
   };
 
   const uploadCover = async (file: File) => {
-    if (file.size > 8 * 1024 * 1024) {
-      throw new Error('Imagem muito grande (máx. 8MB)');
-    }
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `events/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const normalizedFile = await normalizeCoverImage(file);
+    const path = `events/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
     const { error: upErr } = await supabase.storage
       .from('news-images')
-      .upload(path, file, { upsert: true, contentType: file.type || `image/${ext}` });
+      .upload(path, normalizedFile, { upsert: false, contentType: 'image/jpeg' });
     if (upErr) throw upErr;
     const { data } = supabase.storage.from('news-images').getPublicUrl(path);
     return data.publicUrl;
@@ -270,8 +332,8 @@ export function EventsManagement() {
             <div className="space-y-2">
               <Label>Imagem de capa</Label>
               <div className="flex items-center gap-3">
-                {form.cover_image_url ? (
-                  <img src={form.cover_image_url} alt="Capa" className="h-16 w-28 rounded-md object-cover border bg-muted" />
+                {previewCoverUrl ? (
+                  <img src={previewCoverUrl} alt="Capa" className="h-16 w-28 rounded-md object-contain border bg-muted" />
                 ) : (
                   <div className="h-16 w-28 rounded-md border bg-muted flex items-center justify-center text-[10px] text-muted-foreground">sem capa</div>
                 )}
@@ -295,6 +357,7 @@ export function EventsManagement() {
                       }
                     }}
                   />
+                  {uploading && <p className="text-xs text-muted-foreground">Processando e enviando imagem...</p>}
                   <Input placeholder="ou cole uma URL" value={form.cover_image_url} onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })} />
                 </div>
               </div>
