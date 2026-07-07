@@ -102,6 +102,18 @@ export default function Events() {
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
 
+  const fmtRange = (startIso: string, endIso: string | null) => {
+    if (!endIso) return fmtDate(startIso);
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    const sameDay = start.toDateString() === end.toDateString();
+    if (sameDay) {
+      const time = end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return `${fmtDate(startIso)} até ${time}`;
+    }
+    return `${fmtDate(startIso)} até ${fmtDate(endIso)}`;
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-6">
@@ -184,8 +196,8 @@ export default function Events() {
                 <CardContent className="p-3 space-y-2 flex-1 flex flex-col">
                   <div className="space-y-1">
                     <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">{e.title}</h3>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3 shrink-0" /> {fmtDate(e.event_date)}
+                    <p className="text-[11px] text-muted-foreground flex items-start gap-1">
+                      <CalendarDays className="h-3 w-3 shrink-0 mt-0.5" /> <span>{fmtRange(e.event_date, e.end_date)}</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 shrink-0" /> {e.is_online ? 'Evento online' : `${e.location_name ? `${e.location_name} — ` : ''}${e.city}/${e.state}`}

@@ -329,12 +329,19 @@ export function EventsManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label>Cidade *</Label>
-                  <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
-                    <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
-                    <SelectContent>
-                      {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
+                      <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
+                      <SelectContent>
+                        {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {form.city && (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setForm({ ...form, city: '' })}>
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
