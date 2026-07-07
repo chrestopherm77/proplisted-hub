@@ -188,7 +188,7 @@ export default function Events() {
                       <CalendarDays className="h-3 w-3 shrink-0" /> {fmtDate(e.event_date)}
                     </p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3 shrink-0" /> {e.location_name ? `${e.location_name} — ` : ''}{e.city}/{e.state}
+                      <MapPin className="h-3 w-3 shrink-0" /> {e.is_online ? 'Evento online' : `${e.location_name ? `${e.location_name} — ` : ''}${e.city}/${e.state}`}
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">
