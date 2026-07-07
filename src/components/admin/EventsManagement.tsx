@@ -269,7 +269,7 @@ export function EventsManagement() {
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.title}</TableCell>
                   <TableCell className="text-xs">{fmt(e.event_date)}</TableCell>
-                  <TableCell className="text-xs">{e.city}/{e.state}</TableCell>
+                  <TableCell className="text-xs">{e.is_online ? 'Online' : `${e.city}/${e.state}`}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">
                     <a href={e.external_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{e.external_url}</a>
                   </TableCell>
