@@ -17,11 +17,12 @@ interface EventRow {
   description: string | null;
   event_date: string;
   end_date: string | null;
-  state: string;
-  city: string;
+  state: string | null;
+  city: string | null;
   location_name: string | null;
   external_url: string;
   cover_image_url: string | null;
+  is_online?: boolean;
 }
 
 const stripAccent = (s: string) =>
