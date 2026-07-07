@@ -14,27 +14,19 @@ serve(async (req) => {
     const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
     if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
 
-    const FRONTEND_URL = 'https://conectaeimob.com.br';
-
+    // Payment Link (permanente, sem expiração)
     const payload = {
-      billingTypes: ['PIX', 'CREDIT_CARD'],
-      chargeTypes: ['DETACHED'],
-      minutesToExpire: 60,
-      items: [{
-        name: 'Evento Conectae',
-        value: 9.90,
-        description: 'Evento Conectae',
-        quantity: 1,
-      }],
-      callback: {
-        successUrl: `${FRONTEND_URL}/obrigado-grupo`,
-        errorUrl: `${FRONTEND_URL}/checkout-error`,
-        expiredUrl: `${FRONTEND_URL}/checkout-expired`,
-        cancelUrl: `${FRONTEND_URL}/checkout-error`,
-      },
+      name: 'Evento Conectae',
+      description: 'Evento Conectae',
+      billingType: 'UNDEFINED', // permite PIX, boleto e cartão
+      chargeType: 'DETACHED',
+      value: 9.90,
+      dueDateLimitDays: 3,
+      notificationEnabled: true,
+      endDate: null, // sem data de expiração
     };
 
-    const res = await fetch(`${ASAAS_BASE_URL}/checkouts`, {
+    const res = await fetch(`${ASAAS_BASE_URL}/paymentLinks`, {
       method: 'POST',
       headers: {
         'access_token': ASAAS_API_KEY,
@@ -51,7 +43,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, checkoutUrl: data.link || data.url, checkoutId: data.id, raw: data }),
+      JSON.stringify({ success: true, paymentLinkUrl: data.url, paymentLinkId: data.id, raw: data }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e: any) {
