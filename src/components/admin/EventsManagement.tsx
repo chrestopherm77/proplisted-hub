@@ -309,26 +309,35 @@ export function EventsManagement() {
                 <Input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>UF *</Label>
-                <Select value={form.state} onValueChange={(v) => { setForm({ ...form, state: v, city: '' }); fetchCities(v); }}>
-                  <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-                  <SelectContent>
-                    {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cidade *</Label>
-                <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
-                  <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2 rounded-md border p-3">
+              <Switch
+                checked={form.is_online}
+                onCheckedChange={(v) => setForm({ ...form, is_online: v, ...(v ? { state: '', city: '' } : {}) })}
+              />
+              <Label className="cursor-pointer">Evento online (sem localização física)</Label>
             </div>
+            {!form.is_online && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>UF *</Label>
+                  <Select value={form.state} onValueChange={(v) => { setForm({ ...form, state: v, city: '' }); fetchCities(v); }}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>
+                      {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade *</Label>
+                  <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
+                    <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
+                    <SelectContent>
+                      {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Local (ex.: nome do espaço)</Label>
               <Input value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })} />
