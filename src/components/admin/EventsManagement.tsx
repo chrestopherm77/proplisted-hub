@@ -151,20 +151,36 @@ export function EventsManagement() {
     setDialogOpen(true);
   };
 
-  const toLocalInput = (iso: string | null) => {
-    if (!iso) return '';
+  const splitIso = (iso: string | null) => {
+    if (!iso) return { date: '', time: '' };
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const hh = d.getHours();
+    const mm = d.getMinutes();
+    const time = hh === 0 && mm === 0 ? '' : `${pad(hh)}:${pad(mm)}`;
+    return { date, time };
+  };
+
+  const combineDateTime = (date: string, time: string) => {
+    if (!date) return null;
+    const t = time && /^\d{2}:\d{2}$/.test(time) ? time : '00:00';
+    const iso = new Date(`${date}T${t}:00`);
+    if (isNaN(iso.getTime())) return null;
+    return iso.toISOString();
   };
 
   const openEdit = (e: EventRow) => {
+    const start = splitIso(e.event_date);
+    const end = splitIso(e.end_date);
     setForm({
       id: e.id,
       title: e.title,
       description: e.description || '',
-      event_date: toLocalInput(e.event_date),
-      end_date: toLocalInput(e.end_date),
+      event_date: start.date,
+      event_time: start.time,
+      end_date: end.date,
+      end_time: end.time,
       state: e.state || '',
       city: e.city || '',
       location_name: e.location_name || '',
@@ -187,13 +203,19 @@ export function EventsManagement() {
       toast({ title: 'Para eventos presenciais informe UF e cidade', variant: 'destructive' });
       return;
     }
+    const startIso = combineDateTime(form.event_date, form.event_time);
+    if (!startIso) {
+      toast({ title: 'Data inválida', variant: 'destructive' });
+      return;
+    }
+    const endIso = form.end_date ? combineDateTime(form.end_date, form.end_time) : null;
     setSaving(true);
     try {
       const payload = {
         title: form.title.trim(),
         description: form.description.trim() || null,
-        event_date: new Date(form.event_date).toISOString(),
-        end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
+        event_date: startIso,
+        end_date: endIso,
         state: form.is_online ? null : form.state.toUpperCase().slice(0, 2),
         city: form.is_online ? null : form.city,
         location_name: form.location_name.trim() || null,
