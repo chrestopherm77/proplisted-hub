@@ -146,12 +146,13 @@ export default function Events() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((e) => (
               <Card key={e.id} className="overflow-hidden flex flex-col h-full">
-                <div className="w-full h-44 bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-full aspect-[16/10] bg-muted flex items-center justify-center overflow-hidden shrink-0">
                   {e.cover_image_url ? (
                     <img
                       src={e.cover_image_url}
                       alt={e.title}
-                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

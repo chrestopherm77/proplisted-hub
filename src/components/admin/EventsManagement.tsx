@@ -160,12 +160,12 @@ export function EventsManagement() {
       throw new Error('Imagem muito grande (máx. 8MB)');
     }
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `events/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error: upErr } = await supabase.storage
-      .from('event-covers')
+      .from('news-images')
       .upload(path, file, { upsert: true, contentType: file.type || `image/${ext}` });
     if (upErr) throw upErr;
-    const { data } = supabase.storage.from('event-covers').getPublicUrl(path);
+    const { data } = supabase.storage.from('news-images').getPublicUrl(path);
     return data.publicUrl;
   };
 
