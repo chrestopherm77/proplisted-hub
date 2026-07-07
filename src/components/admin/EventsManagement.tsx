@@ -20,12 +20,13 @@ interface EventRow {
   description: string | null;
   event_date: string;
   end_date: string | null;
-  state: string;
-  city: string;
+  state: string | null;
+  city: string | null;
   location_name: string | null;
   external_url: string;
   cover_image_url: string | null;
   is_active: boolean;
+  is_online: boolean;
   sort_order: number;
 }
 
@@ -41,6 +42,7 @@ const emptyForm = {
   external_url: '',
   cover_image_url: '',
   is_active: true,
+  is_online: false,
   sort_order: 0,
 };
 
