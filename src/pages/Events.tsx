@@ -102,6 +102,18 @@ export default function Events() {
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
 
+  const fmtRange = (startIso: string, endIso: string | null) => {
+    if (!endIso) return fmtDate(startIso);
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    const sameDay = start.toDateString() === end.toDateString();
+    if (sameDay) {
+      const time = end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return `${fmtDate(startIso)} até ${time}`;
+    }
+    return `${fmtDate(startIso)} até ${fmtDate(endIso)}`;
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-6">
