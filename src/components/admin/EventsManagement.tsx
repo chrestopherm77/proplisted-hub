@@ -325,12 +325,20 @@ export function EventsManagement() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Data e hora *</Label>
-                <Input type="datetime-local" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} />
+                <Label>Data início *</Label>
+                <Input type="date" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora início (opcional)</Label>
+                <Input type="time" value={form.event_time} onChange={(e) => setForm({ ...form, event_time: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>Data fim (opcional)</Label>
-                <Input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora fim (opcional)</Label>
+                <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-md border p-3">
