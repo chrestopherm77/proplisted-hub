@@ -79,8 +79,8 @@ export default function Events() {
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
-      if (filterUf && e.state.toUpperCase() !== filterUf.toUpperCase()) return false;
-      if (filterCity && stripAccent(e.city) !== stripAccent(filterCity)) return false;
+      if (filterUf && (e.state || '').toUpperCase() !== filterUf.toUpperCase()) return false;
+      if (filterCity && stripAccent(e.city || '') !== stripAccent(filterCity)) return false;
       if (filterDate) {
         const d = new Date(e.event_date).toISOString().slice(0, 10);
         if (d < filterDate) return false;
