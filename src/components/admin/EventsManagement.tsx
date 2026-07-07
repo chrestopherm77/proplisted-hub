@@ -163,12 +163,13 @@ export function EventsManagement() {
       description: e.description || '',
       event_date: toLocalInput(e.event_date),
       end_date: toLocalInput(e.end_date),
-      state: e.state,
-      city: e.city,
+      state: e.state || '',
+      city: e.city || '',
       location_name: e.location_name || '',
       external_url: e.external_url,
       cover_image_url: e.cover_image_url || '',
       is_active: e.is_active,
+      is_online: e.is_online ?? false,
       sort_order: e.sort_order,
     });
     if (e.state) fetchCities(e.state);
@@ -176,8 +177,12 @@ export function EventsManagement() {
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.event_date || !form.state || !form.city || !form.external_url) {
-      toast({ title: 'Preencha título, data, UF, cidade e link', variant: 'destructive' });
+    if (!form.title || !form.event_date || !form.external_url) {
+      toast({ title: 'Preencha título, data e link', variant: 'destructive' });
+      return;
+    }
+    if (!form.is_online && (!form.state || !form.city)) {
+      toast({ title: 'Para eventos presenciais informe UF e cidade', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -187,12 +192,13 @@ export function EventsManagement() {
         description: form.description.trim() || null,
         event_date: new Date(form.event_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
-        state: form.state.toUpperCase().slice(0, 2),
-        city: form.city,
+        state: form.is_online ? null : form.state.toUpperCase().slice(0, 2),
+        city: form.is_online ? null : form.city,
         location_name: form.location_name.trim() || null,
         external_url: form.external_url.trim(),
         cover_image_url: form.cover_image_url.trim() || null,
         is_active: form.is_active,
+        is_online: form.is_online,
         sort_order: form.sort_order || 0,
       };
       const { error } = form.id
