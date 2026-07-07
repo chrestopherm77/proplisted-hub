@@ -672,7 +672,7 @@ export type Database = {
       }
       events: {
         Row: {
-          city: string
+          city: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -681,14 +681,15 @@ export type Database = {
           external_url: string
           id: string
           is_active: boolean
+          is_online: boolean
           location_name: string | null
           sort_order: number
-          state: string
+          state: string | null
           title: string
           updated_at: string
         }
         Insert: {
-          city: string
+          city?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -697,14 +698,15 @@ export type Database = {
           external_url: string
           id?: string
           is_active?: boolean
+          is_online?: boolean
           location_name?: string | null
           sort_order?: number
-          state: string
+          state?: string | null
           title: string
           updated_at?: string
         }
         Update: {
-          city?: string
+          city?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -713,9 +715,10 @@ export type Database = {
           external_url?: string
           id?: string
           is_active?: boolean
+          is_online?: boolean
           location_name?: string | null
           sort_order?: number
-          state?: string
+          state?: string | null
           title?: string
           updated_at?: string
         }

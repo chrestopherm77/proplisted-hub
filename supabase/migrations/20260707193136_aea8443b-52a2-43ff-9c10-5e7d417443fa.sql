@@ -1,0 +1,3 @@
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_online boolean NOT NULL DEFAULT false;
+ALTER TABLE public.events ALTER COLUMN state DROP NOT NULL;
+ALTER TABLE public.events ALTER COLUMN city DROP NOT NULL;
