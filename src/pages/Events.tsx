@@ -17,11 +17,12 @@ interface EventRow {
   description: string | null;
   event_date: string;
   end_date: string | null;
-  state: string;
-  city: string;
+  state: string | null;
+  city: string | null;
   location_name: string | null;
   external_url: string;
   cover_image_url: string | null;
+  is_online?: boolean;
 }
 
 const stripAccent = (s: string) =>
@@ -78,8 +79,8 @@ export default function Events() {
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
-      if (filterUf && e.state.toUpperCase() !== filterUf.toUpperCase()) return false;
-      if (filterCity && stripAccent(e.city) !== stripAccent(filterCity)) return false;
+      if (filterUf && (e.state || '').toUpperCase() !== filterUf.toUpperCase()) return false;
+      if (filterCity && stripAccent(e.city || '') !== stripAccent(filterCity)) return false;
       if (filterDate) {
         const d = new Date(e.event_date).toISOString().slice(0, 10);
         if (d < filterDate) return false;
@@ -187,7 +188,7 @@ export default function Events() {
                       <CalendarDays className="h-3 w-3 shrink-0" /> {fmtDate(e.event_date)}
                     </p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3 shrink-0" /> {e.location_name ? `${e.location_name} — ` : ''}{e.city}/{e.state}
+                      <MapPin className="h-3 w-3 shrink-0" /> {e.is_online ? 'Evento online' : `${e.location_name ? `${e.location_name} — ` : ''}${e.city}/${e.state}`}
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">

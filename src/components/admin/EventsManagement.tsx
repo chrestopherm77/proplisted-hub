@@ -20,12 +20,13 @@ interface EventRow {
   description: string | null;
   event_date: string;
   end_date: string | null;
-  state: string;
-  city: string;
+  state: string | null;
+  city: string | null;
   location_name: string | null;
   external_url: string;
   cover_image_url: string | null;
   is_active: boolean;
+  is_online: boolean;
   sort_order: number;
 }
 
@@ -41,6 +42,7 @@ const emptyForm = {
   external_url: '',
   cover_image_url: '',
   is_active: true,
+  is_online: false,
   sort_order: 0,
 };
 
@@ -161,12 +163,13 @@ export function EventsManagement() {
       description: e.description || '',
       event_date: toLocalInput(e.event_date),
       end_date: toLocalInput(e.end_date),
-      state: e.state,
-      city: e.city,
+      state: e.state || '',
+      city: e.city || '',
       location_name: e.location_name || '',
       external_url: e.external_url,
       cover_image_url: e.cover_image_url || '',
       is_active: e.is_active,
+      is_online: e.is_online ?? false,
       sort_order: e.sort_order,
     });
     if (e.state) fetchCities(e.state);
@@ -174,8 +177,12 @@ export function EventsManagement() {
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.event_date || !form.state || !form.city || !form.external_url) {
-      toast({ title: 'Preencha título, data, UF, cidade e link', variant: 'destructive' });
+    if (!form.title || !form.event_date || !form.external_url) {
+      toast({ title: 'Preencha título, data e link', variant: 'destructive' });
+      return;
+    }
+    if (!form.is_online && (!form.state || !form.city)) {
+      toast({ title: 'Para eventos presenciais informe UF e cidade', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -185,12 +192,13 @@ export function EventsManagement() {
         description: form.description.trim() || null,
         event_date: new Date(form.event_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
-        state: form.state.toUpperCase().slice(0, 2),
-        city: form.city,
+        state: form.is_online ? null : form.state.toUpperCase().slice(0, 2),
+        city: form.is_online ? null : form.city,
         location_name: form.location_name.trim() || null,
         external_url: form.external_url.trim(),
         cover_image_url: form.cover_image_url.trim() || null,
         is_active: form.is_active,
+        is_online: form.is_online,
         sort_order: form.sort_order || 0,
       };
       const { error } = form.id
@@ -261,7 +269,7 @@ export function EventsManagement() {
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.title}</TableCell>
                   <TableCell className="text-xs">{fmt(e.event_date)}</TableCell>
-                  <TableCell className="text-xs">{e.city}/{e.state}</TableCell>
+                  <TableCell className="text-xs">{e.is_online ? 'Online' : `${e.city}/${e.state}`}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">
                     <a href={e.external_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{e.external_url}</a>
                   </TableCell>
@@ -301,26 +309,35 @@ export function EventsManagement() {
                 <Input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>UF *</Label>
-                <Select value={form.state} onValueChange={(v) => { setForm({ ...form, state: v, city: '' }); fetchCities(v); }}>
-                  <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-                  <SelectContent>
-                    {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cidade *</Label>
-                <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
-                  <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2 rounded-md border p-3">
+              <Switch
+                checked={form.is_online}
+                onCheckedChange={(v) => setForm({ ...form, is_online: v, ...(v ? { state: '', city: '' } : {}) })}
+              />
+              <Label className="cursor-pointer">Evento online (sem localização física)</Label>
             </div>
+            {!form.is_online && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>UF *</Label>
+                  <Select value={form.state} onValueChange={(v) => { setForm({ ...form, state: v, city: '' }); fetchCities(v); }}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>
+                      {states.map((s) => <SelectItem key={s.sigla} value={s.sigla}>{s.sigla}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade *</Label>
+                  <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
+                    <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Escolha a UF'} /></SelectTrigger>
+                    <SelectContent>
+                      {cities.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Local (ex.: nome do espaço)</Label>
               <Input value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })} />
