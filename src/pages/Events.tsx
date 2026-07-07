@@ -99,8 +99,15 @@ export default function Events() {
     );
   }
 
+  const hasTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.getHours() !== 0 || d.getMinutes() !== 0;
+  };
+
   const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+    new Date(iso).toLocaleString('pt-BR', hasTime(iso)
+      ? { dateStyle: 'long', timeStyle: 'short' }
+      : { dateStyle: 'long' });
 
   const fmtRange = (startIso: string, endIso: string | null) => {
     if (!endIso) return fmtDate(startIso);
@@ -108,8 +115,11 @@ export default function Events() {
     const end = new Date(endIso);
     const sameDay = start.toDateString() === end.toDateString();
     if (sameDay) {
-      const time = end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      return `${fmtDate(startIso)} até ${time}`;
+      if (hasTime(endIso)) {
+        const time = end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return `${fmtDate(startIso)} até ${time}`;
+      }
+      return fmtDate(startIso);
     }
     return `${fmtDate(startIso)} até ${fmtDate(endIso)}`;
   };
