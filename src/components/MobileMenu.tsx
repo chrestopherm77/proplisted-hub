@@ -171,6 +171,19 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
               <span className="font-medium">Alugue em Parceria</span>
             </Link>
           )}
+          {!isPartnerSite && (
+            <Link
+              to="/eventos"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/eventos')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <CalendarDays className="h-5 w-5" />
+              <span className="font-medium">Eventos</span>
+            </Link>
+          )}
           <Link
             to="/giro-do-mercado"
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
