@@ -104,7 +104,7 @@ export function AppSidebar() {
     { title: 'Portal de Imóveis', url: '/portal-imoveis', icon: Building2, show: !isPartnerSite },
     { title: 'Construtoras', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Procuram-se Terrenos', url: '/procura-se-terrenos', icon: Building2, show: !isPartnerSite && !!isAdmin },
-    { title: 'Eventos', url: '/eventos', icon: CalendarDays, show: !isPartnerSite && !!user },
+    { title: 'Eventos', url: '/eventos', icon: CalendarDays, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },
     { title: 'Criativos', url: '/criativos', icon: Sparkles, show: true },
