@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown, Sparkles, Coins, Handshake } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, User, LogOut, Search, Rocket, DollarSign, Newspaper, Bot, Calculator, Building2, Crown, Sparkles, Coins, Handshake, CalendarDays } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { usePartner } from '@/contexts/PartnerContext';
 import { useAuth } from '@/hooks/useAuth';
