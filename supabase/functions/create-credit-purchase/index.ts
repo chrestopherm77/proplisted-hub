@@ -59,7 +59,7 @@ serve(async (req) => {
     const isSubscriber = Boolean(isSubscriberData) || Boolean(isAdminData);
 
     const effectivePrice = isSubscriber ? Number(pkg.price) : Number(pkg.price) * 2;
-    const effectiveCredits = isSubscriber ? pkg.credits : pkg.credits * 2;
+    const effectiveCredits = pkg.credits;
     const effectiveName = isSubscriber ? pkg.name : `${pkg.name} (sem assinatura)`;
 
     const isSandbox = Deno.env.get('ASAAS_SANDBOX_MODE') === 'true';

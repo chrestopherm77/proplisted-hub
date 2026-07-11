@@ -53,10 +53,9 @@ export default function BuyCredits() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Multiplicador: não-assinantes pagam 2x preço e recebem 2x créditos
-  const mult = isPaidSubscriber ? 1 : 2;
-  const effPrice = (p: number) => p * mult;
-  const effCredits = (c: number) => c * mult;
+  // Assinantes de plano pago têm 50% de desconto no preço; créditos são os mesmos.
+  const effPrice = (p: number) => (isPaidSubscriber ? p : p * 2);
+  const effCredits = (c: number) => c;
 
   useEffect(() => {
     if (authLoading) return;
