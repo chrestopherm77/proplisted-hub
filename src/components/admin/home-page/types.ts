@@ -156,7 +156,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
           'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
           'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
           'Acesso full a financiamentos', '3 criativos imobiliários',
-          'Treinamentos básicos e intermediários',
+          'Treinamentos básicos e intermediários', '50% de desconto na compra de créditos e leads',
         ],
       },
       {
@@ -166,6 +166,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
           'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
           'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
           '15 criativos imobiliários', 'Site Personalizado',
+          '50% de desconto na compra de créditos e leads',
         ],
       },
       {
