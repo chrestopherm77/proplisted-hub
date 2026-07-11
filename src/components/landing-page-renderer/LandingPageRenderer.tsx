@@ -367,6 +367,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
             )}
           </div>
         </section>
+        )}
 
         {/* ===== CTA Final ===== */}
         <section ref={finalCtaRef} className="container mx-auto px-4 py-16 md:py-20 scroll-mt-20">
