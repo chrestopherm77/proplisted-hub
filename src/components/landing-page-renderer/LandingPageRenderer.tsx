@@ -279,8 +279,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           </div>
         </section>
+        )}
 
         {/* ===== Planos ===== */}
+        {c.plans_section.plans.length > 0 && (
         <section
           ref={plansRef}
           id="planos"
