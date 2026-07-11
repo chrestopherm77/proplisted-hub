@@ -232,8 +232,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           )}
         </section>
+        )}
 
         {/* ===== Como funciona ===== */}
+        {c.how_it_works.steps.length > 0 && (
         <section className="relative bg-muted/40 py-20 border-y border-border overflow-hidden">
           <div className="absolute inset-0 bg-grid-pattern mask-radial-fade opacity-40" />
           <div className="container mx-auto px-4 relative">
