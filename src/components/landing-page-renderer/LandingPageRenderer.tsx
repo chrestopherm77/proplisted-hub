@@ -257,8 +257,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           </div>
         </section>
+        )}
 
         {/* ===== Stats ===== */}
+        {c.stats.items.length > 0 && (
         <section className="container mx-auto px-4 py-16">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-secondary-dark p-10 md:p-14 shadow-2xl shadow-primary/20">
             <div className="absolute inset-0 bg-dots-pattern opacity-30" />
