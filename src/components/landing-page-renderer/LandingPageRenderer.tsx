@@ -171,6 +171,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
         </section>
 
         {/* ===== Funcionalidades ===== */}
+        {(c.features_section.items.length > 0 || c.extras.length > 0) && (
         <section className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="text-center max-w-2xl mx-auto mb-14">
             {c.features_section.badge && (
@@ -231,8 +232,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           )}
         </section>
+        )}
 
         {/* ===== Como funciona ===== */}
+        {c.how_it_works.steps.length > 0 && (
         <section className="relative bg-muted/40 py-20 border-y border-border overflow-hidden">
           <div className="absolute inset-0 bg-grid-pattern mask-radial-fade opacity-40" />
           <div className="container mx-auto px-4 relative">
@@ -254,8 +257,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           </div>
         </section>
+        )}
 
         {/* ===== Stats ===== */}
+        {c.stats.items.length > 0 && (
         <section className="container mx-auto px-4 py-16">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-secondary-dark p-10 md:p-14 shadow-2xl shadow-primary/20">
             <div className="absolute inset-0 bg-dots-pattern opacity-30" />
@@ -274,8 +279,10 @@ export function LandingPageRenderer({ theme, content }: Props) {
             </div>
           </div>
         </section>
+        )}
 
         {/* ===== Planos ===== */}
+        {c.plans_section.plans.length > 0 && (
         <section
           ref={plansRef}
           id="planos"
@@ -360,6 +367,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
             )}
           </div>
         </section>
+        )}
 
         {/* ===== CTA Final ===== */}
         <section ref={finalCtaRef} className="container mx-auto px-4 py-16 md:py-20 scroll-mt-20">
