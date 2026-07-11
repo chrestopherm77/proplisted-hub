@@ -171,6 +171,7 @@ export function LandingPageRenderer({ theme, content }: Props) {
         </section>
 
         {/* ===== Funcionalidades ===== */}
+        {(c.features_section.items.length > 0 || c.extras.length > 0) && (
         <section className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="text-center max-w-2xl mx-auto mb-14">
             {c.features_section.badge && (
