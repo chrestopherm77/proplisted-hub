@@ -14,6 +14,9 @@ serve(async (req) => {
     const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
     if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
 
+    // URL interna no domínio cadastrado no Asaas; ela redireciona para a página oficial do evento.
+    const THANK_YOU_URL = 'https://conectaeimob.com.br/obrigado-liveconectae';
+
     // Payment Link (permanente, sem expiração)
     const payload = {
       name: 'Evento Conectae',
@@ -24,6 +27,10 @@ serve(async (req) => {
       dueDateLimitDays: 3,
       notificationEnabled: true,
       endDate: null, // sem data de expiração
+      callback: {
+        successUrl: THANK_YOU_URL,
+        autoRedirect: true,
+      },
     };
 
     const res = await fetch(`${ASAAS_BASE_URL}/paymentLinks`, {
