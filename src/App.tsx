@@ -145,6 +145,7 @@ const App = () => {
           <Route path="/admin/events" element={<Admin section="events" />} />
           <Route path="/eventos" element={<Events />} />
           <Route path="/obrigado-grupo" element={<ObrigadoGrupo />} />
+          <Route path="/obrigado-liveconectae" element={<ObrigadoLiveConectae />} />
 
           <Route path="/afiliado" element={<AffiliateDashboard />} />
           <Route path="/portal/:slug" element={<BrokerPortal />} />
