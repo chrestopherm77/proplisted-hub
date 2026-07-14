@@ -63,7 +63,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 h-full overflow-y-auto p-4 pb-24">
+      <SheetContent side="left" className="flex h-[100dvh] max-h-[100dvh] w-72 flex-col overflow-hidden p-4">
         <SheetHeader>
           <SheetTitle className="text-left">
             {isPartnerSite && partner?.logo_url ? (
@@ -85,7 +85,7 @@ export const MobileMenu = ({ isAdmin, isConstrutora, onSignOut }: MobileMenuProp
             {(creditBalance ?? 0).toLocaleString('pt-BR')}
           </span>
         </Link>
-        <nav className="flex flex-col space-y-2 mt-4">
+        <nav className="mt-4 flex min-h-0 flex-1 flex-col space-y-2 overflow-y-auto overscroll-contain pr-1 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <Link
             to="/my-leads"
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
