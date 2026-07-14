@@ -14,7 +14,7 @@ serve(async (req) => {
     const ASAAS_BASE_URL = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
     if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
 
-    const THANK_YOU_URL = 'https://conectaeimob.com.br/obrigado-liveconectae';
+    const THANK_YOU_URL = 'https://www.conectaeimob.com.br/obrigado-liveconectae';
     const SHORT = '63rrzg54twfk3y1w';
 
     const headers = {
