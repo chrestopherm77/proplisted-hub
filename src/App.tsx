@@ -52,6 +52,7 @@ import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
 import Events from "./pages/Events";
 import ObrigadoGrupo from "./pages/ObrigadoGrupo";
+import ObrigadoLiveConectae from "./pages/ObrigadoLiveConectae";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { AffiliateRefCapture } from "./components/AffiliateRefCapture";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
