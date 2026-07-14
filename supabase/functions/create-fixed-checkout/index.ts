@@ -15,7 +15,7 @@ serve(async (req) => {
     if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY não configurada');
 
     // URL interna no domínio cadastrado no Asaas; ela redireciona para a página oficial do evento.
-    const THANK_YOU_URL = 'https://conectaeimob.com.br/obrigado-liveconectae';
+    const THANK_YOU_URL = 'https://www.conectaeimob.com.br/obrigado-liveconectae';
 
     // Payment Link (permanente, sem expiração)
     const payload = {
