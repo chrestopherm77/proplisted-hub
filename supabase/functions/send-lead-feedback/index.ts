@@ -176,13 +176,12 @@ Deno.serve(async (req) => {
   if (body.leadId) {
     query = query.eq("id", body.leadId);
   } else {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    // Eligible: never sent and created >=7d ago, OR pending and last send >=7d ago
-    query = query
-      .or(`and(feedback_sent_at.is.null,created_at.lte.${cutoff}),and(feedback_response.eq.PENDING,feedback_sent_at.lte.${cutoff})`);
+    // Eligible: never sent feedback yet (spread ativos hoje/amanhã, 1 por rodada)
+    query = query.is("feedback_sent_at", null).order("created_at", { ascending: true });
   }
 
-  const { data: leads, error } = await query.limit(100);
+  const perRun = body.leadId ? 100 : 1;
+  const { data: leads, error } = await query.limit(perRun);
 
   if (error) {
     console.error("Query error:", error);
