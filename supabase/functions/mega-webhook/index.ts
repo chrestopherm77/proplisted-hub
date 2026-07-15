@@ -175,23 +175,40 @@ Deno.serve(async (req) => {
         });
       }
 
-      const update: Record<string, unknown> = {
-        feedback_response: isDone ? "DONE" : "PENDING",
+      if (isDone) {
+        // Usuário informou que não está mais procurando → remover do sistema
+        // Limpa dependências primeiro para não quebrar FKs
+        await supabase.from("shopping_cart").delete().eq("lead_id", leadId);
+        await supabase.from("credit_transactions").delete().eq("lead_id", leadId);
+        await supabase.from("purchases").delete().eq("lead_id", leadId);
+        await supabase.from("voucher_redemptions").delete().eq("lead_id", leadId);
+        await supabase.from("lead_crm_status").delete().eq("lead_id", leadId);
+        const { error: delErr } = await supabase.from("leads").delete().eq("id", leadId);
+        if (delErr) {
+          console.error("feedback delete error:", delErr);
+          return new Response(JSON.stringify({ error: delErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.log(`Feedback DONE → lead ${leadId} DELETED from system`);
+        return new Response(JSON.stringify({ ok: true, feedback: "DONE", deleted: true }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: fbErr } = await supabase.from("leads").update({
+        feedback_response: "PENDING",
         feedback_responded_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      };
-      if (isDone) update.is_active = false;
-
-      const { error: fbErr } = await supabase.from("leads").update(update).eq("id", leadId);
+      }).eq("id", leadId);
       if (fbErr) {
         console.error("feedback update error:", fbErr);
         return new Response(JSON.stringify({ error: fbErr.message }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      console.log(`Feedback ${isDone ? "DONE (deactivated)" : "PENDING"} for lead ${leadId}`);
-      return new Response(JSON.stringify({ ok: true, feedback: isDone ? "DONE" : "PENDING" }), {
+      console.log(`Feedback PENDING for lead ${leadId}`);
+      return new Response(JSON.stringify({ ok: true, feedback: "PENDING" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
