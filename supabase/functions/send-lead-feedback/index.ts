@@ -104,12 +104,12 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const instanceKey = Deno.env.get("MEGA_INSTANCE_KEY") || Deno.env.get("MEGA_API_INSTANCE_KEY");
+  const instanceKey = Deno.env.get("MEGA_INSTANCE_KEY") || Deno.env.get("MEGA_API_INSTANCE_KEY") || "megacode-Mj46Nd4U5tP";
   const token = Deno.env.get("MEGA_API_TOKEN");
 
-  if (!instanceKey || !token) {
+  if (!token) {
     return new Response(
-      JSON.stringify({ error: "Mega API credentials missing" }),
+      JSON.stringify({ error: "MEGA_API_TOKEN missing" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
