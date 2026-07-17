@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { CheckCircle2, ExternalLink } from 'lucide-react';
 
-const FINAL_REDIRECT_URL = 'https://conectei.digital/lp/liveconectae/obrigado';
+const FINAL_REDIRECT_URL = 'https://conectei.digital/lp/liveconectaee/obrigado';
 
 export default function ObrigadoLiveConectae() {
   useEffect(() => {
