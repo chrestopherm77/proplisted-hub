@@ -34,7 +34,7 @@ export function useIsPaidSubscriber() {
 
       const { data } = await supabase
         .from('user_subscriptions')
-        .select('id, plan:subscription_plans(price)')
+        .select('id, plan:subscription_plans!user_subscriptions_plan_id_fkey(price)')
         .eq('user_id', user.id)
         .eq('status', 'ACTIVE')
         .order('created_at', { ascending: false });
