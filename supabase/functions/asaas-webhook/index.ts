@@ -638,24 +638,10 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
     console.error('Error inserting subscription_payment:', payInsertError);
   }
 
-  // Update user_subscription period and status
-  const now = new Date();
-  const cycleMonths = Number(sub.plan?.cycle_months ?? 1) || 1;
-  const periodEnd = new Date(now);
-  periodEnd.setMonth(periodEnd.getMonth() + cycleMonths);
-
-  await supabaseClient
-    .from('user_subscriptions')
-    .update({
-      status: 'ACTIVE',
-      current_period_start: now.toISOString(),
-      current_period_end: periodEnd.toISOString(),
-      next_due_date: payment.nextDueDate ?? null,
-      invoice_url: payment.invoiceUrl ?? sub.invoice_url,
-    })
-    .eq('id', sub.id);
-
-  // === Expirar outras assinaturas ativas do mesmo usuário (troca de plano confirmada) ===
+  // === Expirar outras assinaturas ativas do mesmo usuário PRIMEIRO ===
+  // A tabela tem unique constraint (uniq_user_active_subscription) que impede
+  // dois registros ACTIVE simultâneos. Se não expirarmos antes, o UPDATE
+  // abaixo falha silenciosamente e a assinatura fica travada em PENDING.
   const { data: otherActive } = await supabaseClient
     .from('user_subscriptions')
     .select('id, plan_id, asaas_subscription_id')
@@ -666,10 +652,11 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
   if (otherActive && otherActive.length > 0) {
     console.log(`🔄 Expirando ${otherActive.length} assinatura(s) anterior(es) do user ${sub.user_id}`);
     for (const other of otherActive) {
-      await supabaseClient
+      const { error: expErr } = await supabaseClient
         .from('user_subscriptions')
         .update({ status: 'EXPIRED', canceled_at: new Date().toISOString() })
         .eq('id', other.id);
+      if (expErr) console.error('Falha ao expirar assinatura anterior:', other.id, expErr);
 
       // Tenta cancelar no Asaas se tinha id remoto
       if (other.asaas_subscription_id) {
@@ -686,6 +673,39 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
         }
       }
     }
+  }
+
+  // Update user_subscription period and status
+  const now = new Date();
+  const cycleMonths = Number(sub.plan?.cycle_months ?? 1) || 1;
+  const periodEnd = new Date(now);
+  periodEnd.setMonth(periodEnd.getMonth() + cycleMonths);
+
+  const { error: activateErr } = await supabaseClient
+    .from('user_subscriptions')
+    .update({
+      status: 'ACTIVE',
+      current_period_start: now.toISOString(),
+      current_period_end: periodEnd.toISOString(),
+      next_due_date: payment.nextDueDate ?? null,
+      invoice_url: payment.invoiceUrl ?? sub.invoice_url,
+    })
+    .eq('id', sub.id);
+
+  if (activateErr) {
+    // Registra falha explícita no evento para dar visibilidade a admins
+    console.error('❌ Falha ao ativar assinatura:', sub.id, activateErr);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: `Falha ao ativar assinatura ${sub.id}: ${activateErr.message}` })
+      .eq('asaas_event_id', eventId);
+    await supabaseClient.from('admin_alerts').insert({
+      type: 'SUBSCRIPTION_ACTIVATION_FAILED',
+      severity: 'CRITICAL',
+      message: `Assinatura ${sub.id} do usuário ${sub.user_id} não foi ativada após pagamento confirmado (${asaasPaymentId}). Erro: ${activateErr.message}`,
+      payload: { subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId, error: activateErr.message },
+    });
+    throw activateErr;
   }
 
   // Credit monthly credits to user atomically
