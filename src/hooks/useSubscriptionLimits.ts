@@ -120,7 +120,7 @@ export function useSubscriptionLimits() {
     // 1) Busca assinatura ATIVA (com period_start para definir ciclo)
     const subRes = await supabase
       .from('user_subscriptions')
-      .select('current_period_start, plan:subscription_plans(id, slug, name, price, monthly_credits, features, feature_list)')
+      .select('current_period_start, plan:subscription_plans!user_subscriptions_plan_id_fkey(id, slug, name, price, monthly_credits, features, feature_list)')
       .eq('user_id', user.id)
       .in('status', ['ACTIVE'])
       .order('created_at', { ascending: false })

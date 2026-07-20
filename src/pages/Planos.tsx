@@ -62,7 +62,7 @@ export default function Planos() {
           .order('display_order', { ascending: true }),
         supabase
           .from('user_subscriptions')
-          .select('id, plan_id, status, invoice_url, created_at, plan:subscription_plans(price)')
+          .select('id, plan_id, status, invoice_url, created_at, plan:subscription_plans!user_subscriptions_plan_id_fkey(price)')
           .eq('user_id', user!.id)
           .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
           .order('created_at', { ascending: false }),

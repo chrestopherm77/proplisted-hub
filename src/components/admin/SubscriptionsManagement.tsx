@@ -27,7 +27,7 @@ export const SubscriptionsManagement = () => {
     setLoading(true);
     const { data: subsData } = await supabase
       .from('user_subscriptions')
-      .select('id, status, user_id, current_period_end, created_at, plan:subscription_plans(name, price, slug)')
+      .select('id, status, user_id, current_period_end, created_at, plan:subscription_plans!user_subscriptions_plan_id_fkey(name, price, slug)')
       .order('created_at', { ascending: false });
 
     const userIds = Array.from(new Set((subsData ?? []).map((s: any) => s.user_id)));
