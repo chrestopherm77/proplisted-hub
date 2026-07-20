@@ -55,7 +55,7 @@ export const MySubscriptionCard = () => {
     setLoading(true);
     const { data } = await supabase
       .from('user_subscriptions')
-      .select('id, status, current_period_end, next_due_date, invoice_url, payment_method, plan:subscription_plans(name, price, monthly_credits, slug)')
+      .select('id, status, current_period_end, next_due_date, invoice_url, payment_method, plan:subscription_plans!user_subscriptions_plan_id_fkey(name, price, monthly_credits, slug)')
       .eq('user_id', user.id)
       .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
       .order('created_at', { ascending: false });

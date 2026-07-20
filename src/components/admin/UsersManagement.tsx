@@ -102,7 +102,7 @@ export function UsersManagement() {
       supabase.functions.invoke('list-users'),
       supabase
         .from('user_subscriptions')
-        .select('user_id, status, created_at, plan:subscription_plans(name, slug, price)')
+        .select('user_id, status, created_at, plan:subscription_plans!user_subscriptions_plan_id_fkey(name, slug, price)')
         .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
         .order('created_at', { ascending: false }),
     ]);
