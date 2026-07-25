@@ -213,7 +213,122 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ===== Assinaturas pendentes (rede de segurança do webhook) =====
+    const { data: pendingSubs } = await adminClient
+      .from('user_subscriptions')
+      .select('id, user_id, plan_id, asaas_subscription_id, created_at, plan:subscription_plans!user_subscriptions_plan_id_fkey(price, name, monthly_credits, cycle_months, slug)')
+      .eq('status', 'PENDING')
+      .not('asaas_subscription_id', 'is', null)
+      .lt('created_at', cutoff);
+
+    for (const s of pendingSubs ?? []) {
+      try {
+        const url = `${ASAAS_BASE_URL}/payments?subscription=${encodeURIComponent(s.asaas_subscription_id)}&limit=10`;
+        const resp = await fetch(url, {
+          headers: { 'access_token': ASAAS_API_KEY, 'User-Agent': 'Conectae-Reconcile' },
+        });
+        if (!resp.ok) {
+          results.push({ type: 'subscription', id: s.id, external_reference: s.asaas_subscription_id, asaas_status: null, action: 'ERROR', message: `HTTP ${resp.status}` });
+          continue;
+        }
+        const json = await resp.json();
+        const payments: any[] = json?.data ?? [];
+        const paid = payments.find((p) => ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(p.status));
+
+        if (!paid) {
+          results.push({ type: 'subscription', id: s.id, external_reference: s.asaas_subscription_id, asaas_status: payments[0]?.status ?? null, action: 'STILL_PENDING' });
+          continue;
+        }
+
+        // Expira outras assinaturas do usuário (constraint de assinatura ativa única)
+        await adminClient
+          .from('user_subscriptions')
+          .update({ status: 'EXPIRED', canceled_at: new Date().toISOString() })
+          .eq('user_id', s.user_id)
+          .neq('id', s.id)
+          .in('status', ['ACTIVE', 'PENDING', 'OVERDUE']);
+
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + (Number((s as any).plan?.cycle_months ?? 1) || 1));
+
+        const { data: activated } = await adminClient
+          .from('user_subscriptions')
+          .update({
+            status: 'ACTIVE',
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+          })
+          .eq('id', s.id)
+          .eq('status', 'PENDING')
+          .select('id');
+
+        if (!activated || activated.length === 0) {
+          results.push({ type: 'subscription', id: s.id, external_reference: s.asaas_subscription_id, asaas_status: paid.status, action: 'ERROR', message: 'Não foi possível ativar' });
+          await adminClient.from('admin_alerts').insert({
+            type: 'SUBSCRIPTION_ACTIVATION_FAILED',
+            severity: 'CRITICAL',
+            message: `Reconciliação: assinatura ${s.id} do usuário ${s.user_id} tem pagamento confirmado no Asaas mas não foi possível ativar.`,
+            payload: { subscription_id: s.id, user_id: s.user_id, asaas_payment_id: paid.id },
+          });
+          continue;
+        }
+
+        // Registra o pagamento (idempotente por asaas_payment_id)
+        const { data: existingPay } = await adminClient
+          .from('subscription_payments')
+          .select('id')
+          .eq('asaas_payment_id', paid.id)
+          .maybeSingle();
+
+        if (!existingPay) {
+          await adminClient.from('subscription_payments').insert({
+            subscription_id: s.id,
+            user_id: s.user_id,
+            asaas_payment_id: paid.id,
+            amount: Number(paid.value ?? (s as any).plan?.price ?? 0),
+            status: 'PAID',
+            paid_at: paid.paymentDate ? new Date(paid.paymentDate).toISOString() : new Date().toISOString(),
+            due_date: paid.dueDate ?? null,
+            payment_method: paid.billingType ?? null,
+            invoice_url: paid.invoiceUrl ?? null,
+          });
+
+          const monthly = Number((s as any).plan?.monthly_credits ?? 0);
+          if (monthly > 0) {
+            await adminClient.rpc('add_credits_atomic', {
+              p_user_id: s.user_id,
+              p_amount: monthly,
+              p_type: 'SUBSCRIPTION_RENEWAL',
+              p_lead_id: null,
+            });
+          }
+          await adminClient.rpc('grant_referral_bonus_if_eligible', { p_user_id: s.user_id });
+          await adminClient.rpc('record_affiliate_commission', {
+            p_user_id: s.user_id,
+            p_subscription_id: s.id,
+            p_asaas_payment_id: paid.id,
+            p_amount: Number(paid.value ?? (s as any).plan?.price ?? 0),
+            p_plan_slug: (s as any).plan?.slug ?? null,
+            p_plan_name: (s as any).plan?.name ?? null,
+          });
+        }
+
+        results.push({ type: 'subscription', id: s.id, external_reference: s.asaas_subscription_id, asaas_status: paid.status, action: 'CONFIRMED', message: 'Assinatura ativada pela reconciliação' });
+
+        await adminClient.from('admin_alerts').insert({
+          type: 'SUBSCRIPTION_RECONCILED',
+          severity: 'WARNING',
+          message: `Assinatura ${(s as any).plan?.name ?? ''} do usuário ${s.user_id} foi ativada pela reconciliação — o webhook do Asaas não processou o pagamento ${paid.id}.`,
+          payload: { subscription_id: s.id, user_id: s.user_id, asaas_payment_id: paid.id },
+        });
+      } catch (err: any) {
+        results.push({ type: 'subscription', id: s.id, external_reference: s.asaas_subscription_id, asaas_status: null, action: 'ERROR', message: err.message });
+      }
+    }
+
     const summary = {
+
       total: results.length,
       confirmed: results.filter((r) => r.action === 'CONFIRMED').length,
       expired: results.filter((r) => r.action === 'EXPIRED').length,
