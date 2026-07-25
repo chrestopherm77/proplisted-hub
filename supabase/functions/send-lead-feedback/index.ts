@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  let body: { leadId?: string; cronSecret?: string } = {};
+  let body: { leadId?: string; cronSecret?: string; testPhone?: string; testName?: string; testIntention?: Intention } = {};
   try {
     if (req.method === "POST") {
       const txt = await req.text();
