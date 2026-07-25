@@ -744,14 +744,35 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
       .from('asaas_webhook_events')
       .update({ error_message: `Falha ao ativar assinatura ${sub.id}: ${activateErr.message}` })
       .eq('asaas_event_id', eventId);
-    await supabaseClient.from('admin_alerts').insert({
-      type: 'SUBSCRIPTION_ACTIVATION_FAILED',
-      severity: 'CRITICAL',
-      message: `Assinatura ${sub.id} do usuário ${sub.user_id} não foi ativada após pagamento confirmado (${asaasPaymentId}). Erro: ${activateErr.message}`,
-      payload: { subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId, error: activateErr.message },
-    });
+    await notifyCriticalPaymentFailure(
+      supabaseClient,
+      'SUBSCRIPTION_ACTIVATION_FAILED',
+      `Assinatura ${sub.id} do usuário ${sub.user_id} não foi ativada após pagamento confirmado (${asaasPaymentId}). Erro: ${activateErr.message}`,
+      { subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId, error: activateErr.message },
+    );
     throw activateErr;
   }
+
+  // VERIFICAÇÃO FINAL: garante que a assinatura realmente ficou ACTIVE.
+  const { data: check } = await supabaseClient
+    .from('user_subscriptions')
+    .select('status')
+    .eq('id', sub.id)
+    .maybeSingle();
+
+  if (check?.status !== 'ACTIVE') {
+    const msg = `Assinatura ${sub.id} do usuário ${sub.user_id} continua "${check?.status}" após pagamento confirmado (${asaasPaymentId}). Ativação manual necessária.`;
+    console.error('❌', msg);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: msg })
+      .eq('asaas_event_id', eventId);
+    await notifyCriticalPaymentFailure(supabaseClient, 'SUBSCRIPTION_ACTIVATION_FAILED', msg, {
+      subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId,
+    });
+    throw new Error(msg);
+  }
+
 
   // Credit monthly credits to user atomically
   const monthly = sub.plan?.monthly_credits ?? 0;
