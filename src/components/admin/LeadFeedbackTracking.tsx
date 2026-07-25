@@ -166,6 +166,10 @@ export function LeadFeedbackTracking() {
         </p>
       </div>
 
+      <LeadFeedbackQueuePanel />
+
+
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <SummaryCard label="Total" value={summary.total} />
         <SummaryCard label="Enviados" value={summary.sent} />
