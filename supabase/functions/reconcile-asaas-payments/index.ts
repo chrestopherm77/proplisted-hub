@@ -18,7 +18,7 @@ function getCorsHeaders(req: Request) {
 }
 
 interface ReconcileResult {
-  type: 'credit_purchase' | 'lead_purchase';
+  type: 'credit_purchase' | 'lead_purchase' | 'subscription';
   id: string;
   external_reference: string | null;
   asaas_status: string | null;
