@@ -851,3 +851,67 @@ async function markSubscriptionCanceled(supabaseClient: any, payload: any) {
     .eq('asaas_subscription_id', asaasSubscriptionId);
   console.log('✅ Subscription canceled:', asaasSubscriptionId);
 }
+/**
+ * Alerta CRÍTICO para os ADMs: grava em admin_alerts (modal no painel)
+ * e dispara e-mail via Resend. Nunca lança exceção.
+ */
+async function notifyCriticalPaymentFailure(
+  supabaseClient: any,
+  type: string,
+  message: string,
+  payload: Record<string, unknown>,
+) {
+  try {
+    await supabaseClient.from('admin_alerts').insert({
+      type,
+      severity: 'CRITICAL',
+      message,
+      payload,
+    });
+  } catch (e) {
+    console.error('Falha ao gravar admin_alert:', e);
+  }
+
+  try {
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    if (!RESEND_API_KEY) return;
+
+    const { data: admins } = await supabaseClient
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'MASTER_ADMIN');
+
+    const ids = (admins ?? []).map((a: any) => a.user_id);
+    if (ids.length === 0) return;
+
+    const { data: profiles } = await supabaseClient
+      .from('profiles')
+      .select('email')
+      .in('id', ids);
+
+    const emails = (profiles ?? []).map((p: any) => p.email).filter(Boolean);
+    if (emails.length === 0) return;
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Conectae Alertas <alertas@conectaeimob.com.br>',
+        to: emails,
+        subject: `🚨 [CRÍTICO] Falha no pagamento — ${type}`,
+        html: `
+          <h2 style="color:#b91c1c">Falha crítica no processamento de pagamento</h2>
+          <p><strong>Tipo:</strong> ${type}</p>
+          <p>${message}</p>
+          <pre style="background:#f4f4f5;padding:12px;border-radius:8px;font-size:12px">${JSON.stringify(payload, null, 2)}</pre>
+          <p>Verifique o painel administrativo e ative a assinatura manualmente se necessário.</p>
+        `,
+      }),
+    });
+  } catch (e) {
+    console.error('Falha ao enviar e-mail de alerta crítico:', e);
+  }
+}
