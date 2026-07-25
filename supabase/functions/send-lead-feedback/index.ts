@@ -192,31 +192,62 @@ Deno.serve(async (req) => {
 
 
 
-  // Build query for eligible leads
-  let query = sb
-    .from("leads")
-    .select("id, name, phone, form_data, feedback_sent_at, feedback_response, feedback_attempts, created_at")
-    .eq("is_active", true)
-    .eq("whatsapp_confirmed", true)
-    .eq("is_exhausted", false)
-    .lt("feedback_attempts", MAX_ATTEMPTS);
+  // ---- Seleção dos leads ----
+  type LeadRow = {
+    id: string; name: string | null; phone: string | null;
+    form_data: Record<string, unknown> | null;
+    feedback_sent_at: string | null; feedback_response: string | null;
+    feedback_attempts: number | null; created_at: string;
+  };
+
+  const leadSelect = "id, name, phone, form_data, feedback_sent_at, feedback_response, feedback_attempts, created_at";
+  let leads: LeadRow[] = [];
+  const queueByLead = new Map<string, string>();
 
   if (body.leadId) {
-    query = query.eq("id", body.leadId);
+    const { data, error } = await sb
+      .from("leads").select(leadSelect)
+      .eq("is_active", true).eq("whatsapp_confirmed", true).eq("is_exhausted", false)
+      .lt("feedback_attempts", MAX_ATTEMPTS)
+      .eq("id", body.leadId).limit(1);
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    leads = (data || []) as LeadRow[];
   } else {
-    // Eligible: never sent feedback yet (spread ativos hoje/amanhã, 1 por rodada)
-    query = query.is("feedback_sent_at", null).order("created_at", { ascending: true });
-  }
+    // Modo fila: processa apenas itens agendados e vencidos
+    const batch = Math.min(Math.max(Number(body.limit) || 5, 1), 20);
+    const { data: due, error: dueErr } = await sb
+      .from("lead_feedback_queue")
+      .select("id, lead_id")
+      .eq("status", "PENDING")
+      .lte("scheduled_at", new Date().toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(batch);
+    if (dueErr) {
+      return new Response(JSON.stringify({ error: dueErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    for (const q of due || []) queueByLead.set(q.lead_id, q.id);
 
-  const perRun = body.leadId ? 100 : 1;
-  const { data: leads, error } = await query.limit(perRun);
-
-  if (error) {
-    console.error("Query error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    if (queueByLead.size > 0) {
+      const ids = [...queueByLead.keys()];
+      const { data, error } = await sb
+        .from("leads").select(leadSelect)
+        .in("id", ids)
+        .eq("is_active", true).eq("whatsapp_confirmed", true).eq("is_exhausted", false)
+        .lt("feedback_attempts", MAX_ATTEMPTS);
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      leads = (data || []) as LeadRow[];
+      const eligible = new Set(leads.map((l) => l.id));
+      const skipped = ids.filter((id) => !eligible.has(id));
+      if (skipped.length > 0) {
+        await sb.from("lead_feedback_queue")
+          .update({ status: "SKIPPED", error: "lead inelegível (inativo/esgotado/já respondido)" })
+          .in("lead_id", skipped).eq("status", "PENDING");
+      }
+    }
   }
 
   const results: Array<{ leadId: string; ok: boolean; error?: string }> = [];
@@ -224,8 +255,13 @@ Deno.serve(async (req) => {
   for (const lead of leads || []) {
     const intention = getIntention(lead.form_data as Record<string, unknown> | null);
     const phone = String(lead.phone || "").replace(/\D/g, "");
+    const queueId = queueByLead.get(lead.id);
+
     if (phone.length < 10) {
       results.push({ leadId: lead.id, ok: false, error: "invalid_phone" });
+      if (queueId) {
+        await sb.from("lead_feedback_queue").update({ status: "FAILED", error: "invalid_phone", attempts: 1 }).eq("id", queueId);
+      }
       continue;
     }
 
@@ -238,19 +274,25 @@ Deno.serve(async (req) => {
       intention,
     });
 
-    await sb
-      .from("leads")
-      .update({
-        feedback_sent_at: new Date().toISOString(),
-        feedback_attempts: (lead.feedback_attempts || 0) + 1,
-        feedback_response: r.ok ? null : lead.feedback_response, // reset to null on new ask if previously PENDING
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", lead.id);
+    if (r.ok) {
+      await sb
+        .from("leads")
+        .update({
+          feedback_sent_at: new Date().toISOString(),
+          feedback_attempts: (lead.feedback_attempts || 0) + 1,
+          feedback_response: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", lead.id);
+    }
 
-    // If we are re-asking a PENDING lead, clear PENDING so next response is fresh
-    if (r.ok && lead.feedback_response === "PENDING") {
-      await sb.from("leads").update({ feedback_response: null }).eq("id", lead.id);
+    if (queueId) {
+      await sb.from("lead_feedback_queue").update({
+        status: r.ok ? "SENT" : "FAILED",
+        sent_at: r.ok ? new Date().toISOString() : null,
+        error: r.ok ? null : (r.error ?? "erro desconhecido"),
+        attempts: 1,
+      }).eq("id", queueId);
     }
 
     results.push({ leadId: lead.id, ok: r.ok, error: r.error });
@@ -258,6 +300,7 @@ Deno.serve(async (req) => {
 
     await new Promise((res) => setTimeout(res, SEND_DELAY_MS));
   }
+
 
   // Deactivate leads that exhausted feedback attempts without response
   let deactivated = 0;
