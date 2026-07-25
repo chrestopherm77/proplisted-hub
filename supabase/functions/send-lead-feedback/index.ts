@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  let body: { leadId?: string; cronSecret?: string } = {};
+  let body: { leadId?: string; cronSecret?: string; testPhone?: string; testName?: string; testIntention?: Intention } = {};
   try {
     if (req.method === "POST") {
       const txt = await req.text();
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     }
   } catch { /* empty */ }
 
-  const isCronMode = !body.leadId;
+  const isCronMode = !body.leadId && !body.testPhone;
 
   // Cron mode requires CRON_SECRET. Single-lead mode requires INTERNAL_FUNCTION_SECRET or admin JWT.
   if (isCronMode) {
@@ -137,7 +137,10 @@ Deno.serve(async (req) => {
   } else {
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const providedInternal = req.headers.get("x-internal-secret");
-    let authorized = !!internalSecret && providedInternal === internalSecret;
+    const cronExpected = Deno.env.get("CRON_SECRET");
+    const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
+    let authorized = (!!internalSecret && providedInternal === internalSecret)
+      || (!!cronExpected && providedCron === cronExpected);
     if (!authorized) {
       const authHeader = req.headers.get("Authorization") || "";
       if (authHeader.startsWith("Bearer ")) {
@@ -163,6 +166,31 @@ Deno.serve(async (req) => {
       );
     }
   }
+
+  // Test mode: envia a mensagem de feedback para um número avulso, sem tocar no banco
+  if (body.testPhone) {
+    const phone = String(body.testPhone).replace(/\D/g, "");
+    if (phone.length < 10) {
+      return new Response(
+        JSON.stringify({ error: "invalid_phone" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const r = await sendListMessage({
+      phone,
+      instanceKey,
+      token,
+      leadId: "test",
+      name: body.testName ?? null,
+      intention: body.testIntention ?? "BUY",
+    });
+    return new Response(
+      JSON.stringify({ test: true, phone, ...r }),
+      { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+
 
   // Build query for eligible leads
   let query = sb
