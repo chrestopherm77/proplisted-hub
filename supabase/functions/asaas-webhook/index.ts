@@ -222,6 +222,14 @@ serve(async (req) => {
           processed: false,
           error_message: error.message,
         });
+
+      await notifyCriticalPaymentFailure(
+        supabaseClient,
+        'ASAAS_WEBHOOK_ERROR',
+        `Erro ao processar webhook do Asaas: ${error.message}`,
+        { error: error.message },
+      );
+
     } catch (dbError) {
       console.error('Failed to log error to database:', dbError);
     }
@@ -604,20 +612,65 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
   }
 
   // Locate user_subscription
+  // IMPORTANTE: user_subscriptions tem DOIS FKs para subscription_plans
+  // (plan_id e pending_downgrade_to_plan_id). Sem o hint explícito do FK o
+  // PostgREST retorna PGRST201 e o resultado vem NULL — foi isso que fez
+  // pagamentos confirmados nunca ativarem a assinatura (falha silenciosa).
+  const PLAN_EMBED = 'plan:subscription_plans!user_subscriptions_plan_id_fkey(*)';
   let sub: any = null;
+  let lookupError: any = null;
+
   if (asaasSubscriptionId) {
-    const { data } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('user_subscriptions')
-      .select('*, plan:subscription_plans(*)')
+      .select(`*, ${PLAN_EMBED}`)
       .eq('asaas_subscription_id', asaasSubscriptionId)
       .maybeSingle();
+    if (error) lookupError = error;
     sub = data;
   }
 
-  if (!sub) {
-    console.warn('⚠️ user_subscription not found for', asaasSubscriptionId);
-    return;
+  // Fallback 1: externalReference no formato sub_<uuid da user_subscriptions>
+  if (!sub && externalReference?.startsWith('sub_')) {
+    const maybeUuid = externalReference.slice(4);
+    if (/^[0-9a-f-]{36}$/i.test(maybeUuid)) {
+      const { data, error } = await supabaseClient
+        .from('user_subscriptions')
+        .select(`*, ${PLAN_EMBED}`)
+        .eq('id', maybeUuid)
+        .maybeSingle();
+      if (error) lookupError = error;
+      sub = data;
+    }
   }
+
+  // Fallback 2: pelo customer do Asaas, pegando a assinatura pendente mais recente
+  if (!sub && payment?.customer) {
+    const { data } = await supabaseClient
+      .from('user_subscriptions')
+      .select(`*, ${PLAN_EMBED}`)
+      .eq('asaas_customer_id', payment.customer)
+      .in('status', ['PENDING', 'OVERDUE', 'ACTIVE'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    sub = data?.[0] ?? null;
+  }
+
+  if (!sub) {
+    const msg = `Pagamento confirmado (${asaasPaymentId}) mas assinatura não localizada. asaas_subscription_id=${asaasSubscriptionId} externalReference=${externalReference} customer=${payment?.customer}. ${lookupError ? 'Erro de consulta: ' + lookupError.message : ''}`;
+    console.error('❌', msg);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: msg })
+      .eq('asaas_event_id', eventId);
+    await notifyCriticalPaymentFailure(supabaseClient, 'SUBSCRIPTION_NOT_FOUND', msg, {
+      asaas_payment_id: asaasPaymentId,
+      asaas_subscription_id: asaasSubscriptionId,
+      external_reference: externalReference,
+    });
+    throw new Error(msg);
+  }
+
 
   // Insert subscription_payment (unique by asaas_payment_id)
   const { error: payInsertError } = await supabaseClient
@@ -699,14 +752,35 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
       .from('asaas_webhook_events')
       .update({ error_message: `Falha ao ativar assinatura ${sub.id}: ${activateErr.message}` })
       .eq('asaas_event_id', eventId);
-    await supabaseClient.from('admin_alerts').insert({
-      type: 'SUBSCRIPTION_ACTIVATION_FAILED',
-      severity: 'CRITICAL',
-      message: `Assinatura ${sub.id} do usuário ${sub.user_id} não foi ativada após pagamento confirmado (${asaasPaymentId}). Erro: ${activateErr.message}`,
-      payload: { subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId, error: activateErr.message },
-    });
+    await notifyCriticalPaymentFailure(
+      supabaseClient,
+      'SUBSCRIPTION_ACTIVATION_FAILED',
+      `Assinatura ${sub.id} do usuário ${sub.user_id} não foi ativada após pagamento confirmado (${asaasPaymentId}). Erro: ${activateErr.message}`,
+      { subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId, error: activateErr.message },
+    );
     throw activateErr;
   }
+
+  // VERIFICAÇÃO FINAL: garante que a assinatura realmente ficou ACTIVE.
+  const { data: check } = await supabaseClient
+    .from('user_subscriptions')
+    .select('status')
+    .eq('id', sub.id)
+    .maybeSingle();
+
+  if (check?.status !== 'ACTIVE') {
+    const msg = `Assinatura ${sub.id} do usuário ${sub.user_id} continua "${check?.status}" após pagamento confirmado (${asaasPaymentId}). Ativação manual necessária.`;
+    console.error('❌', msg);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: msg })
+      .eq('asaas_event_id', eventId);
+    await notifyCriticalPaymentFailure(supabaseClient, 'SUBSCRIPTION_ACTIVATION_FAILED', msg, {
+      subscription_id: sub.id, user_id: sub.user_id, asaas_payment_id: asaasPaymentId,
+    });
+    throw new Error(msg);
+  }
+
 
   // Credit monthly credits to user atomically
   const monthly = sub.plan?.monthly_credits ?? 0;
@@ -784,4 +858,68 @@ async function markSubscriptionCanceled(supabaseClient: any, payload: any) {
     .update({ status: 'CANCELED', canceled_at: new Date().toISOString() })
     .eq('asaas_subscription_id', asaasSubscriptionId);
   console.log('✅ Subscription canceled:', asaasSubscriptionId);
+}
+/**
+ * Alerta CRÍTICO para os ADMs: grava em admin_alerts (modal no painel)
+ * e dispara e-mail via Resend. Nunca lança exceção.
+ */
+async function notifyCriticalPaymentFailure(
+  supabaseClient: any,
+  type: string,
+  message: string,
+  payload: Record<string, unknown>,
+) {
+  try {
+    await supabaseClient.from('admin_alerts').insert({
+      type,
+      severity: 'CRITICAL',
+      message,
+      payload,
+    });
+  } catch (e) {
+    console.error('Falha ao gravar admin_alert:', e);
+  }
+
+  try {
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    if (!RESEND_API_KEY) return;
+
+    const { data: admins } = await supabaseClient
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'MASTER_ADMIN');
+
+    const ids = (admins ?? []).map((a: any) => a.user_id);
+    if (ids.length === 0) return;
+
+    const { data: profiles } = await supabaseClient
+      .from('profiles')
+      .select('email')
+      .in('id', ids);
+
+    const emails = (profiles ?? []).map((p: any) => p.email).filter(Boolean);
+    if (emails.length === 0) return;
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Conectae Alertas <alertas@conectaeimob.com.br>',
+        to: emails,
+        subject: `🚨 [CRÍTICO] Falha no pagamento — ${type}`,
+        html: `
+          <h2 style="color:#b91c1c">Falha crítica no processamento de pagamento</h2>
+          <p><strong>Tipo:</strong> ${type}</p>
+          <p>${message}</p>
+          <pre style="background:#f4f4f5;padding:12px;border-radius:8px;font-size:12px">${JSON.stringify(payload, null, 2)}</pre>
+          <p>Verifique o painel administrativo e ative a assinatura manualmente se necessário.</p>
+        `,
+      }),
+    });
+  } catch (e) {
+    console.error('Falha ao enviar e-mail de alerta crítico:', e);
+  }
 }

@@ -48,7 +48,7 @@ serve(async (req) => {
     // Fetch ALL relevant subscriptions of user (ordered, newest first)
     const { data: allSubs } = await supabaseClient
       .from('user_subscriptions')
-      .select('id, plan_id, status, asaas_subscription_id, current_period_end, created_at, plan:subscription_plans(price, name)')
+      .select('id, plan_id, status, asaas_subscription_id, current_period_end, created_at, plan:subscription_plans!user_subscriptions_plan_id_fkey(price, name)')
       .eq('user_id', user.id)
       .in('status', ['ACTIVE', 'PENDING', 'OVERDUE'])
       .order('created_at', { ascending: false });
