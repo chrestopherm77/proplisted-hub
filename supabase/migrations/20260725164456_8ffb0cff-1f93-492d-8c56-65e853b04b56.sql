@@ -1,0 +1,1 @@
+update lead_feedback_queue set status = 'cancelled', updated_at = now() where status in ('QUEUED', 'PENDING');
