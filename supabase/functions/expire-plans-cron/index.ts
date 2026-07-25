@@ -32,7 +32,7 @@ serve(async (req) => {
     // Busca planos pagos vencidos
     const { data: expired } = await supabase
       .from('user_subscriptions')
-      .select('id, user_id, plan:subscription_plans(price)')
+      .select('id, user_id, plan:subscription_plans!user_subscriptions_plan_id_fkey(price)')
       .eq('status', 'ACTIVE')
       .lt('current_period_end', nowIso);
 
