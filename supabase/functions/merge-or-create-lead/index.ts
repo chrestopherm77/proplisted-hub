@@ -99,14 +99,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Normalize phone for comparison
+    // 2. Normalize phone for comparison (ignora máscara, DDI e o 9 extra)
     const normalizedPhone = phone.replace(/\D/g, "");
+    const phoneKey = (p?: string | null) => {
+      let d = (p || "").replace(/\D/g, "");
+      if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+      if (d.length === 11 && d[2] === "9") d = d.slice(0, 2) + d.slice(3); // DDD + 8 dígitos
+      return d;
+    };
+    const targetKey = phoneKey(normalizedPhone);
 
-    // 3. Search for existing active lead with same phone
+    // 3. Busca leads do mesmo telefone — inclusive os que ainda aguardam
+    //    confirmação no WhatsApp (is_active = false), que era a brecha
+    //    que permitia o mesmo lead se cadastrar duas vezes.
     const { data: existingLeads, error: searchError } = await supabase
       .from("leads")
-      .select("id, description, form_data, phone")
-      .eq("is_active", true);
+      .select("id, description, form_data, phone, is_active, whatsapp_confirmed, is_exhausted, purchase_count, max_purchases, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
     if (searchError) {
       console.error("Lead search error:", searchError);
@@ -116,10 +126,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Find match by normalized phone
-    const existingLead = (existingLeads || []).find(
-      (l) => l.phone?.replace(/\D/g, "") === normalizedPhone
-    );
+    const samePhone = (existingLeads || []).filter((l) => phoneKey(l.phone) === targetKey);
+
+    // Mescla quando o lead ainda está em circulação:
+    // - ativo e não esgotado, OU
+    // - inativo apenas porque aguarda a confirmação no WhatsApp.
+    const existingLead = samePhone.find((l) => {
+      const exhausted = l.is_exhausted === true ||
+        (l.purchase_count ?? 0) >= (l.max_purchases ?? 5);
+      if (exhausted) return false;
+      if (l.is_active === true) return true;
+      return l.whatsapp_confirmed !== true; // pendente de confirmação
+    });
+
 
     let leadId: string;
 
