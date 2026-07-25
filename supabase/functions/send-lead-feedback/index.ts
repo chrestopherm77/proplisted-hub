@@ -164,6 +164,31 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Test mode: envia a mensagem de feedback para um número avulso, sem tocar no banco
+  if (body.testPhone) {
+    const phone = String(body.testPhone).replace(/\D/g, "");
+    if (phone.length < 10) {
+      return new Response(
+        JSON.stringify({ error: "invalid_phone" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const r = await sendListMessage({
+      phone,
+      instanceKey,
+      token,
+      leadId: "test",
+      name: body.testName ?? null,
+      intention: body.testIntention ?? "BUY",
+    });
+    return new Response(
+      JSON.stringify({ test: true, phone, ...r }),
+      { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+
+
   // Build query for eligible leads
   let query = sb
     .from("leads")
