@@ -137,7 +137,10 @@ Deno.serve(async (req) => {
   } else {
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const providedInternal = req.headers.get("x-internal-secret");
-    let authorized = !!internalSecret && providedInternal === internalSecret;
+    const cronExpected = Deno.env.get("CRON_SECRET");
+    const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
+    let authorized = (!!internalSecret && providedInternal === internalSecret)
+      || (!!cronExpected && providedCron === cronExpected);
     if (!authorized) {
       const authHeader = req.headers.get("Authorization") || "";
       if (authHeader.startsWith("Bearer ")) {
