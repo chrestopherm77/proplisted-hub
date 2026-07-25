@@ -222,6 +222,14 @@ serve(async (req) => {
           processed: false,
           error_message: error.message,
         });
+
+      await notifyCriticalPaymentFailure(
+        supabaseClient,
+        'ASAAS_WEBHOOK_ERROR',
+        `Erro ao processar webhook do Asaas: ${error.message}`,
+        { error: error.message },
+      );
+
     } catch (dbError) {
       console.error('Failed to log error to database:', dbError);
     }
