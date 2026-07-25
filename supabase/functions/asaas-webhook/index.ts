@@ -604,20 +604,65 @@ async function processSubscriptionPayment(supabaseClient: any, payload: any, eve
   }
 
   // Locate user_subscription
+  // IMPORTANTE: user_subscriptions tem DOIS FKs para subscription_plans
+  // (plan_id e pending_downgrade_to_plan_id). Sem o hint explícito do FK o
+  // PostgREST retorna PGRST201 e o resultado vem NULL — foi isso que fez
+  // pagamentos confirmados nunca ativarem a assinatura (falha silenciosa).
+  const PLAN_EMBED = 'plan:subscription_plans!user_subscriptions_plan_id_fkey(*)';
   let sub: any = null;
+  let lookupError: any = null;
+
   if (asaasSubscriptionId) {
-    const { data } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('user_subscriptions')
-      .select('*, plan:subscription_plans(*)')
+      .select(`*, ${PLAN_EMBED}`)
       .eq('asaas_subscription_id', asaasSubscriptionId)
       .maybeSingle();
+    if (error) lookupError = error;
     sub = data;
   }
 
-  if (!sub) {
-    console.warn('⚠️ user_subscription not found for', asaasSubscriptionId);
-    return;
+  // Fallback 1: externalReference no formato sub_<uuid da user_subscriptions>
+  if (!sub && externalReference?.startsWith('sub_')) {
+    const maybeUuid = externalReference.slice(4);
+    if (/^[0-9a-f-]{36}$/i.test(maybeUuid)) {
+      const { data, error } = await supabaseClient
+        .from('user_subscriptions')
+        .select(`*, ${PLAN_EMBED}`)
+        .eq('id', maybeUuid)
+        .maybeSingle();
+      if (error) lookupError = error;
+      sub = data;
+    }
   }
+
+  // Fallback 2: pelo customer do Asaas, pegando a assinatura pendente mais recente
+  if (!sub && payment?.customer) {
+    const { data } = await supabaseClient
+      .from('user_subscriptions')
+      .select(`*, ${PLAN_EMBED}`)
+      .eq('asaas_customer_id', payment.customer)
+      .in('status', ['PENDING', 'OVERDUE', 'ACTIVE'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    sub = data?.[0] ?? null;
+  }
+
+  if (!sub) {
+    const msg = `Pagamento confirmado (${asaasPaymentId}) mas assinatura não localizada. asaas_subscription_id=${asaasSubscriptionId} externalReference=${externalReference} customer=${payment?.customer}. ${lookupError ? 'Erro de consulta: ' + lookupError.message : ''}`;
+    console.error('❌', msg);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: msg })
+      .eq('asaas_event_id', eventId);
+    await notifyCriticalPaymentFailure(supabaseClient, 'SUBSCRIPTION_NOT_FOUND', msg, {
+      asaas_payment_id: asaasPaymentId,
+      asaas_subscription_id: asaasSubscriptionId,
+      external_reference: externalReference,
+    });
+    throw new Error(msg);
+  }
+
 
   // Insert subscription_payment (unique by asaas_payment_id)
   const { error: payInsertError } = await supabaseClient
