@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { LeadFeedbackQueuePanel } from './LeadFeedbackQueuePanel';
+
 
 type IntentionKey = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
 
@@ -163,6 +165,10 @@ export function LeadFeedbackTracking() {
           Acompanhe a automação de feedback enviada por WhatsApp para os leads ativos.
         </p>
       </div>
+
+      <LeadFeedbackQueuePanel />
+
+
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <SummaryCard label="Total" value={summary.total} />
