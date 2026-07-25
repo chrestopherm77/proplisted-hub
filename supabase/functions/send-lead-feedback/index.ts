@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     }
   } catch { /* empty */ }
 
-  const isCronMode = !body.leadId;
+  const isCronMode = !body.leadId && !body.testPhone;
 
   // Cron mode requires CRON_SECRET. Single-lead mode requires INTERNAL_FUNCTION_SECRET or admin JWT.
   if (isCronMode) {
