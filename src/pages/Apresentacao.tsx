@@ -469,12 +469,28 @@ const Apresentacao = () => {
           </div>
           <div className="rounded-xl border border-white/15 bg-white/5 p-6">
             <h3 className="font-semibold mb-4">Uso dos recursos</h3>
-            <div className="h-72">
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={useOfFunds} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={3}>
+                  <Pie
+                    data={useOfFunds}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={55}
+                    outerRadius={95}
+                    paddingAngle={3}
+                    labelLine={{ stroke: 'rgba(255,255,255,0.5)' }}
+                    label={({ value }: any) => `${value}%`}
+                  >
                     {useOfFunds.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} stroke="none" />)}
+                    <LabelList
+                      dataKey="value"
+                      position="inside"
+                      formatter={(v: number) => `${v}%`}
+                      style={{ fontSize: 13, fontWeight: 700, fill: '#fff' }}
+                    />
                   </Pie>
+
                   <Tooltip {...chartTooltip} formatter={(v: number) => `${v}%`} />
                   <Legend wrapperStyle={{ fontSize: 12, color: '#fff' }} />
                 </PieChart>
