@@ -480,15 +480,10 @@ const Apresentacao = () => {
                     outerRadius={95}
                     paddingAngle={3}
                     labelLine={{ stroke: 'rgba(255,255,255,0.5)' }}
-                    label={({ value }: any) => `${value}%`}
+                    label={({ name, value }: any) => `${name}: ${value}%`}
                   >
                     {useOfFunds.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} stroke="none" />)}
-                    <LabelList
-                      dataKey="value"
-                      position="inside"
-                      formatter={(v: number) => `${v}%`}
-                      style={{ fontSize: 13, fontWeight: 700, fill: '#fff' }}
-                    />
+
                   </Pie>
 
                   <Tooltip {...chartTooltip} formatter={(v: number) => `${v}%`} />
