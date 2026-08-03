@@ -9,6 +9,10 @@ import {
   Scale, Handshake, Rocket, Target, TrendingUp, Mail, Phone, CheckCircle2,
   XCircle, MinusCircle, Sparkles, MapPin,
 } from 'lucide-react';
+import gustavoPhoto from '@/assets/team-gustavo.jpg.asset.json';
+import chrestopherPhoto from '@/assets/team-chrestopher.jpg.asset.json';
+import lucasPhoto from '@/assets/team-lucas.jpg.asset.json';
+
 
 /* ---------------- Dados ---------------- */
 
