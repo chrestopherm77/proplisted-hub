@@ -9,6 +9,10 @@ import {
   Scale, Handshake, Rocket, Target, TrendingUp, Mail, Phone, CheckCircle2,
   XCircle, MinusCircle, Sparkles, MapPin,
 } from 'lucide-react';
+import gustavoPhoto from '@/assets/team-gustavo.jpg.asset.json';
+import chrestopherPhoto from '@/assets/team-chrestopher.jpg.asset.json';
+import lucasPhoto from '@/assets/team-lucas.jpg.asset.json';
+
 
 /* ---------------- Dados ---------------- */
 
@@ -389,7 +393,7 @@ const Apresentacao = () => {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
-              name: 'Gustavo Rech Beltrami', role: 'CEO',
+              name: 'Gustavo Rech Beltrami', role: 'CEO', photo: gustavoPhoto.url,
               items: [
                 ['Formação', 'Graduado em Administração de Empresas e pós-graduado em Finanças, Controladoria e Auditoria.'],
                 ['Gestão e escala', '8 anos nas indústrias metalúrgica e automotiva, escalando de trainee a Sócio-Diretor.'],
@@ -397,7 +401,7 @@ const Apresentacao = () => {
               ],
             },
             {
-              name: 'Chrestopher Marcelo', role: 'CTO',
+              name: 'Chrestopher Marcelo', role: 'CTO', photo: chrestopherPhoto.url,
               items: [
                 ['Formação', 'Especialista em automação, inteligência artificial e estruturação de operações digitais.'],
                 ['Tecnologia & automação', 'Criação e implantação de agentes de IA, automações comerciais e integração de sistemas.'],
@@ -405,7 +409,7 @@ const Apresentacao = () => {
               ],
             },
             {
-              name: 'Lucas Philip', role: 'Growth & Vendas',
+              name: 'Lucas Philip', role: 'Growth & Vendas', photo: lucasPhoto.url,
               items: [
                 ['Formação', 'Especialista em growth marketing e inside sales B2B, com fechamento de contas de alta complexidade.'],
                 ['Marketing e escala', '8 anos de mercado, com captação de leads e vendas consultivas B2C e B2B.'],
@@ -414,11 +418,22 @@ const Apresentacao = () => {
             },
           ].map((p) => (
             <div key={p.name} className="rounded-xl border border-border bg-card p-6">
-              <div className="w-14 h-14 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg mb-4">
-                {p.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+              <div className="mb-5 flex justify-center">
+                <div className="relative">
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-primary opacity-70 blur-[2px]" aria-hidden />
+                  <div className="relative h-40 w-40 overflow-hidden rounded-2xl ring-2 ring-white shadow-xl">
+                    <img
+                      src={p.photo}
+                      alt={`Retrato de ${p.name}, ${p.role} da Conectae`}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[hsl(var(--portal-navy))]/45 via-transparent to-transparent" />
+                  </div>
+                </div>
               </div>
-              <h3 className="font-bold text-lg text-[hsl(var(--portal-navy))]">{p.name}</h3>
-              <p className="text-sm text-primary font-medium mb-4">{p.role}</p>
+              <h3 className="font-bold text-lg text-[hsl(var(--portal-navy))] text-center">{p.name}</h3>
+              <p className="text-sm text-primary font-medium mb-4 text-center">{p.role}</p>
               <ul className="space-y-3">
                 {p.items.map(([k, v]) => (
                   <li key={k} className="text-sm">
@@ -429,6 +444,7 @@ const Apresentacao = () => {
               </ul>
             </div>
           ))}
+
         </div>
       </Slide>
 
@@ -453,12 +469,42 @@ const Apresentacao = () => {
           </div>
           <div className="rounded-xl border border-white/15 bg-white/5 p-6">
             <h3 className="font-semibold mb-4">Uso dos recursos</h3>
-            <div className="h-72">
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={useOfFunds} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={3}>
+                  <Pie
+                    data={useOfFunds}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={48}
+                    outerRadius={82}
+                    paddingAngle={3}
+                    labelLine={{ stroke: 'rgba(255,255,255,0.45)' }}
+                    label={(props: any) => {
+                      const { cx, cy, midAngle, outerRadius, value } = props;
+                      const rad = -midAngle * (Math.PI / 180);
+                      const r = outerRadius + 20;
+                      const x = cx + r * Math.cos(rad);
+                      const y = cy + r * Math.sin(rad);
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#ffffff"
+                          fontSize={13}
+                          fontWeight={700}
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                        >
+                          {value}%
+                        </text>
+                      );
+                    }}
+                  >
                     {useOfFunds.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} stroke="none" />)}
                   </Pie>
+
+
                   <Tooltip {...chartTooltip} formatter={(v: number) => `${v}%`} />
                   <Legend wrapperStyle={{ fontSize: 12, color: '#fff' }} />
                 </PieChart>
