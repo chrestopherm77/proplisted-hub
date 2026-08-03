@@ -476,15 +476,34 @@ const Apresentacao = () => {
                     data={useOfFunds}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={55}
-                    outerRadius={95}
+                    innerRadius={48}
+                    outerRadius={82}
                     paddingAngle={3}
-                    labelLine={{ stroke: 'rgba(255,255,255,0.5)' }}
-                    label={({ name, value }: any) => `${name}: ${value}%`}
+                    labelLine={{ stroke: 'rgba(255,255,255,0.45)' }}
+                    label={(props: any) => {
+                      const { cx, cy, midAngle, outerRadius, value } = props;
+                      const rad = -midAngle * (Math.PI / 180);
+                      const r = outerRadius + 20;
+                      const x = cx + r * Math.cos(rad);
+                      const y = cy + r * Math.sin(rad);
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#ffffff"
+                          fontSize={13}
+                          fontWeight={700}
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                        >
+                          {value}%
+                        </text>
+                      );
+                    }}
                   >
                     {useOfFunds.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} stroke="none" />)}
-
                   </Pie>
+
 
                   <Tooltip {...chartTooltip} formatter={(v: number) => `${v}%`} />
                   <Legend wrapperStyle={{ fontSize: 12, color: '#fff' }} />
