@@ -50,6 +50,7 @@ import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import LandSearches from "./pages/LandSearches";
 import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
+import Apresentacao from "./pages/Apresentacao";
 import Events from "./pages/Events";
 import ObrigadoGrupo from "./pages/ObrigadoGrupo";
 import ObrigadoLiveConectae from "./pages/ObrigadoLiveConectae";
