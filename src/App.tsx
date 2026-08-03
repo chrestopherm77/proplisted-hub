@@ -50,6 +50,7 @@ import ConectaEImobPortal from "./pages/ConectaEImobPortal";
 import LandSearches from "./pages/LandSearches";
 import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
+import Apresentacao from "./pages/Apresentacao";
 import Events from "./pages/Events";
 import ObrigadoGrupo from "./pages/ObrigadoGrupo";
 import ObrigadoLiveConectae from "./pages/ObrigadoLiveConectae";
@@ -181,6 +182,7 @@ const App = () => {
           <Route path="/indicar" element={<Indicar />} />
           <Route path="/conectaeimob" element={<ConectaEImobPortal />} />
           <Route path="/conectaeimob/noticias" element={<ConectaEImobNews />} />
+          <Route path="/apresentacao" element={<Apresentacao />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           {/* Catch-slug for custom landing pages — MUST be last before "*" */}
