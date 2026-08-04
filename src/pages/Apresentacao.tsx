@@ -333,7 +333,7 @@ const Apresentacao = () => {
         <SlideTitle kicker="07 · Go-To-Market" title="Como vamos tracionar" />
         <div className="grid md:grid-cols-2 gap-6">
           <Card icon={Rocket} title="Aquisição descentralizada">
-            Eliminação do CAC fixo. Operamos com um exército de recrutadores autônomos comissionados com 100% da
+            Redução do CAC fixo. Operamos com um exército de recrutadores autônomos comissionados com 100% da
             primeira mensalidade + 5% de revenue share sobre o consumo na plataforma. Eles prospectam, embarcam e
             engajam os corretores.
           </Card>
@@ -544,8 +544,8 @@ const Apresentacao = () => {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             { fase: 'Fase 1 · Consolidação', cidades: ['Ribeirão Preto — SP'] },
-            { fase: 'Fase 2 · Regional', cidades: ['Campinas — SP', 'Sorocaba — SP', 'São Paulo — SP', 'Goiânia — GO', 'Rio de Janeiro — RJ', 'Nova Lima — MG'] },
-            { fase: 'Fase 3 · Nacional', cidades: ['Expansão para novas praças estratégicas'] },
+            { fase: 'Fase 2 · Regional', cidades: ['Campinas'] },
+            { fase: 'Fase 3 · Nacional', cidades: ['São Paulo — SP'] },
           ].map((f, i) => (
             <div key={f.fase} className="rounded-xl border border-border bg-card p-6 border-t-4" style={{ borderTopColor: PIE_COLORS[i] }}>
               <h4 className="font-semibold text-[hsl(var(--portal-navy))] mb-4">{f.fase}</h4>
@@ -667,29 +667,18 @@ const Apresentacao = () => {
 
       {/* 14 · Contato */}
       <section className="bg-[hsl(var(--portal-navy-deep))] text-white px-6 py-24">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="bg-white rounded-2xl px-6 py-4 inline-flex shadow-lg mb-8">
-              <BrandLogo size="md" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold">Vamos conversar</h2>
-            <div className="mt-6 space-y-3 text-white/80">
-              <a href="mailto:contato@conectaeimob.com.br" className="flex items-center gap-3 hover:text-white transition-colors">
-                <Mail className="w-5 h-5 text-[hsl(var(--brand-green))]" /> contato@conectaeimob.com.br
-              </a>
-              <a href="https://wa.me/5516981334182" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-white transition-colors">
-                <Phone className="w-5 h-5 text-[hsl(var(--brand-green))]" /> (16) 98133-4182
-              </a>
-            </div>
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-2xl px-6 py-4 inline-flex shadow-lg mb-8">
+            <BrandLogo size="md" />
           </div>
-          <div className="flex flex-col items-center md:items-end">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://conectaeimob.com.br"
-              alt="QR Code para acessar a plataforma Conectae Imob"
-              className="w-44 h-44 rounded-xl bg-white p-3"
-              loading="lazy"
-            />
-            <p className="mt-3 text-sm text-white/60">Acesse o protótipo: conectaeimob.com.br</p>
+          <h2 className="text-3xl md:text-4xl font-bold">Vamos conversar</h2>
+          <div className="mt-6 space-y-3 text-white/80">
+            <a href="mailto:contato@beltramicapital.com.br" className="flex items-center gap-3 hover:text-white transition-colors">
+              <Mail className="w-5 h-5 text-[hsl(var(--brand-green))]" /> contato@beltramicapital.com.br
+            </a>
+            <a href="https://wa.me/55439996102805" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-white transition-colors">
+              <Phone className="w-5 h-5 text-[hsl(var(--brand-green))]" /> 43 9 9610-2805
+            </a>
           </div>
         </div>
       </section>
