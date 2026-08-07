@@ -112,11 +112,11 @@ export const SubscribeDialog = ({ plan, open, onOpenChange, onSuccess }: Subscri
           </div>
 
           <div className="space-y-2">
-            <Label>Forma de pagamento preferida</Label>
+            <Label>Forma de pagamento</Label>
             <RadioGroup value={paymentMethod} onValueChange={(v: any) => setPaymentMethod(v)}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="PIX" id="pix" />
-                <Label htmlFor="pix" className="font-normal cursor-pointer">PIX</Label>
+                <Label htmlFor="pix" className="font-normal cursor-pointer">PIX recorrente</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="CREDIT_CARD" id="cc" />
@@ -124,7 +124,7 @@ export const SubscribeDialog = ({ plan, open, onOpenChange, onSuccess }: Subscri
               </div>
             </RadioGroup>
             <p className="text-xs text-muted-foreground">
-              Você poderá escolher novamente a forma de pagamento na tela do Asaas.
+              A cobrança será feita apenas por PIX recorrente ou cartão de crédito. Boleto não está disponível.
             </p>
           </div>
         </div>
