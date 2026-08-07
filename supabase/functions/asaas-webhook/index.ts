@@ -865,6 +865,69 @@ async function markSubscriptionCanceled(supabaseClient: any, payload: any) {
     .eq('asaas_subscription_id', asaasSubscriptionId);
   console.log('✅ Subscription canceled:', asaasSubscriptionId);
 }
+
+/**
+ * Pix Automático: acompanha o ciclo de vida da autorização de débito automático.
+ * A ativação efetiva da assinatura acontece no PAYMENT_RECEIVED da primeira cobrança,
+ * aqui apenas espelhamos o status da autorização e tratamos recusa/cancelamento.
+ */
+async function processPixAutomaticAuthorization(supabaseClient: any, payload: any, eventId: string) {
+  const auth = payload.authorization;
+  const authorizationId = auth?.id;
+  const status = auth?.status;
+
+  console.log('Pix Automático authorization event:', { authorizationId, status });
+  if (!authorizationId) return;
+
+  const { data: sub } = await supabaseClient
+    .from('user_subscriptions')
+    .select('id, user_id, status')
+    .eq('pix_auto_authorization_id', authorizationId)
+    .maybeSingle();
+
+  if (!sub) {
+    const msg = `Evento de Pix Automático recebido para autorização desconhecida (${authorizationId}, status ${status}).`;
+    console.warn('⚠️', msg);
+    await supabaseClient
+      .from('asaas_webhook_events')
+      .update({ error_message: msg })
+      .eq('asaas_event_id', eventId);
+    return;
+  }
+
+  const updates: Record<string, unknown> = { pix_auto_status: status ?? null };
+
+  if (status === 'CANCELLED' || status === 'EXPIRED' || status === 'REFUSED') {
+    // Autorização morreu: assinatura não pode mais ser cobrada automaticamente
+    updates.status = sub.status === 'ACTIVE' ? 'CANCELED' : 'CANCELED';
+    updates.canceled_at = new Date().toISOString();
+
+    await notifyCriticalPaymentFailure(
+      supabaseClient,
+      'PIX_AUTOMATIC_AUTHORIZATION_LOST',
+      `Autorização de Pix Automático ${authorizationId} ficou "${status}". A assinatura ${sub.id} do usuário ${sub.user_id} foi cancelada e não será mais cobrada automaticamente.`,
+      { authorization_id: authorizationId, subscription_id: sub.id, user_id: sub.user_id, status },
+    );
+  }
+
+  const { error: updErr } = await supabaseClient
+    .from('user_subscriptions')
+    .update(updates)
+    .eq('id', sub.id);
+
+  if (updErr) {
+    console.error('Falha ao atualizar assinatura via Pix Automático:', updErr);
+    return;
+  }
+
+  await supabaseClient
+    .from('asaas_webhook_events')
+    .update({ processed: true, processed_at: new Date().toISOString() })
+    .eq('asaas_event_id', eventId);
+
+  console.log(`✅ Pix Automático ${status} aplicado à assinatura ${sub.id}`);
+}
+
 /**
  * Alerta CRÍTICO para os ADMs: grava em admin_alerts (modal no painel)
  * e dispara e-mail via Resend. Nunca lança exceção.
