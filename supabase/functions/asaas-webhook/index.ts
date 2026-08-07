@@ -191,6 +191,12 @@ serve(async (req) => {
       await markSubscriptionCanceled(supabaseClient, payload);
     }
 
+    // ===== Pix Automático (débito automático) =====
+    if (typeof event === 'string' && event.startsWith('PIX_AUTOMATIC_RECURRING_AUTHORIZATION_')) {
+      await processPixAutomaticAuthorization(supabaseClient, payload, eventId);
+    }
+
+
     console.log('=== Webhook processed successfully ===');
 
     return new Response(
