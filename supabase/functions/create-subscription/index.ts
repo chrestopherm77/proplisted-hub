@@ -265,6 +265,87 @@ serve(async (req) => {
 
     const billingType = paymentMethod === 'CREDIT_CARD' ? 'CREDIT_CARD' : 'PIX';
 
+    // ============ PIX AUTOMÁTICO (débito automático via Pix) ============
+    if (paymentMethod === 'PIX_AUTOMATIC') {
+      const planCycleAuto = (plan as any).billing_cycle || 'MONTHLY';
+      const frequency =
+        planCycleAuto === 'YEARLY' ? 'ANNUALLY' :
+        planCycleAuto === 'QUARTERLY' ? 'QUARTERLY' :
+        'MONTHLY';
+
+      // contractId e description têm limite de 35 caracteres na API do Asaas
+      const contractId = `CONECTAE-${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`;
+      const shortDescription = `Assinatura ${plan.name}`.slice(0, 35);
+
+      const authPayload = {
+        frequency,
+        contractId,
+        startDate: nextDueStr,
+        value: Number(plan.price),
+        description: shortDescription,
+        customerId,
+        paymentCreationMode: 'SUBSCRIPTION',
+        retryPolicy: 'ALLOW_THREE_IN_SEVEN_DAYS',
+        immediateQrCode: {
+          expirationSeconds: 86400,
+          originalValue: Number(plan.price),
+          description: shortDescription,
+        },
+      };
+
+      const authResp = await fetch(`${ASAAS_BASE_URL}/pix/automatic/authorizations`, {
+        method: 'POST',
+        headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json', 'User-Agent': 'Conectae-System' },
+        body: JSON.stringify(authPayload),
+      });
+
+      const authText = await authResp.text();
+      if (!authResp.ok) {
+        console.error('Asaas pix automatic authorization failed:', authText);
+        let friendly = 'Não foi possível criar o Pix Automático. Tente novamente ou escolha cartão de crédito.';
+        try {
+          const parsed = JSON.parse(authText);
+          const desc = parsed?.errors?.[0]?.description;
+          if (desc) friendly = `Pix Automático indisponível: ${desc}`;
+        } catch { /* ignore */ }
+        throw new Error(friendly);
+      }
+
+      const authData = JSON.parse(authText);
+      console.log('Pix Automático authorization created:', authData.id);
+
+      const { data: newAutoSub, error: autoInsertError } = await supabaseClient
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_id: plan.id,
+          asaas_customer_id: customerId,
+          status: 'PENDING',
+          next_due_date: nextDueStr,
+          payment_method: 'PIX_AUTOMATIC',
+          billing_cycle: planCycleAuto,
+          pix_auto_authorization_id: authData.id,
+          pix_auto_status: authData.status ?? 'CREATED',
+        })
+        .select()
+        .single();
+      if (autoInsertError) throw autoInsertError;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          subscriptionId: newAutoSub.id,
+          pixAutomatic: true,
+          authorizationId: authData.id,
+          pixPayload: authData.payload ?? null,
+          pixQrCodeImage: authData.encodedImage ?? null,
+          expirationDate: authData.immediateQrCode?.expirationDate ?? null,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+
     // Mapeia ciclo do plano para o cycle do Asaas
     const planCycle = (plan as any).billing_cycle || 'MONTHLY';
     const asaasCycle =
