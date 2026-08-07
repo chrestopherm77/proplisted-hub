@@ -2787,6 +2787,8 @@ export type Database = {
           next_due_date: string | null
           payment_method: string | null
           pending_downgrade_to_plan_id: string | null
+          pix_auto_authorization_id: string | null
+          pix_auto_status: string | null
           plan_id: string
           scheduled_change_at: string | null
           status: string
@@ -2806,6 +2808,8 @@ export type Database = {
           next_due_date?: string | null
           payment_method?: string | null
           pending_downgrade_to_plan_id?: string | null
+          pix_auto_authorization_id?: string | null
+          pix_auto_status?: string | null
           plan_id: string
           scheduled_change_at?: string | null
           status?: string
@@ -2825,6 +2829,8 @@ export type Database = {
           next_due_date?: string | null
           payment_method?: string | null
           pending_downgrade_to_plan_id?: string | null
+          pix_auto_authorization_id?: string | null
+          pix_auto_status?: string | null
           plan_id?: string
           scheduled_change_at?: string | null
           status?: string
