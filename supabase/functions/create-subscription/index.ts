@@ -274,7 +274,7 @@ serve(async (req) => {
 
     const subPayload: any = {
       customer: customerId,
-      billingType: 'UNDEFINED',
+      billingType,
       value: Number(plan.price),
       nextDueDate: nextDueStr,
       cycle: asaasCycle,
