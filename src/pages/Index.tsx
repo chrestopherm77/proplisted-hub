@@ -269,8 +269,8 @@ const Index = () => {
               <p className="text-muted-foreground text-base md:text-lg">{c.plans_section.subtitle}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
-              {c.plans_section.plans.map((plan) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+              {c.plans_section.plans.filter((plan) => plan.slug !== 'partner').map((plan) => {
                 const popular = isPopular(plan.slug);
                 const highlight = isHighlight(plan.slug);
                 const isPartner = plan.slug === 'partner';
