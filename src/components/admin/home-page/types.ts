@@ -150,7 +150,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
       },
       {
         slug: 'essencial', name: 'Essencial', price: 'R$ 39,90', priceSuffix: '/mês',
-        credits: '30 créditos/mês', cta: 'Assinar Essencial',
+        credits: '30 créditos Grátis/mês', cta: 'Assinar Essencial',
         features: [
           'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
           'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
