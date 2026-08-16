@@ -76,7 +76,6 @@ export const PLAN_SLUGS: HomePlan['slug'][] = [
   'conexao',
   'essencial',
   'elite',
-  'partner',
 ];
 
 // Defaults espelhando o seed da migration — fallback caso a tabela esteja vazia.
