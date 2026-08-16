@@ -29,72 +29,56 @@ function getIntention(formData: Record<string, unknown> | null | undefined): Int
   return "BUY";
 }
 
-async function sendListMessage(params: {
-  phone: string;
-  instanceKey: string;
-  token: string;
+const INTEREST_PT: Record<Intention, string> = {
+  BUY: "comprar",
+  RENT: "alugar",
+  SELL: "vender",
+  BUILD: "construir",
+};
+
+/** Normaliza telefone: 55 + DDD + 8 dígitos */
+function normalizePhone(raw: string): string {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (d.startsWith("55")) d = d.slice(2);
+  if (d.length >= 10) {
+    const ddd = d.slice(0, 2);
+    d = ddd + d.slice(2).slice(-8);
+  }
+  return "55" + d;
+}
+
+async function sendWebhook(params: {
   leadId: string;
   name: string | null;
+  phone: string;
   intention: Intention;
 }): Promise<{ ok: boolean; error?: string; messageId?: string }> {
-  const labels = LABELS[params.intention];
-  const greeting = firstName(params.name);
-  const text =
-    `Olá ${greeting}! 👋\n\n` +
-    `Faz alguns dias que recebemos seu interesse em ${labels.verb}.\n\n` +
-    `Você ainda está procurando? Toque em uma das opções abaixo:`;
+  const url = Deno.env.get("LEAD_FEEDBACK_WEBHOOK_URL");
+  if (!url) return { ok: false, error: "LEAD_FEEDBACK_WEBHOOK_URL missing" };
 
-  const body = {
-    messageData: {
-      to: `${params.phone}@s.whatsapp.net`,
-      title: "Conectae - Feedback",
-      text,
-      buttonText: "Responder",
-      description: "Toque para escolher uma das opções",
-      sections: [
-        {
-          title: "Como está sua busca?",
-          rows: [
-            {
-              rowId: `feedback_done_${params.leadId}`,
-              title: `✅ ${labels.done}`,
-              description: "Vamos encerrar seu cadastro",
-            },
-            {
-              rowId: `feedback_pending_${params.leadId}`,
-              title: `⏳ ${labels.pending}`,
-              description: "Continuamos te ajudando",
-            },
-          ],
-        },
-      ],
-      listType: 0,
-    },
+  const payload = {
+    nome: params.name || "",
+    telefone: normalizePhone(params.phone),
+    interesse: INTEREST_PT[params.intention],
+    intention: params.intention,
+    lead_id: params.leadId,
+    enviado_em: new Date().toISOString(),
   };
 
-  const url = `https://apinocode01.megaapi.com.br/rest/sendMessage/${params.instanceKey}/listMessage`;
-
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${params.token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const outToken = Deno.env.get("LEAD_FEEDBACK_WEBHOOK_TOKEN");
+    if (outToken) headers["Authorization"] = `Bearer ${outToken}`;
+
+    const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
     const txt = await res.text();
-    let data: any;
-    try { data = JSON.parse(txt); } catch { data = { raw: txt.slice(0, 400) }; }
-    if (res.ok && data?.error !== true) {
-      const id = data?.key?.id || data?.messageData?.key?.id || data?.id || null;
-      return { ok: true, messageId: id };
-    }
-    return { ok: false, error: data?.message || data?.error || `HTTP ${res.status}` };
+    if (res.ok) return { ok: true, messageId: txt.slice(0, 120) };
+    return { ok: false, error: `HTTP ${res.status} ${txt.slice(0, 200)}` };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
