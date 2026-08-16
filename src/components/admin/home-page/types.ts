@@ -140,7 +140,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
     plans: [
       {
         slug: 'conexao', name: 'Conexão', price: 'Grátis', priceSuffix: '',
-        credits: '10 créditos/mês', cta: 'Começar grátis',
+        credits: '10 créditos Grátis/mês', cta: 'Começar grátis',
         features: [
           '1 solicitação de parceria', 'Até 5 ofertas de parceria',
           'Até 3 imóveis no portal', 'Acesso full a lançamentos',
