@@ -121,8 +121,12 @@ Deno.serve(async (req) => {
     const providedInternal = req.headers.get("x-internal-secret");
     const cronExpected = Deno.env.get("CRON_SECRET");
     const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
     let authorized = (!!internalSecret && providedInternal === internalSecret)
-      || (!!cronExpected && providedCron === cronExpected);
+      || (!!cronExpected && providedCron === cronExpected)
+      || (!!serviceKey && bearer === serviceKey);
+
     if (!authorized) {
       const authHeader = req.headers.get("Authorization") || "";
       if (authHeader.startsWith("Bearer ")) {
