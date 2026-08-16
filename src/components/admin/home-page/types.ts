@@ -160,20 +160,11 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
       },
       {
         slug: 'elite', name: 'Elite', price: 'R$ 79,90', priceSuffix: '/mês',
-        credits: '150 créditos/mês', cta: 'Assinar Elite',
+        credits: '150 créditos Grátis/mês', cta: 'Assinar Elite',
         features: [
-          'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
-          'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
-          '15 criativos imobiliários', 'Site Personalizado',
-          '50% de desconto na compra de créditos e leads',
-        ],
-      },
-      {
-        slug: 'partner', name: 'Quero ser parceiro', price: '', priceSuffix: '',
-        credits: '', cta: 'Falar no WhatsApp',
-        features: [
-          'Tem outras necessidades?',
-          'Vamos conversar sobre uma parceria personalizada para o seu negócio.',
+          'Tudo do Plano Essencial',
+          '15 criativos imobiliários',
+          'Site Personalizado',
         ],
       },
     ],
