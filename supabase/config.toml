@@ -108,5 +108,9 @@ verify_jwt = false
 [functions.send-lead-feedback]
 verify_jwt = false
 
+[functions.lead-feedback-callback]
+verify_jwt = false
+
 [functions.create-fixed-checkout]
 verify_jwt = false
+
