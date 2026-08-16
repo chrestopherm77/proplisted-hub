@@ -76,7 +76,6 @@ export const PLAN_SLUGS: HomePlan['slug'][] = [
   'conexao',
   'essencial',
   'elite',
-  'partner',
 ];
 
 // Defaults espelhando o seed da migration — fallback caso a tabela esteja vazia.
@@ -141,7 +140,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
     plans: [
       {
         slug: 'conexao', name: 'Conexão', price: 'Grátis', priceSuffix: '',
-        credits: '10 créditos/mês', cta: 'Começar grátis',
+        credits: '10 créditos Grátis/mês', cta: 'Começar grátis',
         features: [
           '1 solicitação de parceria', 'Até 5 ofertas de parceria',
           'Até 3 imóveis no portal', 'Acesso full a lançamentos',
@@ -151,7 +150,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
       },
       {
         slug: 'essencial', name: 'Essencial', price: 'R$ 39,90', priceSuffix: '/mês',
-        credits: '30 créditos/mês', cta: 'Assinar Essencial',
+        credits: '30 créditos Grátis/mês', cta: 'Assinar Essencial',
         features: [
           'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
           'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
@@ -161,20 +160,11 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
       },
       {
         slug: 'elite', name: 'Elite', price: 'R$ 79,90', priceSuffix: '/mês',
-        credits: '150 créditos/mês', cta: 'Assinar Elite',
+        credits: '150 créditos Grátis/mês', cta: 'Assinar Elite',
         features: [
-          'Solicitações de parceria ilimitadas', 'Ofertas de parceria ilimitadas',
-          'Imóveis no portal ilimitados', 'Acesso full a lançamentos',
-          '15 criativos imobiliários', 'Site Personalizado',
-          '50% de desconto na compra de créditos e leads',
-        ],
-      },
-      {
-        slug: 'partner', name: 'Quero ser parceiro', price: '', priceSuffix: '',
-        credits: '', cta: 'Falar no WhatsApp',
-        features: [
-          'Tem outras necessidades?',
-          'Vamos conversar sobre uma parceria personalizada para o seu negócio.',
+          'Tudo do Plano Essencial',
+          '15 criativos imobiliários',
+          'Site Personalizado',
         ],
       },
     ],

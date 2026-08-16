@@ -367,7 +367,7 @@ function CycleAndGrid({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {ordered.map((plan) => {
           const parent = ((plan as any).parent_slug ?? plan.slug) as string;
           const activePlan = plans.find((p) => p.id === activePlanId);
@@ -391,29 +391,6 @@ function CycleAndGrid({
             />
           );
         })}
-        {/* Card "Quero ser parceiro" */}
-        <div className="relative flex flex-col rounded-2xl border bg-card p-6 transition-all hover:-translate-y-1 border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
-          <div className="text-center mb-5">
-            <h3 className="text-base font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Quero ser parceiro
-            </h3>
-            <div className="min-h-[3rem] flex items-center justify-center">
-              <span className="text-2xl font-bold tracking-tight">Sob medida</span>
-            </div>
-          </div>
-          <ul className="space-y-2.5 flex-1 mb-5 text-sm text-foreground/90">
-            <li>Tem outras necessidades?</li>
-            <li>Vamos conversar sobre uma parceria personalizada para o seu negócio.</li>
-          </ul>
-          <a
-            href="https://wa.me/5516992456258"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-full h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition"
-          >
-            Falar no WhatsApp
-          </a>
-        </div>
       </div>
     </>
   );
