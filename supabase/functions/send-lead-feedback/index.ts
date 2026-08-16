@@ -247,14 +247,13 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    const r = await sendListMessage({
+    const r = await sendWebhook({
       phone,
-      instanceKey,
-      token,
       leadId: lead.id,
       name: lead.name,
       intention,
     });
+
 
     if (r.ok) {
       await sb
