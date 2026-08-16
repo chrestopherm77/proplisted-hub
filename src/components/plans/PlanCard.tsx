@@ -157,7 +157,7 @@ export const PlanCard = ({
           )}
         </div>
         <div className="mt-2 text-sm text-primary font-medium">
-          {plan.monthly_credits.toLocaleString('pt-BR')} créditos
+          {plan.monthly_credits.toLocaleString('pt-BR')} créditos Grátis
           {months > 1 ? ` por cobrança (${months}x)` : '/mês'}
         </div>
       </CardHeader>
