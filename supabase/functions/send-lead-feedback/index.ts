@@ -88,15 +88,13 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const instanceKey = Deno.env.get("MEGA_INSTANCE_KEY") || Deno.env.get("MEGA_API_INSTANCE_KEY") || "megacode-Mj46Nd4U5tP";
-  const token = Deno.env.get("MEGA_API_TOKEN");
-
-  if (!token) {
+  if (!Deno.env.get("LEAD_FEEDBACK_WEBHOOK_URL")) {
     return new Response(
-      JSON.stringify({ error: "MEGA_API_TOKEN missing" }),
+      JSON.stringify({ error: "LEAD_FEEDBACK_WEBHOOK_URL missing" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
+
 
   let body: { leadId?: string; cronSecret?: string; testPhone?: string; testName?: string; testIntention?: Intention; limit?: number } = {};
   try {
