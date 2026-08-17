@@ -131,29 +131,41 @@ export function LeadFeedbackManualPanel() {
           </div>
         </div>
 
-        {log.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Disparos desta sessão</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Histórico de disparos e retornos</p>
+            <Button variant="outline" size="sm" onClick={fetchEvents} disabled={loadingEvents}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loadingEvents ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+          {events.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
+          ) : (
             <div className="rounded-md border divide-y">
-              {log.map((l, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-                  <Badge variant={l.ok ? 'default' : 'destructive'} className={l.ok ? 'bg-emerald-600 hover:bg-emerald-600' : ''}>
-                    {l.ok ? 'Enviado' : 'Falhou'}
+              {events.map((l) => (
+                <div key={l.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
+                  <Badge variant="outline">{l.direction === 'OUT' ? 'Enviado' : 'Retorno'}</Badge>
+                  <Badge
+                    variant={l.ok ? 'default' : 'destructive'}
+                    className={l.ok ? 'bg-emerald-600 hover:bg-emerald-600' : ''}
+                  >
+                    {l.ok ? 'OK' : 'Falhou'}
                   </Badge>
-                  <span className="font-medium">{l.name}</span>
+                  <span className="font-medium">{l.name || '—'}</span>
                   <span className="text-muted-foreground">{l.phone}</span>
-                  <span className="text-muted-foreground">
-                    {INTENTION_OPTIONS.find((o) => o.value === l.intention)?.label}
-                  </span>
+                  {l.intention && <span className="text-muted-foreground">{l.intention}</span>}
+                  {l.status && <span className="text-muted-foreground">{l.status}</span>}
                   <span className="text-xs text-muted-foreground ml-auto">
-                    {new Date(l.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                    {new Date(l.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                   </span>
-                  <span className="w-full text-xs text-muted-foreground">{l.detail}</span>
+                  {l.detail && <span className="w-full text-xs text-muted-foreground">{l.detail}</span>}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </CardContent>
     </Card>
   );
