@@ -271,20 +271,23 @@ export function LeadFeedbackTracking() {
                       </TableCell>
                       <TableCell>{r.feedback_attempts}</TableCell>
                       <TableCell>
-                        {r.feedback_response === 'DONE' ? (
+                        {r.feedback_response === 'DONE' || r.feedback_response === 'NOT_SEARCHING' ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600">
                             Já não precisa
                           </Badge>
-                        ) : r.feedback_response === 'PENDING' ? (
+                        ) : r.feedback_response === 'PENDING' || r.feedback_response === 'STILL_SEARCHING' ? (
                           <Badge className="bg-amber-500 hover:bg-amber-500">
                             Ainda procurando
                           </Badge>
+                        ) : r.feedback_response === 'NO_RESPONSE' ? (
+                          <Badge variant="destructive">Sem resposta</Badge>
                         ) : r.feedback_sent_at ? (
                           <Badge variant="outline">Aguardando</Badge>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
+
                       <TableCell className="text-xs">
                         {formatDate(r.feedback_responded_at)}
                       </TableCell>
