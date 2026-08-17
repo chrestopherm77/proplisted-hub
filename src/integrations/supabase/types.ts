@@ -1193,6 +1193,45 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_feedback_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          direction: string
+          id: string
+          intention: string | null
+          lead_id: string | null
+          name: string | null
+          ok: boolean
+          phone: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          direction: string
+          id?: string
+          intention?: string | null
+          lead_id?: string | null
+          name?: string | null
+          ok?: boolean
+          phone: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          direction?: string
+          id?: string
+          intention?: string | null
+          lead_id?: string | null
+          name?: string | null
+          ok?: boolean
+          phone?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       lead_feedback_queue: {
         Row: {
           attempts: number
