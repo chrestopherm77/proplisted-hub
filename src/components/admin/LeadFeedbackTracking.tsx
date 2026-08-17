@@ -132,9 +132,9 @@ export function LeadFeedbackTracking() {
         case 'SENT_NO_REPLY':
           return !!r.feedback_sent_at && !r.feedback_response;
         case 'PENDING':
-          return r.feedback_response === 'PENDING';
+          return r.feedback_response === 'PENDING' || r.feedback_response === 'STILL_SEARCHING';
         case 'DONE':
-          return r.feedback_response === 'DONE';
+          return r.feedback_response === 'DONE' || r.feedback_response === 'NOT_SEARCHING';
         case 'EXHAUSTED':
           return r.is_exhausted || !r.is_active;
         default:
