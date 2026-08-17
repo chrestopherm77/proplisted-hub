@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { LeadFeedbackQueuePanel } from './LeadFeedbackQueuePanel';
+import { LeadFeedbackManualPanel } from './LeadFeedbackManualPanel';
 
 
 type IntentionKey = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
