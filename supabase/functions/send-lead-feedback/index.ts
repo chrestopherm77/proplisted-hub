@@ -333,6 +333,22 @@ Deno.serve(async (req) => {
       }).eq("id", queueId);
     }
 
+    // Reagenda automaticamente o próximo disparo para daqui a 14 dias
+    if (r.ok && (lead.feedback_attempts || 0) + 1 < MAX_ATTEMPTS) {
+      const next = new Date(Date.now() + NEXT_DISPATCH_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      const { data: existing } = await sb
+        .from("lead_feedback_queue")
+        .select("id").eq("lead_id", lead.id).eq("status", "PENDING").limit(1);
+      if (!existing || existing.length === 0) {
+        await sb.from("lead_feedback_queue").insert({
+          lead_id: lead.id,
+          scheduled_at: next,
+          status: "PENDING",
+        });
+      }
+    }
+
+
     results.push({ leadId: lead.id, ok: r.ok, error: r.error });
     console.log(`feedback lead=${lead.id} ok=${r.ok} ${r.error ?? ""}`);
 
