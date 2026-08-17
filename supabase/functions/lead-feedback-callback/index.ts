@@ -80,6 +80,20 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  const logEvent = async (ok: boolean, detail: string, leadId: string | null) => {
+    try {
+      await sb.from("lead_feedback_events").insert({
+        direction: "IN",
+        name: nome || null,
+        phone: telefone,
+        status: status === "KEEP" ? "Manter ativo" : "Desativar",
+        ok,
+        detail,
+        lead_id: leadId,
+      });
+    } catch (_e) { /* noop */ }
+  };
+
   const last8 = key.slice(-8);
   const { data: candidates, error } = await sb
     .from("leads")
@@ -93,6 +107,7 @@ Deno.serve(async (req) => {
   const matches = (candidates || []).filter((l) => phoneKey(l.phone || "") === key);
   if (matches.length === 0) {
     console.log(`lead-feedback-callback: lead não encontrado telefone=${last8}`);
+    await logEvent(false, "Retorno recebido, mas nenhum lead com esse telefone", null);
     return json({ ok: false, matched: 0, message: "lead não encontrado" }, 404);
   }
 
@@ -109,9 +124,19 @@ Deno.serve(async (req) => {
     })
     .in("id", ids);
 
-  if (updErr) return json({ error: updErr.message }, 500);
+  if (updErr) {
+    await logEvent(false, updErr.message, ids[0]);
+    return json({ error: updErr.message }, 500);
+  }
 
   console.log(`lead-feedback-callback: ${status} aplicado em ${ids.length} lead(s) nome=${nome} tel=${last8}`);
+  await logEvent(
+    true,
+    status === "KEEP"
+      ? `Lead mantido ativo (${ids.length})`
+      : `Lead inativado (${ids.length})`,
+    ids[0],
+  );
 
   return json({
     ok: true,
@@ -121,3 +146,4 @@ Deno.serve(async (req) => {
     is_active: status === "KEEP",
   });
 });
+
