@@ -8,6 +8,8 @@ const corsHeaders = {
 
 const MAX_ATTEMPTS = 2;
 const SEND_DELAY_MS = 700;
+const NEXT_DISPATCH_DAYS = 14;
+
 
 type Intention = "BUY" | "RENT" | "SELL" | "BUILD";
 
