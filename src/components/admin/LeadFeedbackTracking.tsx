@@ -166,7 +166,10 @@ export function LeadFeedbackTracking() {
         </p>
       </div>
 
+      <LeadFeedbackManualPanel />
+
       <LeadFeedbackQueuePanel />
+
 
 
 
