@@ -60,7 +60,7 @@ async function sendWebhook(params: {
     nome: params.name || "",
     telefone: normalizePhone(params.phone),
     interesse: INTEREST_PT[params.intention],
-    intention: params.intention,
+    intencao: INTEREST_PT[params.intention],
     lead_id: params.leadId,
     enviado_em: new Date().toISOString(),
   };
@@ -122,9 +122,12 @@ Deno.serve(async (req) => {
     const cronExpected = Deno.env.get("CRON_SECRET");
     const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const testSecret = Deno.env.get("LEAD_FEEDBACK_TEST_SECRET");
+    const providedTest = req.headers.get("x-test-secret");
     const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
     let authorized = (!!internalSecret && providedInternal === internalSecret)
       || (!!cronExpected && providedCron === cronExpected)
+      || (!!testSecret && providedTest === testSecret)
       || (!!serviceKey && bearer === serviceKey);
 
     if (!authorized) {
