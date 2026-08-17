@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, RefreshCw } from 'lucide-react';
 
 type Intention = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
 
@@ -18,13 +18,16 @@ const INTENTION_OPTIONS: { value: Intention; label: string }[] = [
   { value: 'BUILD', label: 'Construir' },
 ];
 
-interface LogItem {
-  at: string;
+interface EventRow {
+  id: string;
+  direction: 'OUT' | 'IN';
+  name: string | null;
   phone: string;
-  name: string;
-  intention: Intention;
+  intention: string | null;
+  status: string | null;
   ok: boolean;
-  detail: string;
+  detail: string | null;
+  created_at: string;
 }
 
 export function LeadFeedbackManualPanel() {
@@ -32,8 +35,25 @@ export function LeadFeedbackManualPanel() {
   const [phone, setPhone] = useState('');
   const [intention, setIntention] = useState<Intention>('BUY');
   const [sending, setSending] = useState(false);
-  const [log, setLog] = useState<LogItem[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const { toast } = useToast();
+
+  const fetchEvents = useCallback(async () => {
+    setLoadingEvents(true);
+    const { data, error } = await supabase
+      .from('lead_feedback_events')
+      .select('id, direction, name, phone, intention, status, ok, detail, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (!error) setEvents((data || []) as EventRow[]);
+    setLoadingEvents(false);
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
 
   const handleSend = async () => {
     const digits = phone.replace(/\D/g, '');
