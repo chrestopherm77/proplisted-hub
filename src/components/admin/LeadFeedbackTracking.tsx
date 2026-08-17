@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { LeadFeedbackQueuePanel } from './LeadFeedbackQueuePanel';
+import { LeadFeedbackManualPanel } from './LeadFeedbackManualPanel';
 
 
 type IntentionKey = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
@@ -28,7 +29,7 @@ interface Row {
   created_at: string;
   feedback_sent_at: string | null;
   feedback_attempts: number;
-  feedback_response: 'DONE' | 'PENDING' | null;
+  feedback_response: 'DONE' | 'PENDING' | 'STILL_SEARCHING' | 'NOT_SEARCHING' | 'NO_RESPONSE' | null;
   feedback_responded_at: string | null;
   is_active: boolean;
   is_exhausted: boolean;
@@ -131,9 +132,9 @@ export function LeadFeedbackTracking() {
         case 'SENT_NO_REPLY':
           return !!r.feedback_sent_at && !r.feedback_response;
         case 'PENDING':
-          return r.feedback_response === 'PENDING';
+          return r.feedback_response === 'PENDING' || r.feedback_response === 'STILL_SEARCHING';
         case 'DONE':
-          return r.feedback_response === 'DONE';
+          return r.feedback_response === 'DONE' || r.feedback_response === 'NOT_SEARCHING';
         case 'EXHAUSTED':
           return r.is_exhausted || !r.is_active;
         default:
@@ -166,7 +167,10 @@ export function LeadFeedbackTracking() {
         </p>
       </div>
 
+      <LeadFeedbackManualPanel />
+
       <LeadFeedbackQueuePanel />
+
 
 
 
@@ -267,20 +271,23 @@ export function LeadFeedbackTracking() {
                       </TableCell>
                       <TableCell>{r.feedback_attempts}</TableCell>
                       <TableCell>
-                        {r.feedback_response === 'DONE' ? (
+                        {r.feedback_response === 'DONE' || r.feedback_response === 'NOT_SEARCHING' ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600">
                             Já não precisa
                           </Badge>
-                        ) : r.feedback_response === 'PENDING' ? (
+                        ) : r.feedback_response === 'PENDING' || r.feedback_response === 'STILL_SEARCHING' ? (
                           <Badge className="bg-amber-500 hover:bg-amber-500">
                             Ainda procurando
                           </Badge>
+                        ) : r.feedback_response === 'NO_RESPONSE' ? (
+                          <Badge variant="destructive">Sem resposta</Badge>
                         ) : r.feedback_sent_at ? (
                           <Badge variant="outline">Aguardando</Badge>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
+
                       <TableCell className="text-xs">
                         {formatDate(r.feedback_responded_at)}
                       </TableCell>
