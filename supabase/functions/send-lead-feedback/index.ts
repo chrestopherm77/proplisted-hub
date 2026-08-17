@@ -47,7 +47,36 @@ function normalizePhone(raw: string): string {
   return "55" + d;
 }
 
+async function logEvent(e: {
+  direction: "OUT" | "IN";
+  name: string | null;
+  phone: string;
+  intention?: string | null;
+  status?: string | null;
+  ok: boolean;
+  detail?: string | null;
+  leadId?: string | null;
+}) {
+  try {
+    const sbLog = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    await sbLog.from("lead_feedback_events").insert({
+      direction: e.direction,
+      name: e.name,
+      phone: e.phone,
+      intention: e.intention ?? null,
+      status: e.status ?? null,
+      ok: e.ok,
+      detail: e.detail ?? null,
+      lead_id: e.leadId ?? null,
+    });
+  } catch (_err) { /* logging não pode quebrar o disparo */ }
+}
+
 async function sendWebhook(params: {
+
   leadId: string;
   name: string | null;
   phone: string;
