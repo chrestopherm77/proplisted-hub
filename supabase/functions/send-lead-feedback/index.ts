@@ -47,7 +47,36 @@ function normalizePhone(raw: string): string {
   return "55" + d;
 }
 
+async function logEvent(e: {
+  direction: "OUT" | "IN";
+  name: string | null;
+  phone: string;
+  intention?: string | null;
+  status?: string | null;
+  ok: boolean;
+  detail?: string | null;
+  leadId?: string | null;
+}) {
+  try {
+    const sbLog = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    await sbLog.from("lead_feedback_events").insert({
+      direction: e.direction,
+      name: e.name,
+      phone: e.phone,
+      intention: e.intention ?? null,
+      status: e.status ?? null,
+      ok: e.ok,
+      detail: e.detail ?? null,
+      lead_id: e.leadId ?? null,
+    });
+  } catch (_err) { /* logging não pode quebrar o disparo */ }
+}
+
 async function sendWebhook(params: {
+
   leadId: string;
   name: string | null;
   phone: string;
@@ -72,12 +101,34 @@ async function sendWebhook(params: {
 
     const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
     const txt = await res.text();
-    if (res.ok) return { ok: true, messageId: txt.slice(0, 120) };
-    return { ok: false, error: `HTTP ${res.status} ${txt.slice(0, 200)}` };
+    const result = res.ok
+      ? { ok: true, messageId: txt.slice(0, 120) }
+      : { ok: false, error: `HTTP ${res.status} ${txt.slice(0, 200)}` };
+    await logEvent({
+      direction: "OUT",
+      name: params.name,
+      phone: payload.telefone,
+      intention: INTEREST_PT[params.intention],
+      ok: result.ok,
+      detail: result.ok ? "Webhook recebeu o disparo" : String((result as { error?: string }).error || ""),
+      leadId: params.leadId !== "test" ? params.leadId : null,
+    });
+    return result;
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? e.message : String(e);
+    await logEvent({
+      direction: "OUT",
+      name: params.name,
+      phone: payload.telefone,
+      intention: INTEREST_PT[params.intention],
+      ok: false,
+      detail: msg,
+      leadId: params.leadId !== "test" ? params.leadId : null,
+    });
+    return { ok: false, error: msg };
   }
 }
+
 
 
 Deno.serve(async (req) => {

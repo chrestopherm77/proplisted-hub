@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, RefreshCw } from 'lucide-react';
 
 type Intention = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
 
@@ -18,13 +18,16 @@ const INTENTION_OPTIONS: { value: Intention; label: string }[] = [
   { value: 'BUILD', label: 'Construir' },
 ];
 
-interface LogItem {
-  at: string;
+interface EventRow {
+  id: string;
+  direction: 'OUT' | 'IN';
+  name: string | null;
   phone: string;
-  name: string;
-  intention: Intention;
+  intention: string | null;
+  status: string | null;
   ok: boolean;
-  detail: string;
+  detail: string | null;
+  created_at: string;
 }
 
 export function LeadFeedbackManualPanel() {
@@ -32,8 +35,25 @@ export function LeadFeedbackManualPanel() {
   const [phone, setPhone] = useState('');
   const [intention, setIntention] = useState<Intention>('BUY');
   const [sending, setSending] = useState(false);
-  const [log, setLog] = useState<LogItem[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const { toast } = useToast();
+
+  const fetchEvents = useCallback(async () => {
+    setLoadingEvents(true);
+    const { data, error } = await supabase
+      .from('lead_feedback_events')
+      .select('id, direction, name, phone, intention, status, ok, detail, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (!error) setEvents((data || []) as EventRow[]);
+    setLoadingEvents(false);
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
 
   const handleSend = async () => {
     const digits = phone.replace(/\D/g, '');
@@ -48,33 +68,21 @@ export function LeadFeedbackManualPanel() {
       });
       if (error) throw error;
       const ok = !!(data as any)?.ok;
-      setLog((prev) => [
-        {
-          at: new Date().toISOString(),
-          phone: digits,
-          name: name || '—',
-          intention,
-          ok,
-          detail: ok ? 'Webhook recebeu o disparo' : String((data as any)?.error || 'Falha no webhook'),
-        },
-        ...prev,
-      ]);
       toast({
         title: ok ? 'Disparo enviado' : 'Falha no disparo',
         description: ok ? 'O webhook confirmou o recebimento.' : String((data as any)?.error || ''),
         variant: ok ? 'default' : 'destructive',
       });
+      await fetchEvents();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setLog((prev) => [
-        { at: new Date().toISOString(), phone: digits, name: name || '—', intention, ok: false, detail: msg },
-        ...prev,
-      ]);
       toast({ title: 'Erro ao disparar', description: msg, variant: 'destructive' });
+      await fetchEvents();
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <Card translate="no">
@@ -123,29 +131,41 @@ export function LeadFeedbackManualPanel() {
           </div>
         </div>
 
-        {log.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Disparos desta sessão</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Histórico de disparos e retornos</p>
+            <Button variant="outline" size="sm" onClick={fetchEvents} disabled={loadingEvents}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loadingEvents ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+          {events.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
+          ) : (
             <div className="rounded-md border divide-y">
-              {log.map((l, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-                  <Badge variant={l.ok ? 'default' : 'destructive'} className={l.ok ? 'bg-emerald-600 hover:bg-emerald-600' : ''}>
-                    {l.ok ? 'Enviado' : 'Falhou'}
+              {events.map((l) => (
+                <div key={l.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
+                  <Badge variant="outline">{l.direction === 'OUT' ? 'Enviado' : 'Retorno'}</Badge>
+                  <Badge
+                    variant={l.ok ? 'default' : 'destructive'}
+                    className={l.ok ? 'bg-emerald-600 hover:bg-emerald-600' : ''}
+                  >
+                    {l.ok ? 'OK' : 'Falhou'}
                   </Badge>
-                  <span className="font-medium">{l.name}</span>
+                  <span className="font-medium">{l.name || '—'}</span>
                   <span className="text-muted-foreground">{l.phone}</span>
-                  <span className="text-muted-foreground">
-                    {INTENTION_OPTIONS.find((o) => o.value === l.intention)?.label}
-                  </span>
+                  {l.intention && <span className="text-muted-foreground">{l.intention}</span>}
+                  {l.status && <span className="text-muted-foreground">{l.status}</span>}
                   <span className="text-xs text-muted-foreground ml-auto">
-                    {new Date(l.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                    {new Date(l.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                   </span>
-                  <span className="w-full text-xs text-muted-foreground">{l.detail}</span>
+                  {l.detail && <span className="w-full text-xs text-muted-foreground">{l.detail}</span>}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </CardContent>
     </Card>
   );
