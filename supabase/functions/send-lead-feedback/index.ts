@@ -60,7 +60,7 @@ async function sendWebhook(params: {
     nome: params.name || "",
     telefone: normalizePhone(params.phone),
     interesse: INTEREST_PT[params.intention],
-    intention: params.intention,
+    intencao: INTEREST_PT[params.intention],
     lead_id: params.leadId,
     enviado_em: new Date().toISOString(),
   };
