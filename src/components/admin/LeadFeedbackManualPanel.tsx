@@ -68,33 +68,21 @@ export function LeadFeedbackManualPanel() {
       });
       if (error) throw error;
       const ok = !!(data as any)?.ok;
-      setLog((prev) => [
-        {
-          at: new Date().toISOString(),
-          phone: digits,
-          name: name || '—',
-          intention,
-          ok,
-          detail: ok ? 'Webhook recebeu o disparo' : String((data as any)?.error || 'Falha no webhook'),
-        },
-        ...prev,
-      ]);
       toast({
         title: ok ? 'Disparo enviado' : 'Falha no disparo',
         description: ok ? 'O webhook confirmou o recebimento.' : String((data as any)?.error || ''),
         variant: ok ? 'default' : 'destructive',
       });
+      await fetchEvents();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setLog((prev) => [
-        { at: new Date().toISOString(), phone: digits, name: name || '—', intention, ok: false, detail: msg },
-        ...prev,
-      ]);
       toast({ title: 'Erro ao disparar', description: msg, variant: 'destructive' });
+      await fetchEvents();
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <Card translate="no">
