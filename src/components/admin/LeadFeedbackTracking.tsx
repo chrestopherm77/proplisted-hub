@@ -29,7 +29,7 @@ interface Row {
   created_at: string;
   feedback_sent_at: string | null;
   feedback_attempts: number;
-  feedback_response: 'DONE' | 'PENDING' | null;
+  feedback_response: 'DONE' | 'PENDING' | 'STILL_SEARCHING' | 'NOT_SEARCHING' | 'NO_RESPONSE' | null;
   feedback_responded_at: string | null;
   is_active: boolean;
   is_exhausted: boolean;
