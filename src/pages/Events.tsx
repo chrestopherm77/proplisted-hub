@@ -77,8 +77,17 @@ export default function Events() {
     if (v) fetchCities(v);
   };
 
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
   const filtered = useMemo(() => {
     return events.filter((e) => {
+      const eventEnd = e.end_date ? new Date(e.end_date) : new Date(e.event_date);
+      eventEnd.setHours(23, 59, 59, 999);
+      if (eventEnd < todayStart) return false;
       if (filterUf && (e.state || '').toUpperCase() !== filterUf.toUpperCase()) return false;
       if (filterCity && stripAccent(e.city || '') !== stripAccent(filterCity)) return false;
       if (filterDate) {
@@ -87,7 +96,7 @@ export default function Events() {
       }
       return true;
     });
-  }, [events, filterUf, filterCity, filterDate]);
+  }, [events, filterUf, filterCity, filterDate, todayStart]);
 
   if (!user) {
     return (
