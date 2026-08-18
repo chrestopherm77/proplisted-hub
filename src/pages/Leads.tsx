@@ -306,7 +306,7 @@ export default function Leads() {
         .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at')
         .or('is_active.eq.true,is_exhausted.eq.true')
         .order('is_promotion', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
       if (error) throw error;
       setLeads(data || []);
     } catch (error) {

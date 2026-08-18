@@ -127,12 +127,13 @@ Deno.serve(async (req) => {
 
     const details = lines.join("\n");
 
+    const leadLink = `https://www.conectaeimob.com.br/leads?leadId=${leadId}`;
     let groupMsg = `*🚀 Novo lead na sua região!*\n\n`;
     groupMsg += `*Interesse:* ${intentionLabel} um imóvel\n\n`;
     if (details) groupMsg += `${details}\n\n`;
     groupMsg += `Seja rápido! Leads recentes têm maior taxa de conversão.\n\n`;
-    groupMsg += `Clique abaixo para entrar em contato agora:\n\n`;
-    groupMsg += `👉 https://www.conectaeimob.com.br/leads`;
+    groupMsg += `Clique abaixo para ver e comprar este lead agora:\n\n`;
+    groupMsg += `👉 ${leadLink}`;
 
     // Roteamento por cidade
     const { data: groupsData, error: groupsErr } = await supabase
