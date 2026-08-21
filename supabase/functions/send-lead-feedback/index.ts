@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
     let authorized = (!!internalSecret && providedInternal === internalSecret)
       || (!!cronExpected && providedCron === cronExpected)
       || (!!testSecret && providedTest === testSecret)
+      || (!!adminSecret && providedTest === adminSecret)
       || (!!serviceKey && bearer === serviceKey);
 
     if (!authorized) {
