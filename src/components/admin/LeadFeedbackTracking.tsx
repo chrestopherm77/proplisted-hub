@@ -335,6 +335,16 @@ export function LeadFeedbackTracking() {
                           <Badge variant="outline">Ativo</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => markResponse(r.id, true)}>
+                            Manter ativo
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => markResponse(r.id, false)}>
+                            Desativar
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
