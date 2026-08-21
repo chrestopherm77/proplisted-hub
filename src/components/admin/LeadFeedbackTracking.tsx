@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { LeadFeedbackQueuePanel } from './LeadFeedbackQueuePanel';
 import { LeadFeedbackManualPanel } from './LeadFeedbackManualPanel';
+import { LeadFeedbackResponsesPanel } from './LeadFeedbackResponsesPanel';
 
 
 type IntentionKey = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
