@@ -176,11 +176,13 @@ Deno.serve(async (req) => {
     const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const testSecret = Deno.env.get("LEAD_FEEDBACK_TEST_SECRET");
+    const adminSecret = Deno.env.get("LEAD_FEEDBACK_ADMIN_SECRET");
     const providedTest = req.headers.get("x-test-secret");
     const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
     let authorized = (!!internalSecret && providedInternal === internalSecret)
       || (!!cronExpected && providedCron === cronExpected)
       || (!!testSecret && providedTest === testSecret)
+      || (!!adminSecret && providedTest === adminSecret)
       || (!!serviceKey && bearer === serviceKey);
 
     if (!authorized) {
