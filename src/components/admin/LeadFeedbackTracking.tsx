@@ -156,6 +156,39 @@ export function LeadFeedbackTracking() {
     return { total, sent, responded, noReplyMaxAttempts, removed };
   }, [rows]);
 
+  const markResponse = async (leadId: string, keep: boolean) => {
+    const nowIso = new Date().toISOString();
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === leadId
+          ? {
+              ...r,
+              feedback_response: keep ? 'STILL_SEARCHING' : 'NOT_SEARCHING',
+              feedback_responded_at: nowIso,
+              is_active: keep,
+            }
+          : r,
+      ),
+    );
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        is_active: keep,
+        feedback_response: keep ? 'STILL_SEARCHING' : 'NOT_SEARCHING',
+        feedback_responded_at: nowIso,
+      })
+      .eq('id', leadId);
+    if (error) {
+      toast({ title: 'Erro ao registrar resposta', description: error.message, variant: 'destructive' });
+      fetchData();
+      return;
+    }
+    toast({
+      title: keep ? 'Lead mantido ativo' : 'Lead desativado',
+      description: 'Resposta registrada manualmente.',
+    });
+  };
+
   if (loading) {
     return <div className="p-6 text-center text-muted-foreground">Carregando feedback...</div>;
   }
