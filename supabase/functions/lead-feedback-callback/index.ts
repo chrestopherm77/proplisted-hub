@@ -95,12 +95,15 @@ Deno.serve(async (req) => {
   };
 
   const last8 = key.slice(-8);
+  // Telefones podem estar salvos formatados: "(16) 99205-7145".
+  // Buscamos tanto o formato cru quanto o formatado com hífen.
+  const dashed = `${last8.slice(0, 4)}-${last8.slice(4)}`;
   const { data: candidates, error } = await sb
     .from("leads")
     .select("id, name, phone, is_active")
-    .ilike("phone", `%${last8}%`)
+    .or(`phone.ilike.%${last8}%,phone.ilike.%${dashed}%`)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(50);
 
   if (error) return json({ error: error.message }, 500);
 
