@@ -206,6 +206,8 @@ export function LeadFeedbackTracking() {
 
       <LeadFeedbackQueuePanel />
 
+      <LeadFeedbackResponsesPanel />
+
 
 
 
