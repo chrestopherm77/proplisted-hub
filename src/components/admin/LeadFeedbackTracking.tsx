@@ -269,12 +269,13 @@ export function LeadFeedbackTracking() {
                   <TableHead>Resposta</TableHead>
                   <TableHead>Respondido em</TableHead>
                   <TableHead>Situação</TableHead>
+                  <TableHead>Registrar resposta</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                       Nenhum lead encontrado.
                     </TableCell>
                   </TableRow>
