@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { LeadFeedbackQueuePanel } from './LeadFeedbackQueuePanel';
 import { LeadFeedbackManualPanel } from './LeadFeedbackManualPanel';
+import { LeadFeedbackResponsesPanel } from './LeadFeedbackResponsesPanel';
 
 
 type IntentionKey = 'BUY' | 'RENT' | 'SELL' | 'BUILD';
@@ -154,6 +156,39 @@ export function LeadFeedbackTracking() {
     return { total, sent, responded, noReplyMaxAttempts, removed };
   }, [rows]);
 
+  const markResponse = async (leadId: string, keep: boolean) => {
+    const nowIso = new Date().toISOString();
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === leadId
+          ? {
+              ...r,
+              feedback_response: keep ? 'STILL_SEARCHING' : 'NOT_SEARCHING',
+              feedback_responded_at: nowIso,
+              is_active: keep,
+            }
+          : r,
+      ),
+    );
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        is_active: keep,
+        feedback_response: keep ? 'STILL_SEARCHING' : 'NOT_SEARCHING',
+        feedback_responded_at: nowIso,
+      })
+      .eq('id', leadId);
+    if (error) {
+      toast({ title: 'Erro ao registrar resposta', description: error.message, variant: 'destructive' });
+      fetchData();
+      return;
+    }
+    toast({
+      title: keep ? 'Lead mantido ativo' : 'Lead desativado',
+      description: 'Resposta registrada manualmente.',
+    });
+  };
+
   if (loading) {
     return <div className="p-6 text-center text-muted-foreground">Carregando feedback...</div>;
   }
@@ -170,6 +205,8 @@ export function LeadFeedbackTracking() {
       <LeadFeedbackManualPanel />
 
       <LeadFeedbackQueuePanel />
+
+      <LeadFeedbackResponsesPanel />
 
 
 
@@ -234,12 +271,13 @@ export function LeadFeedbackTracking() {
                   <TableHead>Resposta</TableHead>
                   <TableHead>Respondido em</TableHead>
                   <TableHead>Situação</TableHead>
+                  <TableHead>Registrar resposta</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                       Nenhum lead encontrado.
                     </TableCell>
                   </TableRow>
@@ -299,6 +337,16 @@ export function LeadFeedbackTracking() {
                         ) : (
                           <Badge variant="outline">Ativo</Badge>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => markResponse(r.id, true)}>
+                            Manter ativo
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => markResponse(r.id, false)}>
+                            Desativar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
