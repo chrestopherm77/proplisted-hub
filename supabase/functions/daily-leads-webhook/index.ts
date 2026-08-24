@@ -26,6 +26,7 @@ type Lead = {
   form_data: Record<string, unknown> | null;
 };
 
+// @ts-ignore unused
 function leadCode(id: string) {
   return id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
