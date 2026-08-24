@@ -136,38 +136,62 @@ Deno.serve(async (req) => {
   const batches: Lead[][] = [];
   for (let i = 0; i < leads.length; i += BATCH_SIZE) batches.push(leads.slice(i, i + BATCH_SIZE));
 
-  const results: Array<{ batch: number; ok: boolean; status?: number; detail?: string; payload: Record<string, unknown> }> = [];
-
-  for (let i = 0; i < batches.length; i++) {
-    const payload: Record<string, unknown> = {
-      enviado_em: new Date().toISOString(),
-      total_leads: batches[i].length,
-    };
-    batches[i].forEach((lead, idx) => {
-      payload[`lead_${idx + 1}`] = buildLeadText(lead);
-    });
-    // garante os 3 campos sempre presentes
-    for (let k = batches[i].length; k < BATCH_SIZE; k++) payload[`lead_${k + 1}`] = "";
-
-    if (dryRun) {
-      results.push({ batch: i + 1, ok: true, detail: "dry-run (webhook não configurado)", payload });
-      continue;
+  // Destinatários: cada corretor recebe o resumo com seu nome e telefone
+  type Broker = { nome: string; telefone: string };
+  let brokers: Broker[] = [];
+  if (body.testBroker?.telefone) {
+    brokers = [{ nome: body.testBroker.nome || "Corretor", telefone: normalizePhone(body.testBroker.telefone) }];
+  } else {
+    const { data: profs } = await sb
+      .from("profiles")
+      .select("name, phone")
+      .eq("is_active", true);
+    const seen = new Set<string>();
+    for (const p of (profs || []) as Array<{ name: string; phone: string }>) {
+      const tel = normalizePhone(p.phone || "");
+      if (tel.length < 12 || seen.has(tel)) continue;
+      seen.add(tel);
+      brokers.push({ nome: p.name || "Corretor", telefone: tel });
     }
-
-    try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const txt = await res.text();
-      results.push({ batch: i + 1, ok: res.ok, status: res.status, detail: txt.slice(0, 200), payload });
-    } catch (e) {
-      results.push({ batch: i + 1, ok: false, detail: e instanceof Error ? e.message : String(e), payload });
-    }
-
-    await new Promise((r) => setTimeout(r, 700));
   }
+
+  const results: Array<{ batch: number; corretor: string; ok: boolean; status?: number; detail?: string; payload: Record<string, unknown> }> = [];
+
+  for (const broker of brokers) {
+    for (let i = 0; i < batches.length; i++) {
+      const payload: Record<string, unknown> = {
+        nome: broker.nome,
+        telefone: broker.telefone,
+        enviado_em: new Date().toISOString(),
+        total_leads: batches[i].length,
+      };
+      batches[i].forEach((lead, idx) => {
+        payload[`lead_${idx + 1}`] = buildLeadText(lead);
+      });
+      // garante os 3 campos sempre presentes
+      for (let k = batches[i].length; k < BATCH_SIZE; k++) payload[`lead_${k + 1}`] = "";
+
+      if (dryRun) {
+        results.push({ batch: i + 1, corretor: broker.telefone, ok: true, detail: "dry-run (webhook não configurado)", payload });
+        continue;
+      }
+
+      try {
+        const res = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const txt = await res.text();
+        results.push({ batch: i + 1, corretor: broker.telefone, ok: res.ok, status: res.status, detail: txt.slice(0, 200), payload });
+      } catch (e) {
+        results.push({ batch: i + 1, corretor: broker.telefone, ok: false, detail: e instanceof Error ? e.message : String(e), payload });
+      }
+
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  }
+
 
   const failed = results.filter((r) => !r.ok);
   if (failed.length > 0) {
