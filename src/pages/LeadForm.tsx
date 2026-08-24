@@ -18,7 +18,7 @@ export default function LeadForm() {
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '27910388055250579');
+      fbq('init', '1267609825231112');
       fbq('track', 'PageView');
     `;
     document.head.appendChild(inline);
@@ -28,7 +28,7 @@ export default function LeadForm() {
     img.height = 1;
     img.width = 1;
     img.style.display = "none";
-    img.src = "https://www.facebook.com/tr?id=27910388055250579&ev=PageView&noscript=1";
+    img.src = "https://www.facebook.com/tr?id=1267609825231112&ev=PageView&noscript=1";
     noscript.appendChild(img);
     document.body.appendChild(noscript);
 
