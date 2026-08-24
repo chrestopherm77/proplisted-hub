@@ -77,13 +77,16 @@ type LeadFields = {
 
 function buildLeadFields(lead: Lead): LeadFields {
   const texto = buildLeadText(lead);
-  const lines = texto.split("\n");
+  const id = leadMarketplaceId(lead.id);
+  const interesseMatch = texto.match(/Interesse: (.+?) - Valor:/);
+  const valorMatch = texto.match(/Valor: (.+?) - Região:/);
+  const regiaoMatch = texto.match(/Região: (.+)$/);
   return {
-    id: leadMarketplaceId(lead.id),
+    id,
     texto,
-    interesse: lines.find((l) => l.startsWith("Interesse:"))?.replace("Interesse: ", "") || "",
-    valor: lines.find((l) => l.startsWith("Valor:"))?.replace("Valor: ", "") || "",
-    regiao: lines.find((l) => l.startsWith("Região:"))?.replace("Região: ", "") || "",
+    interesse: interesseMatch ? interesseMatch[1].trim() : "",
+    valor: valorMatch ? valorMatch[1].trim() : "",
+    regiao: regiaoMatch ? regiaoMatch[1].trim() : "",
   };
 }
 
