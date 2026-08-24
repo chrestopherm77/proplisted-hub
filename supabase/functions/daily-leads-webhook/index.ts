@@ -52,11 +52,12 @@ function buildLeadText(lead: Lead) {
   const tipo = propTypeRaw ? (propLabels[propTypeRaw] || propTypeRaw) : "";
 
   return [
-    `Lead: ${leadCode(lead.id)}`,
+    `Lead: ${lead.id}`,
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
   ].join("\n");
+
 }
 
 Deno.serve(async (req) => {
