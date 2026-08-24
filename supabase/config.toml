@@ -114,3 +114,7 @@ verify_jwt = false
 [functions.create-fixed-checkout]
 verify_jwt = false
 
+[functions.daily-leads-webhook]
+verify_jwt = false
+
+
