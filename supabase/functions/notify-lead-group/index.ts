@@ -148,7 +148,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const instanceId = (typeof instance === "string" && /^[A-Za-z0-9_-]+$/.test(instance))
+      ? instance
+      : "megacode-Mj46Nd4U5tP";
+    const megaUrl = `https://apinocode01.megaapi.com.br/rest/sendMessage/${instanceId}/text`;
 
     const results: Array<{ groupId: string; success: boolean; details: string }> = [];
 
