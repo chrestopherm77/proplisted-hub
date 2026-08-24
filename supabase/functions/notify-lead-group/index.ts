@@ -138,11 +138,16 @@ Deno.serve(async (req) => {
     groupMsg += `Clique abaixo para ver e comprar este lead agora:\n\n`;
     groupMsg += `👉 ${leadLink}`;
 
-    // Roteamento por cidade
-    const { data: groupsData, error: groupsErr } = await supabase
-      .rpc("get_groups_for_city", { p_city: city || "", p_uf: uf || "" });
-    if (groupsErr) console.error("get_groups_for_city error:", groupsErr);
-    const WHATSAPP_GROUP_IDS: string[] = (groupsData as string[] | null) || [];
+    // Roteamento por cidade (com override manual opcional)
+    let WHATSAPP_GROUP_IDS: string[] = [];
+    if (Array.isArray(groupIds) && groupIds.length > 0) {
+      WHATSAPP_GROUP_IDS = groupIds.filter((g: unknown) => typeof g === "string" && g.endsWith("@g.us"));
+    } else {
+      const { data: groupsData, error: groupsErr } = await supabase
+        .rpc("get_groups_for_city", { p_city: city || "", p_uf: uf || "" });
+      if (groupsErr) console.error("get_groups_for_city error:", groupsErr);
+      WHATSAPP_GROUP_IDS = (groupsData as string[] | null) || [];
+    }
 
     if (WHATSAPP_GROUP_IDS.length === 0) {
       console.log(`Cidade "${city}/${uf}" sem grupo mapeado — disparo ignorado para lead ${leadId}`);
@@ -154,6 +159,10 @@ Deno.serve(async (req) => {
     const instanceId = (typeof instance === "string" && /^[A-Za-z0-9_-]+$/.test(instance))
       ? instance
       : "megacode-Mj46Nd4U5tP";
+    // Token por instância (a instância alternativa possui token próprio)
+    const megaToken = instanceId === "megacode-MJjV24kQIXz"
+      ? (Deno.env.get("MEGA_API_TOKEN_MJJV") || MEGA_API_TOKEN)
+      : MEGA_API_TOKEN;
     const megaUrl = `https://apinocode01.megaapi.com.br/rest/sendMessage/${instanceId}/text`;
 
     const results: Array<{ groupId: string; success: boolean; details: string }> = [];
@@ -167,7 +176,7 @@ Deno.serve(async (req) => {
         try {
           const res = await fetch(megaUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEGA_API_TOKEN}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${megaToken}` },
             body: JSON.stringify(megaBody),
           });
           const resBody = await res.text();
