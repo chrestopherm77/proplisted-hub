@@ -18,7 +18,10 @@ Deno.serve(async (req) => {
 
     const internalSecret = req.headers.get("x-internal-secret") || "";
     const expectedInternal = Deno.env.get("INTERNAL_FUNCTION_SECRET") || "";
-    const isInternalCall = expectedInternal.length > 0 && internalSecret === expectedInternal;
+    const expectedAdminDispatch = Deno.env.get("ADMIN_DISPATCH_SECRET") || "";
+    const isInternalCall =
+      (expectedInternal.length > 0 && internalSecret === expectedInternal) ||
+      (expectedAdminDispatch.length > 0 && internalSecret === expectedAdminDispatch);
 
     if (!isInternalCall) {
       const authHeader = req.headers.get("Authorization") || "";
