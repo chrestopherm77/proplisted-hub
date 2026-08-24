@@ -104,11 +104,13 @@ Deno.serve(async (req) => {
   } catch { /* empty */ }
 
   // Auth: CRON_SECRET, segredo administrativo ou JWT de admin
-  const cronExpected = Deno.env.get("DAILY_LEADS_CRON_SECRET") || Deno.env.get("CRON_SECRET");
+  const dailyCronSecret = Deno.env.get("DAILY_LEADS_CRON_SECRET");
+  const cronSecret = Deno.env.get("CRON_SECRET");
   const adminSecret = Deno.env.get("LEAD_FEEDBACK_ADMIN_SECRET");
   const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
   const providedTest = req.headers.get("x-test-secret");
-  let authorized = (!!cronExpected && providedCron === cronExpected)
+  let authorized = (!!dailyCronSecret && providedCron === dailyCronSecret)
+    || (!!cronSecret && providedCron === cronSecret)
     || (!!adminSecret && providedTest === adminSecret);
 
   if (!authorized) {
