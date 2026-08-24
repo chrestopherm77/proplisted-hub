@@ -18,7 +18,10 @@ Deno.serve(async (req) => {
 
     const internalSecret = req.headers.get("x-internal-secret") || "";
     const expectedInternal = Deno.env.get("INTERNAL_FUNCTION_SECRET") || "";
-    const isInternalCall = expectedInternal.length > 0 && internalSecret === expectedInternal;
+    const expectedAdminDispatch = Deno.env.get("ADMIN_DISPATCH_SECRET") || "";
+    const isInternalCall =
+      (expectedInternal.length > 0 && internalSecret === expectedInternal) ||
+      (expectedAdminDispatch.length > 0 && internalSecret === expectedAdminDispatch);
 
     if (!isInternalCall) {
       const authHeader = req.headers.get("Authorization") || "";
@@ -37,7 +40,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { leadId } = await req.json();
+    const { leadId, instance } = await req.json();
     if (!leadId) {
       return new Response(JSON.stringify({ error: "leadId obrigatório" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -148,7 +151,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const instanceId = (typeof instance === "string" && /^[A-Za-z0-9_-]+$/.test(instance))
+      ? instance
+      : "megacode-Mj46Nd4U5tP";
+    const megaUrl = `https://apinocode01.megaapi.com.br/rest/sendMessage/${instanceId}/text`;
 
     const results: Array<{ groupId: string; success: boolean; details: string }> = [];
 
