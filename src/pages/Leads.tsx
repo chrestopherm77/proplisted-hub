@@ -449,9 +449,13 @@ export default function Leads() {
         const range = ranges.find(r => r.value === filterValueRange);
         if (range && (leadValue < range.min || leadValue > range.max)) return false;
       }
+      if (filterSearchId) {
+        const leadShortId = lead.id.slice(0, 5).toUpperCase();
+        if (leadShortId !== filterSearchId) return false;
+      }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange]);
+  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
