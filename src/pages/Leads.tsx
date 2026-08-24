@@ -202,6 +202,7 @@ export default function Leads() {
   const [tempCondition, setTempCondition] = useState<string>('all');
   const [tempObjective, setTempObjective] = useState<string>('all');
   const [tempValueRange, setTempValueRange] = useState<string>('all');
+  const [tempSearchId, setTempSearchId] = useState<string>('');
   
   // Applied filter states
   const [filterUF, setFilterUF] = useState<string>('all');
