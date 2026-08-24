@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { leadId, instance } = await req.json();
+    const { leadId, instance, groupIds } = await req.json();
     if (!leadId) {
       return new Response(JSON.stringify({ error: "leadId obrigatório" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
