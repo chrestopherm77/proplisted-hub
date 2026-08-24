@@ -26,9 +26,8 @@ type Lead = {
   form_data: Record<string, unknown> | null;
 };
 
-// @ts-ignore unused
-function leadCode(id: string) {
-  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+function leadMarketplaceId(id: string) {
+  return `#${id.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
 }
 
 function normalizePhone(raw: string) {
@@ -60,12 +59,32 @@ function buildLeadText(lead: Lead) {
   const tipo = propTypeRaw ? (propLabels[propTypeRaw] || propTypeRaw) : "";
 
   return [
-    `Lead: ${lead.id}`,
+    `Lead ${leadMarketplaceId(lead.id)}`,
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
   ].join("\n");
 
+}
+
+type LeadFields = {
+  id: string;
+  texto: string;
+  interesse: string;
+  valor: string;
+  regiao: string;
+};
+
+function buildLeadFields(lead: Lead): LeadFields {
+  const texto = buildLeadText(lead);
+  const lines = texto.split("\n");
+  return {
+    id: leadMarketplaceId(lead.id),
+    texto,
+    interesse: lines.find((l) => l.startsWith("Interesse:"))?.replace("Interesse: ", "") || "",
+    valor: lines.find((l) => l.startsWith("Valor:"))?.replace("Valor: ", "") || "",
+    regiao: lines.find((l) => l.startsWith("Região:"))?.replace("Região: ", "") || "",
+  };
 }
 
 Deno.serve(async (req) => {
@@ -173,10 +192,23 @@ Deno.serve(async (req) => {
         total_leads: batches[i].length,
       };
       batches[i].forEach((lead, idx) => {
-        payload[`lead_${idx + 1}`] = buildLeadText(lead);
+        const fields = buildLeadFields(lead);
+        const n = idx + 1;
+        payload[`lead_${n}`] = fields.texto;
+        payload[`lead_${n}_id`] = fields.id;
+        payload[`lead_${n}_interesse`] = fields.interesse;
+        payload[`lead_${n}_valor`] = fields.valor;
+        payload[`lead_${n}_regiao`] = fields.regiao;
       });
       // garante os 3 campos sempre presentes
-      for (let k = batches[i].length; k < BATCH_SIZE; k++) payload[`lead_${k + 1}`] = "";
+      for (let k = batches[i].length; k < BATCH_SIZE; k++) {
+        const n = k + 1;
+        payload[`lead_${n}`] = "";
+        payload[`lead_${n}_id`] = "";
+        payload[`lead_${n}_interesse`] = "";
+        payload[`lead_${n}_valor`] = "";
+        payload[`lead_${n}_regiao`] = "";
+      }
 
       if (dryRun) {
         results.push({ batch: i + 1, corretor: broker.telefone, ok: true, detail: "dry-run (webhook não configurado)", payload });
