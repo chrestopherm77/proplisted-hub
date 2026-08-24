@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
   const dryRun = body.dryRun === true || !webhookUrl;
 
   // Leads criados nas últimas N horas (padrão 24h = resumo do dia)
-  const hours = Math.min(Math.max(Number(body.hours) || 24, 1), 168);
+  const hours = Math.min(Math.max(Number(body.hours) || 24, 1), 720);
   const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await sb
