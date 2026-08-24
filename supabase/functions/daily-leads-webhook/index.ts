@@ -26,6 +26,7 @@ type Lead = {
   form_data: Record<string, unknown> | null;
 };
 
+// @ts-ignore unused
 function leadCode(id: string) {
   return id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
@@ -52,11 +53,12 @@ function buildLeadText(lead: Lead) {
   const tipo = propTypeRaw ? (propLabels[propTypeRaw] || propTypeRaw) : "";
 
   return [
-    `Lead: ${leadCode(lead.id)}`,
+    `Lead: ${lead.id}`,
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
   ].join("\n");
+
 }
 
 Deno.serve(async (req) => {
