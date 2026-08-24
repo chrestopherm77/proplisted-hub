@@ -63,7 +63,7 @@ function buildLeadText(lead: Lead) {
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
-  ].join("\n");
+  ].join(" - ");
 
 }
 
@@ -77,13 +77,16 @@ type LeadFields = {
 
 function buildLeadFields(lead: Lead): LeadFields {
   const texto = buildLeadText(lead);
-  const lines = texto.split("\n");
+  const id = leadMarketplaceId(lead.id);
+  const interesseMatch = texto.match(/Interesse: (.+?) - Valor:/);
+  const valorMatch = texto.match(/Valor: (.+?) - Região:/);
+  const regiaoMatch = texto.match(/Região: (.+)$/);
   return {
-    id: leadMarketplaceId(lead.id),
+    id,
     texto,
-    interesse: lines.find((l) => l.startsWith("Interesse:"))?.replace("Interesse: ", "") || "",
-    valor: lines.find((l) => l.startsWith("Valor:"))?.replace("Valor: ", "") || "",
-    regiao: lines.find((l) => l.startsWith("Região:"))?.replace("Região: ", "") || "",
+    interesse: interesseMatch ? interesseMatch[1].trim() : "",
+    valor: valorMatch ? valorMatch[1].trim() : "",
+    regiao: regiaoMatch ? regiaoMatch[1].trim() : "",
   };
 }
 
@@ -104,11 +107,13 @@ Deno.serve(async (req) => {
   } catch { /* empty */ }
 
   // Auth: CRON_SECRET, segredo administrativo ou JWT de admin
-  const cronExpected = Deno.env.get("DAILY_LEADS_CRON_SECRET") || Deno.env.get("CRON_SECRET");
+  const dailyCronSecret = Deno.env.get("DAILY_LEADS_CRON_SECRET");
+  const cronSecret = Deno.env.get("CRON_SECRET");
   const adminSecret = Deno.env.get("LEAD_FEEDBACK_ADMIN_SECRET");
   const providedCron = req.headers.get("x-cron-secret") || body.cronSecret;
   const providedTest = req.headers.get("x-test-secret");
-  let authorized = (!!cronExpected && providedCron === cronExpected)
+  let authorized = (!!dailyCronSecret && providedCron === dailyCronSecret)
+    || (!!cronSecret && providedCron === cronSecret)
     || (!!adminSecret && providedTest === adminSecret);
 
   if (!authorized) {
