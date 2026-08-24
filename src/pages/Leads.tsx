@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Coins, Filter, Loader2, Bell, Trash2, Save } from 'lucide-react';
+import { Coins, Filter, Loader2, Bell, Trash2, Save, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
@@ -201,6 +202,7 @@ export default function Leads() {
   const [tempCondition, setTempCondition] = useState<string>('all');
   const [tempObjective, setTempObjective] = useState<string>('all');
   const [tempValueRange, setTempValueRange] = useState<string>('all');
+  const [tempSearchId, setTempSearchId] = useState<string>('');
   
   // Applied filter states
   const [filterUF, setFilterUF] = useState<string>('all');
@@ -209,6 +211,7 @@ export default function Leads() {
   const [filterCondition, setFilterCondition] = useState<string>('all');
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
+  const [filterSearchId, setFilterSearchId] = useState<string>('');
   
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { isPaidSubscriber } = useIsPaidSubscriber();
@@ -414,13 +417,14 @@ export default function Leads() {
     setFilterCondition(tempCondition);
     setFilterObjective(tempObjective);
     setFilterValueRange(tempValueRange);
+    setFilterSearchId(tempSearchId.trim().toUpperCase().replace(/^#/, ''));
   };
 
   const clearFilters = () => {
     setTempUF('all'); setTempCity('all'); setTempZone('all'); setTempCondition('all');
-    setTempObjective('all'); setTempValueRange('all');
+    setTempObjective('all'); setTempValueRange('all'); setTempSearchId('');
     setFilterUF('all'); setFilterCity('all'); setFilterZone('all'); setFilterCondition('all');
-    setFilterObjective('all'); setFilterValueRange('all');
+    setFilterObjective('all'); setFilterValueRange('all'); setFilterSearchId('');
   };
 
   const handleUFChange = (value: string) => { setTempUF(value); setTempCity('all'); };
@@ -445,9 +449,13 @@ export default function Leads() {
         const range = ranges.find(r => r.value === filterValueRange);
         if (range && (leadValue < range.min || leadValue > range.max)) return false;
       }
+      if (filterSearchId) {
+        const leadShortId = lead.id.slice(0, 5).toUpperCase();
+        if (leadShortId !== filterSearchId) return false;
+      }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange]);
+  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
@@ -535,6 +543,19 @@ export default function Leads() {
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="flex flex-col gap-1.5 lg:col-span-6">
+              <label className="text-xs text-muted-foreground">Buscar por ID</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Ex: #A7EF2"
+                  value={tempSearchId}
+                  onChange={(e) => setTempSearchId(e.target.value.toUpperCase())}
+                  className="pl-9 bg-background"
+                />
+              </div>
+            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">UF</label>
               <Select value={tempUF} onValueChange={handleUFChange}>
