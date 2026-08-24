@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  let body: { cronSecret?: string; dryRun?: boolean; hours?: number; webhookUrl?: string; testBroker?: { nome?: string; telefone?: string } } = {};
+  let body: { cronSecret?: string; dryRun?: boolean; hours?: number; maxLeads?: number; webhookUrl?: string; testBroker?: { nome?: string; telefone?: string } } = {};
   try {
     if (req.method === "POST") {
       const txt = await req.text();
@@ -157,7 +157,9 @@ Deno.serve(async (req) => {
     });
   }
 
-  const leads = (data || []) as Lead[];
+  let leads = (data || []) as Lead[];
+  const maxLeads = Number(body.maxLeads) || 0;
+  if (maxLeads > 0) leads = leads.slice(0, maxLeads);
   if (leads.length === 0) {
     return new Response(JSON.stringify({ sent: 0, leads: 0, message: "Nenhum lead novo hoje" }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
