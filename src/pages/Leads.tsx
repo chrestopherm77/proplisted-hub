@@ -417,13 +417,14 @@ export default function Leads() {
     setFilterCondition(tempCondition);
     setFilterObjective(tempObjective);
     setFilterValueRange(tempValueRange);
+    setFilterSearchId(tempSearchId.trim().toUpperCase().replace(/^#/, ''));
   };
 
   const clearFilters = () => {
     setTempUF('all'); setTempCity('all'); setTempZone('all'); setTempCondition('all');
-    setTempObjective('all'); setTempValueRange('all');
+    setTempObjective('all'); setTempValueRange('all'); setTempSearchId('');
     setFilterUF('all'); setFilterCity('all'); setFilterZone('all'); setFilterCondition('all');
-    setFilterObjective('all'); setFilterValueRange('all');
+    setFilterObjective('all'); setFilterValueRange('all'); setFilterSearchId('');
   };
 
   const handleUFChange = (value: string) => { setTempUF(value); setTempCity('all'); };
