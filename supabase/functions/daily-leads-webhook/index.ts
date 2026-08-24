@@ -31,6 +31,13 @@ function leadCode(id: string) {
   return id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
+function normalizePhone(raw: string) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (d.startsWith("55")) d = d.slice(2);
+  if (d.length === 11 && d[2] === "9") d = d.slice(0, 2) + d.slice(3);
+  return "55" + d;
+}
+
 function buildLeadText(lead: Lead) {
   const fd = (lead.form_data || {}) as Record<string, unknown>;
   const intentionRaw = String(fd.intention || "");
@@ -69,7 +76,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  let body: { cronSecret?: string; dryRun?: boolean; hours?: number; webhookUrl?: string } = {};
+  let body: { cronSecret?: string; dryRun?: boolean; hours?: number; webhookUrl?: string; testBroker?: { nome?: string; telefone?: string } } = {};
   try {
     if (req.method === "POST") {
       const txt = await req.text();
