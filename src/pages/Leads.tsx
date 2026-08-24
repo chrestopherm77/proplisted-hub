@@ -543,6 +543,19 @@ export default function Leads() {
             <span className="text-sm font-medium text-foreground">Filtros</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="flex flex-col gap-1.5 lg:col-span-2">
+              <label className="text-xs text-muted-foreground">Buscar por ID</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Ex: #A7EF2"
+                  value={tempSearchId}
+                  onChange={(e) => setTempSearchId(e.target.value.toUpperCase())}
+                  className="pl-9 bg-background"
+                />
+              </div>
+            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">UF</label>
               <Select value={tempUF} onValueChange={handleUFChange}>
