@@ -26,9 +26,8 @@ type Lead = {
   form_data: Record<string, unknown> | null;
 };
 
-// @ts-ignore unused
-function leadCode(id: string) {
-  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+function leadMarketplaceId(id: string) {
+  return `#${id.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
 }
 
 function normalizePhone(raw: string) {
@@ -60,12 +59,32 @@ function buildLeadText(lead: Lead) {
   const tipo = propTypeRaw ? (propLabels[propTypeRaw] || propTypeRaw) : "";
 
   return [
-    `Lead: ${lead.id}`,
+    `Lead ${leadMarketplaceId(lead.id)}`,
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
   ].join("\n");
 
+}
+
+type LeadFields = {
+  id: string;
+  texto: string;
+  interesse: string;
+  valor: string;
+  regiao: string;
+};
+
+function buildLeadFields(lead: Lead): LeadFields {
+  const texto = buildLeadText(lead);
+  const lines = texto.split("\n");
+  return {
+    id: leadMarketplaceId(lead.id),
+    texto,
+    interesse: lines.find((l) => l.startsWith("Interesse:"))?.replace("Interesse: ", "") || "",
+    valor: lines.find((l) => l.startsWith("Valor:"))?.replace("Valor: ", "") || "",
+    regiao: lines.find((l) => l.startsWith("Região:"))?.replace("Região: ", "") || "",
+  };
 }
 
 Deno.serve(async (req) => {
