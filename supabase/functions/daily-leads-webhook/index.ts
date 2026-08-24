@@ -192,10 +192,23 @@ Deno.serve(async (req) => {
         total_leads: batches[i].length,
       };
       batches[i].forEach((lead, idx) => {
-        payload[`lead_${idx + 1}`] = buildLeadText(lead);
+        const fields = buildLeadFields(lead);
+        const n = idx + 1;
+        payload[`lead_${n}`] = fields.texto;
+        payload[`lead_${n}_id`] = fields.id;
+        payload[`lead_${n}_interesse`] = fields.interesse;
+        payload[`lead_${n}_valor`] = fields.valor;
+        payload[`lead_${n}_regiao`] = fields.regiao;
       });
       // garante os 3 campos sempre presentes
-      for (let k = batches[i].length; k < BATCH_SIZE; k++) payload[`lead_${k + 1}`] = "";
+      for (let k = batches[i].length; k < BATCH_SIZE; k++) {
+        const n = k + 1;
+        payload[`lead_${n}`] = "";
+        payload[`lead_${n}_id`] = "";
+        payload[`lead_${n}_interesse`] = "";
+        payload[`lead_${n}_valor`] = "";
+        payload[`lead_${n}_regiao`] = "";
+      }
 
       if (dryRun) {
         results.push({ batch: i + 1, corretor: broker.telefone, ok: true, detail: "dry-run (webhook não configurado)", payload });
