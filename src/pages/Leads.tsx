@@ -211,6 +211,7 @@ export default function Leads() {
   const [filterCondition, setFilterCondition] = useState<string>('all');
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
+  const [filterSearchId, setFilterSearchId] = useState<string>('');
   
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { isPaidSubscriber } = useIsPaidSubscriber();
