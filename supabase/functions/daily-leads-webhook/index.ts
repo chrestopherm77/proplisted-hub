@@ -63,7 +63,7 @@ function buildLeadText(lead: Lead) {
     `Interesse: ${interesse}${tipo ? ` (${tipo})` : ""}`,
     `Valor: ${valor}`,
     `Região: ${regiao}`,
-  ].join("\n");
+  ].join(" - ");
 
 }
 
