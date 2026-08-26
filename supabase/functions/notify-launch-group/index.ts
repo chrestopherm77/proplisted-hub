@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
+    const MEGA_API_TOKEN = (Deno.env.get("MEGA_API_TOKEN_MJJV") || Deno.env.get("MEGA_API_TOKEN"));
     if (!MEGA_API_TOKEN) {
       return new Response(JSON.stringify({ error: "MEGA_API_TOKEN não configurado" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     groupMsg += `\n\nConfira detalhes, tabela e book completo no sistema:\n\n`;
     groupMsg += `👉 https://www.conectaeimob.com.br/launches`;
 
-    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-MJjV24kQIXz/text";
     const results: Array<{ groupId: string; success: boolean }> = [];
 
     for (const groupId of WHATSAPP_GROUP_IDS) {

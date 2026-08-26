@@ -71,7 +71,7 @@ serve(async (req) => {
 
     const { state, city, operationType, propertyType, zone, neighborhood, valueMax } = parsed.data;
 
-    const MEGA_API_TOKEN = Deno.env.get("MEGA_API_TOKEN");
+    const MEGA_API_TOKEN = (Deno.env.get("MEGA_API_TOKEN_MJJV") || Deno.env.get("MEGA_API_TOKEN"));
     if (!MEGA_API_TOKEN) {
       console.error("MEGA_API_TOKEN not configured");
       return new Response(JSON.stringify({ error: "MEGA_API_TOKEN not configured" }), {
@@ -112,7 +112,7 @@ serve(async (req) => {
       });
     }
 
-    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
+    const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-MJjV24kQIXz/text";
 
     console.log(`Sending group notification for new search in ${city}/${state} to ${WHATSAPP_GROUP_IDS.length} groups`);
     const results: Record<string, boolean> = {};
