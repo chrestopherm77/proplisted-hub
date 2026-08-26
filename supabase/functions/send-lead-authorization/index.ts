@@ -37,11 +37,13 @@ Deno.serve(async (req) => {
   // Auth: internal secret, admin secret ou JWT de admin
   const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
   const adminSecret = Deno.env.get("ADMIN_DISPATCH_SECRET");
+  const testSecret = Deno.env.get("LEAD_AUTH_TEST_SECRET");
   const providedInternal = req.headers.get("x-internal-secret");
   const providedAdmin = req.headers.get("x-admin-secret");
   let authorized =
     (!!internalSecret && providedInternal === internalSecret) ||
-    (!!adminSecret && providedAdmin === adminSecret);
+    (!!adminSecret && providedAdmin === adminSecret) ||
+    (!!testSecret && (providedAdmin === testSecret || providedInternal === testSecret));
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
