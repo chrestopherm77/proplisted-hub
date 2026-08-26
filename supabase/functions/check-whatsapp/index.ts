@@ -51,19 +51,19 @@ serve(async (req) => {
     }
 
     const MEGA_API_TOKEN = Deno.env.get('MEGA_API_TOKEN');
-    if (!MEGA_API_TOKEN) {
-      console.error('MEGA_API_TOKEN not configured');
+    const MJJV_TOKEN = Deno.env.get('MEGA_API_TOKEN_MJJV');
+    if (!MEGA_API_TOKEN && !MJJV_TOKEN) {
+      console.error('Nenhum token MegaAPI configurado');
       return new Response(
         JSON.stringify({ error: 'Serviço de verificação indisponível' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const instances: Array<{ key: string; token: string }> = [
-      { key: 'megacode-Mj46Nd4U5tP', token: MEGA_API_TOKEN },
-    ];
-    const altToken = Deno.env.get('MEGA_API_TOKEN_MJJV');
-    if (altToken) instances.push({ key: 'megacode-MJjV24kQIXz', token: altToken });
+    const instances: Array<{ key: string; token: string }> = [];
+    if (MJJV_TOKEN) instances.push({ key: 'megacode-MJjV24kQIXz', token: MJJV_TOKEN });
+    if (MEGA_API_TOKEN) instances.push({ key: 'megacode-MJjV24kQIXz', token: MEGA_API_TOKEN });
+    if (MEGA_API_TOKEN) instances.push({ key: 'megacode-Mj46Nd4U5tP', token: MEGA_API_TOKEN });
 
     for (const inst of instances) {
       const url = `https://apinocode01.megaapi.com.br/rest/instance/isOnWhatsApp/${inst.key}?jid=${formatted}`;
