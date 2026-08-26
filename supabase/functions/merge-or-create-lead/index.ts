@@ -240,9 +240,9 @@ Deno.serve(async (req) => {
 
       console.log(`Created new lead ${leadId} (inactive, awaiting WhatsApp confirmation)`);
 
-      // Send WhatsApp confirmation message (fire-and-forget)
+      // Envia pedido de autorização via webhook externo (fire-and-forget)
       try {
-        const confirmUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-lead-confirmation`;
+        const confirmUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-lead-authorization`;
         await fetch(confirmUrl, {
           method: "POST",
           headers: {
@@ -250,11 +250,11 @@ Deno.serve(async (req) => {
             "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
             "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") || "",
           },
-          body: JSON.stringify({ name: name.trim(), phone, leadId }),
+          body: JSON.stringify({ name: name.trim(), phone, leadId, intention }),
         });
-        console.log(`WhatsApp confirmation request sent for lead ${leadId}`);
+        console.log(`Webhook de autorização enviado para lead ${leadId}`);
       } catch (confirmErr) {
-        console.error("Failed to send WhatsApp confirmation (non-blocking):", confirmErr);
+        console.error("Falha ao enviar webhook de autorização (não bloqueante):", confirmErr);
       }
     }
 
