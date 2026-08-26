@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
 
     const instanceId = (typeof instance === "string" && /^[A-Za-z0-9_-]+$/.test(instance))
       ? instance
-      : "megacode-Mj46Nd4U5tP";
+      : "megacode-MJjV24kQIXz";
     // Token por instância (a instância alternativa possui token próprio)
     const megaToken = instanceId === "megacode-MJjV24kQIXz"
       ? (Deno.env.get("MEGA_API_TOKEN_MJJV") || MEGA_API_TOKEN)
