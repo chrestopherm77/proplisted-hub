@@ -59,22 +59,39 @@ serve(async (req) => {
       );
     }
 
-    const instanceKey = 'megacode-Mj46Nd4U5tP';
-    const url = `https://apinocode01.megaapi.com.br/rest/instance/isOnWhatsApp/${instanceKey}?jid=${formatted}`;
+    const instances: Array<{ key: string; token: string }> = [
+      { key: 'megacode-Mj46Nd4U5tP', token: MEGA_API_TOKEN },
+    ];
+    const altToken = Deno.env.get('MEGA_API_TOKEN_MJJV');
+    if (altToken) instances.push({ key: 'megacode-MJjV24kQIXz', token: altToken });
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${MEGA_API_TOKEN}`,
-      },
-    });
+    for (const inst of instances) {
+      const url = `https://apinocode01.megaapi.com.br/rest/instance/isOnWhatsApp/${inst.key}?jid=${formatted}`;
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${inst.token}` },
+        });
+        const result = await response.json();
+        console.log(`isOnWhatsApp[${inst.key}] ${formatted}: ${JSON.stringify(result).substring(0, 300)}`);
 
-    const result = await response.json();
+        // Instância desconectada / token inválido → tenta a próxima
+        if (result?.error === true || response.status >= 400) continue;
 
-    const exists = result?.exists === true || result?.result === true || result?.isOnWhatsApp === true;
+        const exists = result?.exists === true || result?.result === true || result?.isOnWhatsApp === true;
+        return new Response(
+          JSON.stringify({ exists }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (e) {
+        console.error(`isOnWhatsApp fetch error [${inst.key}]:`, e);
+      }
+    }
 
+    // Nenhuma instância disponível → não bloquear o usuário
+    console.warn('Nenhuma instância MegaAPI disponível — liberando verificação (fail-open)');
     return new Response(
-      JSON.stringify({ exists }),
+      JSON.stringify({ exists: true, unverified: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
