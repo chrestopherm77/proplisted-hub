@@ -62,6 +62,7 @@ serve(async (req) => {
 
     const instances: Array<{ key: string; token: string }> = [];
     if (MJJV_TOKEN) instances.push({ key: 'megacode-MJjV24kQIXz', token: MJJV_TOKEN });
+    if (MEGA_API_TOKEN) instances.push({ key: 'megacode-MJjV24kQIXz', token: MEGA_API_TOKEN });
     if (MEGA_API_TOKEN) instances.push({ key: 'megacode-Mj46Nd4U5tP', token: MEGA_API_TOKEN });
 
     for (const inst of instances) {
