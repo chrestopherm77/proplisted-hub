@@ -212,6 +212,10 @@ export default function Leads() {
   const [filterObjective, setFilterObjective] = useState<string>('all');
   const [filterValueRange, setFilterValueRange] = useState<string>('all');
   const [filterSearchId, setFilterSearchId] = useState<string>('');
+
+  // Modal de busca rápida por ID via link (/leads?buscar=A7EF2)
+  const [idSearchModalOpen, setIdSearchModalOpen] = useState(false);
+  const [idSearchValue, setIdSearchValue] = useState('');
   
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { isPaidSubscriber } = useIsPaidSubscriber();
@@ -231,6 +235,38 @@ export default function Leads() {
       }
     }
   }, [leads, searchParams, setSearchParams]);
+
+  // Abre o modal de busca por ID quando o link tem ?buscar=
+  useEffect(() => {
+    const buscar = searchParams.get('buscar');
+    if (buscar) {
+      setIdSearchValue(buscar.toUpperCase().replace(/^#/, ''));
+      setIdSearchModalOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleIdSearch = () => {
+    const code = idSearchValue.trim().toUpperCase().replace(/^#/, '');
+    if (!code) {
+      toast({ title: 'Digite o código do lead', variant: 'destructive' });
+      return;
+    }
+    const found = leads.some(l => l.id.slice(0, 5).toUpperCase() === code);
+    clearFilters();
+    setTempSearchId(code);
+    setFilterSearchId(code);
+    setIdSearchModalOpen(false);
+    if (found) {
+      toast({ title: `Lead #${code} encontrado!` });
+    } else {
+      toast({
+        title: `Lead #${code} não encontrado`,
+        description: 'Verifique o código ou se o lead ainda está disponível.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -733,6 +769,36 @@ export default function Leads() {
             );
           })}
         </div>
+
+        {/* Modal de busca rápida por ID (link /leads?buscar=XXXXX) */}
+        <Dialog open={idSearchModalOpen} onOpenChange={setIdSearchModalOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Buscar Lead pelo Código</DialogTitle>
+              <DialogDescription>
+                Digite o código do lead (ex: #A7EF2) para localizá-lo no marketplace.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  autoFocus
+                  type="text"
+                  placeholder="Ex: #A7EF2"
+                  value={idSearchValue}
+                  onChange={(e) => setIdSearchValue(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleIdSearch(); }}
+                  className="pl-9 bg-background"
+                />
+              </div>
+              <Button className="w-full" onClick={handleIdSearch}>
+                <Search className="h-4 w-4 mr-2" />
+                Buscar Lead
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Lead Details Modal */}
         <LeadDetailsModal
