@@ -33,11 +33,13 @@ async function sendMegaMessage(megaUrl: string, token: string, body: unknown, at
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
-    if (res.ok) {
+    const errText = await res.text();
+    let parsed: { error?: boolean } = {};
+    try { parsed = JSON.parse(errText); } catch { /* non-json body */ }
+    if (res.ok && !parsed.error) {
       console.log(`Mega API success (attempt ${attempt})`);
       return true;
     }
-    const errText = await res.text();
     console.error(`Mega API error (attempt ${attempt}): ${res.status} - ${errText.substring(0, 300)}`);
     if (res.status >= 500 && attempt < 2) {
       await new Promise(r => setTimeout(r, 2000));
