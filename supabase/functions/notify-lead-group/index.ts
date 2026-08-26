@@ -130,8 +130,10 @@ Deno.serve(async (req) => {
 
     const details = lines.join("\n");
 
-    const leadLink = `https://www.conectaeimob.com.br/leads?leadId=${leadId}`;
+    const leadCode = String(leadId).slice(0, 5).toUpperCase();
+    const leadLink = `https://www.conectaeimob.com.br/leads?buscar=${leadCode}`;
     let groupMsg = `*🚀 Novo lead na sua região!*\n\n`;
+    groupMsg += `*Código do lead:* #${leadCode}\n`;
     groupMsg += `*Interesse:* ${intentionLabel} um imóvel\n\n`;
     if (details) groupMsg += `${details}\n\n`;
     groupMsg += `Seja rápido! Leads recentes têm maior taxa de conversão.\n\n`;
