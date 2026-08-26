@@ -118,3 +118,9 @@ verify_jwt = false
 verify_jwt = false
 
 
+
+[functions.send-lead-authorization]
+verify_jwt = false
+
+[functions.lead-authorization-callback]
+verify_jwt = false
