@@ -236,10 +236,10 @@ export default function Leads() {
     }
   }, [leads, searchParams, setSearchParams]);
 
-  // Abre o modal de busca por ID quando o link tem ?buscar=
+  // Abre o modal de busca por ID quando o link tem ?buscar= (mesmo vazio)
   useEffect(() => {
-    const buscar = searchParams.get('buscar');
-    if (buscar) {
+    if (searchParams.has('buscar')) {
+      const buscar = searchParams.get('buscar') || '';
       setIdSearchValue(buscar.toUpperCase().replace(/^#/, ''));
       setIdSearchModalOpen(true);
       setSearchParams({}, { replace: true });
