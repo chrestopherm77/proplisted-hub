@@ -258,6 +258,200 @@ export type Database = {
         }
         Relationships: []
       }
+      benefit_partners: {
+        Row: {
+          admin_notes: string | null
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          logo_url: string | null
+          phone: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          logo_url?: string | null
+          phone: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          logo_url?: string | null
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      benefit_redemptions: {
+        Row: {
+          benefit_id: string
+          id: string
+          partner_id: string
+          redeemed_at: string
+          reference_month: string
+          user_id: string
+          voucher_id: string
+        }
+        Insert: {
+          benefit_id: string
+          id?: string
+          partner_id: string
+          redeemed_at?: string
+          reference_month: string
+          user_id: string
+          voucher_id: string
+        }
+        Update: {
+          benefit_id?: string
+          id?: string
+          partner_id?: string
+          redeemed_at?: string
+          reference_month?: string
+          user_id?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_redemptions_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefit_redemptions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefit_redemptions_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefit_vouchers: {
+        Row: {
+          benefit_id: string
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          benefit_id: string
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          benefit_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_vouchers_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "benefits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefits: {
+        Row: {
+          address: string | null
+          banner_url: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          discount_label: string | null
+          discount_percent: number | null
+          id: string
+          is_active: boolean
+          link_url: string | null
+          partner_id: string
+          rules: string | null
+          sort_order: number
+          state: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          discount_label?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          partner_id: string
+          rules?: string | null
+          sort_order?: number
+          state?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          discount_label?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          partner_id?: string
+          rules?: string | null
+          sort_order?: number
+          state?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefits_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broker_portal_requests: {
         Row: {
           admin_notes: string | null
@@ -3045,6 +3239,10 @@ export type Database = {
         Args: { p_amount?: number; p_creative_id: string; p_user_id: string }
         Returns: Json
       }
+      generate_benefit_voucher: {
+        Args: { p_benefit_id: string }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_affiliate_dashboard: { Args: { p_user_id: string }; Returns: Json }
       get_groups_for_city: {
@@ -3094,6 +3292,10 @@ export type Database = {
           new_count: number
         }[]
       }
+      is_approved_benefit_partner: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       list_land_searches_public: {
         Args: never
         Returns: {
@@ -3115,6 +3317,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      lookup_benefit_voucher: { Args: { p_code: string }; Returns: Json }
       mark_profile_complete: { Args: { p_user_id: string }; Returns: Json }
       purchase_lead_with_credits: {
         Args: { p_lead_id: string; p_user_id: string }
@@ -3131,6 +3334,7 @@ export type Database = {
         }
         Returns: Json
       }
+      redeem_benefit_voucher: { Args: { p_code: string }; Returns: Json }
       redeem_referral: {
         Args: { p_referral_code: string; p_user_id: string }
         Returns: Json
