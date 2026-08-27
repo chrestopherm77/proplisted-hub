@@ -15,6 +15,7 @@ export type SellerRelation = 'OWNER' | 'LEGAL_REP';
 // Sell flow data
 export interface SellFlowData {
   relation?: SellerRelation;
+  isRealtor?: boolean;
   acceptsExclusivity?: 'YES' | 'NO' | 'DEPENDS';
   propertyType?: PropertyType;
   commercialType?: CommercialType;
