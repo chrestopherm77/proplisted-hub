@@ -36,6 +36,8 @@ export function LeadsManagement() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
