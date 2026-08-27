@@ -55,6 +55,7 @@ import { ContactStep } from "./steps/ContactStep";
 
 // Sell steps
 import { SellRelationStep } from "./steps/sell/SellRelationStep";
+import { SellIsRealtorStep } from "./steps/sell/SellIsRealtorStep";
 import { SellExclusivityStep } from "./steps/sell/SellExclusivityStep";
 import { SellPropertyTypeStep } from "./steps/sell/SellPropertyTypeStep";
 import { SellCommercialTypeStep } from "./steps/sell/SellCommercialTypeStep";
@@ -131,6 +132,12 @@ const flowSteps: StepDefinition[] = [
     component: SellRelationStep, 
     isVisible: (data) => data.intention === 'SELL',
     validate: (data) => !!data.sell?.relation,
+  },
+  { 
+    id: 'sell-is-realtor', 
+    component: SellIsRealtorStep, 
+    isVisible: (data) => data.intention === 'SELL' && data.sell?.relation === 'LEGAL_REP',
+    validate: (data) => data.sell?.isRealtor !== undefined,
   },
   { 
     id: 'sell-exclusivity', 
