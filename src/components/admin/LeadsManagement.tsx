@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle, Megaphone } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Flame, Download, Ban, RotateCcw, CheckCircle, Megaphone, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CsvImport } from './CsvImport';
 import { LeadEditDialog } from './LeadEditDialog';
@@ -36,6 +36,8 @@ export function LeadsManagement() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -230,12 +232,29 @@ export function LeadsManagement() {
   };
 
   const filteredLeads = useMemo(() => {
-    if (periodFilter === 'all') return leads;
-    const days = parseInt(periodFilter);
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    return leads.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
-  }, [leads, periodFilter]);
+    const query = searchQuery.trim().toLowerCase();
+    return leads.filter((l) => {
+      const matchesPeriod = (() => {
+        if (periodFilter === 'all') return true;
+        const days = parseInt(periodFilter);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return l.created_at && new Date(l.created_at) >= cutoff;
+      })();
+
+      const matchesSearch =
+        !query ||
+        l.name?.toLowerCase().includes(query) ||
+        l.phone?.toLowerCase().includes(query);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && l.is_active) ||
+        (statusFilter === 'inactive' && !l.is_active);
+
+      return matchesPeriod && matchesSearch && matchesStatus;
+    });
+  }, [leads, periodFilter, searchQuery, statusFilter]);
 
   const exportLeadsCsv = () => {
     const headers = ['Nome', 'Telefone', 'Descrição', 'Créditos', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
@@ -272,6 +291,25 @@ export function LeadsManagement() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h2 className="text-xl md:text-2xl font-bold">Gerenciar Leads</h2>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={periodFilter} onValueChange={setPeriodFilter}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Período" />
