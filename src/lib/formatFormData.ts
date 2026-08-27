@@ -81,6 +81,9 @@ const ruralTypeLabels: Record<string, string> = {
   'OTHER': 'Outro',
 };
 
+const sellLabel = (map: Record<string, string>, value: string): string =>
+  value === 'MULTIPLE' ? 'Possuo mais de uma opção' : (map[value] || value);
+
 const relationLabels: Record<string, string> = {
   'OWNER': 'Proprietário',
   'LEGAL_REP': 'Representante Legal',
@@ -365,13 +368,13 @@ function extractCharacteristics(data: LeadFormData): string {
   
   if (data.intention === 'SELL' && data.sell) {
     if (data.sell.propertyType) {
-      chars.push(propertyTypeLabels[data.sell.propertyType] || data.sell.propertyType);
+      chars.push(sellLabel(propertyTypeLabels, data.sell.propertyType));
     }
     if (data.sell.residentialType) {
-      chars.push(residentialTypeLabels[data.sell.residentialType] || data.sell.residentialType);
+      chars.push(sellLabel(residentialTypeLabels, data.sell.residentialType));
     }
     if (data.sell.commercialType) {
-      chars.push(commercialTypeLabels[data.sell.commercialType] || data.sell.commercialType);
+      chars.push(sellLabel(commercialTypeLabels, data.sell.commercialType));
     }
     if (data.sell.bedrooms) {
       chars.push(`${data.sell.bedrooms} quarto(s)`);
@@ -504,6 +507,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     // Sobre o vendedor
     const sellerFields: FormField[] = [];
     if (sell.relation) sellerFields.push({ label: 'Relação com o imóvel', value: relationLabels[sell.relation] || sell.relation });
+    if (sell.isRealtor !== undefined) sellerFields.push({ label: 'É corretor de imóveis', value: sell.isRealtor ? 'Sim' : 'Não' });
     if (sell.acceptsExclusivity) sellerFields.push({ label: 'Aceita exclusividade', value: exclusivityLabels[sell.acceptsExclusivity] || sell.acceptsExclusivity });
     if (sellerFields.length > 0) {
       sections.push({ title: 'Sobre o Vendedor', icon: '👤', fields: sellerFields });
@@ -511,9 +515,9 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     
     // Tipo de imóvel
     const propertyFields: FormField[] = [];
-    if (sell.propertyType) propertyFields.push({ label: 'Tipo de imóvel', value: propertyTypeLabels[sell.propertyType] || sell.propertyType });
-    if (sell.commercialType) propertyFields.push({ label: 'Tipo comercial', value: commercialTypeLabels[sell.commercialType] || sell.commercialType });
-    if (sell.residentialType) propertyFields.push({ label: 'Tipo residencial', value: residentialTypeLabels[sell.residentialType] || sell.residentialType });
+    if (sell.propertyType) propertyFields.push({ label: 'Tipo de imóvel', value: sellLabel(propertyTypeLabels, sell.propertyType) });
+    if (sell.commercialType) propertyFields.push({ label: 'Tipo comercial', value: sellLabel(commercialTypeLabels, sell.commercialType) });
+    if (sell.residentialType) propertyFields.push({ label: 'Tipo residencial', value: sellLabel(residentialTypeLabels, sell.residentialType) });
     if (sell.mixedType) propertyFields.push({ label: 'Tipo misto', value: mixedTypeLabels[sell.mixedType] || sell.mixedType });
     if (sell.ruralType) propertyFields.push({ label: 'Tipo rural', value: ruralTypeLabels[sell.ruralType] || sell.ruralType });
     if (propertyFields.length > 0) {
