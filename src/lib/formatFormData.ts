@@ -507,6 +507,7 @@ export function formatFormDataToSections(rawIntention: string, formData: any): F
     // Sobre o vendedor
     const sellerFields: FormField[] = [];
     if (sell.relation) sellerFields.push({ label: 'Relação com o imóvel', value: relationLabels[sell.relation] || sell.relation });
+    if (sell.isRealtor !== undefined) sellerFields.push({ label: 'É corretor de imóveis', value: sell.isRealtor ? 'Sim' : 'Não' });
     if (sell.acceptsExclusivity) sellerFields.push({ label: 'Aceita exclusividade', value: exclusivityLabels[sell.acceptsExclusivity] || sell.acceptsExclusivity });
     if (sellerFields.length > 0) {
       sections.push({ title: 'Sobre o Vendedor', icon: '👤', fields: sellerFields });
