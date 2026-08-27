@@ -63,6 +63,26 @@ export default function ParceiroBeneficios() {
       return;
     }
     setSubmitting(true);
+
+    const cleanPhone = form.phone.replace(/\D/g, '');
+
+    // Valida limite de contas por telefone antes de tentar criar o usuário
+    const { data: phoneOk, error: phoneErr } = await supabase.rpc('check_phone_availability', { p_phone: cleanPhone });
+    if (phoneErr) {
+      setSubmitting(false);
+      toast({ title: 'Erro', description: 'Não foi possível validar o telefone. Tente novamente.', variant: 'destructive' });
+      return;
+    }
+    if (!phoneOk) {
+      setSubmitting(false);
+      toast({
+        title: 'Telefone já cadastrado',
+        description: 'Este telefone já possui o limite máximo de contas (2). Use outro número ou faça login.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
@@ -71,7 +91,7 @@ export default function ParceiroBeneficios() {
         data: {
           name: form.contact_name,
           company_name: form.company_name,
-          phone: form.phone.replace(/\D/g, ''),
+          phone: cleanPhone,
           person_type: 'PJ',
         },
       },
@@ -79,13 +99,17 @@ export default function ParceiroBeneficios() {
 
     if (signUpError || !signUpData.user) {
       setSubmitting(false);
-      toast({
-        title: 'Erro no cadastro',
-        description: signUpError?.message || 'Não foi possível criar a conta.',
-        variant: 'destructive',
-      });
+      const msg = signUpError?.message || '';
+      let description = msg || 'Não foi possível criar a conta.';
+      if (/already registered|already exists/i.test(msg)) {
+        description = 'Este e-mail já está cadastrado. Faça login.';
+      } else if (/database error|unexpected_failure/i.test(msg)) {
+        description = 'Não foi possível criar a conta. Verifique se o telefone ou e-mail já estão em uso.';
+      }
+      toast({ title: 'Erro no cadastro', description, variant: 'destructive' });
       return;
     }
+
 
     const { error: partnerError } = await supabase.from('benefit_partners' as any).insert({
       user_id: signUpData.user.id,
