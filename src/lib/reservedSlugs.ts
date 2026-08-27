@@ -9,6 +9,7 @@ export const RESERVED_SLUGS = [
   'criativos', 'portal-imoveis', 'imovel', 'planos',
   'primeiros-passos', 'indicar', 'v', 'conectaeimob', 'corretor',
   'procura-se-terrenos', 'meus-terrenos-procurados',
+  'beneficios', 'parceiro-beneficios', 'painel-parceiro', 'eventos',
   'api', 'assets', 'public', 'static',
 ];
 

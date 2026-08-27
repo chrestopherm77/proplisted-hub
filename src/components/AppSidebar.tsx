@@ -105,6 +105,7 @@ export function AppSidebar() {
     { title: 'Construtoras', url: '/launches', icon: Rocket, show: !isPartnerSite },
     { title: 'Procuram-se Terrenos', url: '/procura-se-terrenos', icon: Building2, show: !isPartnerSite && !!isAdmin },
     { title: 'Eventos', url: '/eventos', icon: CalendarDays, show: !isPartnerSite },
+    { title: 'Benefícios', url: '/beneficios', icon: Gift, show: !isPartnerSite },
     { title: 'Financiamento', url: '/financiamento', icon: DollarSign, show: true },
     { title: 'Calculadora', url: '/calculadora', icon: Calculator, show: !isPartnerSite },
     { title: 'Criativos', url: '/criativos', icon: Sparkles, show: true },
