@@ -232,12 +232,29 @@ export function LeadsManagement() {
   };
 
   const filteredLeads = useMemo(() => {
-    if (periodFilter === 'all') return leads;
-    const days = parseInt(periodFilter);
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    return leads.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
-  }, [leads, periodFilter]);
+    const query = searchQuery.trim().toLowerCase();
+    return leads.filter((l) => {
+      const matchesPeriod = (() => {
+        if (periodFilter === 'all') return true;
+        const days = parseInt(periodFilter);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return l.created_at && new Date(l.created_at) >= cutoff;
+      })();
+
+      const matchesSearch =
+        !query ||
+        l.name?.toLowerCase().includes(query) ||
+        l.phone?.toLowerCase().includes(query);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && l.is_active) ||
+        (statusFilter === 'inactive' && !l.is_active);
+
+      return matchesPeriod && matchesSearch && matchesStatus;
+    });
+  }, [leads, periodFilter, searchQuery, statusFilter]);
 
   const exportLeadsCsv = () => {
     const headers = ['Nome', 'Telefone', 'Descrição', 'Créditos', 'Vendas', 'Max Vendas', 'Promoção', 'Status', 'Data Cadastro'];
