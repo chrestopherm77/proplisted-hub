@@ -52,6 +52,9 @@ import MyLandSearches from "./pages/MyLandSearches";
 import ConectaEImobNews from "./pages/ConectaEImobNews";
 import Apresentacao from "./pages/Apresentacao";
 import Events from "./pages/Events";
+import Beneficios from "./pages/Beneficios";
+import ParceiroBeneficios from "./pages/ParceiroBeneficios";
+import PainelParceiro from "./pages/PainelParceiro";
 import ObrigadoGrupo from "./pages/ObrigadoGrupo";
 import ObrigadoLiveConectae from "./pages/ObrigadoLiveConectae";
 import { PageViewTracker } from "./components/PageViewTracker";
@@ -145,6 +148,11 @@ const App = () => {
           <Route path="/meus-terrenos-procurados" element={<MyLandSearches />} />
           <Route path="/admin/events" element={<Admin section="events" />} />
           <Route path="/eventos" element={<Events />} />
+          <Route path="/beneficios" element={<Beneficios />} />
+          <Route path="/parceiro-beneficios" element={<ParceiroBeneficios />} />
+          <Route path="/painel-parceiro" element={<PainelParceiro />} />
+          <Route path="/admin/benefit-partners" element={<Admin section="benefit-partners" />} />
+          <Route path="/admin/benefits" element={<Admin section="benefits" />} />
           <Route path="/obrigado-grupo" element={<ObrigadoGrupo />} />
           <Route path="/obrigado-liveconectae" element={<ObrigadoLiveConectae />} />
 
