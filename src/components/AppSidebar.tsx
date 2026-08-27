@@ -23,6 +23,7 @@ import {
   Crown,
   Handshake,
   CalendarDays,
+  Gift,
 } from 'lucide-react';
 import {
   Sidebar,

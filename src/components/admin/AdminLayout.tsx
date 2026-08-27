@@ -45,6 +45,7 @@ import {
   Megaphone,
   MessageCircle,
   CalendarDays,
+  Gift,
 } from 'lucide-react';
 
 
