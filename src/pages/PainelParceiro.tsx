@@ -295,9 +295,9 @@ export default function PainelParceiro() {
                       <p className="flex items-center gap-2 text-green-600 font-medium">
                         <CheckCircle2 className="h-5 w-5" /> Voucher válido
                       </p>
-                      <p className="text-sm"><strong>Corretor:</strong> {lookup.user_name}</p>
+                      <p className="text-sm"><strong>Corretor:</strong> {lookup.broker_name}</p>
                       <p className="text-sm"><strong>Benefício:</strong> {lookup.benefit_title}</p>
-                      {lookup.already_used_this_month ? (
+                      {lookup.used_this_month ? (
                         <p className="text-sm text-destructive">Este corretor já utilizou este benefício neste mês.</p>
                       ) : (
                         <Button onClick={handleRedeem} disabled={checking} className="w-full">
