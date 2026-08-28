@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { FilterState, EMPTY_FILTERS, typeLabel } from './types';
 import { Search } from 'lucide-react';
-import logo from '@/assets/conectae-logo.png';
+import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
+
+const logo = logoAsset.url;
+const HERO_BG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80';
 
 export function Hero({ cities, types, onSearch }: { cities: string[]; types: string[]; onSearch: (f: FilterState) => void }) {
   const [f, setF] = useState<FilterState>(EMPTY_FILTERS);
