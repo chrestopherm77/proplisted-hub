@@ -36,6 +36,7 @@ import BuyCredits from "./pages/BuyCredits";
 import Calculadora from "./pages/Calculadora";
 import Criativos from "./pages/Criativos";
 import PortalImoveis from "./pages/PortalImoveis";
+import PortalConectae from "./pages/PortalConectae";
 import NewProperty from "./pages/NewProperty";
 import PropertyDetail from "./pages/PropertyDetail";
 import PublicPropertyLP from "./pages/PublicPropertyLP";
@@ -181,6 +182,7 @@ const App = () => {
           <Route path="/calculadora" element={<Calculadora />} />
           <Route path="/criativos" element={<Criativos />} />
           <Route path="/portal-imoveis" element={<PortalImoveis />} />
+          <Route path="/portal-conectae" element={<PortalConectae />} />
           <Route path="/portal-imoveis/novo" element={<NewProperty />} />
           <Route path="/portal-imoveis/:id/editar" element={<NewProperty />} />
           <Route path="/portal-imoveis/:id" element={<PropertyDetail />} />
