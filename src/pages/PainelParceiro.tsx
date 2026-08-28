@@ -121,8 +121,10 @@ export default function PainelParceiro() {
   };
 
   const uploadBanner = async (file: File) => {
+    if (!user) { toast({ title: 'Sessão expirada', description: 'Entre novamente para enviar imagens.', variant: 'destructive' }); return; }
     const ext = file.name.split('.').pop() || 'png';
-    const path = `benefits/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // A policy do bucket exige que o primeiro nível da pasta seja o ID do usuário.
+    const path = `${user.id}/benefits/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
     if (error) { toast({ title: 'Erro no upload', description: error.message, variant: 'destructive' }); return; }
     const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);
