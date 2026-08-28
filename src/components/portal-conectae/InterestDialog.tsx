@@ -37,11 +37,13 @@ export function InterestDialog({ open, onOpenChange, property, onExplore }: {
         p_property_id: property.id,
         p_name: name.trim(),
         p_phone: digits,
-        p_source: 'PORTAL_CONECTAE',
       } as any);
       if (error) throw error;
       const res = data as any;
-      if (res && res.success === false) throw new Error(res.error || 'Não foi possível registrar');
+      if (res && res.success === false) {
+        if (res.duplicate) { setDone(true); return; }
+        throw new Error(res.error || 'Não foi possível registrar');
+      }
 
       // Dispara webhook (não bloqueante)
       supabase.functions.invoke('portal-lead-webhook', { body: { lead_id: res?.lead_id } }).catch(() => {});
