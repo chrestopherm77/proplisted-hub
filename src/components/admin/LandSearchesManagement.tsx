@@ -201,8 +201,12 @@ export function LandSearchesManagement() {
   };
 
   const uploadLogo = async (file: File) => {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) throw new Error('Sessão expirada. Entre novamente para enviar imagens.');
     const ext = file.name.split('.').pop() || 'png';
-    const path = `land-searches/logo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // A policy do bucket exige que a primeira pasta seja o ID do usuário.
+    const path = `${uid}/land-searches/logo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
     if (error) throw error;
     const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);

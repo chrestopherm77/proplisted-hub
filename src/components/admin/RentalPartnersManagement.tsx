@@ -269,8 +269,12 @@ export function RentalPartnersManagement() {
   };
 
   const uploadImage = async (file: File, prefix: string) => {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) throw new Error('Sessão expirada. Entre novamente para enviar imagens.');
     const ext = file.name.split('.').pop() || 'png';
-    const path = `rental-partners/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // A policy do bucket exige que a primeira pasta seja o ID do usuário.
+    const path = `${uid}/rental-partners/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error: upErr } = await supabase.storage.from('brand-logos').upload(path, file, { upsert: true });
     if (upErr) throw upErr;
     const { data } = supabase.storage.from('brand-logos').getPublicUrl(path);
