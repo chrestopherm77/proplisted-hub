@@ -21,7 +21,11 @@ export function Hero({ cities, types, onSearch }: { cities: string[]; types: str
   return (
     <section
       className="relative min-h-[520px] flex items-center justify-center text-white overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #101010, #232323 55%, #101010)' }}
+      style={{
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url(${HERO_BG})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--pc-bg)]/90 via-[var(--pc-bg)]/40 to-transparent z-10" />
       <div className="container mx-auto px-4 py-16 relative z-20">
