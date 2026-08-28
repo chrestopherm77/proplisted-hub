@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { FilterState, EMPTY_FILTERS, typeLabel } from './types';
 import { Search } from 'lucide-react';
-import logo from '@/assets/conectae-logo.png';
+import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
+
+const logo = logoAsset.url;
+const HERO_BG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80';
 
 export function Hero({ cities, types, onSearch }: { cities: string[]; types: string[]; onSearch: (f: FilterState) => void }) {
   const [f, setF] = useState<FilterState>(EMPTY_FILTERS);
@@ -18,7 +21,11 @@ export function Hero({ cities, types, onSearch }: { cities: string[]; types: str
   return (
     <section
       className="relative min-h-[520px] flex items-center justify-center text-white overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #101010, #232323 55%, #101010)' }}
+      style={{
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url(${HERO_BG})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--pc-bg)]/90 via-[var(--pc-bg)]/40 to-transparent z-10" />
       <div className="container mx-auto px-4 py-16 relative z-20">

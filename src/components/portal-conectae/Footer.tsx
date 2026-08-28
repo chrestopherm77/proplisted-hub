@@ -1,4 +1,6 @@
-import logo from '@/assets/conectae-logo.png';
+import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
+
+const logo = logoAsset.url;
 
 export function Footer() {
   return (

@@ -1,5 +1,7 @@
 import { Heart } from 'lucide-react';
-import logo from '@/assets/conectae-logo.png';
+import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
+
+const logo = logoAsset.url;
 
 export function Header({ onNav, currentSection }: { onNav: (s: string) => void; currentSection: string }) {
   const items = [
