@@ -2016,6 +2016,56 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_property_leads: {
+        Row: {
+          broker_user_id: string
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          property_id: string
+          source: string
+          updated_at: string
+          webhook_last_error: string | null
+          webhook_sent_at: string | null
+          webhook_status: string
+        }
+        Insert: {
+          broker_user_id: string
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          property_id: string
+          source?: string
+          updated_at?: string
+          webhook_last_error?: string | null
+          webhook_sent_at?: string | null
+          webhook_status?: string
+        }
+        Update: {
+          broker_user_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          property_id?: string
+          source?: string
+          updated_at?: string
+          webhook_last_error?: string | null
+          webhook_sent_at?: string | null
+          webhook_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_property_leads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           accepted_contract: boolean
@@ -3243,6 +3293,10 @@ export type Database = {
       check_phone_availability: { Args: { p_phone: string }; Returns: boolean }
       consume_credits_for_creative: {
         Args: { p_amount?: number; p_creative_id: string; p_user_id: string }
+        Returns: Json
+      }
+      create_portal_property_lead: {
+        Args: { p_name: string; p_phone: string; p_property_id: string }
         Returns: Json
       }
       generate_benefit_voucher: {
