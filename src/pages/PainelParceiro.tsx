@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import BrandLogo from '@/components/BrandLogo';
@@ -56,6 +58,14 @@ const emptyBenefit = {
   address: '',
   link_url: '',
   banner_url: '',
+  is_online: false,
+  usage_limit: 'MONTHLY_1',
+};
+
+const USAGE_LIMIT_LABEL: Record<string, string> = {
+  MONTHLY_1: '1 uso por mês',
+  MONTHLY_2: '2 usos por mês',
+  UNLIMITED: 'Uso ilimitado (toda compra)',
 };
 
 export default function PainelParceiro() {
@@ -133,10 +143,12 @@ export default function PainelParceiro() {
       discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
       discount_label: form.discount_label || null,
       banner_url: form.banner_url || null,
-      state: form.state || null,
-      city: form.city || null,
-      address: form.address || null,
+      state: form.is_online ? null : (form.state || null),
+      city: form.is_online ? null : (form.city || null),
+      address: form.is_online ? null : (form.address || null),
       link_url: form.link_url || null,
+      is_online: form.is_online,
+      usage_limit: form.usage_limit,
     });
     setSaving(false);
     if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
@@ -234,14 +246,36 @@ export default function PainelParceiro() {
                     </div>
                     <div><Label>Regras de uso</Label>
                       <Textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} /></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>UF</Label>
-                        <Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} /></div>
-                      <div><Label>Cidade</Label>
-                        <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+                    <div>
+                      <Label>Limite de uso por corretor</Label>
+                      <Select value={form.usage_limit} onValueChange={(v) => setForm({ ...form, usage_limit: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MONTHLY_1">1 uso por mês</SelectItem>
+                          <SelectItem value="MONTHLY_2">2 usos por mês</SelectItem>
+                          <SelectItem value="UNLIMITED">Uso ilimitado (toda compra)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div><Label>Endereço</Label>
-                      <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <Label>Atendimento online</Label>
+                        <p className="text-xs text-muted-foreground">Benefício válido pelo site, sem loja física</p>
+                      </div>
+                      <Switch checked={form.is_online} onCheckedChange={(v) => setForm({ ...form, is_online: v })} />
+                    </div>
+                    {!form.is_online && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><Label>UF (opcional)</Label>
+                            <Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} /></div>
+                          <div><Label>Cidade (opcional)</Label>
+                            <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+                        </div>
+                        <div><Label>Endereço (opcional)</Label>
+                          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                      </>
+                    )}
                     <div><Label>Link (site / Instagram)</Label>
                       <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} /></div>
                     <div><Label>Imagem</Label>

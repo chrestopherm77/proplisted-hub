@@ -10,7 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Gift, Loader2, MapPin, ExternalLink, Copy, Ticket } from 'lucide-react';
+import { Gift, Loader2, MapPin, ExternalLink, Copy, Ticket, Globe } from 'lucide-react';
+
+const USAGE_LIMIT_LABEL: Record<string, string> = {
+  MONTHLY_1: 'Válido para 1 uso por mês.',
+  MONTHLY_2: 'Válido para 2 usos por mês.',
+  UNLIMITED: 'Uso ilimitado — válido em toda compra.',
+};
 
 interface BenefitRow {
   id: string;
@@ -25,6 +31,8 @@ interface BenefitRow {
   city: string | null;
   link_url: string | null;
   address: string | null;
+  is_online?: boolean | null;
+  usage_limit?: string | null;
   benefit_partners?: { company_name: string; logo_url: string | null } | null;
 }
 
@@ -163,6 +171,11 @@ export default function Beneficios() {
                   {b.description && (
                     <p className="text-sm text-muted-foreground line-clamp-3">{b.description}</p>
                   )}
+                  {b.is_online && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Globe className="h-3 w-3" /> Online
+                    </p>
+                  )}
                   {(b.city || b.state) && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3" /> {[b.city, b.state].filter(Boolean).join(' - ')}
@@ -223,7 +236,7 @@ export default function Beneficios() {
                     <Copy className="h-4 w-4 mr-2" /> Copiar código
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Apresente este código no parceiro. Válido para 1 uso por mês.
+                    Apresente este código no parceiro. {USAGE_LIMIT_LABEL[selected?.usage_limit || 'MONTHLY_1']}
                   </p>
                 </div>
               ) : (

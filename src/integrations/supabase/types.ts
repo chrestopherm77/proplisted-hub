@@ -395,6 +395,7 @@ export type Database = {
           discount_percent: number | null
           id: string
           is_active: boolean
+          is_online: boolean
           link_url: string | null
           partner_id: string
           rules: string | null
@@ -403,6 +404,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          usage_limit: string
         }
         Insert: {
           address?: string | null
@@ -414,6 +416,7 @@ export type Database = {
           discount_percent?: number | null
           id?: string
           is_active?: boolean
+          is_online?: boolean
           link_url?: string | null
           partner_id: string
           rules?: string | null
@@ -422,6 +425,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          usage_limit?: string
         }
         Update: {
           address?: string | null
@@ -433,6 +437,7 @@ export type Database = {
           discount_percent?: number | null
           id?: string
           is_active?: boolean
+          is_online?: boolean
           link_url?: string | null
           partner_id?: string
           rules?: string | null
@@ -441,6 +446,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          usage_limit?: string
         }
         Relationships: [
           {
