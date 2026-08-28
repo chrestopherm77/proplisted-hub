@@ -3368,6 +3368,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      list_portal_conectae_properties: { Args: never; Returns: Json[] }
       log_user_activity: {
         Args: {
           p_event_label: string
