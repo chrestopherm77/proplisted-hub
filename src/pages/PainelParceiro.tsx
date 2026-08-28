@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import BrandLogo from '@/components/BrandLogo';
@@ -56,6 +58,14 @@ const emptyBenefit = {
   address: '',
   link_url: '',
   banner_url: '',
+  is_online: false,
+  usage_limit: 'MONTHLY_1',
+};
+
+const USAGE_LIMIT_LABEL: Record<string, string> = {
+  MONTHLY_1: '1 uso por mês',
+  MONTHLY_2: '2 usos por mês',
+  UNLIMITED: 'Uso ilimitado (toda compra)',
 };
 
 export default function PainelParceiro() {
