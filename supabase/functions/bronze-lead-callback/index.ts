@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
   const provided = req.headers.get("x-webhook-secret") ||
     (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "") ||
     String(body.secret ?? "");
-  if (provided !== expected) return json({ error: "Unauthorized" }, 401);
+  if (!(provided && (provided === expected || provided === expectedAlt))) return json({ error: "Unauthorized" }, 401);
 
   const name = String(body.nome ?? body.name ?? "").trim();
   const phone = normalizePhone(String(body.telefone ?? body.phone ?? ""));
