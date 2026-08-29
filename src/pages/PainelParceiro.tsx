@@ -140,9 +140,10 @@ export default function PainelParceiro() {
       partner_id: partner.id,
       title: form.title.trim(),
       description: form.description || null,
-      rules: form.rules || null,
+      rules: null,
       discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
-      discount_label: form.discount_label || null,
+      discount_label: form.discount_percent ? `${Number(form.discount_percent)}% OFF` : null,
+
       banner_url: form.banner_url || null,
       state: form.is_online ? null : (form.state || null),
       city: form.is_online ? null : (form.city || null),
