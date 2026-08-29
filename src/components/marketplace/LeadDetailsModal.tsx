@@ -173,12 +173,15 @@ export function LeadDetailsModal({
                 </div>
               </div>
               {hasFormData ? (
-                <div className="py-3">
-                  <LeadPreferencesView
-                    formData={normalizedFormData}
-                    fieldTextClass="text-base"
-                    sectionTitleClass="text-base"
-                  />
+                <div className="py-3 space-y-4">
+                  {splitFormDataIntoPreferences(normalizedFormData).length > 0 && (
+                    <LeadPreferencesView
+                      formData={normalizedFormData}
+                      fieldTextClass="text-base"
+                      sectionTitleClass="text-base"
+                    />
+                  )}
+                  <WebhookAnswersView formData={normalizedFormData} />
                 </div>
               ) : (
                 <div className="py-3">
