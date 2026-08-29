@@ -482,8 +482,14 @@ export default function Leads() {
   const handleUFChange = (value: string) => { setTempUF(value); setTempCity('all'); };
   const handleObjectiveChange = (value: string) => { setTempObjective(value); setTempValueRange('all'); };
 
+  const [filterTier, setFilterTier] = useState<string>('all');
+
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
+      const leadTier = lead.tier || 'GOLD';
+      // Classificações Prata/Bronze ficam visíveis somente para administradores
+      if (isAdmin !== true && leadTier !== 'GOLD') return false;
+      if (isAdmin === true && filterTier !== 'all' && leadTier !== filterTier) return false;
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
       const leadCity = extractCityFromFormData(formData);
@@ -507,7 +513,7 @@ export default function Leads() {
       }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
+  }, [leads, isAdmin, filterTier, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
