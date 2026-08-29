@@ -141,6 +141,8 @@ export function LeadTracking() {
 
   const [standbyLeads, setStandbyLeads] = useState<StandbyLead[]>([]);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [webhookSendingId, setWebhookSendingId] = useState<string | null>(null);
+
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -271,6 +273,26 @@ export function LeadTracking() {
     }
     setResendingId(null);
   }
+
+  async function handleSendPartialWebhook(lead: PartialLead) {
+    setWebhookSendingId(lead.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('partial-lead-webhook', {
+        body: { partialLeadId: lead.id },
+      });
+      if (error) throw error;
+      const ok = data?.processed > 0;
+      toast({
+        title: ok ? 'Lead enviado ao webhook!' : 'Falha no envio',
+        description: ok ? undefined : (data?.results?.[0]?.error || 'Não foi possível enviar.'),
+        variant: ok ? undefined : 'destructive',
+      });
+    } catch (err: any) {
+      toast({ title: 'Erro ao disparar', description: err.message, variant: 'destructive' });
+    }
+    setWebhookSendingId(null);
+  }
+
 
   const detailSections = selectedLead?.form_data && selectedLead?.intention
     ? formatFormDataToSections(selectedLead.intention, selectedLead.form_data)
@@ -457,6 +479,8 @@ export function LeadTracking() {
                     <TableHead>Etapa</TableHead>
                     <TableHead>Progresso</TableHead>
                     <TableHead>Última Atividade</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -486,6 +510,18 @@ export function LeadTracking() {
                         ) : '-'}
                       </TableCell>
                       <TableCell className="text-xs">{formatDate(lead.updated_at)}</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!lead.phone || webhookSendingId === lead.id}
+                          onClick={() => handleSendPartialWebhook(lead)}
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" />
+                          {webhookSendingId === lead.id ? 'Enviando...' : 'Disparar'}
+                        </Button>
+                      </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
