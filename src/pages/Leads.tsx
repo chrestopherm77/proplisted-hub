@@ -358,7 +358,7 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at')
+        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at, tier, exclusive_user_id, exclusive_until')
         .eq('is_active', true)
         .order('is_promotion', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
