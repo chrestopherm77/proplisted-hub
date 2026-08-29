@@ -479,6 +479,8 @@ export function LeadTracking() {
                     <TableHead>Etapa</TableHead>
                     <TableHead>Progresso</TableHead>
                     <TableHead>Última Atividade</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
