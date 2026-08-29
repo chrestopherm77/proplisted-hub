@@ -240,14 +240,12 @@ export default function PainelParceiro() {
                       <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
                     <div><Label>Descrição</Label>
                       <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Desconto (%)</Label>
-                        <Input type="number" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} /></div>
-                      <div><Label>Rótulo (opcional)</Label>
-                        <Input value={form.discount_label} onChange={(e) => setForm({ ...form, discount_label: e.target.value })} placeholder="Ex: 15% OFF" /></div>
+                    <div><Label>Desconto (%)</Label>
+                      <Input type="number" min={1} max={100} value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        O rótulo será exibido automaticamente como “{form.discount_percent ? `${Number(form.discount_percent)}% OFF` : '—'}”.
+                      </p>
                     </div>
-                    <div><Label>Regras de uso</Label>
-                      <Textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} /></div>
                     <div>
                       <Label>Limite de uso por corretor</Label>
                       <Select value={form.usage_limit} onValueChange={(v) => setForm({ ...form, usage_limit: v })}>
@@ -269,21 +267,56 @@ export default function PainelParceiro() {
                     {!form.is_online && (
                       <>
                         <div className="grid grid-cols-2 gap-3">
-                          <div><Label>UF (opcional)</Label>
-                            <Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} /></div>
-                          <div><Label>Cidade (opcional)</Label>
-                            <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+                          <div><Label>Estado (UF)</Label>
+                            <Select
+                              value={form.state}
+                              onValueChange={(v) => { setForm({ ...form, state: v, city: '' }); fetchCities(v); }}
+                            >
+                              <SelectTrigger><SelectValue placeholder={loadingStates ? 'Carregando...' : 'Selecione'} /></SelectTrigger>
+                              <SelectContent className="max-h-64">
+                                {states.map((s) => (
+                                  <SelectItem key={s.id} value={s.sigla}>{s.sigla} - {s.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div><Label>Cidade</Label>
+                            <Select
+                              value={form.city}
+                              onValueChange={(v) => setForm({ ...form, city: v })}
+                              disabled={!form.state || loadingCities}
+                            >
+                              <SelectTrigger><SelectValue placeholder={!form.state ? 'Escolha a UF' : (loadingCities ? 'Carregando...' : 'Selecione')} /></SelectTrigger>
+                              <SelectContent className="max-h-64">
+                                {cities.map((c) => (
+                                  <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <div><Label>Endereço (opcional)</Label>
-                          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                        <div><Label>Endereço (link do Google Maps)</Label>
+                          <Input
+                            value={form.address}
+                            onChange={(e) => setForm({ ...form, address: e.target.value })}
+                            placeholder="https://maps.app.goo.gl/..."
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Abra sua loja no Google Maps, toque em “Compartilhar” e cole o link aqui.
+                          </p>
+                        </div>
                       </>
                     )}
                     <div><Label>Link (site / Instagram)</Label>
                       <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} /></div>
                     <div><Label>Imagem</Label>
-                      <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
-                      {form.banner_url && <img src={form.banner_url} alt="" className="mt-2 h-24 object-contain" />}
+                      <Input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Formato recomendado: JPG, PNG ou WEBP · 1200 x 630 px (proporção 16:9) · até 2 MB · logo e textos centralizados.
+                      </p>
+                      {form.banner_url && <img src={form.banner_url} alt="Pré-visualização da imagem do benefício" className="mt-2 h-24 object-contain" />}
                     </div>
+
                     <Button className="w-full" onClick={saveBenefit} disabled={saving}>
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Enviar para aprovação
                     </Button>
