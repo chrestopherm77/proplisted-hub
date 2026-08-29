@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
     });
 
   const expected = Deno.env.get("BRONZE_LEAD_INBOUND_SECRET");
-  if (!expected) return json({ error: "BRONZE_LEAD_INBOUND_SECRET missing" }, 500);
+  const expectedAlt = Deno.env.get("BRONZE_LEAD_TEST_SECRET");
+  if (!expected && !expectedAlt) return json({ error: "BRONZE_LEAD_INBOUND_SECRET missing" }, 500);
 
   let body: Record<string, unknown> = {};
   try {
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
   const provided = req.headers.get("x-webhook-secret") ||
     (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "") ||
     String(body.secret ?? "");
-  if (provided !== expected) return json({ error: "Unauthorized" }, 401);
+  if (!(provided && (provided === expected || provided === expectedAlt))) return json({ error: "Unauthorized" }, 401);
 
   const name = String(body.nome ?? body.name ?? "").trim();
   const phone = normalizePhone(String(body.telefone ?? body.phone ?? ""));
