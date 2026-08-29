@@ -716,7 +716,18 @@ export default function Leads() {
                         🔥 PROMOÇÃO
                       </Badge>
                     )}
+                    {isAdmin === true && (
+                      <Badge className={`text-xs ${tierClasses[lead.tier || 'GOLD']}`}>
+                        {tierLabels[lead.tier || 'GOLD']}
+                      </Badge>
+                    )}
+                    {isAdmin === true && lead.exclusive_until && new Date(lead.exclusive_until) > new Date() && (
+                      <Badge variant="outline" className="text-xs">
+                        Exclusivo até {new Date(lead.exclusive_until).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </Badge>
+                    )}
                   </div>
+
 
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">
