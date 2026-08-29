@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
     });
 
   const expected = Deno.env.get("BRONZE_LEAD_INBOUND_SECRET");
-  if (!expected) return json({ error: "BRONZE_LEAD_INBOUND_SECRET missing" }, 500);
+  const expectedAlt = Deno.env.get("BRONZE_LEAD_TEST_SECRET");
+  if (!expected && !expectedAlt) return json({ error: "BRONZE_LEAD_INBOUND_SECRET missing" }, 500);
 
   let body: Record<string, unknown> = {};
   try {
