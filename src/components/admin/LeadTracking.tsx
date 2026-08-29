@@ -272,6 +272,26 @@ export function LeadTracking() {
     setResendingId(null);
   }
 
+  async function handleSendPartialWebhook(lead: PartialLead) {
+    setWebhookSendingId(lead.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('partial-lead-webhook', {
+        body: { partialLeadId: lead.id },
+      });
+      if (error) throw error;
+      const ok = data?.processed > 0;
+      toast({
+        title: ok ? 'Lead enviado ao webhook!' : 'Falha no envio',
+        description: ok ? undefined : (data?.results?.[0]?.error || 'Não foi possível enviar.'),
+        variant: ok ? undefined : 'destructive',
+      });
+    } catch (err: any) {
+      toast({ title: 'Erro ao disparar', description: err.message, variant: 'destructive' });
+    }
+    setWebhookSendingId(null);
+  }
+
+
   const detailSections = selectedLead?.form_data && selectedLead?.intention
     ? formatFormDataToSections(selectedLead.intention, selectedLead.form_data)
     : [];
