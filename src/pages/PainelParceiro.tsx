@@ -78,6 +78,10 @@ export default function PainelParceiro() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyBenefit);
+  const { states, cities, loadingStates, loadingCities, fetchStates, fetchCities } = useIBGELocation();
+
+  useEffect(() => { fetchStates(); }, [fetchStates]);
+
 
   const [code, setCode] = useState('');
   const [lookup, setLookup] = useState<any>(null);
