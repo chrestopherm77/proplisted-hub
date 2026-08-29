@@ -25,7 +25,23 @@ interface Lead {
   is_exhausted?: boolean;
   form_data?: any;
   created_at?: string;
+  tier?: string | null;
+  exclusive_user_id?: string | null;
+  exclusive_until?: string | null;
 }
+
+const tierLabels: Record<string, string> = {
+  GOLD: '🥇 Ouro',
+  SILVER: '🥈 Prata',
+  BRONZE: '🥉 Bronze',
+};
+
+const tierClasses: Record<string, string> = {
+  GOLD: 'bg-amber-400 hover:bg-amber-400 text-amber-950 border-transparent',
+  SILVER: 'bg-slate-300 hover:bg-slate-300 text-slate-900 border-transparent',
+  BRONZE: 'bg-orange-700 hover:bg-orange-700 text-orange-50 border-transparent',
+};
+
 
 interface ParsedDescription {
   interest: string;
@@ -342,7 +358,7 @@ export default function Leads() {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at')
+        .select('id, description, price, purchase_count, max_purchases, is_active, is_promotion, is_exhausted, form_data, created_at, tier, exclusive_user_id, exclusive_until')
         .eq('is_active', true)
         .order('is_promotion', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -466,8 +482,14 @@ export default function Leads() {
   const handleUFChange = (value: string) => { setTempUF(value); setTempCity('all'); };
   const handleObjectiveChange = (value: string) => { setTempObjective(value); setTempValueRange('all'); };
 
+  const [filterTier, setFilterTier] = useState<string>('all');
+
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
+      const leadTier = lead.tier || 'GOLD';
+      // Classificações Prata/Bronze ficam visíveis somente para administradores
+      if (isAdmin !== true && leadTier !== 'GOLD') return false;
+      if (isAdmin === true && filterTier !== 'all' && leadTier !== filterTier) return false;
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
       const leadCity = extractCityFromFormData(formData);
@@ -491,7 +513,7 @@ export default function Leads() {
       }
       return true;
     });
-  }, [leads, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
+  }, [leads, isAdmin, filterTier, filterUF, filterCity, filterZone, filterCondition, filterObjective, filterValueRange, filterSearchId]);
 
   const addToCart = async (leadId: string) => {
     if (!user) return;
@@ -655,7 +677,22 @@ export default function Leads() {
                 </SelectContent>
               </Select>
             </div>
+            {isAdmin === true && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-muted-foreground">Classificação</label>
+                <Select value={filterTier} onValueChange={setFilterTier}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="GOLD">🥇 Ouro</SelectItem>
+                    <SelectItem value="SILVER">🥈 Prata</SelectItem>
+                    <SelectItem value="BRONZE">🥉 Bronze</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
           <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
             <Button 
               variant="outline" 
@@ -694,7 +731,18 @@ export default function Leads() {
                         🔥 PROMOÇÃO
                       </Badge>
                     )}
+                    {isAdmin === true && (
+                      <Badge className={`text-xs ${tierClasses[lead.tier || 'GOLD']}`}>
+                        {tierLabels[lead.tier || 'GOLD']}
+                      </Badge>
+                    )}
+                    {isAdmin === true && lead.exclusive_until && new Date(lead.exclusive_until) > new Date() && (
+                      <Badge variant="outline" className="text-xs">
+                        Exclusivo até {new Date(lead.exclusive_until).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </Badge>
+                    )}
                   </div>
+
 
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold">

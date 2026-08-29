@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.create_silver_lead_from_portal() FROM PUBLIC, anon, authenticated;

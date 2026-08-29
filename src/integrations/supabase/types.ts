@@ -1544,6 +1544,8 @@ export type Database = {
           confirmation_whatsapp_status: string | null
           created_at: string | null
           description: string
+          exclusive_until: string | null
+          exclusive_user_id: string | null
           feedback_attempts: number
           feedback_responded_at: string | null
           feedback_response: string | null
@@ -1559,6 +1561,9 @@ export type Database = {
           phone: string
           price: number
           purchase_count: number | null
+          source_partial_lead_id: string | null
+          source_portal_lead_id: string | null
+          tier: string
           updated_at: string | null
           whatsapp_confirmed: boolean | null
         }
@@ -1569,6 +1574,8 @@ export type Database = {
           confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description: string
+          exclusive_until?: string | null
+          exclusive_user_id?: string | null
           feedback_attempts?: number
           feedback_responded_at?: string | null
           feedback_response?: string | null
@@ -1584,6 +1591,9 @@ export type Database = {
           phone: string
           price: number
           purchase_count?: number | null
+          source_partial_lead_id?: string | null
+          source_portal_lead_id?: string | null
+          tier?: string
           updated_at?: string | null
           whatsapp_confirmed?: boolean | null
         }
@@ -1594,6 +1604,8 @@ export type Database = {
           confirmation_whatsapp_status?: string | null
           created_at?: string | null
           description?: string
+          exclusive_until?: string | null
+          exclusive_user_id?: string | null
           feedback_attempts?: number
           feedback_responded_at?: string | null
           feedback_response?: string | null
@@ -1609,6 +1621,9 @@ export type Database = {
           phone?: string
           price?: number
           purchase_count?: number | null
+          source_partial_lead_id?: string | null
+          source_portal_lead_id?: string | null
+          tier?: string
           updated_at?: string | null
           whatsapp_confirmed?: boolean | null
         }
