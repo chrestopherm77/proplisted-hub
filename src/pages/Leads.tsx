@@ -25,7 +25,23 @@ interface Lead {
   is_exhausted?: boolean;
   form_data?: any;
   created_at?: string;
+  tier?: string | null;
+  exclusive_user_id?: string | null;
+  exclusive_until?: string | null;
 }
+
+const tierLabels: Record<string, string> = {
+  GOLD: '🥇 Ouro',
+  SILVER: '🥈 Prata',
+  BRONZE: '🥉 Bronze',
+};
+
+const tierClasses: Record<string, string> = {
+  GOLD: 'bg-amber-400 hover:bg-amber-400 text-amber-950 border-transparent',
+  SILVER: 'bg-slate-300 hover:bg-slate-300 text-slate-900 border-transparent',
+  BRONZE: 'bg-orange-700 hover:bg-orange-700 text-orange-50 border-transparent',
+};
+
 
 interface ParsedDescription {
   interest: string;
