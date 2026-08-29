@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Loader2, X, Users } from "lucide-react";
+import { Coins, Loader2, X, Users, Webhook } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
 import { LeadPreferencesView } from "./LeadPreferencesView";
+import { splitFormDataIntoPreferences } from "@/lib/leadPreferences";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
@@ -172,12 +173,15 @@ export function LeadDetailsModal({
                 </div>
               </div>
               {hasFormData ? (
-                <div className="py-3">
-                  <LeadPreferencesView
-                    formData={normalizedFormData}
-                    fieldTextClass="text-base"
-                    sectionTitleClass="text-base"
-                  />
+                <div className="py-3 space-y-4">
+                  {splitFormDataIntoPreferences(normalizedFormData).length > 0 && (
+                    <LeadPreferencesView
+                      formData={normalizedFormData}
+                      fieldTextClass="text-base"
+                      sectionTitleClass="text-base"
+                    />
+                  )}
+                  <WebhookAnswersView formData={normalizedFormData} />
                 </div>
               ) : (
                 <div className="py-3">
@@ -236,6 +240,91 @@ export function LeadDetailsModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const INTERNAL_KEYS = new Set(['origem', 'intention', 'sell', 'buy', 'build', 'rent']);
+
+const ANSWER_KEY_LABELS: Record<string, string> = {
+  cidade: 'Cidade',
+  city: 'Cidade',
+  uf: 'UF',
+  estado: 'Estado',
+  bairro: 'Bairro',
+  zona: 'Zona',
+  regiao: 'Região',
+  tipo_imovel: 'Tipo de imóvel',
+  property_type: 'Tipo de imóvel',
+  valor: 'Valor',
+  faixa_preco: 'Faixa de preço',
+  price_range: 'Faixa de preço',
+  quartos: 'Quartos',
+  bedrooms: 'Quartos',
+  area: 'Área (m²)',
+  area_minima: 'Área mínima (m²)',
+  prazo: 'Prazo',
+  urgencia: 'Urgência',
+  financiamento: 'Financiamento',
+  entrada: 'Entrada',
+  renda: 'Renda',
+  observacoes: 'Observações',
+  interesse: 'Interesse',
+  nome: 'Nome',
+  telefone: 'Telefone',
+};
+
+const INTENTION_LABELS: Record<string, string> = {
+  SELL: 'Vender', BUY: 'Comprar', BUILD: 'Construir', RENT: 'Alugar',
+};
+
+function formatAnswerLabel(key: string): string {
+  const normalized = key.toLowerCase().replace(/\s+/g, '_');
+  if (ANSWER_KEY_LABELS[normalized]) return ANSWER_KEY_LABELS[normalized];
+  return key
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatAnswerValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (Array.isArray(value)) return value.map(formatAnswerValue).join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function WebhookAnswersView({ formData }: { formData: Record<string, any> }) {
+  const intention = String(formData.intention || '').toUpperCase();
+  const entries = Object.entries(formData).filter(
+    ([key, value]) => !INTERNAL_KEYS.has(key) && value !== null && value !== undefined && value !== '' && typeof value !== 'object'
+  );
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+      <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
+        <Webhook className="h-4 w-4 text-primary" />
+        Respostas recebidas via Webhook
+      </h4>
+      {intention && INTENTION_LABELS[intention] && (
+        <div className="text-base">
+          <span className="text-muted-foreground">Interesse:</span>{' '}
+          <span className="font-medium text-foreground">{INTENTION_LABELS[intention]}</span>
+        </div>
+      )}
+      {entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma resposta adicional foi enviada.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {entries.map(([key, value]) => (
+            <div key={key} className="text-base">
+              <span className="text-muted-foreground">{formatAnswerLabel(key)}:</span>{' '}
+              <span className="font-medium text-foreground">{formatAnswerValue(value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
