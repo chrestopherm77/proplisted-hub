@@ -50,9 +50,7 @@ interface Benefit {
 const emptyBenefit = {
   title: '',
   description: '',
-  rules: '',
   discount_percent: '15',
-  discount_label: '',
   state: '',
   city: '',
   address: '',
@@ -61,6 +59,7 @@ const emptyBenefit = {
   is_online: false,
   usage_limit: 'MONTHLY_1',
 };
+
 
 const USAGE_LIMIT_LABEL: Record<string, string> = {
   MONTHLY_1: '1 uso por mês',
