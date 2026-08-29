@@ -141,6 +141,8 @@ export function LeadTracking() {
 
   const [standbyLeads, setStandbyLeads] = useState<StandbyLead[]>([]);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [webhookSendingId, setWebhookSendingId] = useState<string | null>(null);
+
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const { toast } = useToast();
 
