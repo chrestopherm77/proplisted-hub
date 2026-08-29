@@ -677,7 +677,22 @@ export default function Leads() {
                 </SelectContent>
               </Select>
             </div>
+            {isAdmin === true && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-muted-foreground">Classificação</label>
+                <Select value={filterTier} onValueChange={setFilterTier}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="GOLD">🥇 Ouro</SelectItem>
+                    <SelectItem value="SILVER">🥈 Prata</SelectItem>
+                    <SelectItem value="BRONZE">🥉 Bronze</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
           <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
             <Button 
               variant="outline" 
