@@ -510,6 +510,18 @@ export function LeadTracking() {
                         ) : '-'}
                       </TableCell>
                       <TableCell className="text-xs">{formatDate(lead.updated_at)}</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!lead.phone || webhookSendingId === lead.id}
+                          onClick={() => handleSendPartialWebhook(lead)}
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" />
+                          {webhookSendingId === lead.id ? 'Enviando...' : 'Disparar'}
+                        </Button>
+                      </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
