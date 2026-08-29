@@ -1,0 +1,1 @@
+ALTER TABLE public.lp_partial_leads ADD COLUMN IF NOT EXISTS webhook_sent_at timestamptz;

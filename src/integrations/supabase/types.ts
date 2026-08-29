@@ -1689,6 +1689,7 @@ export type Database = {
           step_index: number | null
           total_steps: number | null
           updated_at: string | null
+          webhook_sent_at: string | null
         }
         Insert: {
           completed?: boolean | null
@@ -1705,6 +1706,7 @@ export type Database = {
           step_index?: number | null
           total_steps?: number | null
           updated_at?: string | null
+          webhook_sent_at?: string | null
         }
         Update: {
           completed?: boolean | null
@@ -1721,6 +1723,7 @@ export type Database = {
           step_index?: number | null
           total_steps?: number | null
           updated_at?: string | null
+          webhook_sent_at?: string | null
         }
         Relationships: []
       }
