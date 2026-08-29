@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import BrandLogo from '@/components/BrandLogo';
+import { useIBGELocation } from '@/hooks/useIBGELocation';
+
 import { Loader2, LogOut, Plus, Ticket, CheckCircle2, XCircle } from 'lucide-react';
 
 const STATUS_LABEL: Record<string, string> = {
