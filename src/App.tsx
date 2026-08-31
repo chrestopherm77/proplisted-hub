@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { PartnerProvider } from "./contexts/PartnerContext";
 import Index from "./pages/Index";
+import HomeValidacao from "./pages/HomeValidacao";
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import Leads from "./pages/Leads";
@@ -100,6 +101,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
           <Route path="/corretor" element={<Index />} />
+          <Route path="/validacao" element={<HomeValidacao />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/leads" element={<Leads />} />
