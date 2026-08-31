@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Search } from 'lucide-react';
 import { FilterState, EMPTY_FILTERS, typeLabel } from '@/components/portal-conectae/types';
 
-const HERO_BG = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80';
-
 export function HomeHero({
   cities,
   types,
@@ -23,33 +21,63 @@ export function HomeHero({
   };
 
   return (
-    <section
-      className="relative min-h-[640px] flex items-center text-white"
-      style={{
-        backgroundImage: `linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.58)), url(${HERO_BG})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      <div className="container mx-auto px-4 pt-28 pb-16">
+    <section className="v2-dark relative overflow-hidden">
+      {/* decoração: anéis translúcidos + blob verde */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 -right-32 h-[520px] w-[520px] rounded-full border border-white/10"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-56 h-[620px] w-[620px] rounded-full border border-white/[0.07]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-24 h-[420px] w-[420px] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, hsl(var(--v2-mint) / 0.28), transparent 65%)' }}
+      />
+
+      <div className="relative mx-auto max-w-[1440px] px-5 lg:px-16 pt-16 pb-20">
         <div className="max-w-3xl">
-          <span className="inline-block text-xs uppercase tracking-[0.2em] text-white/70 mb-4">
-            Conectaê Imob
+          <span className="v2-pill inline-flex items-center gap-2 rounded-full border border-[hsl(var(--v2-mint)/0.4)] bg-[hsl(var(--v2-mint)/0.14)] px-4 py-1.5 text-[11px] md:text-xs font-bold uppercase tracking-wide text-[hsl(var(--v2-mint))]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--v2-mint))]" />
+            Portal + ferramentas do corretor, num só lugar
           </span>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight">
-            Encontre o imóvel certo — com um corretor de verdade do seu lado
+
+          <h1 className="mt-6 text-[34px] leading-[1.1] md:text-[50px] font-extrabold text-white">
+            A solução para quem busca o{' '}
+            <span className="text-[hsl(var(--v2-mint))]">imóvel ideal</span> — e para o corretor que
+            deseja anunciar
           </h1>
-          <p className="mt-4 text-base md:text-lg text-white/85 max-w-2xl">
-            Imóveis anunciados por corretores parceiros em todo o Brasil. Busque, demonstre interesse
-            e fale direto com quem entende do bairro.
+
+          <p className="mt-5 max-w-2xl text-base md:text-lg text-[hsl(var(--v2-on-dark))]">
+            Conectamos clientes ao corretor ideal, com tecnologia, transparência e um portfólio de
+            imóveis selecionados em todo o Brasil. Seja para comprar, alugar ou vender, aqui você
+            encontra quem entende do mercado.
           </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <button
+              onClick={() => document.getElementById('imoveis')?.scrollIntoView({ behavior: 'smooth' })}
+              className="rounded-full bg-white px-7 py-4 text-[15px] font-bold text-[hsl(var(--v2-blue))] shadow-[var(--v2-shadow-btn)] hover:brightness-95 transition"
+            >
+              Encontrar meu imóvel
+            </button>
+            <Link
+              to="/corretor"
+              className="rounded-full border-[1.5px] border-white/50 px-7 py-4 text-[15px] font-bold text-white hover:bg-white/10 transition"
+            >
+              Sou corretor
+            </Link>
+          </div>
         </div>
 
-        <div className="bg-background/95 text-foreground rounded-xl p-4 mt-8 shadow-2xl max-w-5xl">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+        {/* Card de busca */}
+        <div className="mt-10 rounded-3xl bg-white p-5 md:p-6 shadow-[var(--v2-shadow-float)]">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 items-end">
             <Field label="Objetivo">
               <select
-                className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
                 value={f.operation}
                 onChange={(e) => set('operation', e.target.value)}
               >
@@ -60,7 +88,7 @@ export function HomeHero({
             </Field>
             <Field label="Cidade">
               <select
-                className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
                 value={f.city}
                 onChange={(e) => set('city', e.target.value)}
               >
@@ -72,7 +100,7 @@ export function HomeHero({
             </Field>
             <Field label="Tipo do imóvel">
               <select
-                className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
                 value={f.propertyType}
                 onChange={(e) => set('propertyType', e.target.value)}
               >
@@ -84,7 +112,7 @@ export function HomeHero({
             </Field>
             <Field label="Valor mínimo">
               <input
-                className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
                 value={fmt(f.priceMin)}
                 onChange={(e) => set('priceMin', e.target.value)}
                 placeholder="R$ 0"
@@ -93,7 +121,7 @@ export function HomeHero({
             </Field>
             <Field label="Valor máximo">
               <input
-                className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
                 value={fmt(f.priceMax)}
                 onChange={(e) => set('priceMax', e.target.value)}
                 placeholder="R$ 0"
@@ -102,18 +130,18 @@ export function HomeHero({
             </Field>
             <button
               onClick={() => onSearch(f)}
-              className="h-10 px-6 rounded-md bg-primary text-primary-foreground font-semibold text-sm inline-flex items-center justify-center gap-2 hover:opacity-90 transition"
+              className="col-span-2 lg:col-span-1 inline-flex h-[46px] items-center justify-center gap-2 rounded-full bg-[hsl(var(--v2-green))] px-6 text-sm font-bold text-white hover:brightness-105 transition"
             >
-              <Search className="h-4 w-4" /> Buscar
+              <Search className="h-4 w-4" strokeWidth={2.2} /> Buscar
             </button>
           </div>
         </div>
 
         <Link
           to="/corretor"
-          className="inline-flex items-center gap-1 mt-5 text-sm text-white/80 hover:text-white underline underline-offset-4"
+          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-[hsl(var(--v2-mint))] hover:text-white transition"
         >
-          É corretor? Anuncie seus imóveis grátis <ArrowRight className="h-4 w-4" />
+          É corretor? Anuncie seus imóveis grátis <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
         </Link>
       </div>
     </section>
@@ -123,7 +151,9 @@ export function HomeHero({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-semibold mb-1 text-muted-foreground">{label}</label>
+      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--v2-body))]">
+        {label}
+      </label>
       {children}
     </div>
   );
