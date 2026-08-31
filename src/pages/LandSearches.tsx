@@ -14,7 +14,7 @@ import {
 import { useLandSearches } from '@/hooks/useLandSearches';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings, ArrowUpDown } from 'lucide-react';
+import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Settings, ArrowUpDown } from 'lucide-react';
 
 const formatArea = (n: number | null | undefined) =>
   n == null ? '—' : `${Number(n).toLocaleString('pt-BR')} m²`;
@@ -31,7 +31,7 @@ export default function LandSearches() {
   const [canPublish, setCanPublish] = useState(false);
   const [filterState, setFilterState] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
-  const [filterCompany, setFilterCompany] = useState('');
+  const [filterCompany, setFilterCompany] = useState('all');
   const [filterMinArea, setFilterMinArea] = useState<string>('');
   const [sortByName, setSortByName] = useState<'none' | 'asc' | 'desc'>('none');
 
@@ -43,6 +43,12 @@ export default function LandSearches() {
       .select('id').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => setCanPublish(!!data));
   }, [user, isAdmin]);
+
+  const allCompanies = useMemo(() => {
+    const s = new Set<string>();
+    items.forEach((i) => i.company_name && s.add(i.company_name));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+  }, [items]);
 
   const allStates = useMemo(() => {
     const s = new Set<string>();
@@ -61,7 +67,7 @@ export default function LandSearches() {
   const filtered = useMemo(() => {
     const minArea = filterMinArea ? Number(filterMinArea.replace(/\D/g, '')) : null;
     const list = items.filter((i) => {
-      if (filterCompany && !i.company_name.toLowerCase().includes(filterCompany.toLowerCase())) return false;
+      if (filterCompany !== 'all' && i.company_name !== filterCompany) return false;
       if (minArea != null) {
         const m = computeMinArea(i);
         if (m == null || m > minArea) return false;
@@ -184,15 +190,13 @@ export default function LandSearches() {
         {/* Filtros */}
         <Card>
           <CardContent className="p-4 grid gap-3 md:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Construtora/Incorporadora"
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+            <Select value={filterCompany} onValueChange={setFilterCompany}>
+              <SelectTrigger><SelectValue placeholder="Construtora/Incorporadora" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas construtoras</SelectItem>
+                {allCompanies.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={filterState} onValueChange={(v) => { setFilterState(v); setFilterCity('all'); }}>
               <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
               <SelectContent>
