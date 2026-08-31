@@ -1138,6 +1138,7 @@ export type Database = {
           logo_url: string | null
           min_area_m2: number | null
           notes: string | null
+          payment_methods: string[]
           sort_order: number
           updated_at: string
           user_id: string | null
@@ -1153,6 +1154,7 @@ export type Database = {
           logo_url?: string | null
           min_area_m2?: number | null
           notes?: string | null
+          payment_methods?: string[]
           sort_order?: number
           updated_at?: string
           user_id?: string | null
@@ -1168,6 +1170,7 @@ export type Database = {
           logo_url?: string | null
           min_area_m2?: number | null
           notes?: string | null
+          payment_methods?: string[]
           sort_order?: number
           updated_at?: string
           user_id?: string | null
@@ -3383,6 +3386,7 @@ export type Database = {
           logo_url: string
           min_area_m2: number
           notes: string
+          payment_methods: string[]
           sort_order: number
         }[]
       }

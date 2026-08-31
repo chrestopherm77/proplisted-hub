@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
@@ -35,7 +36,10 @@ interface LandSearch {
   logo_url: string | null;
   is_active: boolean;
   sort_order: number;
+  payment_methods: string[] | null;
 }
+
+export const PAYMENT_METHODS = ['Permuta Física', 'Permuta Financeira', 'Compra'] as const;
 
 const emptyArea: Area = { state: '', city: '', zone: '', neighborhood: '' };
 
@@ -47,6 +51,7 @@ const emptyForm = {
   contact_email: '',
   min_area_m2: '',
   notes: '',
+  payment_methods: [] as string[],
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -114,6 +119,7 @@ export function LandSearchesManagement() {
       contact_email: item.contact_email,
       min_area_m2: item.min_area_m2?.toString() || '',
       notes: item.notes || '',
+      payment_methods: item.payment_methods || [],
       areas,
     });
     setAreaCities({});
@@ -151,6 +157,7 @@ export function LandSearchesManagement() {
         contact_email: form.contact_email.trim().toLowerCase(),
         min_area_m2: form.min_area_m2 ? Number(form.min_area_m2.replace(/\D/g, '')) : null,
         notes: form.notes.trim() || null,
+        payment_methods: form.payment_methods,
       };
 
       let landSearchId = form.id;
@@ -229,6 +236,7 @@ export function LandSearchesManagement() {
                 <TableHead>Construtora/Incorporadora</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead>Regiões</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead>Área mín.</TableHead>
                 <TableHead className="w-20">Ativo</TableHead>
                 <TableHead className="w-32 text-right">Ações</TableHead>
@@ -236,7 +244,7 @@ export function LandSearchesManagement() {
             </TableHeader>
             <TableBody>
               {items.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum anúncio cadastrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum anúncio cadastrado.</TableCell></TableRow>
               ) : items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.company_name}</TableCell>
@@ -246,6 +254,9 @@ export function LandSearchesManagement() {
                   </TableCell>
                   <TableCell className="text-xs">
                     {item.areas.length === 0 ? '—' : item.areas.map((a: any) => `${a.city}/${a.state}`).join(' • ')}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {!item.payment_methods || item.payment_methods.length === 0 ? '—' : item.payment_methods.join(' • ')}
                   </TableCell>
                   <TableCell className="text-xs">{item.min_area_m2 ? `${Number(item.min_area_m2).toLocaleString('pt-BR')} m²` : '—'}</TableCell>
                   <TableCell><Switch checked={item.is_active} onCheckedChange={() => toggleActive(item)} /></TableCell>
@@ -309,6 +320,28 @@ export function LandSearchesManagement() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="Detalhes sobre o tipo de terreno procurado, prazos, formas de pagamento…"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Formas de pagamento (pode marcar mais de uma)</Label>
+              <div className="flex flex-wrap gap-4 rounded-md border p-3 bg-muted/30">
+                {PAYMENT_METHODS.map((m) => (
+                  <label key={m} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={form.payment_methods.includes(m)}
+                      onCheckedChange={(checked) =>
+                        setForm((f) => ({
+                          ...f,
+                          payment_methods: checked
+                            ? [...f.payment_methods, m]
+                            : f.payment_methods.filter((x) => x !== m),
+                        }))
+                      }
+                    />
+                    {m}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">
