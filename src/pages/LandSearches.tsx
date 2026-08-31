@@ -14,7 +14,7 @@ import {
 import { useLandSearches } from '@/hooks/useLandSearches';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Search, Settings, ArrowUpDown } from 'lucide-react';
+import { Building2, MapPin, Mail, MessageCircle, Lock, Crown, Loader2, Settings, ArrowUpDown } from 'lucide-react';
 
 const formatArea = (n: number | null | undefined) =>
   n == null ? '—' : `${Number(n).toLocaleString('pt-BR')} m²`;
