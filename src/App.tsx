@@ -110,7 +110,8 @@ const App = () => {
         <MegaApiAlertModal />
         <PageTransition>
         <Routes>
-          <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
+          <Route path="/" element={<BrokerDomainGate><HomeValidacao /></BrokerDomainGate>} />
+          <Route path="/validacao" element={<Navigate to="/" replace />} />
           <Route path="/corretor" element={<Index />} />
           <Route path="/validacao" element={<HomeValidacao />} />
           <Route path="/auth" element={<Auth />} />
