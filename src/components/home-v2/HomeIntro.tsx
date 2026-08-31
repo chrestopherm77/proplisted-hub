@@ -1,9 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
-
-const logoWhite = logoAsset.url;
+import conectaeLogo from '@/assets/conectae-logo.png';
 
 export function HomeIntro() {
   const scrollToProperties = () =>
@@ -18,9 +16,9 @@ export function HomeIntro() {
 
       <div className="container mx-auto px-4 relative z-10 text-center">
         <img
-          src={logoWhite}
+          src={conectaeLogo}
           alt="Conectaê Imob"
-          className="h-16 md:h-20 w-auto mx-auto mb-8"
+          className="h-16 md:h-20 w-auto mx-auto mb-8 brightness-0 invert"
         />
 
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight max-w-4xl mx-auto">
