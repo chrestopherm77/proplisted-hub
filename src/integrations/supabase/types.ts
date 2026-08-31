@@ -3386,6 +3386,7 @@ export type Database = {
           logo_url: string
           min_area_m2: number
           notes: string
+          payment_methods: string[]
           sort_order: number
         }[]
       }

@@ -21,6 +21,7 @@ export interface LandSearch {
   logo_url: string | null;
   sort_order: number;
   created_at: string;
+  payment_methods?: string[] | null;
   // Campos sensíveis: presentes apenas para admin ou plano pago
   contact_name?: string | null;
   contact_whatsapp?: string | null;
@@ -43,7 +44,7 @@ export function useLandSearches() {
       if (isPaid) {
         const { data } = await supabase
           .from('land_searches' as any)
-          .select('id, company_name, contact_name, contact_whatsapp, contact_email, min_area_m2, notes, logo_url, sort_order, created_at')
+          .select('id, company_name, contact_name, contact_whatsapp, contact_email, min_area_m2, notes, logo_url, sort_order, created_at, payment_methods')
           .eq('is_active', true)
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: false });
