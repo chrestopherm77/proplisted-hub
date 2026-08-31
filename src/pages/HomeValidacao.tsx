@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HomeHeader } from '@/components/home-v2/HomeHeader';
-import { HomeIntro } from '@/components/home-v2/HomeIntro';
 import { HomeHero } from '@/components/home-v2/HomeHero';
 import { PropertiesShowcase } from '@/components/home-v2/PropertiesShowcase';
 import { ForBrokers } from '@/components/home-v2/ForBrokers';
@@ -118,9 +117,9 @@ export default function HomeValidacao() {
 
   if (selected) {
     return (
-      <div style={style} translate="no">
+      <div style={style} translate="no" className="site-v2 min-h-screen bg-[hsl(var(--v2-bg-1))]">
         <HomeHeader />
-        <div className="pt-16">
+        <div>
           <PropertyDetail property={selected} all={properties} onBack={back} onOpen={openProperty} />
         </div>
         <HomeFooter />
@@ -129,13 +128,12 @@ export default function HomeValidacao() {
   }
 
   return (
-    <div style={style} translate="no" className="min-h-screen bg-background text-foreground">
+    <div style={style} translate="no" className="site-v2 min-h-screen bg-[hsl(var(--v2-bg-1))]">
       {jsonLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       )}
       <HomeHeader />
       <main>
-        <HomeIntro />
         <HomeHero
           cities={cities}
           types={types}
