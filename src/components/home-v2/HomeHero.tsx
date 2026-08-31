@@ -1,25 +1,7 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Search } from 'lucide-react';
-import { FilterState, EMPTY_FILTERS, typeLabel } from '@/components/portal-conectae/types';
+import { ArrowRight } from 'lucide-react';
 
-export function HomeHero({
-  cities,
-  types,
-  onSearch,
-}: {
-  cities: string[];
-  types: string[];
-  onSearch: (f: FilterState) => void;
-}) {
-  const [f, setF] = useState<FilterState>(EMPTY_FILTERS);
-  const set = (k: keyof FilterState, v: string) => setF((s) => ({ ...s, [k]: v }));
-
-  const fmt = (v: string) => {
-    const n = v.replace(/\D/g, '');
-    return n ? 'R$ ' + Number(n).toLocaleString('pt-BR') : '';
-  };
-
+export function HomeHero() {
   return (
     <section className="v2-dark relative overflow-hidden">
       {/* decoração: anéis translúcidos + blob verde */}
@@ -37,7 +19,7 @@ export function HomeHero({
         style={{ background: 'radial-gradient(circle, hsl(var(--v2-mint) / 0.28), transparent 65%)' }}
       />
 
-      <div className="relative mx-auto max-w-[1440px] px-5 lg:px-16 pt-16 pb-20">
+      <div className="relative mx-auto max-w-[1440px] px-5 lg:px-16 pt-20 pb-24">
         <div className="max-w-3xl">
           <span className="v2-pill inline-flex items-center gap-2 rounded-full border border-[hsl(var(--v2-mint)/0.4)] bg-[hsl(var(--v2-mint)/0.14)] px-4 py-1.5 text-[11px] md:text-xs font-bold uppercase tracking-wide text-[hsl(var(--v2-mint))]">
             <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--v2-mint))]" />
@@ -70,91 +52,15 @@ export function HomeHero({
               Sou corretor
             </Link>
           </div>
-        </div>
 
-        {/* Card de busca */}
-        <div className="mt-10 rounded-3xl bg-white p-5 md:p-6 shadow-[var(--v2-shadow-float)]">
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 items-end">
-            <Field label="Objetivo">
-              <select
-                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
-                value={f.operation}
-                onChange={(e) => set('operation', e.target.value)}
-              >
-                <option value="">Todos</option>
-                <option value="SALE">Comprar</option>
-                <option value="RENT">Alugar</option>
-              </select>
-            </Field>
-            <Field label="Cidade">
-              <select
-                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
-                value={f.city}
-                onChange={(e) => set('city', e.target.value)}
-              >
-                <option value="">Todas</option>
-                {cities.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Tipo do imóvel">
-              <select
-                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
-                value={f.propertyType}
-                onChange={(e) => set('propertyType', e.target.value)}
-              >
-                <option value="">Todos</option>
-                {types.map((t) => (
-                  <option key={t} value={t}>{typeLabel(t)}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Valor mínimo">
-              <input
-                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
-                value={fmt(f.priceMin)}
-                onChange={(e) => set('priceMin', e.target.value)}
-                placeholder="R$ 0"
-                inputMode="numeric"
-              />
-            </Field>
-            <Field label="Valor máximo">
-              <input
-                className="w-full rounded-xl bg-[hsl(var(--v2-bg-2))] px-3 py-3 text-sm text-[hsl(var(--v2-ink))] outline-none"
-                value={fmt(f.priceMax)}
-                onChange={(e) => set('priceMax', e.target.value)}
-                placeholder="R$ 0"
-                inputMode="numeric"
-              />
-            </Field>
-            <button
-              onClick={() => onSearch(f)}
-              className="col-span-2 lg:col-span-1 inline-flex h-[46px] items-center justify-center gap-2 rounded-full bg-[hsl(var(--v2-green))] px-6 text-sm font-bold text-white hover:brightness-105 transition"
-            >
-              <Search className="h-4 w-4" strokeWidth={2.2} /> Buscar
-            </button>
-          </div>
+          <Link
+            to="/corretor"
+            className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-[hsl(var(--v2-mint))] hover:text-white transition"
+          >
+            É corretor? Anuncie seus imóveis grátis <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+          </Link>
         </div>
-
-        <Link
-          to="/corretor"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-[hsl(var(--v2-mint))] hover:text-white transition"
-        >
-          É corretor? Anuncie seus imóveis grátis <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-        </Link>
       </div>
     </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--v2-body))]">
-        {label}
-      </label>
-      {children}
-    </div>
   );
 }
