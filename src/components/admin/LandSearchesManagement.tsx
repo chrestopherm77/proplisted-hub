@@ -35,7 +35,10 @@ interface LandSearch {
   logo_url: string | null;
   is_active: boolean;
   sort_order: number;
+  payment_methods: string[] | null;
 }
+
+export const PAYMENT_METHODS = ['Permuta Física', 'Permuta Financeira', 'Compra'] as const;
 
 const emptyArea: Area = { state: '', city: '', zone: '', neighborhood: '' };
 
@@ -47,6 +50,7 @@ const emptyForm = {
   contact_email: '',
   min_area_m2: '',
   notes: '',
+  payment_methods: [] as string[],
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -114,6 +118,7 @@ export function LandSearchesManagement() {
       contact_email: item.contact_email,
       min_area_m2: item.min_area_m2?.toString() || '',
       notes: item.notes || '',
+      payment_methods: item.payment_methods || [],
       areas,
     });
     setAreaCities({});
@@ -151,6 +156,7 @@ export function LandSearchesManagement() {
         contact_email: form.contact_email.trim().toLowerCase(),
         min_area_m2: form.min_area_m2 ? Number(form.min_area_m2.replace(/\D/g, '')) : null,
         notes: form.notes.trim() || null,
+        payment_methods: form.payment_methods,
       };
 
       let landSearchId = form.id;
