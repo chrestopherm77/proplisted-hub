@@ -1,46 +1,61 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
-const ITEMS = [
+const FAQ = [
   {
     q: 'É gratuito para quem está procurando imóvel?',
-    a: 'Sim. Buscar imóveis e demonstrar interesse na Conectaê é totalmente gratuito para o cliente final.',
+    a: 'Sim! Buscar imóveis, demonstrar interesse e falar com o corretor responsável é 100% gratuito para quem está procurando imóvel.',
   },
   {
     q: 'Quem vai me atender depois que eu demonstrar interesse?',
-    a: 'O corretor parceiro responsável pelo anúncio recebe seus dados e entra em contato diretamente com você.',
+    a: 'O próprio corretor parceiro responsável pelo anúncio entra em contato com você. Seus dados não são distribuídos para outros corretores.',
   },
   {
     q: 'Como faço para anunciar o meu imóvel?',
-    a: 'Se você é proprietário, demonstre interesse em falar com um parceiro ou procure um corretor da plataforma: ele publica e cuida da divulgação do seu imóvel.',
+    a: 'Se você é proprietário, fale com um corretor parceiro da Conectaê pelo portal — ele cuida da publicação e da negociação.',
   },
   {
     q: 'Sou corretor, como participo da plataforma?',
-    a: 'Basta criar sua conta com CRECI válido. Você já começa publicando imóveis e recebendo oportunidades no plano gratuito.',
+    a: 'Crie sua conta com CRECI ativo, publique seus imóveis e comece a receber leads e usar as ferramentas da plataforma.',
   },
   {
     q: 'Tem custo para o corretor?',
-    a: 'Publicar imóveis é gratuito. Recursos avançados como leads qualificados, criativos com IA e site personalizado fazem parte dos planos pagos.',
+    a: 'Existe um plano gratuito para começar. Os planos pagos liberam mais créditos, criativos com IA e site personalizado — sem fidelidade contratual.',
   },
 ];
 
 export function HomeFaq() {
+  const [open, setOpen] = useState(0);
+
   return (
-    <section className="py-20">
-      <div className="container mx-auto px-4 max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Perguntas frequentes</h2>
-        <Accordion type="single" collapsible className="w-full">
-          {ITEMS.map((it, i) => (
-            <AccordionItem key={it.q} value={`item-${i}`}>
-              <AccordionTrigger className="text-left">{it.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">{it.a}</AccordionContent>
-            </AccordionItem>
+    <section className="bg-[hsl(var(--v2-bg-2))] py-20">
+      <div className="mx-auto max-w-[900px] px-5 lg:px-16">
+        <h2 className="text-center font-display text-[28px] md:text-[38px] font-extrabold text-[hsl(var(--v2-ink))]">
+          Perguntas frequentes
+        </h2>
+
+        <div className="mt-10 space-y-4">
+          {FAQ.map((f, i) => (
+            <div key={f.q} className="rounded-[18px] bg-white shadow-[var(--v2-shadow-card)]">
+              <button
+                onClick={() => setOpen(open === i ? -1 : i)}
+                className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                aria-expanded={open === i}
+              >
+                <span className="font-display text-[15px] md:text-base font-bold text-[hsl(var(--v2-ink))]">
+                  {f.q}
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-[hsl(var(--v2-blue))] transition-transform ${open === i ? 'rotate-180' : ''}`}
+                  strokeWidth={2}
+                />
+              </button>
+              {open === i && (
+                <p className="px-6 pb-6 -mt-1 text-sm leading-relaxed text-[hsl(var(--v2-body))]">{f.a}</p>
+              )}
+            </div>
           ))}
-        </Accordion>
+        </div>
       </div>
     </section>
   );
