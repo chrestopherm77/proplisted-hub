@@ -100,7 +100,10 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
         if (b) {
           const halfB = b.scrollWidth / 2;
           if (halfB > 0) {
-            if (posBRef.current === null) posBRef.current = halfB; // começa no fim: rola para a direita
+            if (posBRef.current === null) {
+              // começa o mais à direita possível: rola para a direita
+              posBRef.current = Math.min(halfB, b.scrollWidth - b.clientWidth);
+            }
             posBRef.current -= speed;
             if (posBRef.current <= 0) posBRef.current += halfB;
             b.scrollLeft = posBRef.current;
