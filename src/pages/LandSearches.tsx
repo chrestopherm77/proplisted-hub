@@ -190,15 +190,13 @@ export default function LandSearches() {
         {/* Filtros */}
         <Card>
           <CardContent className="p-4 grid gap-3 md:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Construtora/Incorporadora"
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+            <Select value={filterCompany} onValueChange={setFilterCompany}>
+              <SelectTrigger><SelectValue placeholder="Construtora/Incorporadora" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas construtoras</SelectItem>
+                {allCompanies.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={filterState} onValueChange={(v) => { setFilterState(v); setFilterCity('all'); }}>
               <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
               <SelectContent>
