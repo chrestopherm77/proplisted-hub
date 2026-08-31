@@ -31,7 +31,7 @@ export default function LandSearches() {
   const [canPublish, setCanPublish] = useState(false);
   const [filterState, setFilterState] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
-  const [filterCompany, setFilterCompany] = useState('');
+  const [filterCompany, setFilterCompany] = useState('all');
   const [filterMinArea, setFilterMinArea] = useState<string>('');
   const [sortByName, setSortByName] = useState<'none' | 'asc' | 'desc'>('none');
 
@@ -67,7 +67,7 @@ export default function LandSearches() {
   const filtered = useMemo(() => {
     const minArea = filterMinArea ? Number(filterMinArea.replace(/\D/g, '')) : null;
     const list = items.filter((i) => {
-      if (filterCompany && !i.company_name.toLowerCase().includes(filterCompany.toLowerCase())) return false;
+      if (filterCompany !== 'all' && i.company_name !== filterCompany) return false;
       if (minArea != null) {
         const m = computeMinArea(i);
         if (m == null || m > minArea) return false;
