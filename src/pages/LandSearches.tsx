@@ -261,6 +261,13 @@ export default function LandSearches() {
                       <TableRow key={item.id}>
                         <TableCell className="align-top">
                           <div className="font-semibold">{item.company_name}</div>
+                          {item.payment_methods && item.payment_methods.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {item.payment_methods.map((m) => (
+                                <Badge key={m} variant="outline" className="text-[10px] font-medium">{m}</Badge>
+                              ))}
+                            </div>
+                          )}
                           {item.notes && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.notes}</div>}
                         </TableCell>
                         <TableCell className="align-top">{renderAreas(item.areas)}</TableCell>
@@ -283,6 +290,13 @@ export default function LandSearches() {
                     <div className="font-semibold">{item.company_name}</div>
                     <Badge variant="secondary" className="shrink-0">{formatArea(computeMinArea(item))}</Badge>
                   </div>
+                  {item.payment_methods && item.payment_methods.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {item.payment_methods.map((m) => (
+                        <Badge key={m} variant="outline" className="text-[10px] font-medium">{m}</Badge>
+                      ))}
+                    </div>
+                  )}
                   {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
                   {renderAreas(item.areas)}
                   <div className="pt-2"><ContactCell item={item} /></div>
