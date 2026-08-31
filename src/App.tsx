@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { PartnerProvider } from "./contexts/PartnerContext";
 import Index from "./pages/Index";
@@ -110,7 +110,8 @@ const App = () => {
         <MegaApiAlertModal />
         <PageTransition>
         <Routes>
-          <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
+          <Route path="/" element={<BrokerDomainGate><HomeValidacao /></BrokerDomainGate>} />
+          <Route path="/validacao" element={<Navigate to="/" replace />} />
           <Route path="/corretor" element={<Index />} />
           <Route path="/validacao" element={<HomeValidacao />} />
           <Route path="/auth" element={<Auth />} />
