@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -28,9 +29,11 @@ interface Area {
 }
 
 const emptyArea: Area = { state: '', city: '', zone: '', neighborhood: '', min_area_m2: '' };
+const PAYMENT_METHODS = ['Permuta Física', 'Permuta Financeira', 'Compra'];
 const emptyForm = {
   id: '', company_name: '', contact_name: '', contact_whatsapp: '',
   contact_email: '', notes: '',
+  payment_methods: [] as string[],
   areas: [{ ...emptyArea }] as Area[],
 };
 
@@ -120,6 +123,7 @@ export default function MyLandSearches() {
       contact_whatsapp: item.contact_whatsapp || profile?.phone || '',
       contact_email: item.contact_email || profile?.email || '',
       notes: item.notes || '',
+      payment_methods: item.payment_methods || [],
       areas,
     });
     setAreaCities({});
@@ -164,6 +168,7 @@ export default function MyLandSearches() {
         contact_whatsapp: whatsapp,
         contact_email: form.contact_email.trim().toLowerCase(),
         notes: form.notes.trim() || null,
+        payment_methods: form.payment_methods,
       };
       let id = form.id;
       if (form.id) {
@@ -248,18 +253,22 @@ export default function MyLandSearches() {
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>Construtora/Incorporadora</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead>Regiões</TableHead>
                   <TableHead>Metragem mínima</TableHead>
                   <TableHead className="w-32 text-right">Ações</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       Nenhum anúncio. Clique em "Novo anúncio" para publicar.
                     </TableCell></TableRow>
                   ) : items.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.company_name}</TableCell>
+                      <TableCell className="text-xs">
+                        {!item.payment_methods || item.payment_methods.length === 0 ? '—' : item.payment_methods.join(' • ')}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {item.areas.length === 0 ? '—' : item.areas.map((a: any) =>
                           `${a.city}/${a.state}${a.zone ? ` - ${a.zone}` : ''}${a.neighborhood ? ` - ${a.neighborhood}` : ''}`
@@ -313,6 +322,27 @@ export default function MyLandSearches() {
                 <Textarea rows={3} value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   placeholder="Detalhes sobre o tipo de terreno procurado, prazos…" />
+              </div>
+              <div className="space-y-2">
+                <Label>Formas de pagamento (pode marcar mais de uma)</Label>
+                <div className="flex flex-wrap gap-4 rounded-md border p-3 bg-muted/30">
+                  {PAYMENT_METHODS.map((m) => (
+                    <label key={m} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={form.payment_methods.includes(m)}
+                        onCheckedChange={(checked) =>
+                          setForm((f) => ({
+                            ...f,
+                            payment_methods: checked
+                              ? [...f.payment_methods, m]
+                              : f.payment_methods.filter((x) => x !== m),
+                          }))
+                        }
+                      />
+                      {m}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
