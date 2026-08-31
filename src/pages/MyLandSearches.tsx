@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useIBGELocation } from '@/hooks/useIBGELocation';
-import { Plus, Pencil, Trash2, Loader2, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Building2, ArrowLeft } from 'lucide-react';
 
 interface Area {
   state: string;
@@ -228,6 +228,11 @@ export default function MyLandSearches() {
   return (
     <Layout>
       <div className="container py-6 space-y-6" translate="no">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to="/procura-se-terrenos">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para Procuram-se Terrenos
+          </Link>
+        </Button>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
