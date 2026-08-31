@@ -11,6 +11,7 @@ import { HowItWorks } from '@/components/home-v2/HowItWorks';
 import { HomeFaq } from '@/components/home-v2/HomeFaq';
 import { FinalCta } from '@/components/home-v2/FinalCta';
 import { HomeFooter } from '@/components/home-v2/HomeFooter';
+import { Reveal } from '@/components/home-v2/Reveal';
 import { PropertyDetail } from '@/components/portal-conectae/PropertyDetail';
 import { useFavorites } from '@/components/portal-conectae/useFavorites';
 import { EMPTY_FILTERS, FilterState } from '@/components/portal-conectae/types';
@@ -134,27 +135,22 @@ export default function HomeValidacao() {
       )}
       <HomeHeader />
       <main>
-        <HomeHero
-          cities={cities}
-          types={types}
-          onSearch={(f) => {
-            setFilters(f);
-            document.getElementById('imoveis')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
+        <HomeHero />
         <PropertiesShowcase
           properties={properties}
           filters={filters}
           setFilters={setFilters}
+          cities={cities}
+          types={types}
           onOpen={openProperty}
           isFav={fav.has}
           onFav={fav.toggle}
         />
-        <ForBrokers />
+        <Reveal><ForBrokers /></Reveal>
         <NewsSection news={news} />
-        <HowItWorks />
-        <HomeFaq />
-        <FinalCta />
+        <Reveal><HowItWorks /></Reveal>
+        <Reveal><HomeFaq /></Reveal>
+        <Reveal><FinalCta /></Reveal>
       </main>
       <HomeFooter />
     </div>

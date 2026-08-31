@@ -288,3 +288,16 @@ All colors MUST be HSL.
 }
 .v2-dark { background: var(--v2-gradient-dark); }
 .v2-light { background: var(--v2-gradient-light); }
+
+/* Marquee do Giro do Mercado (/validacao) */
+@keyframes v2-marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+@keyframes v2-marquee-right {
+  from { transform: translateX(-33.333%); }
+  to { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="v2-marquee"] { animation: none !important; }
+}
