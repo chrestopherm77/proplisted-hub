@@ -3,9 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HomeHeader } from '@/components/home-v2/HomeHeader';
+import { HomeIntro } from '@/components/home-v2/HomeIntro';
 import { HomeHero } from '@/components/home-v2/HomeHero';
 import { PropertiesShowcase } from '@/components/home-v2/PropertiesShowcase';
-import { StatsBar, Stat } from '@/components/home-v2/StatsBar';
 import { ForBrokers } from '@/components/home-v2/ForBrokers';
 import { NewsSection, NewsItem } from '@/components/home-v2/NewsSection';
 import { HowItWorks } from '@/components/home-v2/HowItWorks';
@@ -24,7 +24,6 @@ export default function HomeValidacao() {
   const [params, setParams] = useSearchParams();
   const [properties, setProperties] = useState<any[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [brokerCount, setBrokerCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const fav = useFavorites();
@@ -44,7 +43,7 @@ export default function HomeValidacao() {
 
   useEffect(() => {
     (async () => {
-      const [props, posts, brokers] = await Promise.all([
+      const [props, posts] = await Promise.all([
         supabase.rpc('list_portal_conectae_properties' as any),
         supabase
           .from('news_posts')
@@ -53,11 +52,9 @@ export default function HomeValidacao() {
           .not('image_url', 'is', null)
           .order('created_at', { ascending: false })
           .limit(6),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
       ]);
       if (!props.error && props.data) setProperties(props.data as any[]);
       if (!posts.error && posts.data) setNews(posts.data as NewsItem[]);
-      if (!brokers.error && typeof brokers.count === 'number') setBrokerCount(brokers.count);
       setLoading(false);
     })();
   }, []);
@@ -70,15 +67,6 @@ export default function HomeValidacao() {
     () => Array.from(new Set(properties.map((p) => p.property_type).filter(Boolean))).sort() as string[],
     [properties]
   );
-
-  const stats: Stat[] = useMemo(() => {
-    const list: Stat[] = [];
-    if (properties.length) list.push({ label: 'Imóveis publicados', value: `${properties.length}` });
-    if (cities.length) list.push({ label: 'Cidades atendidas', value: `${cities.length}` });
-    if (types.length) list.push({ label: 'Tipos de imóveis', value: `${types.length}` });
-    if (brokerCount) list.push({ label: 'Corretores parceiros', value: `${brokerCount}` });
-    return list;
-  }, [properties.length, cities.length, types.length, brokerCount]);
 
   const jsonLd = useMemo(() => {
     if (!properties.length) return null;
@@ -147,6 +135,7 @@ export default function HomeValidacao() {
       )}
       <HomeHeader />
       <main>
+        <HomeIntro />
         <HomeHero
           cities={cities}
           types={types}
@@ -163,7 +152,6 @@ export default function HomeValidacao() {
           isFav={fav.has}
           onFav={fav.toggle}
         />
-        <StatsBar stats={stats} />
         <ForBrokers />
         <NewsSection news={news} />
         <HowItWorks />
