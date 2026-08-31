@@ -250,3 +250,41 @@ All colors MUST be HSL.
 .admin-users-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.8);
 }
+
+/* ============================================================
+   Conectaê site v2 (/validacao) — tokens do guia de design
+   ============================================================ */
+.site-v2 {
+  --v2-navy: 215 65% 18%;          /* #10294B */
+  --v2-blue: 214 88% 35%;          /* #0B4FA8 */
+  --v2-blue-vivid: 214 88% 45%;    /* #0E65D8 */
+  --v2-cyan: 199 89% 48%;          /* #0DA2E7 */
+  --v2-mint: 160 60% 73%;          /* #8FE3C7 */
+  --v2-green: 145 63% 42%;         /* #28AF60 */
+  --v2-ink: 221 48% 17%;           /* #16233F */
+  --v2-body: 216 21% 37%;          /* #4A5A72 */
+  --v2-on-dark: 213 81% 92%;       /* #D8E8FB */
+  --v2-meta: 217 25% 65%;          /* #8FA0BC */
+  --v2-bg-1: 207 100% 98%;         /* #F6FBFF */
+  --v2-bg-2: 210 90% 96%;          /* #ECF5FE */
+  --v2-bg-3: 210 75% 92%;          /* #DCEBFA */
+  --v2-line: 210 71% 91%;          /* #DCEAF8 */
+  --v2-footer: 212 67% 13%;        /* #0B2038 */
+
+  --v2-gradient-dark: linear-gradient(150deg, hsl(var(--v2-navy)) 0%, hsl(var(--v2-blue)) 55%, hsl(var(--v2-blue-vivid)) 85%, hsl(var(--v2-cyan)) 120%);
+  --v2-gradient-light: linear-gradient(180deg, hsl(var(--v2-bg-1)) 0%, hsl(var(--v2-bg-2)) 55%, hsl(var(--v2-bg-3)) 100%);
+  --v2-gradient-badge: linear-gradient(145deg, hsl(var(--v2-cyan)), hsl(var(--v2-green)));
+
+  --v2-shadow-card: 0 10px 24px hsl(var(--v2-navy) / 0.09);
+  --v2-shadow-btn: 0 14px 28px hsl(var(--v2-navy) / 0.22);
+  --v2-shadow-float: 0 40px 80px hsl(var(--v2-navy) / 0.28);
+
+  font-family: 'Manrope', 'Segoe UI', Arial, sans-serif;
+  color: hsl(var(--v2-body));
+}
+.site-v2 h1, .site-v2 h2, .site-v2 h3, .site-v2 h4,
+.site-v2 .font-display, .site-v2 button, .site-v2 .v2-pill {
+  font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+}
+.v2-dark { background: var(--v2-gradient-dark); }
+.v2-light { background: var(--v2-gradient-light); }
