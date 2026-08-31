@@ -65,6 +65,8 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
   const rowARef = useRef<HTMLDivElement | null>(null);
   const rowBRef = useRef<HTMLDivElement | null>(null);
   const hoverRef = useRef(false);
+  const posARef = useRef(0);
+  const posBRef = useRef<number | null>(null);
 
   const rowA = news.filter((_, i) => i % 2 === 0);
   const rowB = news.filter((_, i) => i % 2 === 1);
@@ -79,9 +81,6 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
 
     // Posições acumuladas em JS — scrollLeft arredonda para inteiro,
     // então incrementos fracionários precisam ser acumulados fora do DOM
-    let posA = section?.querySelectorAll<HTMLDivElement>('.news-marquee')[0]?.scrollLeft ?? 0;
-    let posB: number | null = null;
-
     let raf: number;
     const speed = 0.5; // px por frame — movimento suave e devagar
 
@@ -93,18 +92,18 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
         if (a) {
           const halfA = a.scrollWidth / 2;
           if (halfA > 0) {
-            posA += speed;
-            if (posA >= halfA) posA -= halfA;
-            a.scrollLeft = posA;
+            posARef.current += speed;
+            if (posARef.current >= halfA) posARef.current -= halfA;
+            a.scrollLeft = posARef.current;
           }
         }
         if (b) {
           const halfB = b.scrollWidth / 2;
           if (halfB > 0) {
-            if (posB === null) posB = halfB; // começa no fim: rola para a direita
-            posB -= speed;
-            if (posB <= 0) posB += halfB;
-            b.scrollLeft = posB;
+            if (posBRef.current === null) posBRef.current = halfB; // começa no fim: rola para a direita
+            posBRef.current -= speed;
+            if (posBRef.current <= 0) posBRef.current += halfB;
+            b.scrollLeft = posBRef.current;
           }
         }
       }
@@ -121,8 +120,15 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
     const b = rowBRef.current;
     const deltaA = dir === 'left' ? amount : -amount;
     const deltaB = -deltaA;
-    a?.scrollBy({ left: deltaA, behavior: 'smooth' });
-    b?.scrollBy({ left: deltaB, behavior: 'smooth' });
+    if (a) {
+      posARef.current = Math.max(0, posARef.current + deltaA);
+      a.scrollTo({ left: posARef.current, behavior: 'smooth' });
+    }
+    if (b) {
+      const base = posBRef.current ?? b.scrollLeft;
+      posBRef.current = Math.max(0, base + deltaB);
+      b.scrollTo({ left: posBRef.current, behavior: 'smooth' });
+    }
   };
 
   if (!news.length) return null;
