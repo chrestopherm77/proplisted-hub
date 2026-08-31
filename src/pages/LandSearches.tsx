@@ -44,6 +44,12 @@ export default function LandSearches() {
       .then(({ data }) => setCanPublish(!!data));
   }, [user, isAdmin]);
 
+  const allCompanies = useMemo(() => {
+    const s = new Set<string>();
+    items.forEach((i) => i.company_name && s.add(i.company_name));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+  }, [items]);
+
   const allStates = useMemo(() => {
     const s = new Set<string>();
     items.forEach((i) => i.areas.forEach((a) => a.state && s.add(a.state)));
