@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Building2 } from 'lucide-react';
-import { PropertyCard } from '@/components/portal-conectae/PropertyCard';
+import { ArrowRight } from 'lucide-react';
+import { PropertyCardV2 } from './PropertyCardV2';
 import { FilterState, EMPTY_FILTERS, applyFilters } from '@/components/portal-conectae/types';
 
 const CHIPS: { id: string; label: string; apply: (f: FilterState) => FilterState }[] = [
@@ -30,7 +30,7 @@ export function PropertiesShowcase({
   const [showAll, setShowAll] = useState(false);
 
   const listed = useMemo(() => applyFilters(properties, filters), [properties, filters]);
-  const visible = showAll ? listed : listed.slice(0, 12);
+  const visible = showAll ? listed : listed.slice(0, 6);
 
   const activeChip = (id: string) => {
     if (id === 'all') return JSON.stringify(filters) === JSON.stringify(EMPTY_FILTERS);
@@ -42,30 +42,37 @@ export function PropertiesShowcase({
   };
 
   return (
-    <section id="imoveis" className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <section id="imoveis" className="bg-[hsl(var(--v2-bg-1))] py-20">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-16">
+        <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-              <Building2 className="h-7 w-7 text-primary" />
+            <h2 className="font-display text-[28px] md:text-[38px] font-extrabold text-[hsl(var(--v2-ink))]">
               Imóveis disponíveis
             </h2>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="mt-2 max-w-xl text-[15px] text-[hsl(var(--v2-body))]">
               Anúncios de corretores parceiros da Conectaê em todo o Brasil.
             </p>
           </div>
-          <span className="text-sm text-muted-foreground">{listed.length} imóveis</span>
+          <button
+            onClick={() => setShowAll(true)}
+            className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-[hsl(var(--v2-line))] px-6 py-3 text-sm font-bold text-[hsl(var(--v2-blue))] hover:bg-white transition"
+          >
+            Ver todos os imóveis <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+          </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="mt-8 flex flex-wrap gap-2.5">
           {CHIPS.map((c) => (
             <button
               key={c.id}
-              onClick={() => { setFilters(c.apply(filters)); setShowAll(false); }}
-              className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${
+              onClick={() => {
+                setFilters(c.apply(filters));
+                setShowAll(false);
+              }}
+              className={`rounded-full px-5 py-2 text-sm font-bold transition ${
                 activeChip(c.id)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background text-foreground hover:border-primary'
+                  ? 'bg-[hsl(var(--v2-blue))] text-white'
+                  : 'border border-[hsl(var(--v2-line))] bg-white text-[hsl(var(--v2-body))] hover:border-[hsl(var(--v2-cyan))]'
               }`}
             >
               {c.label}
@@ -74,13 +81,13 @@ export function PropertiesShowcase({
         </div>
 
         {visible.length === 0 ? (
-          <p className="text-center text-muted-foreground py-16">
+          <p className="py-20 text-center text-[hsl(var(--v2-body))]">
             Nenhum imóvel encontrado com esses critérios.
           </p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((p) => (
-              <PropertyCard
+              <PropertyCardV2
                 key={p.id}
                 property={p}
                 isFav={isFav(p.id)}
@@ -91,13 +98,13 @@ export function PropertiesShowcase({
           </div>
         )}
 
-        {!showAll && listed.length > 12 && (
-          <div className="text-center mt-8">
+        {!showAll && listed.length > 6 && (
+          <div className="mt-10 text-center">
             <button
               onClick={() => setShowAll(true)}
-              className="px-6 py-2.5 rounded-md border font-medium text-sm hover:bg-background transition"
+              className="rounded-full bg-[hsl(var(--v2-blue))] px-8 py-3.5 text-sm font-bold text-white hover:brightness-110 transition"
             >
-              Ver todos os imóveis
+              Ver mais imóveis
             </button>
           </div>
         )}

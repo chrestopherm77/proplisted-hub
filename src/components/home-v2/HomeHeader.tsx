@@ -1,66 +1,50 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import logoAsset from '@/assets/conectae-logo-branco.png.asset.json';
-import conectaeLogo from '@/assets/conectae-logo.png';
 
 const logoWhite = logoAsset.url;
 
 const NAV = [
-  { id: 'imoveis', label: 'Imóveis' },
-  { id: 'corretores', label: 'Para corretores' },
-  { id: 'noticias', label: 'Notícias' },
+  { id: 'imoveis', label: 'Comprar' },
+  { id: 'imoveis', label: 'Alugar' },
+  { id: 'noticias', label: 'Giro do Mercado' },
+  { id: 'corretores', label: 'Sou corretor' },
 ];
 
 export function HomeHeader() {
-  const [solid, setSolid] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > 40);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${
-        solid ? 'bg-background/95 backdrop-blur border-b shadow-sm' : 'bg-transparent'
-      }`}
-    >
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <Link to="/validacao" aria-label="Conectaê Imob">
-          <img src={solid ? conectaeLogo : logoWhite} alt="Conectaê Imob" className="h-9 w-auto object-contain" />
+    <header className="sticky top-0 z-50 bg-[hsl(var(--v2-navy))]">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-16 h-[72px] md:h-[88px] flex items-center justify-between gap-4">
+        <Link to="/validacao" aria-label="Conectaê Imob" className="shrink-0">
+          <img src={logoWhite} alt="Conectaê Imob" className="h-8 md:h-9 w-auto object-contain" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-7">
           {NAV.map((n) => (
             <button
-              key={n.id}
+              key={n.label}
               onClick={() => go(n.id)}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                solid ? 'text-foreground hover:text-primary' : 'text-white/90 hover:text-white'
-              }`}
+              className="text-sm font-semibold text-[hsl(var(--v2-on-dark))] hover:text-white transition-colors"
             >
               {n.label}
             </button>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant={solid ? 'outline' : 'secondary'}
-            size="sm"
-            className={solid ? '' : 'bg-white/15 text-white border-white/30 hover:bg-white/25'}
+        <div className="flex items-center gap-2 md:gap-3">
+          <Link
+            to="/auth"
+            className="hidden sm:inline-flex items-center rounded-full px-4 py-2 text-sm font-bold text-white/90 hover:text-white transition-colors"
           >
-            <Link to="/corretor">Sou corretor</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to="/auth">Entrar</Link>
-          </Button>
+            Entrar
+          </Link>
+          <Link
+            to="/cadastro"
+            className="inline-flex items-center rounded-full bg-[hsl(var(--v2-mint))] px-5 py-2.5 text-sm font-bold text-[hsl(var(--v2-navy))] hover:brightness-105 transition"
+          >
+            Anunciar grátis
+          </Link>
         </div>
       </div>
     </header>
