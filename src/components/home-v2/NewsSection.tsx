@@ -75,17 +75,16 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) return;
 
-    // Linha B começa deslocada para o fim, pois rola para a direita
-    const b0 = rowBRef.current;
-    if (b0) {
-      const half = b0.scrollWidth / 2;
-      b0.scrollLeft = half;
-    }
+    const section = document.getElementById('noticias');
+
+    // Posições acumuladas em JS — scrollLeft arredonda para inteiro,
+    // então incrementos fracionários precisam ser acumulados fora do DOM
+    let posA = section?.querySelectorAll<HTMLDivElement>('.news-marquee')[0]?.scrollLeft ?? 0;
+    let posB: number | null = null;
 
     let raf: number;
     const speed = 0.5; // px por frame — movimento suave e devagar
 
-    const section = document.getElementById('noticias');
     const tick = () => {
       if (!hoverRef.current) {
         const rows = section?.querySelectorAll<HTMLDivElement>('.news-marquee');
@@ -94,15 +93,18 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
         if (a) {
           const halfA = a.scrollWidth / 2;
           if (halfA > 0) {
-            a.scrollLeft += speed;
-            if (a.scrollLeft >= halfA) a.scrollLeft -= halfA;
+            posA += speed;
+            if (posA >= halfA) posA -= halfA;
+            a.scrollLeft = posA;
           }
         }
         if (b) {
           const halfB = b.scrollWidth / 2;
           if (halfB > 0) {
-            b.scrollLeft -= speed;
-            if (b.scrollLeft <= 0) b.scrollLeft += halfB;
+            if (posB === null) posB = halfB; // começa no fim: rola para a direita
+            posB -= speed;
+            if (posB <= 0) posB += halfB;
+            b.scrollLeft = posB;
           }
         }
       }
