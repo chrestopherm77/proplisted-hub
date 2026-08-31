@@ -1,7 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowRight, Newspaper } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Newspaper } from 'lucide-react';
 
 export interface NewsItem {
   id: string;
@@ -10,10 +11,133 @@ export interface NewsItem {
   created_at: string | null;
 }
 
-export function NewsSection({ news }: { news: NewsItem[] }) {
-  if (!news.length) return null;
+function NewsCard({ n }: { n: NewsItem }) {
   return (
-    <section id="noticias" className="py-20">
+    <Link
+      to="/conectaeimob/noticias"
+      className="group w-[300px] sm:w-[340px] shrink-0 rounded-xl overflow-hidden border bg-card hover:shadow-lg transition-shadow"
+    >
+      <div className="aspect-[16/9] bg-muted overflow-hidden">
+        {n.image_url && (
+          <img
+            src={n.image_url}
+            alt={n.title || 'Notícia do mercado imobiliário'}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        )}
+      </div>
+      <div className="p-4">
+        {n.created_at && (
+          <p className="text-xs text-muted-foreground">
+            {format(new Date(n.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          </p>
+        )}
+        <h3 className="font-semibold mt-1 line-clamp-2">{n.title}</h3>
+      </div>
+    </Link>
+  );
+}
+
+function MarqueeRow({
+  items,
+  direction,
+  registerRef,
+}: {
+  items: NewsItem[];
+  direction: 'left' | 'right';
+  registerRef: (el: HTMLDivElement | null) => void;
+}) {
+  // Duplica os itens para loop contínuo
+  const doubled = [...items, ...items];
+  return (
+    <div ref={registerRef} className="news-marquee" data-direction={direction}>
+      <div className="news-marquee-track py-1">
+        {doubled.map((n, i) => (
+          <NewsCard key={`${n.id}-${i}`} n={n} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function NewsSection({ news }: { news: NewsItem[] }) {
+  const rowARef = useRef<HTMLDivElement | null>(null);
+  const rowBRef = useRef<HTMLDivElement | null>(null);
+  const hoverRef = useRef(false);
+  const posARef = useRef(0);
+  const posBRef = useRef<number | null>(null);
+
+  const rowA = news.filter((_, i) => i % 2 === 0);
+  const rowB = news.filter((_, i) => i % 2 === 1);
+  const hasTwoRows = rowB.length > 0;
+
+  // Rolagem automática contínua: linha de cima para a esquerda, de baixo para a direita
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    const section = document.getElementById('noticias');
+
+    // Posições acumuladas em JS — scrollLeft arredonda para inteiro,
+    // então incrementos fracionários precisam ser acumulados fora do DOM
+    let raf: number;
+    const speed = 0.5; // px por frame — movimento suave e devagar
+
+    const tick = () => {
+      if (!hoverRef.current) {
+        const rows = section?.querySelectorAll<HTMLDivElement>('.news-marquee');
+        const a = rows?.[0] ?? null;
+        const b = rows?.[1] ?? null;
+        if (a) {
+          const halfA = a.scrollWidth / 2;
+          if (halfA > 0) {
+            posARef.current += speed;
+            if (posARef.current >= halfA) posARef.current -= halfA;
+            a.scrollLeft = posARef.current;
+          }
+        }
+        if (b) {
+          const halfB = b.scrollWidth / 2;
+          if (halfB > 0) {
+            if (posBRef.current === null) {
+              // começa o mais à direita possível: rola para a direita
+              posBRef.current = Math.min(halfB, b.scrollWidth - b.clientWidth);
+            }
+            posBRef.current -= speed;
+            if (posBRef.current <= 0) posBRef.current += halfB;
+            b.scrollLeft = posBRef.current;
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [news]);
+
+  // Setas: esquerda acelera o fluxo (cima→esquerda, baixo→direita); direita inverte
+  const nudge = (dir: 'left' | 'right') => {
+    const amount = 340;
+    const a = rowARef.current;
+    const b = rowBRef.current;
+    const deltaA = dir === 'left' ? amount : -amount;
+    const deltaB = -deltaA;
+    if (a) {
+      posARef.current = Math.max(0, posARef.current + deltaA);
+      a.scrollTo({ left: posARef.current, behavior: 'smooth' });
+    }
+    if (b) {
+      const base = posBRef.current ?? b.scrollLeft;
+      posBRef.current = Math.max(0, base + deltaB);
+      b.scrollTo({ left: posBRef.current, behavior: 'smooth' });
+    }
+  };
+
+  if (!news.length) return null;
+
+  return (
+    <section id="noticias" className="py-20 overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
@@ -25,42 +149,52 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
               O que está movimentando o mercado imobiliário nesta semana.
             </p>
           </div>
-          <Link
-            to="/conectaeimob/noticias"
-            className="text-sm font-medium text-primary inline-flex items-center gap-1 hover:underline"
-          >
-            Ver todas as notícias <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {news.slice(0, 6).map((n) => (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => nudge('right')}
+                aria-label="Notícias anteriores"
+                className="h-10 w-10 rounded-full border bg-card text-foreground flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => nudge('left')}
+                aria-label="Próximas notícias"
+                className="h-10 w-10 rounded-full border bg-card text-foreground flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
             <Link
-              key={n.id}
               to="/conectaeimob/noticias"
-              className="group rounded-xl overflow-hidden border bg-card hover:shadow-lg transition-shadow"
+              className="text-sm font-medium text-primary inline-flex items-center gap-1 hover:underline"
             >
-              <div className="aspect-[16/9] bg-muted overflow-hidden">
-                {n.image_url && (
-                  <img
-                    src={n.image_url}
-                    alt={n.title || 'Notícia do mercado imobiliário'}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                )}
-              </div>
-              <div className="p-4">
-                {n.created_at && (
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(n.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                )}
-                <h3 className="font-semibold mt-1 line-clamp-2">{n.title}</h3>
-              </div>
+              Ver todas as notícias <ArrowRight className="h-4 w-4" />
             </Link>
-          ))}
+          </div>
         </div>
+      </div>
+
+      <div
+        className="space-y-5"
+        onMouseEnter={() => (hoverRef.current = true)}
+        onMouseLeave={() => (hoverRef.current = false)}
+      >
+        <MarqueeRow
+          items={rowA}
+          direction="left"
+          registerRef={(el) => (rowARef.current = el)}
+        />
+        {hasTwoRows && (
+          <MarqueeRow
+            items={rowB}
+            direction="right"
+            registerRef={(el) => (rowBRef.current = el)}
+          />
+        )}
       </div>
     </section>
   );

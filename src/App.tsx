@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { PartnerProvider } from "./contexts/PartnerContext";
 import Index from "./pages/Index";
@@ -86,6 +86,16 @@ const RedirectHandler = () => {
   return null;
 };
 
+// Transição suave entre páginas (fade + leve subida) a cada troca de rota
+const PageTransition = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="page-transition">
+      {children}
+    </div>
+  );
+};
+
 const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
@@ -98,6 +108,7 @@ const App = () => {
         <AffiliateRefCapture />
         <PageViewTracker />
         <MegaApiAlertModal />
+        <PageTransition>
         <Routes>
           <Route path="/" element={<BrokerDomainGate><ConectaEImobPortal /></BrokerDomainGate>} />
           <Route path="/corretor" element={<Index />} />
@@ -202,6 +213,7 @@ const App = () => {
           <Route path="/:customSlug" element={<CustomLandingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </PageTransition>
         </PartnerProvider>
       </BrowserRouter>
     </TooltipProvider>
