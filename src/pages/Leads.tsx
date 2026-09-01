@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Coins, Filter, Loader2, Bell, Trash2, Save, Search } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Coins, Filter, Loader2, Bell, Trash2, Save, Search, Info } from 'lucide-react';
+
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
