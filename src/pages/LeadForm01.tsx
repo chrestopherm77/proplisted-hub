@@ -35,7 +35,7 @@ export default function LeadForm01() {
     document.getElementById("formulario")?.scrollIntoView({ behavior: "smooth" });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="site-v2 min-h-screen bg-background">
       {/* ===== Hero ===== */}
       <section
         className="relative overflow-hidden"
