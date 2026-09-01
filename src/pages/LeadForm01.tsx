@@ -45,7 +45,7 @@ export default function LeadForm01() {
           backgroundPosition: "center",
         }}
       >
-        <div className="relative mx-auto max-w-4xl px-5 pt-14 pb-16 md:pt-20 md:pb-24 text-center">
+        <div className="relative mx-auto max-w-4xl px-7 pt-14 pb-16 md:pt-20 md:pb-24 text-center">
           <img
             src={conectaeLogo}
             alt="Conectaê Imob"
@@ -57,7 +57,7 @@ export default function LeadForm01() {
             Ribeirão Preto e Região
           </span>
 
-          <h1 className="mt-6 text-[30px] leading-[1.12] md:text-5xl font-extrabold text-white">
+          <h1 className="mt-6 text-[27px] leading-[1.15] md:text-5xl font-extrabold text-white">
             Encontre o imóvel ideal em{" "}
             <span className="text-[hsl(var(--v2-mint))]">Ribeirão Preto</span> com quem realmente
             conhece a sua região
@@ -99,7 +99,7 @@ export default function LeadForm01() {
 
       {/* ===== Formulário ===== */}
       <section id="formulario" className="bg-gradient-to-b from-muted/40 to-background py-12 md:py-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 md:px-4">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight">
               Preencha e um corretor da sua região entra em contato
