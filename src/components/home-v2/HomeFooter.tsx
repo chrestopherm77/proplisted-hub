@@ -10,7 +10,7 @@ export function HomeFooter() {
       <div className="mx-auto max-w-[1440px] px-5 lg:px-16">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
-            <img src={logo} alt="Conectaê Imob" className="h-10 w-auto object-contain" />
+            <img src={logo} alt="Conectae Imob" className="h-10 w-auto object-contain" />
             <p className="mt-4 max-w-xs text-sm text-[hsl(var(--v2-meta))]">
               Portal de imóveis e hub de ferramentas para o corretor. Transparente, direto e
               pró-corretor.
@@ -40,7 +40,7 @@ export function HomeFooter() {
             items={[
               { label: 'Imóveis', to: '#imoveis' },
               { label: 'Giro do Mercado', to: '/conectaeimob/noticias' },
-              { label: 'Portal Conectaê', to: '/portal-conectae' },
+              { label: 'Portal Conectae', to: '/portal-conectae' },
             ]}
           />
           <FooterCol
@@ -61,7 +61,7 @@ export function HomeFooter() {
         </div>
 
         <div className="mt-10 border-t border-white/10 pt-6 text-xs text-[hsl(var(--v2-meta))]">
-          © {new Date().getFullYear()} Conectaê Imob. Todos os direitos reservados. · Anúncios
+          © {new Date().getFullYear()} Conectae Imob. Todos os direitos reservados. · Anúncios
           publicados por corretores parceiros com CRECI ativo.
         </div>
       </div>

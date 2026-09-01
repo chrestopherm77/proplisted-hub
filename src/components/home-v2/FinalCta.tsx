@@ -23,7 +23,7 @@ export function FinalCta() {
           <div className="v2-dark rounded-[24px] p-10">
             <h3 className="font-display text-2xl font-extrabold text-white">É corretor?</h3>
             <p className="mt-3 max-w-md text-[15px] text-[hsl(var(--v2-on-dark))]">
-              Anuncie grátis, receba leads qualificados e use as ferramentas da Conectaê para vender mais.
+              Anuncie grátis, receba leads qualificados e use as ferramentas da Conectae para vender mais.
             </p>
             <Link
               to="/cadastro"

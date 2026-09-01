@@ -16,8 +16,8 @@ export function HomeHeader() {
   return (
     <header className="sticky top-0 z-50 bg-[hsl(var(--v2-navy))]">
       <div className="mx-auto max-w-[1440px] px-5 lg:px-16 h-[72px] md:h-[88px] flex items-center justify-between gap-4">
-        <Link to="/validacao" aria-label="Conectaê Imob" className="shrink-0">
-          <img src={logoWhite} alt="Conectaê Imob" className="h-8 md:h-9 w-auto object-contain" />
+        <Link to="/validacao" aria-label="Conectae Imob" className="shrink-0">
+          <img src={logoWhite} alt="Conectae Imob" className="h-8 md:h-9 w-auto object-contain" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-7">

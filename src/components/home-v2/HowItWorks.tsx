@@ -1,5 +1,5 @@
 const CLIENT = [
-  { t: 'Busque o imóvel', d: 'Filtre por cidade, tipo e valor no portal da Conectaê.' },
+  { t: 'Busque o imóvel', d: 'Filtre por cidade, tipo e valor no portal da Conectae.' },
   { t: 'Demonstre interesse', d: 'Deixe seu nome e telefone no imóvel que gostou.' },
   { t: 'Um corretor te chama', d: 'O corretor responsável pelo anúncio entra em contato com você.' },
 ];
