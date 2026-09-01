@@ -10,7 +10,9 @@ import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, MapPin, Loader2, Download, Megaphone, Link as LinkIcon,
   MessageCircle, BedDouble, Bath, Car, Ruler, Home, Trash2, Pencil,
+  ExternalLink, Copy, ShieldCheck,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyGallery } from '@/components/portal/PropertyGallery';
 import { AmenitiesDisplay } from '@/components/portal/AmenitiesDisplay';
@@ -53,6 +55,7 @@ interface Property {
 
 interface OwnerProfile {
   name: string | null;
+  email: string | null;
   phone: string | null;
   creci_number: string | null;
   creci: string | null;
@@ -62,7 +65,7 @@ interface OwnerProfile {
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,6 +74,7 @@ const PropertyDetail = () => {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [creatingLink, setCreatingLink] = useState(false);
+  const [adminLinkOpen, setAdminLinkOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -92,7 +96,7 @@ const PropertyDetail = () => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('name, phone, creci_number, creci, creci_uf, company_name')
+      .select('name, email, phone, creci_number, creci, creci_uf, company_name')
       .eq('id', data.user_id)
       .maybeSingle();
     if (profile) setOwner(profile as OwnerProfile);
@@ -173,6 +177,15 @@ const PropertyDetail = () => {
     const url = `${window.location.origin}/imovel/${slug}`;
     await navigator.clipboard.writeText(url);
     toast({ title: 'Link copiado!', description: url });
+  };
+
+  const publicOwnerLink = property
+    ? `${window.location.origin}/imovel/${property.reference_code}`
+    : '';
+
+  const copyText = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    toast({ title: `${label} copiado!`, description: text });
   };
 
   const handleAnnounce = async () => {
@@ -363,6 +376,11 @@ const PropertyDetail = () => {
                 <Button variant="outline" className="w-full justify-start" onClick={handleCopyPublicLink}>
                   <LinkIcon className="h-4 w-4" /> Copiar link público
                 </Button>
+                {isAdmin && (
+                  <Button variant="secondary" className="w-full justify-start" onClick={() => setAdminLinkOpen(true)}>
+                    <ShieldCheck className="h-4 w-4" /> Link público + dados do corretor
+                  </Button>
+                )}
                 {isOwner && (
                   <Button variant="destructive" className="w-full justify-start" onClick={handleDelete}>
                     <Trash2 className="h-4 w-4" /> Excluir anúncio
@@ -374,6 +392,73 @@ const PropertyDetail = () => {
         </div>
         </div>
       </div>
+
+      <Dialog open={adminLinkOpen} onOpenChange={setAdminLinkOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Link público do imóvel</DialogTitle>
+            <DialogDescription>
+              Visível apenas para administradores. O link abaixo abre a página pública do imóvel com os dados do corretor que publicou.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Link público (Ref. {property.reference_code})</p>
+              <div className="flex gap-2">
+                <div className="flex-1 rounded-md border bg-muted/40 px-3 py-2 text-xs break-all">{publicOwnerLink}</div>
+                <Button size="icon" variant="outline" onClick={() => copyText(publicOwnerLink, 'Link')} aria-label="Copiar link">
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="outline" asChild aria-label="Abrir link">
+                  <a href={publicOwnerLink} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Corretor que publicou</p>
+              <div className="rounded-md border p-3 space-y-1.5 text-sm">
+                <p><span className="text-muted-foreground">Nome: </span>{owner?.name || '—'}</p>
+                {owner?.company_name && (
+                  <p><span className="text-muted-foreground">Empresa: </span>{owner.company_name}</p>
+                )}
+                <p><span className="text-muted-foreground">WhatsApp: </span>{owner?.phone || '—'}</p>
+                <p className="break-all"><span className="text-muted-foreground">E-mail: </span>{owner?.email || '—'}</p>
+                <p>
+                  <span className="text-muted-foreground">CRECI: </span>
+                  {(owner?.creci_number || owner?.creci)
+                    ? `${owner?.creci_number || owner?.creci}${owner?.creci_uf ? `/${owner.creci_uf}` : ''}`
+                    : '—'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {owner?.phone && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => copyText(owner.phone!, 'Telefone')}>
+                      <Copy className="h-4 w-4" /> Copiar telefone
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={buildWaLink(owner.phone, waMessage)} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="h-4 w-4" /> WhatsApp do corretor
+                      </a>
+                    </Button>
+                  </>
+                )}
+                {owner?.email && (
+                  <Button size="sm" variant="outline" onClick={() => copyText(owner.email!, 'E-mail')}>
+                    <Copy className="h-4 w-4" /> Copiar e-mail
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
