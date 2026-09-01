@@ -28,7 +28,7 @@ export function ForBrokers() {
         </span>
 
         <h2 className="mt-6 max-w-3xl font-display text-[28px] md:text-[42px] font-extrabold leading-tight text-white">
-          Do outro lado do anúncio, tem um corretor crescendo com a Conectaê
+          Do outro lado do anúncio, tem um corretor crescendo com a Conectae
         </h2>
         <p className="mt-4 max-w-2xl text-[15px] md:text-lg text-[hsl(var(--v2-on-dark))]">
           Mais de uma dezena de ferramentas em um só lugar para você captar, atender e fechar mais

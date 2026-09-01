@@ -12,7 +12,7 @@ const FAQ = [
   },
   {
     q: 'Como faço para anunciar o meu imóvel?',
-    a: 'Se você é proprietário, fale com um corretor parceiro da Conectaê pelo portal — ele cuida da publicação e da negociação.',
+    a: 'Se você é proprietário, fale com um corretor parceiro da Conectae pelo portal — ele cuida da publicação e da negociação.',
   },
   {
     q: 'Sou corretor, como participo da plataforma?',

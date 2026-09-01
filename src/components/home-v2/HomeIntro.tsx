@@ -17,12 +17,12 @@ export function HomeIntro() {
       <div className="container mx-auto px-4 relative z-10 text-center">
         <img
           src={conectaeLogo}
-          alt="Conectaê Imob"
+          alt="Conectae Imob"
           className="h-16 md:h-20 w-auto mx-auto mb-8 brightness-0 invert"
         />
 
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight max-w-4xl mx-auto">
-          Conectaê: a solução para quem busca o imóvel ideal e para o corretor que deseja anunciar
+          Conectae: a solução para quem busca o imóvel ideal e para o corretor que deseja anunciar
         </h1>
 
         <p className="mt-6 text-base md:text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">

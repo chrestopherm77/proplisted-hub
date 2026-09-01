@@ -66,7 +66,7 @@ export function PropertiesShowcase({
 
   return (
     <section id="imoveis" className="bg-[hsl(var(--v2-bg-1))] pb-20">
-      {/* Banner do Portal Conectaê */}
+      {/* Banner do Portal Conectae */}
       <div
         className="relative overflow-hidden"
         style={{
@@ -77,9 +77,9 @@ export function PropertiesShowcase({
       >
         <div className="mx-auto max-w-[1440px] px-5 lg:px-16 pt-16 pb-28 text-center">
           <Reveal>
-            <img src={logo} alt="Portal Conectaê Imob" className="mx-auto h-20 md:h-24 w-auto" />
+            <img src={logo} alt="Portal Conectae Imob" className="mx-auto h-20 md:h-24 w-auto" />
             <h2 className="mt-6 font-display text-[28px] md:text-[40px] font-extrabold text-white">
-              O portal de imóveis da <span className="text-[hsl(var(--v2-mint))]">Conectaê</span>
+              O portal de imóveis da <span className="text-[hsl(var(--v2-mint))]">Conectae</span>
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-[15px] md:text-base text-[hsl(var(--v2-on-dark))]">
               Imóveis de corretores parceiros verificados em todo o Brasil. Encontre o seu e
@@ -195,7 +195,7 @@ export function PropertiesShowcase({
                 Imóveis disponíveis
               </h3>
               <p className="mt-2 max-w-xl text-[15px] text-[hsl(var(--v2-body))]">
-                Anúncios de corretores parceiros da Conectaê em todo o Brasil.
+                Anúncios de corretores parceiros da Conectae em todo o Brasil.
               </p>
             </div>
             <button

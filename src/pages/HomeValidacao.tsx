@@ -16,9 +16,9 @@ import { PropertyDetail } from '@/components/portal-conectae/PropertyDetail';
 import { useFavorites } from '@/components/portal-conectae/useFavorites';
 import { EMPTY_FILTERS, FilterState } from '@/components/portal-conectae/types';
 
-const PAGE_TITLE = 'Conectaê Imob | Imóveis à venda e para alugar com corretores parceiros';
+const PAGE_TITLE = 'Conectae Imob | Imóveis à venda e para alugar com corretores parceiros';
 const PAGE_DESC =
-  'Encontre imóveis à venda e para alugar anunciados por corretores parceiros da Conectaê. Busque por cidade, tipo e valor e fale com quem entende do bairro.';
+  'Encontre imóveis à venda e para alugar anunciados por corretores parceiros da Conectae. Busque por cidade, tipo e valor e fale com quem entende do bairro.';
 
 export default function HomeValidacao() {
   const [params, setParams] = useSearchParams();
