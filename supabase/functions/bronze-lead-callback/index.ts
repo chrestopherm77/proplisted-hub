@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     return json({ success: true, duplicate: true, lead_id: existing[0].id, message: "Já existe lead ativo com este telefone" });
   }
 
-  const description = `Deseja ${INTENTION_PT[intention].toLowerCase()} — lead recuperado (formulário não finalizado)`;
+  const description = `Deseja ${INTENTION_PT[intention].toLowerCase()}`;
 
   const formData = {
     ...(partial?.form_data as Record<string, unknown> ?? {}),
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       name,
       phone,
       description,
-      price: 50,
+      price: 35,
       max_purchases: 3,
       is_active: true,
       whatsapp_confirmed: true,
@@ -132,5 +132,5 @@ Deno.serve(async (req) => {
     await sb.from("lp_partial_leads").update({ completed: true }).eq("id", partial.id as string);
   }
 
-  return json({ success: true, lead_id: inserted.id, tier: "BRONZE", price: 50 });
+  return json({ success: true, lead_id: inserted.id, tier: "BRONZE", price: 35 });
 });
