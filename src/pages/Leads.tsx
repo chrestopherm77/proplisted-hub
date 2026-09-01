@@ -560,7 +560,36 @@ export default function Leads() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 md:mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+              Leads Disponíveis
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Entenda a diferença entre os leads"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Info className="h-5 w-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 text-sm space-y-3">
+                  <p className="font-semibold text-foreground">Entenda a classificação dos leads</p>
+                  <div>
+                    <p className="font-medium">🥇 Lead Ouro</p>
+                    <p className="text-muted-foreground">Lead que passa por uma qualificação maior e com mais etapas.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">🥈 Lead Prata</p>
+                    <p className="text-muted-foreground">Lead que demonstrou interesse no imóvel de algum corretor, porém o corretor não adquiriu o lead a tempo.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">🥉 Lead Bronze</p>
+                    <p className="text-muted-foreground">Lead com menor custo e qualificação com menos perguntas. Ainda assim, é um lead que solicitou contato.</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </h1>
+
             <p className="text-sm md:text-base text-muted-foreground">
               Explore e compre leads qualificados para seu negócio imobiliário
             </p>
