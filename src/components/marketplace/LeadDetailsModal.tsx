@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Loader2, X, Users, Webhook } from "lucide-react";
+import { Coins, Loader2, X, Users, Info } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
 import { LeadPreferencesView } from "./LeadPreferencesView";
 import { splitFormDataIntoPreferences } from "@/lib/leadPreferences";
