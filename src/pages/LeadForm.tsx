@@ -123,7 +123,7 @@ export default function LeadForm() {
             </p>
           </div>
 
-          <LeadFormWizard contactAtEnd thankYouPath="/lp-obrigado" sourceLp="/lp" />
+          <LeadFormWizard contactAtEnd={false} thankYouPath="/lp-obrigado" sourceLp="/lp" />
         </div>
       </section>
     </div>
