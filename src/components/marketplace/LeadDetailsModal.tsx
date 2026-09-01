@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Loader2, X, Users, Webhook } from "lucide-react";
+import { Coins, Loader2, X, Users, Info } from "lucide-react";
 import { formatFormDataToSections } from "@/lib/formatFormData";
 import { LeadPreferencesView } from "./LeadPreferencesView";
 import { splitFormDataIntoPreferences } from "@/lib/leadPreferences";
@@ -303,9 +303,10 @@ function WebhookAnswersView({ formData }: { formData: Record<string, any> }) {
   return (
     <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
       <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
-        <Webhook className="h-4 w-4 text-primary" />
-        Respostas recebidas via Webhook
+        <Info className="h-4 w-4 text-primary" />
+        Informações do lead
       </h4>
+
       {intention && INTENTION_LABELS[intention] && (
         <div className="text-base">
           <span className="text-muted-foreground">Interesse:</span>{' '}

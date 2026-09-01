@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Coins, Filter, Loader2, Bell, Trash2, Save, Search } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Coins, Filter, Loader2, Bell, Trash2, Save, Search, Info } from 'lucide-react';
+
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadDetailsModal } from '@/components/marketplace/LeadDetailsModal';
@@ -487,8 +489,8 @@ export default function Leads() {
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const leadTier = lead.tier || 'GOLD';
-      // Classificações Prata/Bronze ficam visíveis somente para administradores
-      if (isAdmin !== true && leadTier !== 'GOLD') return false;
+      // Leads Prata ficam visíveis somente para administradores
+      if (isAdmin !== true && leadTier === 'SILVER') return false;
       if (isAdmin === true && filterTier !== 'all' && leadTier !== filterTier) return false;
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
@@ -560,7 +562,36 @@ export default function Leads() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 md:mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Leads Disponíveis</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+              Leads Disponíveis
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Entenda a diferença entre os leads"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Info className="h-5 w-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 text-sm space-y-3">
+                  <p className="font-semibold text-foreground">Entenda a classificação dos leads</p>
+                  <div>
+                    <p className="font-medium">🥇 Lead Ouro</p>
+                    <p className="text-muted-foreground">Lead que passa por uma qualificação maior e com mais etapas.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">🥈 Lead Prata</p>
+                    <p className="text-muted-foreground">Lead que demonstrou interesse no imóvel de algum corretor, porém o corretor não adquiriu o lead a tempo.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">🥉 Lead Bronze</p>
+                    <p className="text-muted-foreground">Lead com menor custo e qualificação com menos perguntas. Ainda assim, é um lead que solicitou contato.</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </h1>
+
             <p className="text-sm md:text-base text-muted-foreground">
               Explore e compre leads qualificados para seu negócio imobiliário
             </p>
@@ -731,7 +762,7 @@ export default function Leads() {
                         🔥 PROMOÇÃO
                       </Badge>
                     )}
-                    {isAdmin === true && (
+                    {(
                       <Badge className={`text-xs ${tierClasses[lead.tier || 'GOLD']}`}>
                         {tierLabels[lead.tier || 'GOLD']}
                       </Badge>
