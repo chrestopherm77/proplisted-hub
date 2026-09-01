@@ -489,8 +489,8 @@ export default function Leads() {
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const leadTier = lead.tier || 'GOLD';
-      // Classificações Prata/Bronze ficam visíveis somente para administradores
-      if (isAdmin !== true && leadTier !== 'GOLD') return false;
+      // Leads Prata ficam visíveis somente para administradores
+      if (isAdmin !== true && leadTier === 'SILVER') return false;
       if (isAdmin === true && filterTier !== 'all' && leadTier !== filterTier) return false;
       const formData = normalizeFormData(lead.form_data);
       const leadUF = extractUFFromFormData(formData);
@@ -762,7 +762,7 @@ export default function Leads() {
                         🔥 PROMOÇÃO
                       </Badge>
                     )}
-                    {isAdmin === true && (
+                    {(
                       <Badge className={`text-xs ${tierClasses[lead.tier || 'GOLD']}`}>
                         {tierLabels[lead.tier || 'GOLD']}
                       </Badge>
