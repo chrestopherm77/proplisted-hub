@@ -38,7 +38,7 @@ const renderContentWithLinks = (text: string) => {
   });
 };
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 10;
 
 const ConectaEImobNews = () => {
   const [posts, setPosts] = useState<NewsPost[]>([]);
@@ -74,8 +74,9 @@ const ConectaEImobNews = () => {
     fetchPosts(next, true);
   };
 
-  const featured = posts[0];
-  const rest = posts.slice(1);
+  const togglePost = (id: string) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   return (
     <div translate="no" lang="pt-BR" className="site-v2 min-h-screen bg-[hsl(var(--v2-bg-1))]">
@@ -112,7 +113,7 @@ const ConectaEImobNews = () => {
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1440px] px-5 py-12 md:py-16 lg:px-16">
+      <div className="mx-auto max-w-[820px] px-5 py-12 md:py-16 lg:px-16">
         {loading && posts.length === 0 ? (
           <div className="flex justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[hsl(var(--v2-blue))] border-t-transparent" />
@@ -124,94 +125,63 @@ const ConectaEImobNews = () => {
           </div>
         ) : (
           <>
-            {/* Destaque principal */}
-            {featured && (
-              <article className="group mb-10 overflow-hidden rounded-[22px] bg-white shadow-[var(--v2-shadow-card)] md:grid md:grid-cols-2">
-                {featured.image_url && (
-                  <div className="aspect-[16/10] overflow-hidden bg-[hsl(var(--v2-bg-3))] md:aspect-auto md:h-full">
-                    <img
-                      src={featured.image_url}
-                      alt={featured.title || 'Notícia em destaque'}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-                <div className="flex flex-col p-7 md:p-10">
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--v2-green))]">
-                    Destaque ·{' '}
-                    {format(new Date(featured.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </span>
-                  {featured.title && (
-                    <h2 className="mt-3 font-display text-[24px] font-extrabold leading-tight text-[hsl(var(--v2-ink))] md:text-[32px]">
-                      {featured.title}
-                    </h2>
-                  )}
-                  <p
-                    className={`mt-4 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[hsl(var(--v2-body))] ${
-                      !expanded[featured.id] ? 'line-clamp-6' : ''
-                    }`}
+            {/* Lista vertical de notícias */}
+            <div className="flex flex-col gap-6">
+              {posts.map((post) => {
+                const isOpen = !!expanded[post.id];
+                return (
+                  <article
+                    key={post.id}
+                    onClick={() => togglePost(post.id)}
+                    className="group cursor-pointer overflow-hidden rounded-[20px] bg-white shadow-[var(--v2-shadow-card)] transition-all hover:shadow-[0_18px_40px_hsl(var(--v2-navy)/0.12)]"
                   >
-                    {renderContentWithLinks(featured.content)}
-                  </p>
-                  {featured.content.length > 300 && (
-                    <button
-                      onClick={() => setExpanded((prev) => ({ ...prev, [featured.id]: !prev[featured.id] }))}
-                      className="mt-3 inline-flex w-fit items-center gap-1.5 text-sm font-bold text-[hsl(var(--v2-blue))]"
-                    >
-                      {expanded[featured.id] ? 'Ver menos' : 'Ler matéria completa'}
-                      <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-                    </button>
-                  )}
-                </div>
-              </article>
-            )}
-
-            {/* Grade de notícias */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {rest.map((post) => (
-                <article
-                  key={post.id}
-                  className="group flex flex-col overflow-hidden rounded-[18px] bg-white shadow-[var(--v2-shadow-card)] transition-shadow hover:shadow-[0_18px_40px_hsl(var(--v2-navy)/0.14)]"
-                >
-                  {post.image_url && (
-                    <div className="aspect-[16/9] overflow-hidden bg-[hsl(var(--v2-bg-3))]">
-                      <img
-                        src={post.image_url}
-                        alt={post.title || 'Notícia do mercado imobiliário'}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                        loading="lazy"
-                      />
+                    <div className="p-6 md:p-8">
+                      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+                        {post.image_url && (
+                          <div className="order-1 w-full shrink-0 overflow-hidden rounded-[14px] bg-[hsl(var(--v2-bg-3))] md:order-none md:w-[200px]">
+                            <img
+                              src={post.image_url}
+                              alt={post.title || 'Notícia do mercado imobiliário'}
+                              className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] md:aspect-square"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+                        <div className="flex flex-1 flex-col">
+                          <span className="text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--v2-green))]">
+                            {format(new Date(post.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                          </span>
+                          {post.title && (
+                            <h2 className="mt-2 font-display text-[19px] font-extrabold leading-snug text-[hsl(var(--v2-ink))] md:text-[22px]">
+                              {post.title}
+                            </h2>
+                          )}
+                          <div
+                            className={`mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[hsl(var(--v2-body))] ${
+                              isOpen ? '' : 'line-clamp-3'
+                            }`}
+                          >
+                            {renderContentWithLinks(post.content)}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePost(post.id);
+                            }}
+                            className="mt-4 inline-flex w-fit items-center gap-1.5 text-sm font-bold text-[hsl(var(--v2-blue))]"
+                          >
+                            {isOpen ? 'Ver menos' : 'Ler matéria completa'}
+                            <ArrowRight
+                              className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+                              strokeWidth={2.2}
+                            />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex flex-1 flex-col p-6">
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--v2-green))]">
-                      {format(new Date(post.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </span>
-                    {post.title && (
-                      <h3 className="mt-2 line-clamp-3 font-display text-[17px] font-bold text-[hsl(var(--v2-ink))]">
-                        {post.title}
-                      </h3>
-                    )}
-                    <p
-                      className={`mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-[hsl(var(--v2-body))] ${
-                        !expanded[post.id] ? 'line-clamp-4' : ''
-                      }`}
-                    >
-                      {renderContentWithLinks(post.content)}
-                    </p>
-                    {post.content.length > 200 && (
-                      <button
-                        onClick={() => setExpanded((prev) => ({ ...prev, [post.id]: !prev[post.id] }))}
-                        className="mt-auto inline-flex w-fit items-center gap-1.5 pt-4 text-sm font-bold text-[hsl(var(--v2-blue))]"
-                      >
-                        {expanded[post.id] ? 'Ver menos' : 'Ler matéria'}
-                        <ArrowUpRight className="h-4 w-4" strokeWidth={2.2} />
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
             {hasMore && (
