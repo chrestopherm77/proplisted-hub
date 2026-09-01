@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { LeadFormWizard } from "@/components/leadform/LeadFormWizard";
-import { BrandLogo } from "@/components/BrandLogo";
+import { CheckCircle2, Zap, Gift, ArrowDown } from "lucide-react";
+import conectaeLogo from "@/assets/conectae-logo.png";
+
+const HERO_BG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80";
 
 export default function LeadForm01() {
   useEffect(() => {
@@ -28,18 +31,29 @@ export default function LeadForm01() {
     };
   }, []);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-      <div className="container mx-auto px-4 py-8 sm:py-12">
-        <div className="text-center mb-8 sm:mb-12 flex flex-col items-center">
-          <BrandLogo size="lg" className="mb-2" />
-          <p className="text-muted-foreground">
-            Encontre o imóvel ideal para você
-          </p>
-        </div>
+  const scrollToForm = () =>
+    document.getElementById("formulario")?.scrollIntoView({ behavior: "smooth" });
 
-        <LeadFormWizard contactAtEnd thankYouPath="/lp-obrigado-01" sourceLp="/lp-01" />
-      </div>
-    </div>
-  );
-}
+  return (
+    <div className="min-h-screen bg-background">
+      {/* ===== Hero ===== */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(hsl(var(--v2-navy, 222 60% 14%) / 0.85), hsl(var(--v2-blue, 221 70% 35%) / 0.80)), url(${HERO_BG})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="relative mx-auto max-w-4xl px-5 pt-14 pb-16 md:pt-20 md:pb-24 text-center">
+          <img
+            src={conectaeLogo}
+            alt="Conectaê Imob"
+            className="h-14 md:h-20 w-auto mx-auto mb-8 brightness-0 invert"
+          />
+
+          <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--v2-mint,160```
+
+I should not guess the v2 tokens; better to check the token names. Actually simpler: use arbitrary colors from the design guide? Let me check index.css v2 tokens quickly. Actually the earlier rg showed `--v2-mint`, `--v2-blue`, `--v2-navy`, `--v2-on-dark` exist. I'll write the full file with those.
+
+Let me write the complete file properly.
