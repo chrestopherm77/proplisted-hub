@@ -201,9 +201,11 @@ const PropertySearches = () => {
   const handleBroadcastSearch = async (s: any) => {
     setBroadcastingId(s.id);
     try {
+      const cities = splitValues(s.city);
       const payload = {
         state: s.state || undefined,
-        city: s.city,
+        city: cities.join(', '),
+        cities,
         operationType: s.operation_type,
         propertyType: s.property_type,
         zone: s.zone || undefined,
@@ -404,7 +406,7 @@ const PropertySearches = () => {
     const clean = (phone as string).replace(/\D/g, '');
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
     const msg = encodeURIComponent(
-      `Olá! Vi sua procura de ${propertyTypeLabels[search.property_type] ?? search.property_type} em ${search.city} e gostaria de enviar uma oferta.`
+      `Olá! Vi sua procura de ${propertyTypeLabels[search.property_type] ?? search.property_type} em ${splitValues(search.city).join(', ')} e gostaria de enviar uma oferta.`
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
@@ -525,7 +527,7 @@ const PropertySearches = () => {
     setAlertPriceMax('');
   };
 
-  const uniqueCities = useMemo(() => [...new Set(searches.map((s) => s.city))].sort(), [searches]);
+  const uniqueCities = useMemo(() => [...new Set(searches.flatMap((s) => splitValues(s.city)))].sort(), [searches]);
   const uniqueStates = useMemo(() => [...new Set(searches.map((s) => s.state).filter(Boolean) as string[])].sort(), [searches]);
   const uniqueTypes = useMemo(() => [...new Set(searches.map((s) => s.property_type))].sort(), [searches]);
 
@@ -537,15 +539,16 @@ const PropertySearches = () => {
 
   const filtered = searches.filter((s) => {
     const term = textFilter.toLowerCase();
+    const cityText = splitValues(s.city).join(', ');
     const matchesText =
       !term ||
       (s.title ?? '').toLowerCase().includes(term) ||
       (s.headline ?? '').toLowerCase().includes(term) ||
       (s.neighborhood ?? '').toLowerCase().includes(term) ||
-      s.city.toLowerCase().includes(term) ||
+      cityText.toLowerCase().includes(term) ||
       (propertyTypeLabels[s.property_type] ?? '').toLowerCase().includes(term);
 
-    const matchesCity = !filterCity || s.city === filterCity;
+    const matchesCity = !filterCity || splitValues(s.city).includes(filterCity);
     const matchesState = !filterState || s.state === filterState;
     const matchesType = !filterType || s.property_type === filterType;
 
@@ -571,10 +574,10 @@ const PropertySearches = () => {
   const modalDetails: { label: string; value: string | null }[] = selectedSearch ? [
     { label: 'Operação', value: operationLabels[selectedSearch.operation_type] ?? selectedSearch.operation_type },
     { label: 'Tipo', value: propertyTypeLabels[selectedSearch.property_type] ?? selectedSearch.property_type },
-    ...(selectedSearch.house_type ? [{ label: 'Tipo de Casa', value: houseLabels[selectedSearch.house_type] ?? selectedSearch.house_type }] : []),
+    ...(selectedSearch.house_type ? [{ label: 'Tipo de Casa', value: formatHouseTypes(selectedSearch.house_type) }] : []),
     ...(selectedSearch.rural_type ? [{ label: 'Tipo Rural', value: ruralLabels[selectedSearch.rural_type] ?? selectedSearch.rural_type }] : []),
     { label: 'Estado', value: selectedSearch.state },
-    { label: 'Cidade', value: selectedSearch.city },
+    { label: 'Cidades', value: splitValues(selectedSearch.city).join(', ') },
     { label: 'Bairro/Condomínio', value: selectedSearch.neighborhood },
     { label: 'Zona', value: selectedSearch.zone },
     { label: 'Tamanho (m²)', value: selectedSearch.size_m2 },
@@ -798,7 +801,7 @@ const PropertySearches = () => {
                             )}
                             <div className="flex items-center gap-1 justify-end text-xs text-muted-foreground">
                               <MapPin className="h-3 w-3" />
-                              <span>{s.city}{s.state ? ` / ${s.state}` : ''}</span>
+                              <span>{splitValues(s.city).join(', ')}{s.state ? ` / ${s.state}` : ''}</span>
                             </div>
                             <div className="flex items-center gap-1 justify-end text-xs text-muted-foreground">
                               <MessageCircle className="h-3 w-3" />
@@ -904,7 +907,7 @@ const PropertySearches = () => {
                                 {s.headline || s.title || propertyTypeLabels[s.property_type]}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                {s.city}{s.state ? ` / ${s.state}` : ''}
+                                {splitValues(s.city).join(', ')}{s.state ? ` / ${s.state}` : ''}
                               </p>
                             </div>
                             {formatDisplayValue(s.value) && (
