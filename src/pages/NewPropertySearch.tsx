@@ -21,6 +21,7 @@ import { useIBGELocation } from '@/hooks/useIBGELocation';
 import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import { PlanLimitDialog } from '@/components/plans/PlanLimitDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 type PropertyType = 'CASA' | 'APARTAMENTO' | 'SALA_COMERCIAL' | 'LOTE' | 'RURAL' | 'PREDIO_COMERCIAL';
@@ -84,9 +85,9 @@ const NewPropertySearch = () => {
 
   // form fields
   const [state, setState] = useState('');
-  const [city, setCity] = useState('');
+  const [citiesSelected, setCitiesSelected] = useState<string[]>([]);
   const [operationType, setOperationType] = useState('');
-  const [houseType, setHouseType] = useState('');
+  const [houseTypes, setHouseTypes] = useState<string[]>([]);
   const [ruralType, setRuralType] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [zone, setZone] = useState('');
@@ -107,7 +108,7 @@ const NewPropertySearch = () => {
 
   const handleStateChange = (uf: string) => {
     setState(uf);
-    setCity('');
+    setCitiesSelected([]);
     if (uf) {
       fetchCities(uf);
     } else {
@@ -119,11 +120,13 @@ const NewPropertySearch = () => {
     if (!selected) return '';
     const parts: string[] = [];
     parts.push(selected.label);
-    if (selected.type === 'CASA' && houseType) parts.push(houseTypeLabels[houseType] || houseType);
+    if (selected.type === 'CASA' && houseTypes.length > 0) {
+      parts.push(houseTypes.map((type) => houseTypeLabels[type] || type).join(' e '));
+    }
     if (selected.type === 'RURAL' && ruralType) parts.push(ruralTypeLabels[ruralType] || ruralType);
     if (operationType) parts.push(opLabels[operationType] || operationType);
-    if (city && state) parts.push(`${city}/${state}`);
-    else if (city) parts.push(city);
+    if (citiesSelected.length > 0 && state) parts.push(`${citiesSelected.join(', ')}/${state}`);
+    else if (citiesSelected.length > 0) parts.push(citiesSelected.join(', '));
     else if (state) parts.push(state);
     if (neighborhood) parts.push(neighborhood);
     if (zone) parts.push(`Zona ${zone}`);
@@ -134,7 +137,7 @@ const NewPropertySearch = () => {
       else parts.push(`até R$ ${valueMax}`);
     }
     return parts.join(' - ');
-  }, [selected, houseType, ruralType, operationType, city, state, neighborhood, zone, bedrooms, valueMin, valueMax]);
+  }, [selected, houseTypes, ruralType, operationType, citiesSelected, state, neighborhood, zone, bedrooms, valueMin, valueMax]);
 
   const handleSubmit = async () => {
     if (!selected || !user) return;
@@ -142,16 +145,16 @@ const NewPropertySearch = () => {
       setShowLimitDialog(true);
       return;
     }
-    if (!city.trim()) {
-      toast({ title: 'Campo obrigatório', description: 'Informe a cidade.', variant: 'destructive' });
+    if (citiesSelected.length === 0) {
+      toast({ title: 'Campo obrigatório', description: 'Selecione pelo menos uma cidade.', variant: 'destructive' });
       return;
     }
     if (!operationType) {
       toast({ title: 'Campo obrigatório', description: 'Selecione o tipo de operação.', variant: 'destructive' });
       return;
     }
-    if (selected.type === 'CASA' && !houseType) {
-      toast({ title: 'Campo obrigatório', description: 'Selecione o tipo de casa.', variant: 'destructive' });
+    if (selected.type === 'CASA' && houseTypes.length === 0) {
+      toast({ title: 'Campo obrigatório', description: 'Selecione pelo menos um tipo de casa.', variant: 'destructive' });
       return;
     }
     if (selected.type === 'RURAL' && !ruralType) {
@@ -169,7 +172,7 @@ const NewPropertySearch = () => {
       property_type: selected.type,
       operation_type: operationType,
       state: state.trim() || null,
-      city: city.trim(),
+      city: citiesSelected.join(', '),
       neighborhood: neighborhood.trim() || null,
       zone: zone.trim() || null,
       size_m2: sizeM2.trim() || null,
@@ -181,7 +184,7 @@ const NewPropertySearch = () => {
       condominium: condominium.trim() || null,
       floor: floor.trim() || null,
       observation: observation.trim() || null,
-      house_type: selected.type === 'CASA' ? houseType : null,
+      house_type: selected.type === 'CASA' ? houseTypes.join(', ') : null,
       rural_type: selected.type === 'RURAL' ? ruralType : null,
     });
 
@@ -207,7 +210,8 @@ const NewPropertySearch = () => {
           body: {
             searchId: lastSearch.id,
             state: state.trim() || undefined,
-            city: city.trim(),
+            city: citiesSelected.join(', '),
+            cities: citiesSelected,
             property_type: selected.type,
             operation_type: operationType,
             value_min: valueMin.trim() || undefined,
@@ -227,7 +231,8 @@ const NewPropertySearch = () => {
       await supabase.functions.invoke('notify-group-new-search', {
         body: {
           state: state.trim() || undefined,
-          city: city.trim(),
+          city: citiesSelected.join(', '),
+          cities: citiesSelected,
           operationType: operationType,
           propertyType: selected.type,
           zone: zone.trim() || undefined,
