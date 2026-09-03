@@ -188,7 +188,7 @@ const PropertyDetail = () => {
     toast({ title: `${label} copiado!`, description: text });
   };
 
-  // Mensagem formatada para compartilhar o imóvel no WhatsApp (modelo de grupo)
+  // Mensagem formatada para compartilhar o imóvel no WhatsApp (apenas dados do imóvel)
   const waShareMessage = property
     ? (() => {
         const price = property.price_sale ?? property.price_rent;
@@ -208,16 +208,6 @@ const PropertyDetail = () => {
         if (property.area_total) lines.push(`📏 ${property.area_total}m² área total`);
         if (property.condo_fee) lines.push(`🏢 Condomínio: ${formatPrice(property.condo_fee)}`);
         if (property.iptu) lines.push(`🧾 IPTU: ${formatPrice(property.iptu)}`);
-        if (property.additional_info) {
-          lines.push('', property.additional_info);
-        }
-        if (owner?.name) {
-          lines.push('', `👤 *${owner.name}${owner.company_name ? ` — ${owner.company_name}` : ''}*`);
-          const creci = owner.creci_number || owner.creci;
-          if (creci) lines.push(`CRECI: ${creci}${owner.creci_uf ? `/${owner.creci_uf}` : ''}`);
-          if (owner.phone) lines.push(`📞 ${owner.phone}`);
-        }
-        lines.push('', `Ref.: ${property.reference_code}`);
         return lines.join('\n');
       })()
     : '';
