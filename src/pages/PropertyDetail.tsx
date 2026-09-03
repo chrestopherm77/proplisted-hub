@@ -514,7 +514,7 @@ const PropertyDetail = () => {
                   <Copy className="h-4 w-4" /> Copiar mensagem
                 </Button>
                 <Button size="sm" variant="default" asChild>
-                  <a href={`https://wa.me/?text=${encodeURIComponent(waShareMessage)}`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(waShareMessage)}`} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="h-4 w-4" /> Enviar no WhatsApp
                   </a>
                 </Button>
