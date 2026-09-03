@@ -451,7 +451,7 @@ const PropertySearches = () => {
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
     const typeName = propertyTypeLabels[offerModalSearch.property_type] ?? offerModalSearch.property_type;
     const msg = encodeURIComponent(
-      `Olá! Vi sua procura de ${typeName} em ${offerModalSearch.city} no Conectae Imob e tenho um imóvel que pode interessar.\n\n🔗 Link do anúncio: ${offerLink.trim()}\n\nPodemos conversar?`
+      `Olá! Vi sua procura de ${typeName} em ${splitValues(offerModalSearch.city).join(', ')} no Conectae Imob e tenho um imóvel que pode interessar.\n\n🔗 Link do anúncio: ${offerLink.trim()}\n\nPodemos conversar?`
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
