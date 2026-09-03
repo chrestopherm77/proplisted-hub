@@ -94,7 +94,7 @@ interface OfferRecord {
 
 interface SavedAlert {
   id: string;
-  filters: Record<string, string>;
+  filters: Record<string, string | string[]>;
   created_at: string | null;
 }
 
@@ -352,7 +352,7 @@ const PropertySearches = () => {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    setSavedAlerts((data ?? []).map(a => ({ ...a, filters: (a.filters as Record<string, string>) ?? {} })));
+    setSavedAlerts((data ?? []).map(a => ({ ...a, filters: (a.filters as Record<string, string | string[]>) ?? {} })));
   };
 
   const handleDeleteAlert = async (alertId: string) => {
@@ -469,9 +469,9 @@ const PropertySearches = () => {
     if (!user) return;
     setSavingAlert(true);
 
-    const filters: Record<string, string> = {};
+    const filters: Record<string, string | string[]> = {};
     if (alertState) filters.state = alertState;
-    if (alertCity) filters.city = alertCity;
+    if (alertCity) filters.cities = [alertCity];
     if (alertType) filters.property_type = alertType;
     if (alertObjective) filters.operation_type = alertObjective;
     if (alertNeighborhood) filters.neighborhood = alertNeighborhood;
@@ -588,16 +588,17 @@ const PropertySearches = () => {
     { label: 'Data de Criação', value: format(new Date(selectedSearch.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
   ] : [];
 
-  const buildAlertDescription = (filters: Record<string, string>): string => {
+  const buildAlertDescription = (filters: Record<string, string | string[]>): string => {
     const parts: string[] = [];
-    if (filters.state) parts.push(filters.state);
-    if (filters.city) parts.push(filters.city);
-    if (filters.property_type) parts.push(propertyTypeLabels[filters.property_type] ?? filters.property_type);
-    if (filters.operation_type) parts.push(operationLabels[filters.operation_type] ?? filters.operation_type);
-    if (filters.zone) parts.push(`Zona ${filters.zone}`);
-    if (filters.neighborhood) parts.push(filters.neighborhood);
-    if (filters.priceMin) parts.push(`Min ${formatDisplayValue(filters.priceMin)}`);
-    if (filters.priceMax) parts.push(`Max ${formatDisplayValue(filters.priceMax)}`);
+    if (typeof filters.state === 'string') parts.push(filters.state);
+    const alertCities = Array.isArray(filters.cities) ? filters.cities : typeof filters.city === 'string' ? [filters.city] : [];
+    if (alertCities.length > 0) parts.push(alertCities.join(', '));
+    if (typeof filters.property_type === 'string') parts.push(propertyTypeLabels[filters.property_type] ?? filters.property_type);
+    if (typeof filters.operation_type === 'string') parts.push(operationLabels[filters.operation_type] ?? filters.operation_type);
+    if (typeof filters.zone === 'string') parts.push(`Zona ${filters.zone}`);
+    if (typeof filters.neighborhood === 'string') parts.push(filters.neighborhood);
+    if (typeof filters.priceMin === 'string') parts.push(`Min ${formatDisplayValue(filters.priceMin)}`);
+    if (typeof filters.priceMax === 'string') parts.push(`Max ${formatDisplayValue(filters.priceMax)}`);
     return parts.join(' · ') || 'Sem filtros';
   };
 
@@ -1028,7 +1029,7 @@ const PropertySearches = () => {
               <DialogHeader>
                 <DialogTitle>Enviar Oferta</DialogTitle>
                 <DialogDescription>
-                  {offerModalSearch.headline || offerModalSearch.title || `${propertyTypeLabels[offerModalSearch.property_type]} em ${offerModalSearch.city}`}
+                  {offerModalSearch.headline || offerModalSearch.title || `${propertyTypeLabels[offerModalSearch.property_type]} em ${splitValues(offerModalSearch.city).join(', ')}`}
                 </DialogDescription>
               </DialogHeader>
 
