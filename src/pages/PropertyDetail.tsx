@@ -490,6 +490,25 @@ const PropertyDetail = () => {
                 )}
               </div>
             </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Mensagem formatada para WhatsApp</p>
+              <div className="rounded-md border bg-muted/40 p-3 max-h-56 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-xs font-sans">{waShareMessage}</pre>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => copyText(waShareMessage, 'Mensagem')}>
+                  <Copy className="h-4 w-4" /> Copiar mensagem
+                </Button>
+                <Button size="sm" variant="default" asChild>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(waShareMessage)}`} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="h-4 w-4" /> Enviar no WhatsApp
+                  </a>
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
