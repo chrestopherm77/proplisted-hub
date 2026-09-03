@@ -110,7 +110,7 @@ const PublicPropertyLP = () => {
     !!(amenitiesNorm.condo && Object.keys(amenitiesNorm.condo).length) ||
     !!(amenitiesNorm.property && Object.keys(amenitiesNorm.property).length);
   const price = property.operation_type === 'RENT' ? property.price_rent : property.price_sale;
-  const waMessage = `Olá! Tenho interesse no imóvel Ref: ${property.reference_code}`;
+  const waMessage = `Olá tenho interesse no imovel ID ${property.reference_code} que está na conectae`;
 
   const primaryColor = property.brand?.primary_color || null;
   const secondaryColor = property.brand?.secondary_color || null;
