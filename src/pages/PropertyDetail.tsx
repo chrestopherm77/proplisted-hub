@@ -188,6 +188,40 @@ const PropertyDetail = () => {
     toast({ title: `${label} copiado!`, description: text });
   };
 
+  // Mensagem formatada para compartilhar o imóvel no WhatsApp (modelo de grupo)
+  const waShareMessage = property
+    ? (() => {
+        const price = property.price_sale ?? property.price_rent;
+        const titleLine = property.title || `${getPropertyTypeLabel(property.property_type)} ${getOperationLabel(property.operation_type)}`;
+        const locationParts = [property.neighborhood, property.city, property.state].filter(Boolean).join(' - ');
+        const lines: string[] = [
+          `*${titleLine}*`,
+          publicOwnerLink,
+          '',
+        ];
+        if (price) lines.push(`💰 *${formatPrice(price)}*`);
+        lines.push(`📍 ${getPropertyTypeLabel(property.property_type)} ${getOperationLabel(property.operation_type).toLowerCase()} ${locationParts}`);
+        if (property.bedrooms != null) lines.push(`🛏️ ${property.bedrooms} quartos${property.suites ? `, ${property.suites} suíte${property.suites > 1 ? 's' : ''}` : ''}`);
+        if (property.bathrooms != null) lines.push(`🚿 ${property.bathrooms} banheiro${property.bathrooms > 1 ? 's' : ''}`);
+        if (property.parking_spots != null) lines.push(`🚗 ${property.parking_spots} vaga${property.parking_spots > 1 ? 's' : ''}`);
+        if (property.area_useful) lines.push(`📐 ${property.area_useful}m² área útil`);
+        if (property.area_total) lines.push(`📏 ${property.area_total}m² área total`);
+        if (property.condo_fee) lines.push(`🏢 Condomínio: ${formatPrice(property.condo_fee)}`);
+        if (property.iptu) lines.push(`🧾 IPTU: ${formatPrice(property.iptu)}`);
+        if (property.additional_info) {
+          lines.push('', property.additional_info);
+        }
+        if (owner?.name) {
+          lines.push('', `👤 *${owner.name}${owner.company_name ? ` — ${owner.company_name}` : ''}*`);
+          const creci = owner.creci_number || owner.creci;
+          if (creci) lines.push(`CRECI: ${creci}${owner.creci_uf ? `/${owner.creci_uf}` : ''}`);
+          if (owner.phone) lines.push(`📞 ${owner.phone}`);
+        }
+        lines.push('', `Ref.: ${property.reference_code}`);
+        return lines.join('\n');
+      })()
+    : '';
+
   const handleAnnounce = async () => {
     if (!property || !user) return;
     if (!property.accept_affiliation) {
