@@ -117,76 +117,13 @@ const PublicPropertyLP = () => {
   const brandName = property.brand?.company_name || null;
   const brandLogo = property.brand?.logo_url || null;
 
-  const accentBg = primaryColor || 'hsl(var(--primary))';
-
   return (
     <div
       className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: 'url(/images/portal-bg.jpg)' }}
     >
-      <header
-        className="sticky top-0 z-40 backdrop-blur-md bg-card/85 border-b-2 shadow-sm"
-        style={primaryColor ? { borderBottomColor: primaryColor } : undefined}
-      >
-        <div className="container mx-auto px-4 py-3 md:py-4 max-w-6xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 md:gap-4 min-w-0">
-            {brandLogo ? (
-              <div className="bg-white rounded-xl p-2 shadow-md ring-1 ring-border/50 shrink-0">
-                <img
-                  src={brandLogo}
-                  alt={brandName || 'Logo'}
-                  className="h-12 md:h-16 w-auto max-w-[180px] object-contain"
-                />
-              </div>
-            ) : (
-              <div
-                className="h-12 md:h-16 w-12 md:w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"
-              >
-                <Building2 className="h-7 w-7 md:h-9 md:w-9" style={primaryColor ? { color: primaryColor } : undefined} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="font-bold text-lg md:text-2xl leading-tight truncate">
-                {brandName || 'Imóvel'}
-              </p>
-              <p className="text-[11px] md:text-xs text-muted-foreground">Apresenta este imóvel</p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="text-xs md:text-sm shrink-0">
-            Ref: {property.reference_code}
-          </Badge>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
-        {/* Hero da marca */}
-        <section className="mb-6">
-          <div className="bg-card/90 backdrop-blur-md rounded-2xl shadow-xl p-6 md:p-10 text-center border border-border/50">
-            {brandLogo ? (
-              <div className="inline-block bg-white rounded-2xl p-3 md:p-4 shadow-md ring-1 ring-border/50 mb-4">
-                <img
-                  src={brandLogo}
-                  alt={brandName || 'Logo'}
-                  className="mx-auto h-20 md:h-28 w-auto max-w-[280px] object-contain"
-                />
-              </div>
-            ) : (
-              <div className="mx-auto h-20 w-20 md:h-28 md:w-28 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Building2 className="h-12 w-12 md:h-16 md:w-16" style={primaryColor ? { color: primaryColor } : undefined} />
-              </div>
-            )}
-            {brandName && (
-              <h2 className="text-xl md:text-3xl font-bold tracking-tight">{brandName}</h2>
-            )}
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
-              Apresenta este imóvel exclusivo para você
-            </p>
-            <div
-              className="h-1 w-20 mx-auto mt-4 rounded-full"
-              style={{ backgroundColor: accentBg }}
-            />
-          </div>
-        </section>
+
 
         <div className="bg-background/85 backdrop-blur-sm rounded-2xl shadow-lg p-3 sm:p-4 border border-border/50">
           <PropertyGallery photos={photos} />
