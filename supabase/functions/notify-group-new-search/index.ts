@@ -10,6 +10,7 @@ const corsHeaders = {
 const BodySchema = z.object({
   state: z.string().optional(),
   city: z.string().min(1),
+  cities: z.array(z.string().min(1)).optional(),
   operationType: z.string().min(1),
   propertyType: z.string().min(1),
   zone: z.string().optional(),
@@ -69,7 +70,9 @@ serve(async (req) => {
       });
     }
 
-    const { state, city, operationType, propertyType, zone, neighborhood, valueMax } = parsed.data;
+    const { state, city, cities: requestedCities, operationType, propertyType, zone, neighborhood, valueMax } = parsed.data;
+    const cities = [...new Set((requestedCities?.length ? requestedCities : city.split(',')).map((item) => item.trim()).filter(Boolean))];
+    const cityLabel = cities.join(', ');
 
     const MEGA_API_TOKEN = (Deno.env.get("MEGA_API_TOKEN_MJJV") || Deno.env.get("MEGA_API_TOKEN"));
     if (!MEGA_API_TOKEN) {
@@ -84,7 +87,7 @@ serve(async (req) => {
 
     let message = `*Nova Procura Cadastrada! 🚀*\n\n`;
     message += `*Estado:* ${state || 'Não informado'}\n`;
-    message += `*Cidade:* ${city}\n`;
+    message += `*Cidades:* ${cityLabel}\n`;
     message += `*Operação:* ${opName}\n`;
     message += `*Tipo:* ${typeName}\n`;
     message += `*Zona:* ${zone || 'Não informado'}\n`;
@@ -92,21 +95,25 @@ serve(async (req) => {
     message += `*Valor Máximo:* ${valueMax ? `R$ ${valueMax}` : 'Não informado'}\n`;
     message += `\nHá um parceiro aguardando por imóveis com este perfil. Clique abaixo para ver o contato e enviar oportunidades: https://www.conectaeimob.com.br/property-searches`;
 
-    // Buscar grupos por cidade/UF (roteamento dinâmico)
+    // Buscar grupos por todas as cidades/UF (roteamento dinâmico)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-    const { data: groupsData, error: groupsError } = await supabase
-      .rpc("get_groups_for_city", { p_city: city, p_uf: state || "" });
-
-    if (groupsError) {
-      console.error("Error fetching groups:", groupsError);
+    const groupIds = new Set<string>();
+    for (const selectedCity of cities) {
+      const { data: groupsData, error: groupsError } = await supabase
+        .rpc("get_groups_for_city", { p_city: selectedCity, p_uf: state || "" });
+      if (groupsError) {
+        console.error(`Error fetching groups for ${selectedCity}:`, groupsError);
+        continue;
+      }
+      for (const groupId of ((groupsData as string[] | null) || [])) groupIds.add(groupId);
     }
-    const WHATSAPP_GROUP_IDS: string[] = (groupsData as string[] | null) || [];
+    const WHATSAPP_GROUP_IDS = [...groupIds];
 
     if (WHATSAPP_GROUP_IDS.length === 0) {
-      console.log(`Cidade "${city}/${state}" sem grupo mapeado — disparo ignorado`);
+      console.log(`Cidades "${cityLabel}/${state}" sem grupo mapeado — disparo ignorado`);
       return new Response(JSON.stringify({ success: true, skipped: true, reason: "no_groups_for_city" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -114,7 +121,7 @@ serve(async (req) => {
 
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-MJjV24kQIXz/text";
 
-    console.log(`Sending group notification for new search in ${city}/${state} to ${WHATSAPP_GROUP_IDS.length} groups`);
+    console.log(`Sending group notification for new search in ${cityLabel}/${state} to ${WHATSAPP_GROUP_IDS.length} groups`);
     const results: Record<string, boolean> = {};
     for (const groupId of WHATSAPP_GROUP_IDS) {
       const megaBody = { messageData: { to: groupId, text: message } };

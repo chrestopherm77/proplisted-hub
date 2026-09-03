@@ -34,6 +34,12 @@ const ruralLabels: Record<string, string> = {
   CHACARA: 'Chácara',
 };
 
+const splitValues = (value: string | null | undefined): string[] =>
+  (value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+
+const formatHouseTypes = (value: string | null): string =>
+  splitValues(value).map((item) => houseLabels[item] ?? item).join(' e ');
+
 interface PropertySearch {
   id: string;
   user_id: string;
@@ -145,7 +151,7 @@ const PropertySearchDetail = () => {
     const clean = (phone as string).replace(/\D/g, '');
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
     const msg = encodeURIComponent(
-      `Olá! Vi sua procura de ${typeLabels[search.property_type] ?? search.property_type} em ${search.city} e gostaria de enviar uma oferta.`
+      `Olá! Vi sua procura de ${typeLabels[search.property_type] ?? search.property_type} em ${splitValues(search.city).join(', ')} e gostaria de enviar uma oferta.`
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
@@ -182,10 +188,10 @@ const PropertySearchDetail = () => {
   const details: { label: string; value: string | null }[] = [
     { label: 'Operação', value: opLabels[search.operation_type] ?? search.operation_type },
     { label: 'Tipo', value: typeLabels[search.property_type] ?? search.property_type },
-    ...(search.house_type ? [{ label: 'Tipo de Casa', value: houseLabels[search.house_type] ?? search.house_type }] : []),
+    ...(search.house_type ? [{ label: 'Tipo de Casa', value: formatHouseTypes(search.house_type) }] : []),
     ...(search.rural_type ? [{ label: 'Tipo Rural', value: ruralLabels[search.rural_type] ?? search.rural_type }] : []),
     { label: 'Estado', value: search.state },
-    { label: 'Cidade', value: search.city },
+    { label: 'Cidades', value: splitValues(search.city).join(', ') },
     { label: 'Bairro/Condomínio', value: search.neighborhood },
     { label: 'Zona', value: search.zone },
     { label: 'Tamanho (m²)', value: search.size_m2 },

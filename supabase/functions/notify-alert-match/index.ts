@@ -125,23 +125,30 @@ serve(async (req) => {
     let matched = 0;
     const megaUrl = "https://apinocode01.megaapi.com.br/rest/sendMessage/megacode-Mj46Nd4U5tP/text";
 
+    const searchCities = data.city.split(',').map((item) => item.trim()).filter(Boolean);
+
     for (const alert of alerts) {
       if (alert.user_id === data.creatorUserId) continue;
 
-      const f = alert.filters as Record<string, string>;
+      const f = alert.filters as Record<string, string | string[]>;
       if (!f) continue;
 
       if (f.state && data.state && f.state !== data.state) continue;
-      if (f.city && f.city !== data.city) continue;
+      const alertCities = Array.isArray(f.cities)
+        ? f.cities
+        : f.city
+          ? String(f.city).split(',').map((item) => item.trim()).filter(Boolean)
+          : [];
+      if (alertCities.length > 0 && !searchCities.some((city) => alertCities.includes(city))) continue;
       if (f.property_type && f.property_type !== data.property_type) continue;
       if (f.operation_type && f.operation_type !== data.operation_type) continue;
 
-      if (f.priceMin) {
+      if (typeof f.priceMin === 'string') {
         const alertMin = parseNum(f.priceMin);
         const searchMax = parseNum(data.value_max);
         if (alertMin > 0 && searchMax > 0 && searchMax < alertMin) continue;
       }
-      if (f.priceMax) {
+      if (typeof f.priceMax === 'string') {
         const alertMax = parseNum(f.priceMax);
         const searchMin = parseNum(data.value_min);
         if (alertMax > 0 && searchMin > 0 && searchMin > alertMax) continue;

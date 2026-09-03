@@ -102,13 +102,14 @@ serve(async (req) => {
       CASA: 'Casa', APARTAMENTO: 'Apartamento', SALA_COMERCIAL: 'Sala Comercial',
       LOTE: 'Lote', RURAL: 'Rural', PREDIO_COMERCIAL: 'Prédio Comercial',
     };
+    const cities = search.city.split(',').map((item: string) => item.trim()).filter(Boolean).join(', ');
 
     const typeName = typeLabels[search.property_type] ?? search.property_type;
     let message = `*🏠 Nova Oferta Recebida!*\n\nOlá${profile.name ? `, ${profile.name}` : ''}! O corretor *${offerUserName}*`;
     if (offerUserPhone) {
       message += ` (📞 ${offerUserPhone})`;
     }
-    message += ` enviou uma oferta na sua procura de *${typeName}* em *${search.city}*.`;
+    message += ` enviou uma oferta na sua procura de *${typeName}* em *${cities}*.`;
 
     if (offerLink) {
       message += `\n\n🔗 Link do anúncio: ${offerLink}`;

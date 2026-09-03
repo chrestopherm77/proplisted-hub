@@ -94,7 +94,7 @@ interface OfferRecord {
 
 interface SavedAlert {
   id: string;
-  filters: Record<string, string>;
+  filters: Record<string, string | string[]>;
   created_at: string | null;
 }
 
@@ -122,6 +122,12 @@ const ruralLabels: Record<string, string> = {
 };
 
 const zoneOptions = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
+
+const splitValues = (value: string | null | undefined): string[] =>
+  (value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+
+const formatHouseTypes = (value: string | null): string =>
+  splitValues(value).map((item) => houseLabels[item] ?? item).join(' e ');
 
 const propertyTypeIcons: Record<string, React.ReactNode> = {
   CASA: <Home className="h-5 w-5" />,
@@ -158,7 +164,7 @@ const formatCurrencyInput = (value: string): string => {
 
 const buildDescription = (s: PropertySearch): string => {
   const parts: string[] = [];
-  if (s.house_type) parts.push(houseLabels[s.house_type] ?? s.house_type);
+  if (s.house_type) parts.push(formatHouseTypes(s.house_type));
   if (s.rural_type) parts.push(ruralLabels[s.rural_type] ?? s.rural_type);
   if (s.neighborhood) parts.push(`Bairro: ${s.neighborhood}`);
   if (s.zone) parts.push(`Zona: ${s.zone}`);
@@ -195,9 +201,11 @@ const PropertySearches = () => {
   const handleBroadcastSearch = async (s: any) => {
     setBroadcastingId(s.id);
     try {
+      const cities = splitValues(s.city);
       const payload = {
         state: s.state || undefined,
-        city: s.city,
+        city: cities.join(', '),
+        cities,
         operationType: s.operation_type,
         propertyType: s.property_type,
         zone: s.zone || undefined,
@@ -344,7 +352,7 @@ const PropertySearches = () => {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    setSavedAlerts((data ?? []).map(a => ({ ...a, filters: (a.filters as Record<string, string>) ?? {} })));
+    setSavedAlerts((data ?? []).map(a => ({ ...a, filters: (a.filters as Record<string, string | string[]>) ?? {} })));
   };
 
   const handleDeleteAlert = async (alertId: string) => {
@@ -398,7 +406,7 @@ const PropertySearches = () => {
     const clean = (phone as string).replace(/\D/g, '');
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
     const msg = encodeURIComponent(
-      `Olá! Vi sua procura de ${propertyTypeLabels[search.property_type] ?? search.property_type} em ${search.city} e gostaria de enviar uma oferta.`
+      `Olá! Vi sua procura de ${propertyTypeLabels[search.property_type] ?? search.property_type} em ${splitValues(search.city).join(', ')} e gostaria de enviar uma oferta.`
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
@@ -443,7 +451,7 @@ const PropertySearches = () => {
     const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
     const typeName = propertyTypeLabels[offerModalSearch.property_type] ?? offerModalSearch.property_type;
     const msg = encodeURIComponent(
-      `Olá! Vi sua procura de ${typeName} em ${offerModalSearch.city} no Conectae Imob e tenho um imóvel que pode interessar.\n\n🔗 Link do anúncio: ${offerLink.trim()}\n\nPodemos conversar?`
+      `Olá! Vi sua procura de ${typeName} em ${splitValues(offerModalSearch.city).join(', ')} no Conectae Imob e tenho um imóvel que pode interessar.\n\n🔗 Link do anúncio: ${offerLink.trim()}\n\nPodemos conversar?`
     );
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
 
@@ -461,9 +469,9 @@ const PropertySearches = () => {
     if (!user) return;
     setSavingAlert(true);
 
-    const filters: Record<string, string> = {};
+    const filters: Record<string, string | string[]> = {};
     if (alertState) filters.state = alertState;
-    if (alertCity) filters.city = alertCity;
+    if (alertCity) filters.cities = [alertCity];
     if (alertType) filters.property_type = alertType;
     if (alertObjective) filters.operation_type = alertObjective;
     if (alertNeighborhood) filters.neighborhood = alertNeighborhood;
@@ -519,7 +527,7 @@ const PropertySearches = () => {
     setAlertPriceMax('');
   };
 
-  const uniqueCities = useMemo(() => [...new Set(searches.map((s) => s.city))].sort(), [searches]);
+  const uniqueCities = useMemo(() => [...new Set(searches.flatMap((s) => splitValues(s.city)))].sort(), [searches]);
   const uniqueStates = useMemo(() => [...new Set(searches.map((s) => s.state).filter(Boolean) as string[])].sort(), [searches]);
   const uniqueTypes = useMemo(() => [...new Set(searches.map((s) => s.property_type))].sort(), [searches]);
 
@@ -531,15 +539,16 @@ const PropertySearches = () => {
 
   const filtered = searches.filter((s) => {
     const term = textFilter.toLowerCase();
+    const cityText = splitValues(s.city).join(', ');
     const matchesText =
       !term ||
       (s.title ?? '').toLowerCase().includes(term) ||
       (s.headline ?? '').toLowerCase().includes(term) ||
       (s.neighborhood ?? '').toLowerCase().includes(term) ||
-      s.city.toLowerCase().includes(term) ||
+      cityText.toLowerCase().includes(term) ||
       (propertyTypeLabels[s.property_type] ?? '').toLowerCase().includes(term);
 
-    const matchesCity = !filterCity || s.city === filterCity;
+    const matchesCity = !filterCity || splitValues(s.city).includes(filterCity);
     const matchesState = !filterState || s.state === filterState;
     const matchesType = !filterType || s.property_type === filterType;
 
@@ -565,10 +574,10 @@ const PropertySearches = () => {
   const modalDetails: { label: string; value: string | null }[] = selectedSearch ? [
     { label: 'Operação', value: operationLabels[selectedSearch.operation_type] ?? selectedSearch.operation_type },
     { label: 'Tipo', value: propertyTypeLabels[selectedSearch.property_type] ?? selectedSearch.property_type },
-    ...(selectedSearch.house_type ? [{ label: 'Tipo de Casa', value: houseLabels[selectedSearch.house_type] ?? selectedSearch.house_type }] : []),
+    ...(selectedSearch.house_type ? [{ label: 'Tipo de Casa', value: formatHouseTypes(selectedSearch.house_type) }] : []),
     ...(selectedSearch.rural_type ? [{ label: 'Tipo Rural', value: ruralLabels[selectedSearch.rural_type] ?? selectedSearch.rural_type }] : []),
     { label: 'Estado', value: selectedSearch.state },
-    { label: 'Cidade', value: selectedSearch.city },
+    { label: 'Cidades', value: splitValues(selectedSearch.city).join(', ') },
     { label: 'Bairro/Condomínio', value: selectedSearch.neighborhood },
     { label: 'Zona', value: selectedSearch.zone },
     { label: 'Tamanho (m²)', value: selectedSearch.size_m2 },
@@ -579,16 +588,17 @@ const PropertySearches = () => {
     { label: 'Data de Criação', value: format(new Date(selectedSearch.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
   ] : [];
 
-  const buildAlertDescription = (filters: Record<string, string>): string => {
+  const buildAlertDescription = (filters: Record<string, string | string[]>): string => {
     const parts: string[] = [];
-    if (filters.state) parts.push(filters.state);
-    if (filters.city) parts.push(filters.city);
-    if (filters.property_type) parts.push(propertyTypeLabels[filters.property_type] ?? filters.property_type);
-    if (filters.operation_type) parts.push(operationLabels[filters.operation_type] ?? filters.operation_type);
-    if (filters.zone) parts.push(`Zona ${filters.zone}`);
-    if (filters.neighborhood) parts.push(filters.neighborhood);
-    if (filters.priceMin) parts.push(`Min ${formatDisplayValue(filters.priceMin)}`);
-    if (filters.priceMax) parts.push(`Max ${formatDisplayValue(filters.priceMax)}`);
+    if (typeof filters.state === 'string') parts.push(filters.state);
+    const alertCities = Array.isArray(filters.cities) ? filters.cities : typeof filters.city === 'string' ? [filters.city] : [];
+    if (alertCities.length > 0) parts.push(alertCities.join(', '));
+    if (typeof filters.property_type === 'string') parts.push(propertyTypeLabels[filters.property_type] ?? filters.property_type);
+    if (typeof filters.operation_type === 'string') parts.push(operationLabels[filters.operation_type] ?? filters.operation_type);
+    if (typeof filters.zone === 'string') parts.push(`Zona ${filters.zone}`);
+    if (typeof filters.neighborhood === 'string') parts.push(filters.neighborhood);
+    if (typeof filters.priceMin === 'string') parts.push(`Min ${formatDisplayValue(filters.priceMin)}`);
+    if (typeof filters.priceMax === 'string') parts.push(`Max ${formatDisplayValue(filters.priceMax)}`);
     return parts.join(' · ') || 'Sem filtros';
   };
 
@@ -792,7 +802,7 @@ const PropertySearches = () => {
                             )}
                             <div className="flex items-center gap-1 justify-end text-xs text-muted-foreground">
                               <MapPin className="h-3 w-3" />
-                              <span>{s.city}{s.state ? ` / ${s.state}` : ''}</span>
+                              <span>{splitValues(s.city).join(', ')}{s.state ? ` / ${s.state}` : ''}</span>
                             </div>
                             <div className="flex items-center gap-1 justify-end text-xs text-muted-foreground">
                               <MessageCircle className="h-3 w-3" />
@@ -898,7 +908,7 @@ const PropertySearches = () => {
                                 {s.headline || s.title || propertyTypeLabels[s.property_type]}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                {s.city}{s.state ? ` / ${s.state}` : ''}
+                                {splitValues(s.city).join(', ')}{s.state ? ` / ${s.state}` : ''}
                               </p>
                             </div>
                             {formatDisplayValue(s.value) && (
@@ -1019,7 +1029,7 @@ const PropertySearches = () => {
               <DialogHeader>
                 <DialogTitle>Enviar Oferta</DialogTitle>
                 <DialogDescription>
-                  {offerModalSearch.headline || offerModalSearch.title || `${propertyTypeLabels[offerModalSearch.property_type]} em ${offerModalSearch.city}`}
+                  {offerModalSearch.headline || offerModalSearch.title || `${propertyTypeLabels[offerModalSearch.property_type]} em ${splitValues(offerModalSearch.city).join(', ')}`}
                 </DialogDescription>
               </DialogHeader>
 
