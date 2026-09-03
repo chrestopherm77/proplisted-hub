@@ -34,6 +34,12 @@ const ruralLabels: Record<string, string> = {
   CHACARA: 'Chácara',
 };
 
+const splitValues = (value: string | null | undefined): string[] =>
+  (value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+
+const formatHouseTypes = (value: string | null): string =>
+  splitValues(value).map((item) => houseLabels[item] ?? item).join(' e ');
+
 interface PropertySearch {
   id: string;
   user_id: string;

@@ -123,6 +123,12 @@ const ruralLabels: Record<string, string> = {
 
 const zoneOptions = ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Rural'];
 
+const splitValues = (value: string | null | undefined): string[] =>
+  (value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+
+const formatHouseTypes = (value: string | null): string =>
+  splitValues(value).map((item) => houseLabels[item] ?? item).join(' e ');
+
 const propertyTypeIcons: Record<string, React.ReactNode> = {
   CASA: <Home className="h-5 w-5" />,
   APARTAMENTO: <Building2 className="h-5 w-5" />,
@@ -158,7 +164,7 @@ const formatCurrencyInput = (value: string): string => {
 
 const buildDescription = (s: PropertySearch): string => {
   const parts: string[] = [];
-  if (s.house_type) parts.push(houseLabels[s.house_type] ?? s.house_type);
+  if (s.house_type) parts.push(formatHouseTypes(s.house_type));
   if (s.rural_type) parts.push(ruralLabels[s.rural_type] ?? s.rural_type);
   if (s.neighborhood) parts.push(`Bairro: ${s.neighborhood}`);
   if (s.zone) parts.push(`Zona: ${s.zone}`);

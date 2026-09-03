@@ -329,17 +329,22 @@ const NewPropertySearch = () => {
               </div>
             )}
 
-            {/* Sub-select for Casa */}
+            {/* Tipos de Casa com seleção múltipla */}
             {config.hasHouseType && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Tipo de Casa *</Label>
-                <Select value={houseType} onValueChange={setHouseType}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="RUA">Rua</SelectItem>
-                    <SelectItem value="CONDOMINIO">Condomínio</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Object.entries(houseTypeLabels).map(([value, label]) => (
+                    <label key={value} className="flex items-center gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-muted/50">
+                      <Checkbox
+                        checked={houseTypes.includes(value)}
+                        onCheckedChange={(checked) => setHouseTypes((current) => checked ? [...current, value] : current.filter((item) => item !== value))}
+                      />
+                      <span className="text-sm font-medium text-foreground">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Você pode selecionar Rua, Condomínio ou os dois.</p>
               </div>
             )}
 
@@ -374,19 +379,30 @@ const NewPropertySearch = () => {
               </Select>
             </div>
 
-            {/* Cidade via IBGE */}
+            {/* Cidades via IBGE com seleção múltipla */}
             <div className="space-y-2">
-              <Label>Cidade *</Label>
-              <Select value={city} onValueChange={setCity} disabled={!state}>
-                <SelectTrigger>
-                  <SelectValue placeholder={loadingCities ? 'Carregando...' : !state ? 'Selecione o estado primeiro' : 'Selecione a cidade'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((c) => (
-                    <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Cidades *</Label>
+              <div className={cn('rounded-md border border-border max-h-56 overflow-y-auto p-2 space-y-1', !state && 'opacity-60')}>
+                {!state ? (
+                  <p className="text-sm text-muted-foreground p-2">Selecione o estado primeiro.</p>
+                ) : loadingCities ? (
+                  <p className="text-sm text-muted-foreground p-2">Carregando cidades...</p>
+                ) : cities.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-2">Nenhuma cidade encontrada.</p>
+                ) : (
+                  cities.map((c) => (
+                    <label key={c.id} className="flex items-center gap-3 rounded-md p-2 cursor-pointer hover:bg-muted/50">
+                      <Checkbox
+                        checked={citiesSelected.includes(c.nome)}
+                        onCheckedChange={(checked) => setCitiesSelected((current) => checked ? [...current, c.nome] : current.filter((item) => item !== c.nome))}
+                        disabled={!state}
+                      />
+                      <span className="text-sm text-foreground">{c.nome}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {citiesSelected.length > 0 && <p className="text-xs text-muted-foreground">Selecionadas: {citiesSelected.join(', ')}</p>}
             </div>
 
             <div className="space-y-2">
