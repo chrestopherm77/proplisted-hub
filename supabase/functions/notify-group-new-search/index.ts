@@ -10,6 +10,7 @@ const corsHeaders = {
 const BodySchema = z.object({
   state: z.string().optional(),
   city: z.string().min(1),
+  cities: z.array(z.string().min(1)).optional(),
   operationType: z.string().min(1),
   propertyType: z.string().min(1),
   zone: z.string().optional(),
