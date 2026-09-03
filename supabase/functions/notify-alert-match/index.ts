@@ -143,12 +143,12 @@ serve(async (req) => {
       if (f.property_type && f.property_type !== data.property_type) continue;
       if (f.operation_type && f.operation_type !== data.operation_type) continue;
 
-      if (f.priceMin) {
+      if (typeof f.priceMin === 'string') {
         const alertMin = parseNum(f.priceMin);
         const searchMax = parseNum(data.value_max);
         if (alertMin > 0 && searchMax > 0 && searchMax < alertMin) continue;
       }
-      if (f.priceMax) {
+      if (typeof f.priceMax === 'string') {
         const alertMax = parseNum(f.priceMax);
         const searchMin = parseNum(data.value_min);
         if (alertMax > 0 && searchMin > 0 && searchMin > alertMax) continue;
