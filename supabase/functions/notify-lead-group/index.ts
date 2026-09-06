@@ -107,22 +107,25 @@ Deno.serve(async (req) => {
 
     const lines: string[] = [];
 
-    const city = (flow?.city ?? fd.city ?? fd.cidade) as string | undefined;
-    const uf = (flow?.uf ?? fd.uf) as string | undefined;
+    const city = (flow?.city ?? fd.city ?? fd.cidade ?? fd["Cidade de interesse"]) as string | undefined;
+    const uf = (flow?.uf ?? fd.uf ?? fd["UF"]) as string | undefined;
     if (city) lines.push(uf ? `${city} - ${uf}` : city);
 
-    const propType = (flow?.propertyType ?? fd.propertyType ?? fd.tipo) as string | undefined;
+    const propType = (flow?.propertyType ?? fd.propertyType ?? fd.tipo ?? fd["Tipo de imóvel"]) as string | undefined;
     const subTypeRaw = (flow?.residentialType || flow?.commercialType || flow?.mixedType || flow?.ruralType) as string | undefined;
     const subType = subTypeRaw ? (subTypeLabels[subTypeRaw] || subTypeRaw) : undefined;
     if (propType) lines.push(subType ? `${propLabels[propType] || propType} - ${subType}` : (propLabels[propType] || propType));
 
-    const bedrooms = flow?.bedrooms as string | undefined;
+    const bedrooms = (flow?.bedrooms ?? fd["Dormitórios"]) as string | undefined;
     if (bedrooms) lines.push(`${bedrooms} quarto(s)`);
+
+    const neighborhood = (fd["Bairro"] ?? fd.bairro ?? fd["Zona"] ?? fd.zona) as string | undefined;
+    if (neighborhood) lines.push(String(neighborhood));
 
     const purpose = flow?.purpose as string | undefined;
     if (purpose) lines.push(purposeLabels[purpose] || purpose);
 
-    const value = (flow?.expectedValue || flow?.budgetMax || flow?.maxRent || flow?.budget || fd.valor || fd.budget) as string | undefined;
+    const value = (flow?.expectedValue || flow?.budgetMax || flow?.maxRent || flow?.budget || fd.valor || fd.budget || fd["Até qual valor"]) as string | undefined;
     if (value) {
       const cleanValue = String(value).replace(/^R\$\s*/i, "").trim();
       if (cleanValue) lines.push(`R$ ${cleanValue}`);
