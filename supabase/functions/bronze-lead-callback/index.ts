@@ -79,6 +79,25 @@ Deno.serve(async (req) => {
   if (!INTENTION_PT[intention]) return json({ error: "Interesse inválido (comprar, alugar, vender ou construir)" }, 400);
 
   const answers = (body.respostas ?? body.answers ?? {}) as Record<string, unknown>;
+
+  // Campos extras enviados no corpo (ex.: Tipo, Valor, Cidade) entram no form_data do lead
+  const EXTRA_FIELDS: Record<string, string> = {
+    tipo: "Tipo de imóvel",
+    valor: "Até qual valor",
+    cidade: "Cidade de interesse",
+    uf: "UF",
+    bairro: "Bairro",
+    zona: "Zona",
+    dormitorios: "Dormitórios",
+    observacao: "Observação",
+  };
+  const extraAnswers: Record<string, unknown> = {};
+  for (const [key, label] of Object.entries(EXTRA_FIELDS)) {
+    const v = pick(key);
+    if (v) extraAnswers[label] = v;
+  }
+  const cityFromBody = String(pick("cidade")).trim();
+  const ufFromBody = String(pick("uf")).trim();
   const sessionId = body.session_id ? String(body.session_id) : null;
   const partialLeadId = body.partial_lead_id ? String(body.partial_lead_id) : null;
 
