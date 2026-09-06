@@ -131,7 +131,10 @@ Deno.serve(async (req) => {
 
   const formData = {
     ...(partial?.form_data as Record<string, unknown> ?? {}),
+    ...extraAnswers,
     ...answers,
+    ...(cityFromBody ? { city: cityFromBody } : {}),
+    ...(ufFromBody ? { uf: ufFromBody } : {}),
     origem: "RECUPERACAO_FORMULARIO",
     intention,
   };
