@@ -61,9 +61,17 @@ Deno.serve(async (req) => {
     String(body.secret ?? "");
   if (!(provided && (provided === expected || provided === expectedAlt))) return json({ error: "Unauthorized" }, 401);
 
-  const name = String(body.nome ?? body.name ?? "").trim();
-  const phone = normalizePhone(String(body.telefone ?? body.phone ?? ""));
-  const rawIntention = String(body.interesse ?? body.intencao ?? body.intention ?? "").trim();
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const found = Object.keys(body).find((bk) => bk.toLowerCase() === k);
+      if (found !== undefined && body[found] !== undefined && body[found] !== null && body[found] !== "") return body[found];
+    }
+    return "";
+  };
+
+  const name = String(pick("nome", "name")).trim();
+  const phone = normalizePhone(String(pick("telefone", "phone")));
+  const rawIntention = String(pick("interesse", "intencao", "intention")).trim();
   const intention = INTENTION_MAP[rawIntention.toLowerCase()] ?? rawIntention.toUpperCase();
 
   if (name.length < 2) return json({ error: "Nome inválido" }, 400);
@@ -71,6 +79,25 @@ Deno.serve(async (req) => {
   if (!INTENTION_PT[intention]) return json({ error: "Interesse inválido (comprar, alugar, vender ou construir)" }, 400);
 
   const answers = (body.respostas ?? body.answers ?? {}) as Record<string, unknown>;
+
+  // Campos extras enviados no corpo (ex.: Tipo, Valor, Cidade) entram no form_data do lead
+  const EXTRA_FIELDS: Record<string, string> = {
+    tipo: "Tipo de imóvel",
+    valor: "Até qual valor",
+    cidade: "Cidade de interesse",
+    uf: "UF",
+    bairro: "Bairro",
+    zona: "Zona",
+    dormitorios: "Dormitórios",
+    observacao: "Observação",
+  };
+  const extraAnswers: Record<string, unknown> = {};
+  for (const [key, label] of Object.entries(EXTRA_FIELDS)) {
+    const v = pick(key);
+    if (v) extraAnswers[label] = v;
+  }
+  const cityFromBody = String(pick("cidade")).trim();
+  const ufFromBody = String(pick("uf")).trim();
   const sessionId = body.session_id ? String(body.session_id) : null;
   const partialLeadId = body.partial_lead_id ? String(body.partial_lead_id) : null;
 
@@ -104,7 +131,10 @@ Deno.serve(async (req) => {
 
   const formData = {
     ...(partial?.form_data as Record<string, unknown> ?? {}),
+    ...extraAnswers,
     ...answers,
+    ...(cityFromBody ? { city: cityFromBody } : {}),
+    ...(ufFromBody ? { uf: ufFromBody } : {}),
     origem: "RECUPERACAO_FORMULARIO",
     intention,
   };
