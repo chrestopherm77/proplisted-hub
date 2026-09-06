@@ -802,8 +802,10 @@ export default function Leads() {
                       const entries = Object.entries(lead.form_data as Record<string, unknown>).filter(
                         ([k, v]) => !SKIP.has(k) && v !== null && v !== undefined && v !== '' && typeof v !== 'object'
                       );
+                      const LABELS: Record<string, string> = { city: 'Cidade', uf: 'UF', cidade: 'Cidade' };
+                      const label = (k: string) => LABELS[k] ?? k.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
                       return entries.map(([k, v]) => (
-                        <p key={k}><span className="font-medium text-foreground">{k.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}:</span> {String(v)}</p>
+                        <p key={k}><span className="font-medium text-foreground">{label(k)}:</span> {String(v)}</p>
                       ));
                     })()}
                   </div>
