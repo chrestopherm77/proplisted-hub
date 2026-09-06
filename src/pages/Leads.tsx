@@ -708,7 +708,7 @@ export default function Leads() {
                 </SelectContent>
               </Select>
             </div>
-            {isAdmin === true && (
+            {(
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-muted-foreground">Classificação</label>
                 <Select value={filterTier} onValueChange={setFilterTier}>
