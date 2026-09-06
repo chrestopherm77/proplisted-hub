@@ -61,9 +61,17 @@ Deno.serve(async (req) => {
     String(body.secret ?? "");
   if (!(provided && (provided === expected || provided === expectedAlt))) return json({ error: "Unauthorized" }, 401);
 
-  const name = String(body.nome ?? body.name ?? "").trim();
-  const phone = normalizePhone(String(body.telefone ?? body.phone ?? ""));
-  const rawIntention = String(body.interesse ?? body.intencao ?? body.intention ?? "").trim();
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const found = Object.keys(body).find((bk) => bk.toLowerCase() === k);
+      if (found !== undefined && body[found] !== undefined && body[found] !== null && body[found] !== "") return body[found];
+    }
+    return "";
+  };
+
+  const name = String(pick("nome", "name")).trim();
+  const phone = normalizePhone(String(pick("telefone", "phone")));
+  const rawIntention = String(pick("interesse", "intencao", "intention")).trim();
   const intention = INTENTION_MAP[rawIntention.toLowerCase()] ?? rawIntention.toUpperCase();
 
   if (name.length < 2) return json({ error: "Nome inválido" }, 400);
